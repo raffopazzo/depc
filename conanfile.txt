@@ -1,0 +1,10 @@
+[requires]
+antlr4-cppruntime/4.13.0
+boost/1.82.0
+llvm-core/13.0.0
+
+# conflicts
+zlib/1.2.13 # boost vs llvm-core
+
+[generators]
+cmake_find_package

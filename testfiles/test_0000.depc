@@ -1,0 +1,8 @@
+// this is a comment
+/* this is another comment */ /* in fact 2 on the same line */ // or even more
+/* this comment
+   spans multiple
+   lines */
+/* block comments can be /* nested,
+   so this is still a comment */
+   but / or * individually don't start a nested comment */

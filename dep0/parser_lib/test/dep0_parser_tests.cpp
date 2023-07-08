@@ -44,4 +44,10 @@ BOOST_AUTO_TEST_CASE(test_0001)
     BOOST_TEST(f.name == "main");
 }
 
+BOOST_AUTO_TEST_CASE(test_0002)
+{
+    auto const result = dep0::parser::parse(testfiles / "test_0002.depc");
+    BOOST_TEST(result.has_value());
+}
+
 BOOST_AUTO_TEST_SUITE_END()

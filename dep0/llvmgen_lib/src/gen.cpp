@@ -64,7 +64,10 @@ llvm::Instruction* gen(llvm::IRBuilder<>& builder, typecheck::stmt_t const& x)
         llvm::IRBuilder<>& builder;
         llvm::Instruction* operator()(typecheck::stmt_t::return_t const& x)
         {
-            return builder.CreateRet(gen(builder, x.expr));
+            if (x.expr)
+                return builder.CreateRet(gen(builder, *x.expr));
+            else
+                return builder.CreateRetVoid();
         }
     };
     return std::visit(visitor{builder}, x.value);

@@ -14,7 +14,7 @@ body: '{' stmt* '}';
 
 stmt: returnStmt;
 
-returnStmt: 'return' expr ';';
+returnStmt: 'return' expr? ';';
 
 // Expressions
 expr: constantExpr;

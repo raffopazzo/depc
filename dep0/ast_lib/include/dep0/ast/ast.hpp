@@ -3,6 +3,7 @@
 #include "dep0/ast/concepts.hpp"
 
 #include <string_view>
+#include <optional>
 #include <vector>
 #include <variant>
 
@@ -59,7 +60,7 @@ struct stmt_t
     using expr_t = ast::expr_t<P>;
     struct return_t
     {
-        expr_t expr;
+        std::optional<expr_t> expr;
         bool operator==(return_t const&) const = default;
     };
     using value_t = std::variant<return_t>;

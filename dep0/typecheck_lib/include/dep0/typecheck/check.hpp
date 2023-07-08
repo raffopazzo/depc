@@ -128,15 +128,25 @@ template <ast::Properties P> expected<stmt_t> check(ast::stmt_t<P> const& s, std
         std::optional<type_t> const& expected_type;
         expected<stmt_t> operator()(typename ast::stmt_t<P>::return_t const& x)
         {
-            if (not expected_type)
-                return error_t{"Unexpected return statement"};
-            if (auto expr = check(x.expr, *expected_type))
+            if (x.expr)
             {
-                auto der = expr->properties;
-                return stmt_t{std::move(der), stmt_t::return_t{std::move(*expr)}};
+                if (not expected_type)
+                    return error_t{"Unexpected return statement"};
+                if (auto expr = check(*x.expr, *expected_type))
+                {
+                    auto der = expr->properties;
+                    return stmt_t{std::move(der), stmt_t::return_t{std::move(*expr)}};
+                }
+                else
+                    return std::move(expr.error());
             }
             else
-                return std::move(expr.error());
+            {
+                if (expected_type)
+                    // TODO replace `int` with real type name
+                    return error_t{"Expecting expression of type 'int'"};
+                return stmt_t{std::nullopt, stmt_t::return_t{std::nullopt}};
+            }
         }
     };
     return std::visit(visitor{expected_type}, s.value);

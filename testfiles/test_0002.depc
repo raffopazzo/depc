@@ -1,0 +1,4 @@
+int main()
+{
+    return; // error: this does not typecheck
+}

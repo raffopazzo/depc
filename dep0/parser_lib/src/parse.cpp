@@ -11,6 +11,7 @@
 #include <antlr4-runtime/antlr4-runtime.h>
 
 #include <algorithm>
+#include <optional>
 
 namespace dep0::parser {
 
@@ -118,7 +119,10 @@ struct parse_visitor_t : dep0::DepCParserVisitor
 
     virtual std::any visitReturnStmt(DepCParser::ReturnStmtContext* ctx) override
     {
-        return stmt_t::return_t{std::any_cast<expr_t>(visitExpr(ctx->expr()))};
+        if (ctx->expr())
+            return stmt_t::return_t{std::any_cast<expr_t>(visitExpr(ctx->expr()))};
+        else
+            return stmt_t::return_t{std::nullopt};
     }
 
     virtual std::any visitExpr(DepCParser::ExprContext* ctx) override
@@ -139,6 +143,55 @@ struct parse_visitor_t : dep0::DepCParserVisitor
     }
 };
 
+struct FirstErrorListener : antlr4::ANTLRErrorListener
+{
+    std::optional<error_t> error;
+
+    void reportAmbiguity(antlr4::Parser*,
+        antlr4::dfa::DFA const&,
+        std::size_t,
+        std::size_t,
+        bool,
+        antlrcpp::BitSet const&,
+        antlr4::atn::ATNConfigSet*) override
+    {
+        // this is not really an error
+    }
+
+    void reportAttemptingFullContext(
+        antlr4::Parser*,
+        antlr4::dfa::DFA const&,
+        std::size_t,
+        std::size_t,
+        antlrcpp::BitSet const&,
+        antlr4::atn::ATNConfigSet*) override
+    {
+        // this is not really an error
+    }
+
+    void reportContextSensitivity(
+        antlr4::Parser*,
+        antlr4::dfa::DFA const&,
+        std::size_t startIndex,
+        std::size_t stopIndex,
+        std::size_t,
+        antlr4::atn::ATNConfigSet*) override
+    {
+        // this is not really an error
+    }
+
+    void syntaxError(
+        antlr4::Recognizer*,
+        antlr4::Token*,
+        std::size_t line,
+        std::size_t col,
+        std::string const& msg,
+        std::exception_ptr) override
+    {
+        if (not error) error = error_t{msg};
+    }
+};
+
 expected<parse_tree> parse(std::filesystem::path const& path)
 {
     auto text = mmap(path);
@@ -149,7 +202,13 @@ expected<parse_tree> parse(std::filesystem::path const& path)
     antlr4::CommonTokenStream tokens(&lexer);
     tokens.fill();
     dep0::DepCParser parser(&tokens);
+    // TODO: install some error handler that doesn't attempt recovery (we only want the first error)
+    FirstErrorListener error_listener;
+    parser.removeErrorListeners();
+    parser.addErrorListener(&error_listener);
     dep0::DepCParser::ModuleContext* module = parser.module();
+    if (error_listener.error)
+        return error_t{"Parsing failed", std::vector{*error_listener.error}};
     auto const file_content = text->data();
     return parse_tree{
         std::move(*text),

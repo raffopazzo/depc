@@ -42,7 +42,7 @@ llvm::Type* gen(llvm::Module& llvm_module, typecheck::type_t const& x)
 llvm::Value* gen(llvm::Module& llvm_module, typecheck::func_def_t const& x)
 {
     auto const funtype = llvm::FunctionType::get(gen(llvm_module, x.type), {}, false); 
-    auto const func = llvm::Function::Create(funtype, llvm::Function::ExternalLinkage, x.name, llvm_module);
+    auto const func = llvm::Function::Create(funtype, llvm::Function::ExternalLinkage, x.name.txt, llvm_module);
     gen(llvm_module, x.body)->insertInto(func);
     return func;
 }
@@ -81,7 +81,7 @@ llvm::Value* gen(llvm::IRBuilder<>& builder, typecheck::expr_t const& x)
         llvm::Value* operator()(typecheck::expr_t::numeric_constant_t const& x)
         {
             // currently only `int` is derivable, so `typecheck::expr_t` is proof that this is a valid integer number
-            return llvm::ConstantInt::get(llvm::Type::getInt32Ty(builder.getContext()), x.number, 10);
+            return llvm::ConstantInt::get(llvm::Type::getInt32Ty(builder.getContext()), x.number.txt, 10);
         }
     };
     return std::visit(visitor{builder}, x.value);

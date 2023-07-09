@@ -2,7 +2,8 @@
 
 #include "dep0/ast/concepts.hpp"
 
-#include <string_view>
+#include "dep0/source.hpp"
+
 #include <optional>
 #include <vector>
 #include <variant>
@@ -42,7 +43,7 @@ struct expr_t
     using properties_t = typename P::expr_properties_type;
     struct numeric_constant_t
     {
-        std::string_view number;
+        source_text number;
         bool operator==(numeric_constant_t const&) const = default;
     };
     using value_t = std::variant<numeric_constant_t>;
@@ -92,7 +93,7 @@ struct func_def_t
 
     properties_t properties;
     type_t type;
-    std::string_view name;
+    source_text name;
     body_t body;
 
     bool operator==(func_def_t const&) const = default;

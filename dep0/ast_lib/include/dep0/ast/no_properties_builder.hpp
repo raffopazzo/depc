@@ -92,9 +92,9 @@ struct builder_t<no_properties>
         return expr_t{{}, std::forward<Args>(args)...};
     }
 
-    expr_t make_numeric_constant(std::string_view const number)
+    expr_t make_numeric_constant(source_text number)
     {
-        return expr_t{{}, expr_t::numeric_constant_t{number}};
+        return expr_t{{}, expr_t::numeric_constant_t{std::move(number)}};
     }
 };
 

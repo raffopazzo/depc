@@ -4,7 +4,7 @@
 
 namespace dep0 {
 
-// Like `unique_ptr` but removes `nullptr` from the inhabitants.
+// Like `unique_ptr` but removes `nullptr` from its inhabitants.
 template <typename T>
 class unique_ref
 {

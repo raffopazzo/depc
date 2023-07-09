@@ -12,7 +12,7 @@ struct tree
 {
     using properties_type = P;
     using root_type = Root<P>;
-    source_ref_t source;
+    source_text source;
     root_type root;
 };
 

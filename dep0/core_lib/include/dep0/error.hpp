@@ -1,5 +1,8 @@
 #pragma once
 
+#include "dep0/source.hpp"
+
+#include <optional>
 #include <string>
 #include <vector>
 #include <variant>
@@ -9,11 +12,14 @@ namespace dep0 {
 struct error_t
 {
     std::string error;
+    std::optional<source_loc_t> location;
     std::vector<error_t> reasons;
 
     bool operator==(error_t const&) const = default;
     bool operator!=(error_t const&) const = default;
 };
+
+std::ostream& pretty_print(std::ostream& os, error_t const&);
 
 // TODO use `std::expected` once available
 template <typename T, typename E = error_t>

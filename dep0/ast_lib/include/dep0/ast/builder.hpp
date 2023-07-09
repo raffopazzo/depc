@@ -69,9 +69,9 @@ struct builder_t
         return expr_t{std::move(properties), std::forward<Args>(args)...};
     }
 
-    expr_t make_numeric_constant(expr_properties_type properties, std::string_view const number)
+    expr_t make_numeric_constant(expr_properties_type properties, source_text number)
     {
-        return expr_t{std::move(properties), typename expr_t::numeric_constant_t{number}};
+        return expr_t{std::move(properties), typename expr_t::numeric_constant_t{std::move(number)}};
     }
 };
 

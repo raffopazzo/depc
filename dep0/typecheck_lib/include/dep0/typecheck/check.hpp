@@ -30,7 +30,7 @@ struct derivation_properties
     using func_def_properties_type = empty_t; // `func_def` carries its return type which contains its own derivation
     using type_properties_type = derivation;
     using body_properties_type = empty_t;
-    using stmt_properties_type = std::optional<derivation>;
+    using stmt_properties_type = std::optional<derivation>; // why? does it really make sense? worth adding a comment
     using expr_properties_type = derivation;
 };
 static_assert(ast::Properties<derivation_properties>);

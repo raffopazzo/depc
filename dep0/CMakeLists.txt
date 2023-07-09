@@ -1,10 +1,10 @@
 find_package(Boost 1.76.0 REQUIRED)
 
-add_subdirectory(00_antlr_lib)
-add_subdirectory(00_core_lib)
-add_subdirectory(01_ast_lib)
-add_subdirectory(02_parser_lib)
-add_subdirectory(03_typecheck_lib)
-add_subdirectory(04_llvmgen_lib)
-
 add_subdirectory(app/dep0)
+
+add_subdirectory(lib/00_antlr)
+add_subdirectory(lib/00_core)
+add_subdirectory(lib/01_ast)
+add_subdirectory(lib/02_parser)
+add_subdirectory(lib/03_typecheck)
+add_subdirectory(lib/04_llvmgen)

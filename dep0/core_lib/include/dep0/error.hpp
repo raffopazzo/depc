@@ -15,6 +15,19 @@ struct error_t
     std::optional<source_loc_t> location;
     std::vector<error_t> reasons;
 
+    error_t() = default;
+
+    explicit error_t(std::string error, std::optional<source_loc_t> location = {}, std::vector<error_t> reasons = {}) :
+        error(std::move(error)),
+        location(std::move(location)),
+        reasons(std::move(reasons))
+    { }
+
+    error_t(std::string error, std::vector<error_t> reasons) :
+        error(std::move(error)),
+        reasons(std::move(reasons))
+    { }
+
     bool operator==(error_t const&) const = default;
     bool operator!=(error_t const&) const = default;
 };

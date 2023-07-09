@@ -52,7 +52,11 @@ static std::ostream& without_indent(std::ostream& os, error_t const& err, std::s
     {
     case 0ul: return os;
     case 1ul:
-        new_line(os, indent) << "Because ";
+        // if we did not print a location and the underlying reason has no further reasons, put everything on one line
+        if (not err.location and err.reasons[0].reasons.empty())
+            os << " because ";
+        else
+            new_line(os, indent) << "Because ";
         without_indent(os, err.reasons[0], indent, 0ul) << std::endl;
         return os;
     default:

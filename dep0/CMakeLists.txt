@@ -6,3 +6,5 @@ add_subdirectory(01_ast_lib)
 add_subdirectory(02_parser_lib)
 add_subdirectory(03_typecheck_lib)
 add_subdirectory(04_llvmgen_lib)
+
+add_subdirectory(app/dep0)

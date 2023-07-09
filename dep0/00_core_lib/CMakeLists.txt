@@ -1,4 +1,4 @@
-# add_subdirectory(test)
+add_subdirectory(test)
 add_library(dep0_core_lib
     include/dep0/error.hpp
     include/dep0/mmap.hpp

@@ -2,6 +2,11 @@
 
 namespace dep0 {
 
+static bool is_single_line(std::string_view const text)
+{
+    return text.find('\n') == text.npos;
+}
+
 static std::ostream& print_indent(std::ostream& os, std::size_t indent)
 {
     while (indent--)
@@ -16,12 +21,11 @@ static std::ostream& new_line(std::ostream& os, std::size_t const indent)
 
 static std::ostream& quote(std::ostream& os, std::string_view text, std::size_t const indent)
 {
-    // TODO should perhaps handle `\r\n` and escape non 7bit ascii characters too
     auto nl = text.find('\n');
     while (nl != text.npos)
     {
         new_line(os, indent) << "> " << text.substr(0, nl);
-        text.remove_prefix(nl + 11);
+        text.remove_prefix(nl + 1);
         nl = text.find('\n');
     }
     return new_line(os, indent) << "> " << text;
@@ -35,35 +39,44 @@ static std::ostream& with_indent(std::ostream& os, error_t const& err, std::size
     return without_indent(os, err, indent, reason);
 }
 
+enum class quoting_mode
+{
+    dont_quote,
+    single_line,
+    multi_line
+};
+
+static quoting_mode determine_quoting_mode(std::optional<source_loc_t> const& loc)
+{
+    if (not loc or loc->txt.txt.empty())
+        return quoting_mode::dont_quote;
+    return is_single_line(loc->txt.txt) ? quoting_mode::single_line : quoting_mode::multi_line;
+}
+
 static std::ostream& without_indent(std::ostream& os, error_t const& err, std::size_t indent, std::size_t const reason)
 {
     if (reason)
         os << reason << ". ";
-    os << err.error;
+    auto const q = determine_quoting_mode(err.location);
     if (err.location)
     {
-        // if txt contains new lines, should we stop?
-        // maybe we can print it with `>` for quoting?
-        os << " at " << err.location->line << ':' << err.location->col;
-        if (not err.location->txt.txt.empty())
-            quote(os, err.location->txt.txt, indent+1);
+        os << "at " << err.location->line << ':' << err.location->col;
+        if (q == quoting_mode::single_line)
+            os << " `" << err.location->txt.txt << '`';
+        os << ' ';
     }
+    os << err.error;
+    if (q == quoting_mode::multi_line)
+        quote(os, err.location->txt.txt, indent+1);
     switch (err.reasons.size())
     {
     case 0ul: return os;
-    case 1ul:
-        // if we did not print a location and the underlying reason has no further reasons, put everything on one line
-        if (not err.location and err.reasons[0].reasons.empty())
-            os << " because ";
-        else
-            new_line(os, indent) << "Because ";
-        without_indent(os, err.reasons[0], indent, 0ul) << std::endl;
-        return os;
+    case 1ul: return without_indent(os << " because ", err.reasons[0], indent, 0ul);
     default:
-        new_line(os, indent) << "Because:" << std::endl;
+        os << " because:";
         std::size_t i = 1ul;
         for (auto const& reason: err.reasons)
-            with_indent(os, reason, indent+1, i++) << std::endl;
+            with_indent(os << std::endl, reason, indent+1, i++);
         return os;
     }
 }

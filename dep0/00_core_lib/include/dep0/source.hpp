@@ -38,8 +38,6 @@ class source_handle_t
     }
 
 public:
-    source_handle_t() = default;
-
     ~source_handle_t()
     {
         release();
@@ -70,6 +68,7 @@ public:
         return *this;
     }
 };
+
 template <typename U, typename... Args>
 source_handle_t make_handle(Args&&... args)
 {

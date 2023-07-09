@@ -7,7 +7,16 @@
 #include <filesystem>
 #include <cstdlib>
 
-using namespace dep0;
+namespace dep0
+{
+
+std::ostream& operator<<(std::ostream& os, expected<parser::parse_tree> const& x)
+{
+    if (x) return os << "Parsing ok";
+    else return pretty_print(os << std::endl, x.error());
+}
+
+}
 
 std::string toString(llvm::Module const& m)
 {
@@ -25,7 +34,7 @@ struct Fixture
     dep0::typecheck::tree open(std::filesystem::path const& file)
     {
         auto const tree = dep0::parser::parse(testfiles / file);
-        BOOST_TEST_REQUIRE(tree.has_value());
+        BOOST_TEST_REQUIRE(tree);
         auto const checked = dep0::typecheck::check(*tree);
         BOOST_TEST_REQUIRE(checked.has_value());
         return *checked;

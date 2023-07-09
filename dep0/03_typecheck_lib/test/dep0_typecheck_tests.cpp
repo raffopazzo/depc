@@ -7,8 +7,6 @@
 #include <filesystem>
 #include <cstdlib>
 
-using namespace dep0;
-
 namespace dep0
 {
 
@@ -27,7 +25,7 @@ struct Fixture
     dep0::parser::parse_tree open(std::filesystem::path const& file)
     {
         auto const tree = dep0::parser::parse(testfiles / file);
-        BOOST_TEST_REQUIRE(tree.has_value(), tree);
+        BOOST_TEST_REQUIRE(tree);
         return *tree;
     }
 };

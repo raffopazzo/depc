@@ -6,6 +6,17 @@
 #include <filesystem>
 #include <cstdlib>
 
+namespace dep0
+{
+
+std::ostream& operator<<(std::ostream& os, expected<parser::parse_tree> const& x)
+{
+    if (x) return os << "Parsing ok";
+    else return pretty_print(os << std::endl, x.error());
+}
+
+}
+
 struct Fixture
 {
     std::filesystem::path testfiles = std::getenv("DEP0_TESTFILES_DIR");
@@ -16,7 +27,7 @@ BOOST_FIXTURE_TEST_SUITE(dep0_parser_tests, Fixture)
 BOOST_AUTO_TEST_CASE(test_0000)
 {
     auto const result = dep0::parser::parse(testfiles / "test_0000.depc");
-    BOOST_TEST_REQUIRE(result.has_value());
+    BOOST_TEST_REQUIRE(result);
     BOOST_TEST(result->root.properties.line == 9);
     BOOST_TEST(result->root.properties.col == 0);
     BOOST_TEST(result->root.properties.txt == "");
@@ -28,7 +39,7 @@ BOOST_AUTO_TEST_CASE(test_0001)
     auto const result = dep0::parser::parse(testfiles / "test_0001.depc");
     std::string const source = "int main()\n{\n    return 0;\n}";
     std::string const file_source = source + '\n';
-    BOOST_TEST_REQUIRE(result.has_value());
+    BOOST_TEST_REQUIRE(result);
     BOOST_TEST(result->root.properties.line == 1);
     BOOST_TEST(result->root.properties.col == 0);
     BOOST_TEST(result->root.properties.txt == file_source);
@@ -47,7 +58,7 @@ BOOST_AUTO_TEST_CASE(test_0001)
 BOOST_AUTO_TEST_CASE(test_0002)
 {
     auto const result = dep0::parser::parse(testfiles / "test_0002.depc");
-    BOOST_TEST(result.has_value());
+    BOOST_TEST(result);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

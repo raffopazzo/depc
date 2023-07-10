@@ -82,7 +82,7 @@ int main(int argc, char** argv)
         {
             std::ostringstream str;
             dep0::pretty_print(str, parse_tree.error());
-            llvm::WithColor::error(llvm::errs(), f) << str.str() << '\n';
+            llvm::WithColor::error(llvm::errs(), f) << "Parse error: " << str.str() << '\n';
             return 1;
         }
         auto typechecked_tree = dep0::typecheck::check(*parse_tree);
@@ -90,7 +90,7 @@ int main(int argc, char** argv)
         {
             std::ostringstream str;
             dep0::pretty_print(str, typechecked_tree.error());
-            llvm::WithColor::error(llvm::errs(), f) << str.str() << '\n';
+            llvm::WithColor::error(llvm::errs(), f) << "Typecheck error: " << str.str() << '\n';
             return 1;
         }
         auto llvm_module = dep0::llvmgen::gen(llvm_context, f, typechecked_tree->root);
@@ -98,7 +98,7 @@ int main(int argc, char** argv)
         {
             std::ostringstream str;
             dep0::pretty_print(str, llvm_module.error());
-            llvm::WithColor::error(llvm::errs(), f) << str.str() << '\n';
+            llvm::WithColor::error(llvm::errs(), f) << "Codegen error: " << str.str() << '\n';
             return 1;
         }
         if (file_type == llvm::CodeGenFileType::CGFT_Null)

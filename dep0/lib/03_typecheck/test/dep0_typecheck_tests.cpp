@@ -52,6 +52,7 @@ BOOST_AUTO_TEST_CASE(test_0002)
     auto const result = dep0::typecheck::check(tree);
     BOOST_TEST_REQUIRE(result.has_error());
     BOOST_TEST(result.error().error == "Expecting expression of type 'int'");
+    BOOST_TEST(result.error().location.has_value());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

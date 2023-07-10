@@ -29,7 +29,7 @@ BOOST_AUTO_TEST_CASE(test_0000)
     auto const result = dep0::parser::parse(testfiles / "test_0000.depc");
     BOOST_TEST_REQUIRE(result);
     BOOST_TEST(result->root.properties.line == 9);
-    BOOST_TEST(result->root.properties.col == 0);
+    BOOST_TEST(result->root.properties.col == 1);
     BOOST_TEST(result->root.properties.txt == "");
     BOOST_TEST(result->root.func_defs.empty());
 }
@@ -41,15 +41,15 @@ BOOST_AUTO_TEST_CASE(test_0001)
     std::string const file_source = source + '\n';
     BOOST_TEST_REQUIRE(result);
     BOOST_TEST(result->root.properties.line == 1);
-    BOOST_TEST(result->root.properties.col == 0);
+    BOOST_TEST(result->root.properties.col == 1);
     BOOST_TEST(result->root.properties.txt == file_source);
     BOOST_TEST_REQUIRE(result->root.func_defs.size() == 1ul);
     auto const& f = result->root.func_defs[0];
     BOOST_TEST(f.properties.line == 1);
-    BOOST_TEST(f.properties.col == 0);
+    BOOST_TEST(f.properties.col == 1);
     BOOST_TEST(f.properties.txt == source);
     BOOST_TEST(f.type.properties.line == 1);
-    BOOST_TEST(f.type.properties.col == 0);
+    BOOST_TEST(f.type.properties.col == 1);
     BOOST_TEST(f.type.properties.txt == "int");
     BOOST_TEST(std::holds_alternative<dep0::parser::type_t::int_t>(f.type.value));
     BOOST_TEST(f.name == "main");

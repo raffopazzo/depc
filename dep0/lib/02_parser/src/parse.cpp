@@ -39,7 +39,7 @@ std::optional<source_loc_t> make_source(source_text const src, antlr4::ParserRul
 {
     std::optional<source_loc_t> res;
     if (auto txt = get_text(src, ctx))
-        res.emplace(ctx->getStart()->getLine(), ctx->getStart()->getCharPositionInLine(), std::move(*txt));
+        res.emplace(ctx->getStart()->getLine(), 1+ctx->getStart()->getCharPositionInLine(), std::move(*txt));
     return res;
 }
 
@@ -178,7 +178,7 @@ struct FirstErrorListener : antlr4::ANTLRErrorListener
         if (error) return;
         auto text = token ? get_text(src, token) : std::nullopt;
         // TODO substr(src.index_of(line, col), 1);
-        error = error_t{msg, source_loc_t{line, col, text ? std::move(*text) : src.substr(0, 0)}};
+        error = error_t{msg, source_loc_t{line, 1+col, text ? std::move(*text) : src.substr(0, 0)}};
     }
 };
 
@@ -198,7 +198,7 @@ expected<parse_tree> parse(std::filesystem::path const& path)
     parser.addErrorListener(&error_listener);
     dep0::DepCParser::ModuleContext* module = parser.module();
     if (error_listener.error)
-        return error_t{"Parsing failed", std::vector{*error_listener.error}};
+        return std::move(*error_listener.error);
     return parse_tree{
         *source,
         std::any_cast<module_t>(module->accept(std::make_unique<parse_visitor_t>(*source).get()))

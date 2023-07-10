@@ -3,12 +3,10 @@ add_library(dep0_ast_lib
     include/dep0/ast/ast.hpp
     include/dep0/ast/builder.hpp
     include/dep0/ast/concepts.hpp
-    include/dep0/ast/no_properties_builder.hpp
     include/dep0/ast/pretty_print.hpp
     src/ast.cpp
     src/builder.cpp
     src/concepts.cpp
-    src/no_properties_builder.cpp
     src/pretty_print.cpp
     )
 add_library(DepC::Dep0::Ast ALIAS dep0_ast_lib)

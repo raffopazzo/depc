@@ -1,4 +1,3 @@
-#include "dep0/ast/builder.hpp"
 #include "dep0/parser/parse.hpp"
 
 #include "dep0/antlr4/DepCLexer.h"
@@ -13,9 +12,6 @@
 #include <optional>
 
 namespace dep0::parser {
-
-using builder_t = ast::builder_t<parse_tree_properties>;
-
 
 std::optional<source_text> get_text(source_text const src, antlr4::Token const* const token)
 {
@@ -46,7 +42,6 @@ std::optional<source_loc_t> make_source(source_text const src, antlr4::ParserRul
 struct parse_visitor_t : dep0::DepCParserVisitor
 {
     source_text const src;
-    builder_t builder;
 
     explicit parse_visitor_t(source_text const src) :
         src(src)
@@ -62,22 +57,22 @@ struct parse_visitor_t : dep0::DepCParserVisitor
             {
                 return std::any_cast<func_def_t>(visitFuncDef(x));
             });
-        return builder.make_module(make_source(src, ctx).value(), std::move(func_defs));
+        return module_t{make_source(src, ctx).value(), std::move(func_defs)};
     }
 
     virtual std::any visitFuncDef(DepCParser::FuncDefContext* ctx) override
     {
-        return builder.make_func_def(
+        return func_def_t{
             make_source(src, ctx).value(),
-            std::any_cast<type_t>(visitType(ctx->type())),
-            get_text(src, ctx->ID()->getSymbol()).value(),
-            std::any_cast<body_t>(visitBody(ctx->body())));
+                std::any_cast<type_t>(visitType(ctx->type())),
+                get_text(src, ctx->ID()->getSymbol()).value(),
+                std::any_cast<body_t>(visitBody(ctx->body()))};
     }
 
     virtual std::any visitType(DepCParser::TypeContext* ctx) override
     {
         assert(ctx->KW_INT());
-        return builder.make_type(make_source(src, ctx).value(), type_t::int_t{});
+        return type_t{make_source(src, ctx).value(), type_t::int_t{}};
     }
 
     virtual std::any visitBody(DepCParser::BodyContext* ctx) override
@@ -90,14 +85,14 @@ struct parse_visitor_t : dep0::DepCParserVisitor
             {
                 return std::any_cast<stmt_t>(visitStmt(x));
             });
-        return builder.make_body(make_source(src, ctx).value(), std::move(stmts));
+        return body_t{make_source(src, ctx).value(), std::move(stmts)};
     }
 
     virtual std::any visitStmt(DepCParser::StmtContext* ctx) override
     {
-        return builder.make_stmt(
+        return stmt_t{
             make_source(src, ctx).value(),
-            std::any_cast<stmt_t::return_t>(visitReturnStmt(ctx->returnStmt())));
+            std::any_cast<stmt_t::return_t>(visitReturnStmt(ctx->returnStmt()))};
     }
 
     virtual std::any visitReturnStmt(DepCParser::ReturnStmtContext* ctx) override
@@ -115,9 +110,9 @@ struct parse_visitor_t : dep0::DepCParserVisitor
 
     virtual std::any visitConstantExpr(DepCParser::ConstantExprContext* ctx) override
     {
-        return builder.make_expr(
+        return expr_t{
             make_source(src, ctx).value(),
-            std::any_cast<expr_t::numeric_constant_t>(visitNumericExpr(ctx->numericExpr())));
+            std::any_cast<expr_t::numeric_constant_t>(visitNumericExpr(ctx->numericExpr()))};
     }
 
     virtual std::any visitNumericExpr(DepCParser::NumericExprContext* ctx)

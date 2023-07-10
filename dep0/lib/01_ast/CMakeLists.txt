@@ -1,11 +1,9 @@
 # add_subdirectory(test)
 add_library(dep0_ast_lib
     include/dep0/ast/ast.hpp
-    include/dep0/ast/builder.hpp
     include/dep0/ast/concepts.hpp
     include/dep0/ast/pretty_print.hpp
     src/ast.cpp
-    src/builder.cpp
     src/concepts.cpp
     src/pretty_print.cpp
     )

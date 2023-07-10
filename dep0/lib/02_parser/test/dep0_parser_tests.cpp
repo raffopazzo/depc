@@ -57,8 +57,17 @@ BOOST_AUTO_TEST_CASE(test_0001)
 
 BOOST_AUTO_TEST_CASE(test_0002)
 {
-    auto const result = dep0::parser::parse(testfiles / "test_0002.depc");
-    BOOST_TEST(result);
+    BOOST_TEST(dep0::parser::parse(testfiles / "test_0002.depc"));
+}
+
+BOOST_AUTO_TEST_CASE(test_0003)
+{
+    BOOST_TEST(dep0::parser::parse(testfiles / "test_0003.depc"));
+}
+
+BOOST_AUTO_TEST_CASE(test_0004)
+{
+    BOOST_TEST(dep0::parser::parse(testfiles / "test_0004.depc"));
 }
 
 BOOST_AUTO_TEST_SUITE_END()

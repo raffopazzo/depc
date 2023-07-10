@@ -2,6 +2,7 @@
 
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Verifier.h>
 
 namespace dep0::llvmgen {
 
@@ -21,7 +22,12 @@ expected<unique_ref<llvm::Module>> gen(
     auto llvm_module = make_ref<llvm::Module>(name, ctx);
     for (auto const& f: m.func_defs)
         gen(llvm_module.get(), f);
-    return llvm_module;
+
+    std::string err;
+    llvm::raw_string_ostream ostream(err);
+    return llvm::verifyModule(llvm_module.get(), &ostream) // yes true means false...
+        ? expected<unique_ref<llvm::Module>>{error_t{err}}
+        : expected<unique_ref<llvm::Module>>{std::in_place, std::move(llvm_module)};
 }
 
 // all gen functions must be implemented here
@@ -31,6 +37,12 @@ llvm::Type* gen(llvm::Module& llvm_module, typecheck::type_t const& x)
     struct visitor
     {
         llvm::Module& llvm_module;
+        llvm::Type* operator()(typecheck::type_t::unit_t const&)
+        {
+            // this may or may not be fine depending on how LLVM defines `void` (i.e. what properties it has)
+            // for instance, what does it men to have an array of `void` types in LLVM?
+            return llvm::Type::getVoidTy(llvm_module.getContext());
+        }
         llvm::Type* operator()(typecheck::type_t::int_t const&)
         {
             return llvm::Type::getInt32Ty(llvm_module.getContext());

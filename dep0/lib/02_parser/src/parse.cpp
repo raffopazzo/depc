@@ -49,6 +49,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
 
     virtual std::any visitModule(DepCParser::ModuleContext* ctx) override
     {
+        assert(ctx);
         std::vector<func_def_t> func_defs;
         std::ranges::transform(
             ctx->funcDef(),
@@ -62,6 +63,10 @@ struct parse_visitor_t : dep0::DepCParserVisitor
 
     virtual std::any visitFuncDef(DepCParser::FuncDefContext* ctx) override
     {
+        assert(ctx);
+        assert(ctx->type());
+        assert(ctx->ID());
+        assert(ctx->body());
         return func_def_t{
             make_source(src, ctx).value(),
                 std::any_cast<type_t>(visitType(ctx->type())),
@@ -71,12 +76,17 @@ struct parse_visitor_t : dep0::DepCParserVisitor
 
     virtual std::any visitType(DepCParser::TypeContext* ctx) override
     {
-        assert(ctx->KW_INT());
-        return type_t{make_source(src, ctx).value(), type_t::int_t{}};
+        if (ctx->KW_UNIT_T())
+            return type_t{make_source(src, ctx).value(), type_t::unit_t{}};
+        else if (ctx->KW_INT())
+            return type_t{make_source(src, ctx).value(), type_t::int_t{}};
+        else
+            assert(nullptr);
     }
 
     virtual std::any visitBody(DepCParser::BodyContext* ctx) override
     {
+        assert(ctx);
         std::vector<stmt_t> stmts;
         std::ranges::transform(
             ctx->stmt(),
@@ -90,6 +100,8 @@ struct parse_visitor_t : dep0::DepCParserVisitor
 
     virtual std::any visitStmt(DepCParser::StmtContext* ctx) override
     {
+        assert(ctx);
+        assert(ctx->returnStmt());
         return stmt_t{
             make_source(src, ctx).value(),
             std::any_cast<stmt_t::return_t>(visitReturnStmt(ctx->returnStmt()))};
@@ -97,6 +109,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
 
     virtual std::any visitReturnStmt(DepCParser::ReturnStmtContext* ctx) override
     {
+        assert(ctx);
         if (ctx->expr())
             return stmt_t::return_t{std::any_cast<expr_t>(visitExpr(ctx->expr()))};
         else
@@ -105,11 +118,15 @@ struct parse_visitor_t : dep0::DepCParserVisitor
 
     virtual std::any visitExpr(DepCParser::ExprContext* ctx) override
     {
+        assert(ctx);
+        assert(ctx->constantExpr());
         return visitConstantExpr(ctx->constantExpr());
     }
 
     virtual std::any visitConstantExpr(DepCParser::ConstantExprContext* ctx) override
     {
+        assert(ctx);
+        assert(ctx->numericExpr());
         return expr_t{
             make_source(src, ctx).value(),
             std::any_cast<expr_t::numeric_constant_t>(visitNumericExpr(ctx->numericExpr()))};
@@ -117,6 +134,8 @@ struct parse_visitor_t : dep0::DepCParserVisitor
 
     virtual std::any visitNumericExpr(DepCParser::NumericExprContext* ctx)
     {
+        assert(ctx);
+        assert(ctx->NUMBER());
         return expr_t::numeric_constant_t{get_text(src, ctx->NUMBER()->getSymbol()).value()};
     }
 };

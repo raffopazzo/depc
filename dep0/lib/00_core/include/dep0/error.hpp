@@ -46,6 +46,11 @@ public:
     /*implicit*/expected(T v) : value_(std::move(v)) { }
     /*implicit*/expected(E e) : value_(std::move(e)) { }
 
+    template <typename... Args>
+    expected(std::in_place_t, Args&&... args) :
+        value_(std::in_place_type<T>, std::forward<Args>(args)...)
+    { }
+
     expected(expected const&) = default;
     expected(expected&&) = default;
     expected& operator=(expected const&) = default;

@@ -6,6 +6,7 @@ fragment ALPHANUM: [A-Za-z0-9_]+;
 
 KW_INT: 'int';
 KW_RETURN: 'return';
+KW_UNIT_T: 'unit_t';
 
 LCURLY: '{';
 RCURLY: '}';

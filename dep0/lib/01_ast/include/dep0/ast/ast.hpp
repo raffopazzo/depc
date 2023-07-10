@@ -25,11 +25,9 @@ template <Properties P>
 struct type_t
 {
     using properties_t = typename P::type_properties_type;
-    struct int_t
-    {
-        bool operator==(int_t const&) const { return true; }
-    };
-    using value_t = std::variant<int_t>;
+    struct unit_t { bool operator==(unit_t const&) const { return true; } };
+    struct int_t { bool operator==(int_t const&) const { return true; } };
+    using value_t = std::variant<unit_t, int_t>;
 
     properties_t properties;
     value_t value;

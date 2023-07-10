@@ -1,0 +1,4 @@
+unit_t foo()
+{
+    return 0; // error: this does not typecheck
+}

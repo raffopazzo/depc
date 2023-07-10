@@ -17,6 +17,12 @@ std::ostream& operator<<(std::ostream& os, expected<parser::module_t> const& x)
     else return pretty_print(os << std::endl, x.error());
 }
 
+std::ostream& operator<<(std::ostream& os, expected<unique_ref<llvm::Module>> const& x)
+{
+    if (x) return os << "Codegen ok";
+    else return pretty_print(os << std::endl, x.error());
+}
+
 }
 
 std::string toString(llvm::Module const& m)
@@ -61,6 +67,16 @@ BOOST_AUTO_TEST_CASE(test_0001)
     auto const& f = *result->get().begin();
     auto const* p = result->get().getFunction("main");
     BOOST_TEST(&f == p);
+    // TODO should perhaps test properties of f
 }
+
+// BOOST_AUTO_TEST_CASE(test_0002) doesn't type check
+
+BOOST_AUTO_TEST_CASE(test_0003)
+{
+    BOOST_TEST(dep0::llvmgen::gen(llvm_ctx, "test.depc", open("test_0003.depc")));
+}
+
+// BOOST_AUTO_TEST_CASE(test_0004) doesn't type check
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -1,0 +1,11 @@
+unit_t foo()
+{
+}
+unit_t bar()
+{
+    return;
+}
+int main()
+{
+    return 0;
+}

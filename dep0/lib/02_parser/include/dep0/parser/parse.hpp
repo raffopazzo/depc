@@ -1,6 +1,6 @@
 #pragma once
 
-#include "dep0/parser/parse_tree.hpp"
+#include "dep0/parser/ast.hpp"
 
 #include "dep0/error.hpp"
 
@@ -8,6 +8,6 @@
 
 namespace dep0::parser {
 
-expected<parse_tree> parse(std::filesystem::path const&);
+expected<module_t> parse(std::filesystem::path const&);
 
 }

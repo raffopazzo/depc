@@ -77,23 +77,23 @@ int main(int argc, char** argv)
         : ".o";
     for (auto const& f: input_files)
     {
-        auto parse_tree = dep0::parser::parse(f);
-        if (not parse_tree)
+        auto parsed_module = dep0::parser::parse(f);
+        if (not parsed_module)
         {
             std::ostringstream str;
-            dep0::pretty_print(str, parse_tree.error());
+            dep0::pretty_print(str, parsed_module.error());
             llvm::WithColor::error(llvm::errs(), f) << "Parse error: " << str.str() << '\n';
             return 1;
         }
-        auto typechecked_tree = dep0::typecheck::check(*parse_tree);
-        if (not typechecked_tree)
+        auto typechecked_module = dep0::typecheck::check(*parsed_module);
+        if (not typechecked_module)
         {
             std::ostringstream str;
-            dep0::pretty_print(str, typechecked_tree.error());
+            dep0::pretty_print(str, typechecked_module.error());
             llvm::WithColor::error(llvm::errs(), f) << "Typecheck error: " << str.str() << '\n';
             return 1;
         }
-        auto llvm_module = dep0::llvmgen::gen(llvm_context, f, typechecked_tree->root);
+        auto llvm_module = dep0::llvmgen::gen(llvm_context, f, *typechecked_module);
         if (not llvm_module)
         {
             std::ostringstream str;

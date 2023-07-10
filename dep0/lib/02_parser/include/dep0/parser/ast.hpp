@@ -2,7 +2,8 @@
 
 #include "dep0/ast/ast.hpp"
 #include "dep0/ast/concepts.hpp"
-#include "dep0/ast/tree.hpp"
+
+#include "dep0/source.hpp"
 
 namespace dep0::parser {
 
@@ -23,7 +24,5 @@ using type_t = ast::type_t<parse_tree_properties>;
 using body_t = ast::body_t<parse_tree_properties>;
 using stmt_t = ast::stmt_t<parse_tree_properties>;
 using expr_t = ast::expr_t<parse_tree_properties>;
-
-using parse_tree = ast::tree<ast::module_t, parse_tree_properties>;
 
 } // namespace dep0::parser

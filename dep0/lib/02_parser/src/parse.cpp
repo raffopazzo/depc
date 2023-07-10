@@ -182,7 +182,7 @@ struct FirstErrorListener : antlr4::ANTLRErrorListener
     }
 };
 
-expected<parse_tree> parse(std::filesystem::path const& path)
+expected<module_t> parse(std::filesystem::path const& path)
 {
     auto source = mmap(path);
     if (not source)
@@ -199,10 +199,8 @@ expected<parse_tree> parse(std::filesystem::path const& path)
     dep0::DepCParser::ModuleContext* module = parser.module();
     if (error_listener.error)
         return std::move(*error_listener.error);
-    return parse_tree{
-        *source,
-        std::any_cast<module_t>(module->accept(std::make_unique<parse_visitor_t>(*source).get()))
-    };
+    parse_visitor_t visitor(*source);
+    return std::any_cast<module_t>(module->accept(&visitor));
 }
 
 }

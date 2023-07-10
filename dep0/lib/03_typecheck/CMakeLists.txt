@@ -1,6 +1,8 @@
 add_subdirectory(test)
 add_library(dep0_typecheck_lib
+  include/dep0/typecheck/ast.hpp
   include/dep0/typecheck/check.hpp
+  src/ast.cpp
   src/check.cpp
   )
 add_library(DepC::Dep0::TypeCheck ALIAS dep0_typecheck_lib)

@@ -5,6 +5,7 @@ set_property(TEST dep0_llvmgen_tests PROPERTY ENVIRONMENT
     )
 target_link_libraries(dep0_llvmgen_tests
   PRIVATE
+    DepC::Dep0::Transform
     DepC::Dep0::LLVMGen
     Boost::Boost
     )

@@ -2,6 +2,7 @@
 #include <boost/test/included/unit_test.hpp>
 
 #include "dep0/parser/parse.hpp"
+#include "dep0/transform/reify_return_unit.hpp"
 #include "dep0/typecheck/check.hpp"
 #include "dep0/llvmgen/gen.hpp"
 
@@ -74,7 +75,10 @@ BOOST_AUTO_TEST_CASE(test_0001)
 
 BOOST_AUTO_TEST_CASE(test_0003)
 {
-    BOOST_TEST(dep0::llvmgen::gen(llvm_ctx, "test.depc", open("test_0003.depc")));
+    auto module = open("test_0003.depc");
+    BOOST_TEST(dep0::llvmgen::gen(llvm_ctx, "test.depc", module).has_error());
+    BOOST_TEST(dep0::transform::reify_return_unit(module).has_value());
+    BOOST_TEST(dep0::llvmgen::gen(llvm_ctx, "test.depc", module));
 }
 
 // BOOST_AUTO_TEST_CASE(test_0004) doesn't type check

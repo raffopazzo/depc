@@ -7,6 +7,7 @@ target_link_libraries(dep0
     DepC::Dep0::Core
     DepC::Dep0::Parser
     DepC::Dep0::TypeCheck
+    DepC::Dep0::Transform
     DepC::Dep0::LLVMGen
     ${LLVM_COMPONENTS}
     )

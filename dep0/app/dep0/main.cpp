@@ -1,6 +1,8 @@
 #include "dep0/mmap.hpp"
 #include "dep0/parser/parse.hpp"
 #include "dep0/typecheck/check.hpp"
+#include "dep0/transform/reify_return_unit.hpp"
+#include "dep0/transform/run.hpp"
 #include "dep0/llvmgen/gen.hpp"
 
 #include <llvm/CodeGen/CommandFlags.h>
@@ -93,6 +95,11 @@ int main(int argc, char** argv)
             llvm::WithColor::error(llvm::errs(), f) << "Typecheck error: " << str.str() << '\n';
             return 1;
         }
+        auto transform_result = dep0::transform::run(
+            std::vector<dep0::transform::transform_t>{
+                [] (dep0::typecheck::module_t& m) { return dep0::transform::reify_return_unit(m); }
+            },
+            *typechecked_module);
         auto llvm_module = dep0::llvmgen::gen(llvm_context, f, *typechecked_module);
         if (not llvm_module)
         {

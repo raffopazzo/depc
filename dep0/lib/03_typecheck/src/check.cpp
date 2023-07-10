@@ -41,21 +41,13 @@ expected<type_t> check(parser::type_t const& t)
     return std::visit(visitor{}, t.value);
 }
 
-// a body may not have an expected type, eg `void f()` - though it should perhaps be some unit type
-expected<body_t> check(parser::body_t const& x, std::optional<type_t> const& expected_type)
+expected<body_t> check(parser::body_t const& x, type_t const& return_type)
 {
     std::vector<stmt_t> stmts;
     stmts.reserve(x.stmts.size());
     for (auto const& s: x.stmts)
     {
-        auto stmt = [&]
-        {
-            if (std::holds_alternative<parser::stmt_t::return_t>(s.value))
-                return check(s, expected_type);
-            else
-                return check(s, std::nullopt);
-        }();
-        if (stmt)
+        if (auto stmt = check(s, return_type))
             stmts.push_back(std::move(*stmt));
         else
             return std::move(stmt.error());
@@ -63,34 +55,28 @@ expected<body_t> check(parser::body_t const& x, std::optional<type_t> const& exp
     return body_t{legal_body_t{}, std::move(stmts)};
 }
 
-// statement also may not have a type, eg an assigment `a = 5;`
-expected<stmt_t> check(parser::stmt_t const& s, std::optional<type_t> const& expected_type)
+expected<stmt_t> check(parser::stmt_t const& s, type_t const& return_type)
 {
     struct visitor
     {
-        std::optional<type_t> const& expected_type;
+        type_t const& return_type;
         source_loc_t const& location;
         expected<stmt_t> operator()(parser::stmt_t::return_t const& x)
         {
             if (x.expr)
             {
-                if (not expected_type)
-                    return error_t{"Unexpected return statement", location};
-                auto expr = check(*x.expr, *expected_type);
-                if (not expr)
+                if (auto expr = check(*x.expr, return_type))
+                    return stmt_t{legal_stmt_t{}, stmt_t::return_t{std::move(*expr)}};
+                else
                     return std::move(expr.error());
-                return stmt_t{legal_stmt_t{}, stmt_t::return_t{std::move(*expr)}};
             }
             else
-            {
-                if (expected_type)
-                    // TODO replace `int` with real type name
-                    return error_t{"Expecting expression of type 'int'", location};
-                return stmt_t{legal_stmt_t{}, stmt_t::return_t{std::nullopt}};
-            }
+                // TODO it `return_type` is "void" this would be fine
+                // TODO replace `int` with real type name
+                return error_t{"Expecting expression of type 'int'", location};
         }
     };
-    return std::visit(visitor{expected_type, s.properties}, s.value);
+    return std::visit(visitor{return_type, s.properties}, s.value);
 }
 
 expected<expr_t> check(parser::expr_t const& x, type_t const& expected_type)
@@ -101,7 +87,6 @@ expected<expr_t> check(parser::expr_t const& x, type_t const& expected_type)
         expected<expr_t> operator()(parser::expr_t::numeric_constant_t const& x, type_t::int_t const&) const
         {
             // TODO should check that the string represents a valid integer, for now we say that only `0` is valid
-//          if (x.number.txt != "0")
             if (x.number != "0")
                 return error_t{"Invalid integer number", location};
             return expr_t{legal_expr_t{}, typename expr_t::numeric_constant_t{x.number}};

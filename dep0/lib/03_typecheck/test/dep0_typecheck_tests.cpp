@@ -16,6 +16,12 @@ std::ostream& operator<<(std::ostream& os, expected<parser::module_t> const& x)
     else return pretty_print(os << std::endl, x.error());
 }
 
+std::ostream& operator<<(std::ostream& os, expected<typecheck::module_t> const& x)
+{
+    if (x) return os << "Typechecking ok";
+    else return pretty_print(os << std::endl, x.error());
+}
+
 }
 
 struct Fixture
@@ -36,14 +42,14 @@ BOOST_AUTO_TEST_CASE(test_0000)
 {
     auto const module = open("test_0000.depc");
     auto const result = dep0::typecheck::check(module);
-    BOOST_TEST(result.has_value());
+    BOOST_TEST(result);
 }
 
 BOOST_AUTO_TEST_CASE(test_0001)
 {
     auto const module = open("test_0001.depc");
     auto const result = dep0::typecheck::check(module);
-    BOOST_TEST(result.has_value());
+    BOOST_TEST(result);
 }
 
 BOOST_AUTO_TEST_CASE(test_0002)

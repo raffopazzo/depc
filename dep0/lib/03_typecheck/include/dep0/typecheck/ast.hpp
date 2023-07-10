@@ -7,33 +7,57 @@
 
 namespace dep0::typecheck {
 
-struct empty_t{};
+struct legal_module_t;
+struct legal_func_def_t;
+struct legal_type_t;
+struct legal_body_t;
+struct legal_stmt_t;
+struct legal_expr_t;
 
-// TODO should be `legal_xxx_t` and remove empty_t
-struct derivation
+struct properties_t
 {
-    // TODO: here we should store the computed type for the function/expression (maybe statement?)
-    // also the derivation of type declarations somehow
+    using module_properties_type = legal_module_t;
+    using func_def_properties_type = legal_func_def_t;
+    using type_properties_type = legal_type_t;
+    using body_properties_type = legal_body_t;
+    using stmt_properties_type = legal_stmt_t;
+    using expr_properties_type = legal_expr_t;
+};
+static_assert(ast::Properties<properties_t>);
 
-    // currently however we only support `int`, so a value of type `derivation` represents a valid integer expression
+struct legal_module_t
+{
+    // here I would like to express that a module is legal if *all* its functions, types, etc are legal;
+    // but this requires dependent types... which is why I'm writing DepC in the first place
 };
 
-struct derivation_properties
+struct legal_func_def_t
 {
-    using module_properties_type = empty_t;
-    using func_def_properties_type = empty_t; // `func_def` carries its return type which contains its own derivation
-    using type_properties_type = derivation;
-    using body_properties_type = empty_t;
-    using stmt_properties_type = std::optional<derivation>; // why? does it really make sense? worth adding a comment
-    using expr_properties_type = derivation;
 };
-static_assert(ast::Properties<derivation_properties>);
 
-using module_t = ast::module_t<derivation_properties>;
-using func_def_t = ast::func_def_t<derivation_properties>;
-using type_t = ast::type_t<derivation_properties>;
-using body_t = ast::body_t<derivation_properties>;
-using stmt_t = ast::stmt_t<derivation_properties>;
-using expr_t = ast::expr_t<derivation_properties>;
+struct legal_type_t
+{
+    // TODO: store the derivation of the type definition
+};
+
+struct legal_body_t
+{
+};
+
+struct legal_stmt_t
+{
+};
+
+struct legal_expr_t
+{
+    // TODO: store the computed type of the expression
+};
+
+using module_t = ast::module_t<properties_t>;
+using func_def_t = ast::func_def_t<properties_t>;
+using type_t = ast::type_t<properties_t>;
+using body_t = ast::body_t<properties_t>;
+using stmt_t = ast::stmt_t<properties_t>;
+using expr_t = ast::expr_t<properties_t>;
 
 } // namespace dep0::typecheck

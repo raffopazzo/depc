@@ -11,7 +11,7 @@ expected<module_t> check(parser::module_t const& x)
             fs.push_back(std::move(*res));
         else
             return std::move(res.error());
-    return module_t{empty_t{}, std::move(fs)};
+    return module_t{legal_module_t{}, std::move(fs)};
 }
 
 expected<func_def_t> check(parser::func_def_t const& f)
@@ -25,7 +25,7 @@ expected<func_def_t> check(parser::func_def_t const& f)
 // TODO: add this check
 //  if (type_of(ret_type->properties.conclusion) != type_of(body->properties.conclusion))
 //      return error_t{"The return type `{}` does not match the body type `{}`"};
-    return func_def_t{empty_t{}, std::move(*ret_type), f.name, std::move(*body)};
+    return func_def_t{legal_func_def_t{}, std::move(*ret_type), f.name, std::move(*body)};
 }
 
 expected<type_t> check(parser::type_t const& t)
@@ -35,7 +35,7 @@ expected<type_t> check(parser::type_t const& t)
         expected<type_t> operator()(parser::type_t::int_t const&) const
         {
             // `int` and other primitives are always derivable
-            return type_t{derivation{}, typename type_t::int_t{}};
+            return type_t{legal_type_t{}, typename type_t::int_t{}};
         }
     };
     return std::visit(visitor{}, t.value);
@@ -60,7 +60,7 @@ expected<body_t> check(parser::body_t const& x, std::optional<type_t> const& exp
         else
             return std::move(stmt.error());
     }
-    return body_t{empty_t{}, std::move(stmts)};
+    return body_t{legal_body_t{}, std::move(stmts)};
 }
 
 // statement also may not have a type, eg an assigment `a = 5;`
@@ -76,20 +76,17 @@ expected<stmt_t> check(parser::stmt_t const& s, std::optional<type_t> const& exp
             {
                 if (not expected_type)
                     return error_t{"Unexpected return statement", location};
-                if (auto expr = check(*x.expr, *expected_type))
-                {
-                    auto der = expr->properties;
-                    return stmt_t{std::move(der), stmt_t::return_t{std::move(*expr)}};
-                }
-                else
+                auto expr = check(*x.expr, *expected_type);
+                if (not expr)
                     return std::move(expr.error());
+                return stmt_t{legal_stmt_t{}, stmt_t::return_t{std::move(*expr)}};
             }
             else
             {
                 if (expected_type)
                     // TODO replace `int` with real type name
                     return error_t{"Expecting expression of type 'int'", location};
-                return stmt_t{std::nullopt, stmt_t::return_t{std::nullopt}};
+                return stmt_t{legal_stmt_t{}, stmt_t::return_t{std::nullopt}};
             }
         }
     };
@@ -104,10 +101,10 @@ expected<expr_t> check(parser::expr_t const& x, type_t const& expected_type)
         expected<expr_t> operator()(parser::expr_t::numeric_constant_t const& x, type_t::int_t const&) const
         {
             // TODO should check that the string represents a valid integer, for now we say that only `0` is valid
-            if (x.number == "0")
-                return expr_t{derivation{}, typename expr_t::numeric_constant_t{x.number}};
-            else
+//          if (x.number.txt != "0")
+            if (x.number != "0")
                 return error_t{"Invalid integer number", location};
+            return expr_t{legal_expr_t{}, typename expr_t::numeric_constant_t{x.number}};
         }
     };
     return std::visit(visitor{x.properties}, x.value, expected_type.value);

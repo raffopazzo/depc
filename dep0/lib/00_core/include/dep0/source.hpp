@@ -87,13 +87,14 @@ struct source_text
         return {hdl, txt.substr(pos, n)};
     }
 
-    bool operator==(std::string_view const s) const { return txt == s; }
-    bool operator!=(std::string_view const s) const { return txt == s; }
-
     bool operator==(source_text const& that) const { return txt == that.txt; }
-    bool operator!=(source_text const& that) const { return txt == that.txt; }
-
+    bool operator!=(source_text const& that) const { return txt != that.txt; }
 };
+
+inline bool operator==(source_text const& x, std::string_view const s) { return x.txt == s; }
+inline bool operator!=(source_text const& x, std::string_view const s) { return x.txt != s; }
+inline bool operator==(std::string_view const s, source_text const& x) { return x.txt == s; }
+inline bool operator!=(std::string_view const s, source_text const& x) { return x.txt != s; }
 
 inline std::ostream& operator<<(std::ostream& os, source_text const& s) { return os << s.txt; }
 

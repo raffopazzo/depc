@@ -127,4 +127,6 @@ BOOST_AUTO_TEST_CASE(test_0020)
     BOOST_TEST(dep0::llvmgen::gen(llvm_ctx, "test.depc", module));
 }
 
+BOOST_AUTO_TEST_CASE(test_0021) { BOOST_TEST(dep0::llvmgen::gen(llvm_ctx, "test.depc", open("test_0021.depc"))); }
+
 BOOST_AUTO_TEST_SUITE_END()

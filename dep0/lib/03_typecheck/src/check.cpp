@@ -44,6 +44,15 @@ expected<func_def_t> check(tt::context_t ctx, parser::func_def_t const& f)
 // TODO: add this check
 //  if (type_of(ret_type->properties.conclusion) != type_of(body->properties.conclusion))
 //      return error_t{"The return type `{}` does not match the body type `{}`"};
+
+    // so far so good, but we now need to make sure that all branches contain a return statement,
+    // with the only exception of functions returning `unit_t` because the return statement is optional;
+    if (not std::holds_alternative<type_t::unit_t>(ret_type->value) and not returns_from_all_branches(*body))
+    {
+        std::ostringstream err;
+        err << "In function `" << f.name << "` missing return statement";
+        return error_t{err.str(), f.properties};
+    }
     return func_def_t{legal_func_def_t{}, std::move(*ret_type), f.name, std::move(*body)};
 }
 
@@ -81,13 +90,7 @@ expected<body_t> check(tt::context_t ctx, parser::body_t const& x, type_t const&
         else
             return std::move(stmt.error());
     }
-    // so far so good, but we now need to make sure that all branches contain a return statement,
-    // with the only exception of functions returning `unit_t` because the return statement is optional;
-    auto body = body_t{legal_body_t{}, std::move(stmts)};
-    if (std::holds_alternative<type_t::unit_t>(return_type.value) or returns_from_all_branches(body))
-        return body;
-    else
-        return error_t{"Missing return statement", x.properties};
+    return body_t{legal_body_t{}, std::move(stmts)};
 }
 
 expected<stmt_t> check(tt::context_t ctx, parser::stmt_t const& s, type_t const& return_type)

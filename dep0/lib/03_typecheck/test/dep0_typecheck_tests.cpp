@@ -96,7 +96,7 @@ BOOST_AUTO_TEST_CASE(test_0010)
     auto const module = open("test_0010.depc");
     auto const result = check(tt::context_t(), module);
     BOOST_TEST_REQUIRE(result.has_error());
-    BOOST_TEST(result.error().error == "Missing return statement"); // improve
+    BOOST_TEST(result.error().error == "In function `main` missing return statement");
     BOOST_TEST(result.error().location.has_value());
 }
 
@@ -116,7 +116,7 @@ BOOST_AUTO_TEST_CASE(test_0013)
     auto const module = open("test_0013.depc");
     auto const result = check(tt::context_t(), module);
     BOOST_TEST_REQUIRE(result.has_error());
-    BOOST_TEST(result.error().error == "Missing return statement"); // improve
+    BOOST_TEST(result.error().error == "In function `main` missing return statement");
     BOOST_TEST(result.error().location.has_value());
 }
 
@@ -128,5 +128,6 @@ BOOST_AUTO_TEST_CASE(test_0017) { BOOST_TEST(check(tt::context_t(), open("test_0
 BOOST_AUTO_TEST_CASE(test_0018) { BOOST_TEST(check(tt::context_t(), open("test_0018.depc"))); }
 BOOST_AUTO_TEST_CASE(test_0019) { BOOST_TEST(check(tt::context_t(), open("test_0019.depc"))); }
 BOOST_AUTO_TEST_CASE(test_0020) { BOOST_TEST(check(tt::context_t(), open("test_0020.depc"))); }
+BOOST_AUTO_TEST_CASE(test_0021) { BOOST_TEST(check(tt::context_t(), open("test_0021.depc"))); }
 
 BOOST_AUTO_TEST_SUITE_END()

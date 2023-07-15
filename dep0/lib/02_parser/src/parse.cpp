@@ -84,12 +84,10 @@ struct parse_visitor_t : dep0::DepCParserVisitor
 
     virtual std::any visitType(DepCParser::TypeContext* ctx) override
     {
-        if (ctx->KW_UNIT_T())
-            return type_t{make_source(src, *ctx).value(), type_t::unit_t{}};
-        else if (ctx->KW_INT())
-            return type_t{make_source(src, *ctx).value(), type_t::int_t{}};
-        else
-            assert(nullptr);
+        if (ctx->KW_BOOL()) return type_t{make_source(src, *ctx).value(), type_t::bool_t{}};
+        if (ctx->KW_INT()) return type_t{make_source(src, *ctx).value(), type_t::int_t{}};
+        if (ctx->KW_UNIT_T()) return type_t{make_source(src, *ctx).value(), type_t::unit_t{}};
+        assert(nullptr);
     }
 
     virtual std::any visitBody(DepCParser::BodyContext* ctx) override
@@ -127,26 +125,36 @@ struct parse_visitor_t : dep0::DepCParserVisitor
     virtual std::any visitExpr(DepCParser::ExprContext* ctx) override
     {
         assert(ctx);
-        if (ctx->constantExpr())
-            return visitConstantExpr(ctx->constantExpr());
-        if (ctx->funCallExpr())
-            return visitFunCallExpr(ctx->funCallExpr());
+        if (ctx->constantExpr()) return visitConstantExpr(ctx->constantExpr());
+        if (ctx->funCallExpr()) return visitFunCallExpr(ctx->funCallExpr());
         assert(nullptr);
     }
 
     virtual std::any visitConstantExpr(DepCParser::ConstantExprContext* ctx) override
     {
         assert(ctx);
-        assert(ctx->numericExpr());
-        return expr_t{
-            make_source(src, *ctx).value(),
-            std::any_cast<expr_t::numeric_constant_t>(visitNumericExpr(ctx->numericExpr()))};
+        if (ctx->numericExpr())
+            return expr_t{
+                make_source(src, *ctx).value(),
+                std::any_cast<expr_t::numeric_constant_t>(visitNumericExpr(ctx->numericExpr()))};
+        if (ctx->booleanExpr())
+            return expr_t{
+                make_source(src, *ctx).value(),
+                std::any_cast<expr_t::boolean_constant_t>(visitBooleanExpr(ctx->booleanExpr()))};
+        assert(nullptr);
+    }
+
+    virtual std::any visitBooleanExpr(DepCParser::BooleanExprContext* ctx)
+    {
+        assert(ctx);
+        assert(ctx->value);
+        return expr_t::boolean_constant_t{get_text(src, *ctx->value).value()};
     }
 
     virtual std::any visitNumericExpr(DepCParser::NumericExprContext* ctx)
     {
         assert(ctx);
-        assert(ctx->NUMBER());
+        assert(ctx->value);
         return expr_t::numeric_constant_t{get_text(src, *ctx->value).value()};
     }
 

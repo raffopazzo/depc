@@ -8,15 +8,9 @@ derivation_t::form_t::form_t(type_t ty) :
     m_ty(std::move(ty))
 { }
 
-derivation_t::form_t derivation_t::form_t::primitive_unit()
-{
-    return derivation_t::form_t(type_t::var("unit_t"));
-}
-
-derivation_t::form_t derivation_t::form_t::primitive_int()
-{
-    return derivation_t::form_t(type_t::var("int"));
-}
+derivation_t::form_t derivation_t::form_t::primitive_bool() { return derivation_t::form_t(type_t::var("bool")); }
+derivation_t::form_t derivation_t::form_t::primitive_int() { return derivation_t::form_t(type_t::var("int")); }
+derivation_t::form_t derivation_t::form_t::primitive_unit() { return derivation_t::form_t(type_t::var("unit_t")); }
 
 derivation_t::var_t::var_t(context_t ctx, term_t::var_t var, type_t ty) :
     m_ctx(std::move(ctx)),

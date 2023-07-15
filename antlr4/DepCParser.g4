@@ -7,7 +7,7 @@ module: funcDef* EOF;
 funcDef: type name=ID '(' ')' body;
 
 // Types
-type: 'int' | 'unit_t';
+type: 'bool' | 'int' | 'unit_t';
 
 // Statements
 body: '{' stmt* '}';
@@ -19,7 +19,8 @@ returnStmt: 'return' expr? ';';
 // Expressions
 expr: constantExpr | funCallExpr;
 
-constantExpr: numericExpr;
+constantExpr: numericExpr | booleanExpr;
 numericExpr: value=NUMBER;
+booleanExpr: value=('true'|'false');
 
 funCallExpr: name=ID '(' ')';

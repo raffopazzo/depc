@@ -49,13 +49,17 @@ expected<type_t> check(tt::context_t ctx, parser::type_t const& t)
         tt::context_t& ctx;
         source_loc_t const& location;
 
-        expected<type_t> operator()(parser::type_t::unit_t const&) const
+        expected<type_t> operator()(parser::type_t::bool_t const&) const
         {
-            return type_t{tt::derivation_t(tt::derivation_t::form_t::primitive_unit()), typename type_t::unit_t{}};
+            return type_t{tt::derivation_t(tt::derivation_t::form_t::primitive_bool()), typename type_t::bool_t{}};
         }
         expected<type_t> operator()(parser::type_t::int_t const&) const
         {
             return type_t{tt::derivation_t(tt::derivation_t::form_t::primitive_int()), typename type_t::int_t{}};
+        }
+        expected<type_t> operator()(parser::type_t::unit_t const&) const
+        {
+            return type_t{tt::derivation_t(tt::derivation_t::form_t::primitive_unit()), typename type_t::unit_t{}};
         }
     };
     return std::visit(visitor{ctx, t.properties}, t.value);
@@ -124,16 +128,38 @@ struct check_expr_visitor
         {
             std::ostringstream err;
             tt::pretty_print(err << "Type mismatch between function return type `", *fun_type);
-            tt::pretty_print(err << "` and expected type `", tt::type_of(expected_type.derivation)) << "`";
+            tt::pretty_print(err << "` and expected type `", tt::type_of(expected_type.derivation)) << '`';
             return error_t{err.str(), location};
         }
         else
             return expr_t{expected_type.derivation, typename expr_t::fun_call_t{x.name}};
     }
 
-    expected<expr_t> operator()(parser::expr_t::numeric_constant_t const& x, type_t::unit_t const&) const
+    template <typename T>
+    expected<expr_t> operator()(parser::expr_t::boolean_constant_t const& x, T const&) const
     {
-        return error_t{"Type mismatch between numeric constant and `unit_t`", location};
+        std::ostringstream err;
+        tt::pretty_print(
+            err << "Type mismatch between boolean constant and `",
+            tt::type_of(expected_type.derivation)
+        ) << '`';
+        return error_t{err.str(), location};
+    }
+
+    expected<expr_t> operator()(parser::expr_t::boolean_constant_t const& x, type_t::bool_t const&) const
+    {
+        return expr_t{expected_type.derivation, typename expr_t::boolean_constant_t{x.value}};
+    }
+
+    template <typename T>
+    expected<expr_t> operator()(parser::expr_t::numeric_constant_t const& x, T const&) const
+    {
+        std::ostringstream err;
+        tt::pretty_print(
+            err << "Type mismatch between numeric constant and `",
+            tt::type_of(expected_type.derivation)
+        ) << '`';
+        return error_t{err.str(), location};
     }
 
     expected<expr_t> operator()(parser::expr_t::numeric_constant_t const& x, type_t::int_t const&) const

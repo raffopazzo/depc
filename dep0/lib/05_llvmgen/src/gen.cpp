@@ -46,15 +46,19 @@ llvm::Type* gen(context_t&, llvm::Module& llvm_module, typecheck::type_t const& 
     struct visitor
     {
         llvm::Module& llvm_module;
+        llvm::Type* operator()(typecheck::type_t::bool_t const&)
+        {
+            return llvm::Type::getInt1Ty(llvm_module.getContext());
+        }
+        llvm::Type* operator()(typecheck::type_t::int_t const&)
+        {
+            return llvm::Type::getInt32Ty(llvm_module.getContext());
+        }
         llvm::Type* operator()(typecheck::type_t::unit_t const&)
         {
             // this may or may not be fine depending on how LLVM defines `void` (i.e. what properties it has)
             // for instance, what does it men to have an array of `void` types in LLVM?
             return llvm::Type::getVoidTy(llvm_module.getContext());
-        }
-        llvm::Type* operator()(typecheck::type_t::int_t const&)
-        {
-            return llvm::Type::getInt32Ty(llvm_module.getContext());
         }
     };
     return std::visit(visitor{llvm_module}, x.value);
@@ -105,6 +109,10 @@ llvm::Value* gen(context_t& ctx, llvm::IRBuilder<>& builder, typecheck::expr_t c
         llvm::IRBuilder<>& builder;
         typecheck::expr_t const& expr;
 
+        llvm::Value* operator()(typecheck::expr_t::boolean_constant_t const& x)
+        {
+            return llvm::ConstantInt::getBool(builder.getContext(), x.value == "true");
+        }
         llvm::Value* operator()(typecheck::expr_t::numeric_constant_t const& x)
         {
             // currently only `int` is derivable, so `typecheck::expr_t` is proof that this is a valid integer number

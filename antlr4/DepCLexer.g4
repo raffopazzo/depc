@@ -4,8 +4,11 @@ lexer grammar DepCLexer;
 fragment ALPHA: [A-Za-z_]+; // we treat '-' as alpha
 fragment ALPHANUM: [A-Za-z0-9_]+;
 
+KW_BOOL: 'bool';
+KW_FALSE: 'false';
 KW_INT: 'int';
 KW_RETURN: 'return';
+KW_TRUE: 'true';
 KW_UNIT_T: 'unit_t';
 
 LCURLY: '{';

@@ -86,5 +86,8 @@ BOOST_AUTO_TEST_CASE(test_0003)
 
 BOOST_AUTO_TEST_CASE(test_0005) { BOOST_TEST(dep0::llvmgen::gen(llvm_ctx, "test.depc", open("test_0005.depc"))); }
 BOOST_AUTO_TEST_CASE(test_0006) { BOOST_TEST(dep0::llvmgen::gen(llvm_ctx, "test.depc", open("test_0006.depc"))); }
+BOOST_AUTO_TEST_CASE(test_0007) { BOOST_TEST(dep0::llvmgen::gen(llvm_ctx, "test.depc", open("test_0007.depc"))); }
+// BOOST_AUTO_TEST_CASE(test_0008) doesn't type check
+// BOOST_AUTO_TEST_CASE(test_0009) doesn't type check
 
 BOOST_AUTO_TEST_SUITE_END()

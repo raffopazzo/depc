@@ -1,0 +1,2 @@
+bool yes() { return true; }
+bool no() { return false; }

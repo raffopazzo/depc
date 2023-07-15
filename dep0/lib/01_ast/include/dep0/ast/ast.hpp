@@ -25,9 +25,10 @@ template <Properties P>
 struct type_t
 {
     using properties_t = typename P::type_properties_type;
-    struct unit_t { bool operator==(unit_t const&) const { return true; } };
+    struct bool_t { bool operator==(bool_t const&) const { return true; } };
     struct int_t { bool operator==(int_t const&) const { return true; } };
-    using value_t = std::variant<unit_t, int_t>;
+    struct unit_t { bool operator==(unit_t const&) const { return true; } };
+    using value_t = std::variant<bool_t, int_t, unit_t>;
 
     properties_t properties;
     value_t value;
@@ -39,6 +40,11 @@ template <Properties P>
 struct expr_t
 {
     using properties_t = typename P::expr_properties_type;
+    struct boolean_constant_t
+    {
+        source_text value;
+        bool operator==(boolean_constant_t const&) const = default;
+    };
     struct numeric_constant_t
     {
         source_text number;
@@ -49,7 +55,7 @@ struct expr_t
         source_text name;
         bool operator==(fun_call_t const&) const = default;
     };
-    using value_t = std::variant<numeric_constant_t, fun_call_t>;
+    using value_t = std::variant<boolean_constant_t, numeric_constant_t, fun_call_t>;
 
     properties_t properties;
     value_t value;

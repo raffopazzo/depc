@@ -71,5 +71,24 @@ BOOST_AUTO_TEST_CASE(test_0004)
 
 BOOST_AUTO_TEST_CASE(test_0005) { BOOST_TEST(check(tt::context_t(), open("test_0005.depc"))); }
 BOOST_AUTO_TEST_CASE(test_0006) { BOOST_TEST(check(tt::context_t(), open("test_0006.depc"))); }
+BOOST_AUTO_TEST_CASE(test_0007) { BOOST_TEST(check(tt::context_t(), open("test_0007.depc"))); }
+
+BOOST_AUTO_TEST_CASE(test_0008)
+{
+    auto const module = open("test_0008.depc");
+    auto const result = check(tt::context_t(), module);
+    BOOST_TEST_REQUIRE(result.has_error());
+    BOOST_TEST(result.error().error == "Type mismatch between boolean constant and `int`");
+    BOOST_TEST(result.error().location.has_value());
+}
+
+BOOST_AUTO_TEST_CASE(test_0009)
+{
+    auto const module = open("test_0009.depc");
+    auto const result = check(tt::context_t(), module);
+    BOOST_TEST_REQUIRE(result.has_error());
+    BOOST_TEST(result.error().error == "Type mismatch between numeric constant and `bool`");
+    BOOST_TEST(result.error().location.has_value());
+}
 
 BOOST_AUTO_TEST_SUITE_END()

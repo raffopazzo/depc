@@ -1,0 +1,1 @@
+bool no() { return 0; }

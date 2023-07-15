@@ -18,8 +18,9 @@ struct derivation_t
     {
         auto const& ty() const { return m_ty; }
 
-        static form_t primitive_unit();
+        static form_t primitive_bool();
         static form_t primitive_int();
+        static form_t primitive_unit();
 
         form_t(form_t const&) = default;
         form_t(form_t&&) = default;

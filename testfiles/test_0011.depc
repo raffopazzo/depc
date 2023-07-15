@@ -1,0 +1,34 @@
+int zero() { return 0; }
+int f1()
+{
+    if (true) return 0;
+    else return zero();
+}
+int f2()
+{
+    if (true) { return 0; }
+    else { return zero(); }
+}
+int f3()
+{
+    if (true) return 0;
+    else { return zero(); }
+}
+int f4()
+{
+    if (true) { return 0; }
+    else return zero();
+}
+int main()
+{
+    if (true)
+        if (false)
+            return f1();
+        else
+        {
+            return f2();
+        }
+    else if (false) {
+        return f3();
+    } else return f4();
+}

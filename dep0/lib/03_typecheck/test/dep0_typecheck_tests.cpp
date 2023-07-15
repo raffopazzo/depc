@@ -91,4 +91,42 @@ BOOST_AUTO_TEST_CASE(test_0009)
     BOOST_TEST(result.error().location.has_value());
 }
 
+BOOST_AUTO_TEST_CASE(test_0010)
+{
+    auto const module = open("test_0010.depc");
+    auto const result = check(tt::context_t(), module);
+    BOOST_TEST_REQUIRE(result.has_error());
+    BOOST_TEST(result.error().error == "Missing return statement"); // improve
+    BOOST_TEST(result.error().location.has_value());
+}
+
+BOOST_AUTO_TEST_CASE(test_0011) { BOOST_TEST(check(tt::context_t(), open("test_0011.depc"))); }
+
+BOOST_AUTO_TEST_CASE(test_0012)
+{
+    auto const module = open("test_0012.depc");
+    auto const result = check(tt::context_t(), module);
+    BOOST_TEST_REQUIRE(result.has_error());
+    BOOST_TEST(result.error().error == "Type mismatch between boolean constant and `int`");
+    BOOST_TEST(result.error().location.has_value());
+}
+
+BOOST_AUTO_TEST_CASE(test_0013)
+{
+    auto const module = open("test_0013.depc");
+    auto const result = check(tt::context_t(), module);
+    BOOST_TEST_REQUIRE(result.has_error());
+    BOOST_TEST(result.error().error == "Missing return statement"); // improve
+    BOOST_TEST(result.error().location.has_value());
+}
+
+BOOST_AUTO_TEST_CASE(test_0014) { BOOST_TEST(check(tt::context_t(), open("test_0014.depc"))); }
+BOOST_AUTO_TEST_CASE(test_0015) { BOOST_TEST(check(tt::context_t(), open("test_0015.depc"))); }
+
+BOOST_AUTO_TEST_CASE(test_0016) { BOOST_TEST(check(tt::context_t(), open("test_0016.depc")).has_error()); }
+BOOST_AUTO_TEST_CASE(test_0017) { BOOST_TEST(check(tt::context_t(), open("test_0017.depc")).has_error()); }
+BOOST_AUTO_TEST_CASE(test_0018) { BOOST_TEST(check(tt::context_t(), open("test_0018.depc"))); }
+BOOST_AUTO_TEST_CASE(test_0019) { BOOST_TEST(check(tt::context_t(), open("test_0019.depc"))); }
+BOOST_AUTO_TEST_CASE(test_0020) { BOOST_TEST(check(tt::context_t(), open("test_0020.depc"))); }
+
 BOOST_AUTO_TEST_SUITE_END()

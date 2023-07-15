@@ -1,0 +1,4 @@
+int main()
+{
+    // typecheck error: missing return statement
+}

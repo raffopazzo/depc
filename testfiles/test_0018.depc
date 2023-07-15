@@ -1,0 +1,7 @@
+unit_t foo()
+{
+    if (false)
+        return;
+    else if(true) return;
+}
+

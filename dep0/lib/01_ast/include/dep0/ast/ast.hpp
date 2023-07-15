@@ -67,13 +67,21 @@ template <Properties P>
 struct stmt_t
 {
     using properties_t = typename P::stmt_properties_type;
+    using body_t = ast::body_t<P>;
     using expr_t = ast::expr_t<P>;
+    struct if_else_t
+    {
+        expr_t cond;
+        body_t true_branch;
+        std::optional<body_t> false_branch;
+        bool operator==(if_else_t const&) const = default;
+    };
     struct return_t
     {
         std::optional<expr_t> expr;
         bool operator==(return_t const&) const = default;
     };
-    using value_t = std::variant<return_t>;
+    using value_t = std::variant<if_else_t, return_t>;
 
     properties_t properties;
     value_t value;

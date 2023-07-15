@@ -107,10 +107,32 @@ struct parse_visitor_t : dep0::DepCParserVisitor
     virtual std::any visitStmt(DepCParser::StmtContext* ctx) override
     {
         assert(ctx);
-        assert(ctx->returnStmt());
-        return stmt_t{
-            make_source(src, *ctx).value(),
-            std::any_cast<stmt_t::return_t>(visitReturnStmt(ctx->returnStmt()))};
+        auto s = make_source(src, *ctx).value();
+        if (ctx->ifElse())
+            return stmt_t{std::move(s), std::any_cast<stmt_t::if_else_t>(visitIfElse(ctx->ifElse()))};
+        if (ctx->returnStmt())
+            return stmt_t{std::move(s), std::any_cast<stmt_t::return_t>(visitReturnStmt(ctx->returnStmt()))};
+        assert(nullptr);
+    }
+
+    virtual std::any visitIfElse(DepCParser::IfElseContext* ctx) override
+    {
+        assert(ctx);
+        assert(ctx->cond);
+        assert(ctx->true_branch);
+        return stmt_t::if_else_t{
+            std::any_cast<expr_t>(visitExpr(ctx->cond)),
+            std::any_cast<body_t>(visitBodyOrStmt(ctx->true_branch)),
+            ctx->false_branch ? std::optional{std::any_cast<body_t>(visitBodyOrStmt(ctx->false_branch))} : std::nullopt
+        };
+    }
+
+    virtual std::any visitBodyOrStmt(DepCParser::BodyOrStmtContext* ctx) override
+    {
+        assert(ctx);
+        if (ctx->body()) return visitBody(ctx->body());
+        if (ctx->stmt()) return body_t{make_source(src, *ctx).value(), {std::any_cast<stmt_t>(visitStmt(ctx->stmt()))}};
+        assert(nullptr);
     }
 
     virtual std::any visitReturnStmt(DepCParser::ReturnStmtContext* ctx) override

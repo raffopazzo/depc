@@ -89,5 +89,42 @@ BOOST_AUTO_TEST_CASE(test_0006) { BOOST_TEST(dep0::llvmgen::gen(llvm_ctx, "test.
 BOOST_AUTO_TEST_CASE(test_0007) { BOOST_TEST(dep0::llvmgen::gen(llvm_ctx, "test.depc", open("test_0007.depc"))); }
 // BOOST_AUTO_TEST_CASE(test_0008) doesn't type check
 // BOOST_AUTO_TEST_CASE(test_0009) doesn't type check
+// BOOST_AUTO_TEST_CASE(test_0010) doesn't type check
+BOOST_AUTO_TEST_CASE(test_0011) { BOOST_TEST(dep0::llvmgen::gen(llvm_ctx, "test.depc", open("test_0011.depc"))); }
+// BOOST_AUTO_TEST_CASE(test_0012) doesn't type check
+// BOOST_AUTO_TEST_CASE(test_0013) doesn't type check
+BOOST_AUTO_TEST_CASE(test_0014) { BOOST_TEST(dep0::llvmgen::gen(llvm_ctx, "test.depc", open("test_0014.depc"))); }
+BOOST_AUTO_TEST_CASE(test_0015)
+{
+    auto module = open("test_0015.depc");
+    BOOST_TEST(dep0::llvmgen::gen(llvm_ctx, "test.depc", module).has_error());
+    BOOST_TEST(dep0::transform::reify_return_unit(module).has_value());
+    BOOST_TEST(dep0::llvmgen::gen(llvm_ctx, "test.depc", module));
+}
+// BOOST_AUTO_TEST_CASE(test_0016) doesn't type check
+// BOOST_AUTO_TEST_CASE(test_0017) doesn't type check
+
+BOOST_AUTO_TEST_CASE(test_0018)
+{
+    auto module = open("test_0018.depc");
+    BOOST_TEST(dep0::llvmgen::gen(llvm_ctx, "test.depc", module).has_error());
+    BOOST_TEST(dep0::transform::reify_return_unit(module).has_value());
+    BOOST_TEST(dep0::llvmgen::gen(llvm_ctx, "test.depc", module));
+}
+BOOST_AUTO_TEST_CASE(test_0019)
+{
+    auto module = open("test_0019.depc");
+    BOOST_TEST(dep0::llvmgen::gen(llvm_ctx, "test.depc", module).has_error());
+    BOOST_TEST(dep0::transform::reify_return_unit(module).has_value());
+    BOOST_TEST(dep0::llvmgen::gen(llvm_ctx, "test.depc", module));
+}
+
+BOOST_AUTO_TEST_CASE(test_0020)
+{
+    auto module = open("test_0020.depc");
+    BOOST_TEST(dep0::llvmgen::gen(llvm_ctx, "test.depc", module).has_error());
+    BOOST_TEST(dep0::transform::reify_return_unit(module).has_value());
+    BOOST_TEST(dep0::llvmgen::gen(llvm_ctx, "test.depc", module));
+}
 
 BOOST_AUTO_TEST_SUITE_END()

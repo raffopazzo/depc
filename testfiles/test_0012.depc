@@ -1,0 +1,9 @@
+bool false_() { return false; }
+int main()
+{
+    if (false_())
+    {
+        return 0;
+    }
+    else return false;
+}

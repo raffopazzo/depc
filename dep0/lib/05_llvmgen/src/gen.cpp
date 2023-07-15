@@ -4,6 +4,8 @@
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Verifier.h>
 
+#include <algorithm>
+
 namespace dep0::llvmgen {
 
 struct context_t
@@ -13,12 +15,27 @@ struct context_t
     // TODO what about extending a context?
 };
 
+// Snippet is a model of a block of IR code that is being built,
+// could be for example from the body of a function definition or the body of an if-else branch.
+// It contains an entry point and possibly many open blocks, i.e. blocks which currently do not have
+// a terminator. All open blocks are closed by jumping to the next statement in the parent scope.
+struct snippet_t
+{
+    llvm::BasicBlock* entry_block;
+    std::vector<llvm::BasicBlock*> open_blocks;
+};
+
 // all gen functions must be forward-declared here
 
 static llvm::Type* gen(context_t&, llvm::Module&, typecheck::type_t const&);
 static llvm::Value* gen(context_t&, llvm::Module& , typecheck::func_def_t const&);
-static llvm::BasicBlock* gen(context_t&, llvm::Module& , typecheck::body_t const&);
-static llvm::Instruction* gen(context_t&, llvm::IRBuilder<>& , typecheck::stmt_t const&);
+static snippet_t gen(
+    context_t&,
+    llvm::LLVMContext&,
+    typecheck::body_t const&,
+    std::string_view,
+    llvm::Function*);
+static void gen(context_t&, snippet_t&, llvm::IRBuilder<>&, typecheck::stmt_t const&, llvm::Function*);
 static llvm::Value* gen(context_t&, llvm::IRBuilder<>& , typecheck::expr_t const&);
 
 expected<unique_ref<llvm::Module>> gen(
@@ -41,64 +58,114 @@ expected<unique_ref<llvm::Module>> gen(
 
 // all gen functions must be implemented here
 
-llvm::Type* gen(context_t&, llvm::Module& llvm_module, typecheck::type_t const& x)
+llvm::Type* gen(context_t&, llvm::LLVMContext& llvm_ctx, typecheck::type_t const& x)
 {
     struct visitor
     {
-        llvm::Module& llvm_module;
+        llvm::LLVMContext& llvm_ctx;
         llvm::Type* operator()(typecheck::type_t::bool_t const&)
         {
-            return llvm::Type::getInt1Ty(llvm_module.getContext());
+            return llvm::Type::getInt1Ty(llvm_ctx);
         }
         llvm::Type* operator()(typecheck::type_t::int_t const&)
         {
-            return llvm::Type::getInt32Ty(llvm_module.getContext());
+            return llvm::Type::getInt32Ty(llvm_ctx);
         }
         llvm::Type* operator()(typecheck::type_t::unit_t const&)
         {
             // this may or may not be fine depending on how LLVM defines `void` (i.e. what properties it has)
             // for instance, what does it men to have an array of `void` types in LLVM?
-            return llvm::Type::getVoidTy(llvm_module.getContext());
+            return llvm::Type::getVoidTy(llvm_ctx);
         }
     };
-    return std::visit(visitor{llvm_module}, x.value);
+    return std::visit(visitor{llvm_ctx}, x.value);
 }
 
 llvm::Value* gen(context_t& ctx, llvm::Module& llvm_module, typecheck::func_def_t const& x)
 {
-    auto const funtype = llvm::FunctionType::get(gen(ctx, llvm_module, x.type), {}, false);
+    auto const funtype = llvm::FunctionType::get(gen(ctx, llvm_module.getContext(), x.type), {}, false);
     auto const func = llvm::Function::Create(funtype, llvm::Function::ExternalLinkage, x.name.view(), llvm_module);
     ctx.fun_types[x.name] = funtype;
     ctx.values[x.name] = func;
-    gen(ctx, llvm_module, x.body)->insertInto(func);
+    gen(ctx, llvm_module.getContext(), x.body, "entry", func);
     return func;
 }
 
-llvm::BasicBlock* gen(context_t& ctx, llvm::Module& llvm_module, typecheck::body_t const& x)
+snippet_t gen(
+    context_t& ctx,
+    llvm::LLVMContext& llvm_ctx,
+    typecheck::body_t const& x,
+    std::string_view const entry_block_name,
+    llvm::Function* const func)
 {
-    auto builder = llvm::IRBuilder<>(llvm_module.getContext());
-    auto const entry = llvm::BasicBlock::Create(llvm_module.getContext(), "entry");
-    builder.SetInsertPoint(entry);
-    for (auto const& s: x.stmts)
-        gen(ctx, builder, s);
-    return entry;
+    snippet_t snippet;
+    auto builder = llvm::IRBuilder<>(llvm_ctx);
+    builder.SetInsertPoint(snippet.entry_block = llvm::BasicBlock::Create(llvm_ctx, entry_block_name, func));
+    auto it = x.stmts.begin();
+    if (it == x.stmts.end())
+        snippet.open_blocks.push_back(snippet.entry_block);
+    else
+    {
+        gen(ctx, snippet, builder, *it, func);
+        while (++it != x.stmts.end())
+        {
+            if (snippet.open_blocks.size())
+            {
+                auto next = llvm::BasicBlock::Create(llvm_ctx, "next", func);
+                for (auto& bb: snippet.open_blocks)
+                {
+                    builder.SetInsertPoint(bb);
+                    builder.CreateBr(next);
+                }
+                snippet.open_blocks.clear();
+                builder.SetInsertPoint(next);
+            }
+            gen(ctx, snippet, builder, *it, func);
+        }
+    }
+    return snippet;
 }
 
-llvm::Instruction* gen(context_t& ctx, llvm::IRBuilder<>& builder, typecheck::stmt_t const& x)
+void gen(
+    context_t& ctx,
+    snippet_t& snipppet,
+    llvm::IRBuilder<>& builder,
+    typecheck::stmt_t const& x,
+    llvm::Function* const func)
 {
     struct visitor
     {
         context_t& ctx;
+        snippet_t& snipppet;
         llvm::IRBuilder<>& builder;
-        llvm::Instruction* operator()(typecheck::stmt_t::return_t const& x)
+        llvm::Function* const func;
+        void operator()(typecheck::stmt_t::if_else_t const& x)
+        {
+            auto* cond = gen(ctx, builder, x.cond);
+            auto then = gen(ctx, builder.getContext(), x.true_branch, "then", func);
+            std::ranges::copy(then.open_blocks, std::back_inserter(snipppet.open_blocks));
+            if (x.false_branch)
+            {
+                auto else_ = gen(ctx, builder.getContext(), *x.false_branch, "else", func);
+                std::ranges::copy(else_.open_blocks, std::back_inserter(snipppet.open_blocks));
+                builder.CreateCondBr(cond, then.entry_block, else_.entry_block);
+            }
+            else
+            {
+                auto else_ = llvm::BasicBlock::Create(builder.getContext(), "else", func);
+                builder.CreateCondBr(cond, then.entry_block, else_);
+                snipppet.open_blocks.push_back(else_);
+            }
+        }
+        void operator()(typecheck::stmt_t::return_t const& x)
         {
             if (x.expr)
-                return builder.CreateRet(gen(ctx, builder, *x.expr));
+                builder.CreateRet(gen(ctx, builder, *x.expr));
             else
-                return builder.CreateRetVoid();
+                builder.CreateRetVoid();
         }
     };
-    return std::visit(visitor{ctx, builder}, x.value);
+    std::visit(visitor{ctx, snipppet, builder, func}, x.value);
 }
 
 llvm::Value* gen(context_t& ctx, llvm::IRBuilder<>& builder, typecheck::expr_t const& expr)

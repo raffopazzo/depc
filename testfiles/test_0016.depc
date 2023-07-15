@@ -1,0 +1,8 @@
+int main()
+{
+    if (false)
+        return 0;
+    else if(true) return 0;
+    // typecheck error: missing return statement
+}
+

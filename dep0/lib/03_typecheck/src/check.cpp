@@ -41,10 +41,6 @@ expected<func_def_t> check(tt::context_t ctx, parser::func_def_t const& f)
     auto body = check(ctx, f.body, *ret_type);
     if (not body)
         return std::move(body.error());
-// TODO: add this check
-//  if (type_of(ret_type->properties.conclusion) != type_of(body->properties.conclusion))
-//      return error_t{"The return type `{}` does not match the body type `{}`"};
-
     // so far so good, but we now need to make sure that all branches contain a return statement,
     // with the only exception of functions returning `unit_t` because the return statement is optional;
     if (not std::holds_alternative<type_t::unit_t>(ret_type->value) and not returns_from_all_branches(*body))

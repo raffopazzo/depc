@@ -12,11 +12,12 @@ type: 'bool' | 'int' | 'unit_t';
 // Statements
 body: '{' stmt* '}';
 
-stmt: returnStmt | ifElse;
+stmt: funCallStmt | ifElse | returnStmt ;
 
-returnStmt: 'return' expr? ';';
+funCallStmt: funCallExpr ';';
 ifElse: 'if' '(' cond=expr ')' true_branch=bodyOrStmt ('else' false_branch=bodyOrStmt)?;
 bodyOrStmt: body | stmt;
+returnStmt: 'return' expr? ';';
 
 // Expressions
 expr: constantExpr | funCallExpr;

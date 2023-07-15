@@ -108,11 +108,20 @@ struct parse_visitor_t : dep0::DepCParserVisitor
     {
         assert(ctx);
         auto s = make_source(src, *ctx).value();
+        if (ctx->funCallStmt())
+            return stmt_t{std::move(s), std::any_cast<stmt_t::fun_call_t>(visitFunCallStmt(ctx->funCallStmt()))};
         if (ctx->ifElse())
             return stmt_t{std::move(s), std::any_cast<stmt_t::if_else_t>(visitIfElse(ctx->ifElse()))};
         if (ctx->returnStmt())
             return stmt_t{std::move(s), std::any_cast<stmt_t::return_t>(visitReturnStmt(ctx->returnStmt()))};
         assert(nullptr);
+    }
+
+    virtual std::any visitFunCallStmt(DepCParser::FunCallStmtContext* ctx)override
+    {
+        assert(ctx);
+        assert(ctx->funCallExpr());
+        return stmt_t::fun_call_t{std::any_cast<expr_t>(visitFunCallExpr(ctx->funCallExpr()))};
     }
 
     virtual std::any visitIfElse(DepCParser::IfElseContext* ctx) override

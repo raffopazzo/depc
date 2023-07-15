@@ -69,6 +69,11 @@ struct stmt_t
     using properties_t = typename P::stmt_properties_type;
     using body_t = ast::body_t<P>;
     using expr_t = ast::expr_t<P>;
+    struct fun_call_t
+    {
+        expr_t expr; // of type expr_t::fun_call_t
+        bool operator==(fun_call_t const&) const = default;
+    };
     struct if_else_t
     {
         expr_t cond;
@@ -81,7 +86,7 @@ struct stmt_t
         std::optional<expr_t> expr;
         bool operator==(return_t const&) const = default;
     };
-    using value_t = std::variant<if_else_t, return_t>;
+    using value_t = std::variant<fun_call_t, if_else_t, return_t>;
 
     properties_t properties;
     value_t value;

@@ -139,6 +139,11 @@ void gen(
         snippet_t& snipppet;
         llvm::IRBuilder<>& builder;
         llvm::Function* const func;
+        void operator()(typecheck::stmt_t::fun_call_t const& x)
+        {
+            auto const name = std::get<typecheck::expr_t::fun_call_t>(x.expr.value).name;
+            builder.CreateCall(ctx.fun_types[name], ctx.values[name]);
+        }
         void operator()(typecheck::stmt_t::if_else_t const& x)
         {
             auto* cond = gen(ctx, builder, x.cond);

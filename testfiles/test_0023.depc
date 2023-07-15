@@ -1,0 +1,6 @@
+int main()
+{
+    nop(); // typecheck error: function not defined
+    return 0;
+}
+

@@ -5,6 +5,8 @@
 
 namespace dep0::typecheck {
 
+expected<expr_t> type_assign(tt::context_t, parser::expr_t const&);
+
 static tt::derivation_t bool_derivation() { return tt::derivation_t(tt::derivation_t::form_t::primitive_bool()); }
 static tt::derivation_t int_derivation() { return tt::derivation_t(tt::derivation_t::form_t::primitive_int()); }
 static tt::derivation_t unit_derivation() { return tt::derivation_t(tt::derivation_t::form_t::primitive_unit()); }
@@ -96,6 +98,13 @@ expected<stmt_t> check(tt::context_t ctx, parser::stmt_t const& s, type_t const&
         tt::context_t const& ctx;
         type_t const& return_type;
         source_loc_t const& location;
+        expected<stmt_t> operator()(parser::stmt_t::fun_call_t const& x)
+        {
+            if (auto expr = type_assign(ctx, x.expr))
+                return stmt_t{legal_stmt_t{}, stmt_t::fun_call_t{std::move(*expr)}};
+            else
+                return std::move(expr.error());
+        }
         expected<stmt_t> operator()(parser::stmt_t::if_else_t const& x)
         {
             auto cond = check(ctx, x.cond, type_t{bool_derivation(), type_t::bool_t{}});
@@ -141,76 +150,57 @@ expected<stmt_t> check(tt::context_t ctx, parser::stmt_t const& s, type_t const&
     return std::visit(visitor{ctx, return_type, s.properties}, s.value);
 }
 
-struct check_expr_visitor
+expected<expr_t> type_assign(tt::context_t ctx, parser::expr_t const& x)
 {
-    tt::context_t const& context;
-    legal_type_t const& expected_type;
-    source_loc_t const& location;
-
-    template <typename T>
-    expected<expr_t> operator()(parser::expr_t::fun_call_t const& x, T const&) const
+    struct visitor
     {
-        auto fun_type = context[tt::term_t::var_t(x.name)];
-        if (not fun_type)
+        tt::context_t const& ctx;
+        source_loc_t const& location;
+
+        expected<expr_t> operator()(parser::expr_t::fun_call_t const& x) const
         {
-            std::ostringstream err;
-            err << "Unknown function name `" << x.name << '`';
-            return error_t{err.str(),  location};
+            if (auto d = tt::type_assign(ctx, tt::term_t::var(x.name)))
+                return expr_t{std::move(*d), expr_t::fun_call_t{x.name}};
+            else
+                return std::move(d.error());
         }
-        else if (*fun_type != tt::type_of(expected_type.derivation))
+
+        expected<expr_t> operator()(parser::expr_t::boolean_constant_t const& x) const
         {
-            std::ostringstream err;
-            tt::pretty_print(err << "Type mismatch between function return type `", *fun_type);
-            tt::pretty_print(err << "` and expected type `", tt::type_of(expected_type.derivation)) << '`';
-            return error_t{err.str(), location};
+            return expr_t{bool_derivation(), expr_t::boolean_constant_t{x.value}};
         }
-        else
-            return expr_t{expected_type.derivation, expr_t::fun_call_t{x.name}};
-    }
 
-    template <typename T>
-    expected<expr_t> operator()(parser::expr_t::boolean_constant_t const& x, T const&) const
-    {
-        std::ostringstream err;
-        tt::pretty_print(
-            err << "Type mismatch between boolean constant and `",
-            tt::type_of(expected_type.derivation)
-        ) << '`';
-        return error_t{err.str(), location};
-    }
-
-    expected<expr_t> operator()(parser::expr_t::boolean_constant_t const& x, type_t::bool_t const&) const
-    {
-        return expr_t{expected_type.derivation, expr_t::boolean_constant_t{x.value}};
-    }
-
-    template <typename T>
-    expected<expr_t> operator()(parser::expr_t::numeric_constant_t const& x, T const&) const
-    {
-        std::ostringstream err;
-        tt::pretty_print(
-            err << "Type mismatch between numeric constant and `",
-            tt::type_of(expected_type.derivation)
-        ) << '`';
-        return error_t{err.str(), location};
-    }
-
-    expected<expr_t> operator()(parser::expr_t::numeric_constant_t const& x, type_t::int_t const&) const
-    {
-        // TODO should check that the string represents a valid integer, for now we say that only `0` is valid
-        // the test per se is easy, I really need to decide on what primitive types I want, possible choices are:
-        // - `[unsigned] (short|int|long|long long)` with platform defined width, like C
-        // - `[iu](8|16|32|64|128)_t` with fixed width
-        // - both
-        // - both but `short, int, etc` have fixed width and `word_t, quadword_t` for platform stuff
-        if (x.number != "0")
-            return error_t{"Invalid integer number", location};
-        return expr_t{expected_type.derivation, expr_t::numeric_constant_t{x.number}};
-    }
-};
+        expected<expr_t> operator()(parser::expr_t::numeric_constant_t const& x) const
+        {
+            // TODO should check that the string represents a valid integer, for now we say that only `0` is valid
+            // the test per se is easy, I really need to decide on what primitive types I want, possible choices are:
+            // - `[unsigned] (short|int|long|long long)` with platform defined width, like C
+            // - `[iu](8|16|32|64|128)_t` with fixed width
+            // - both
+            // - both but `short, int, etc` have fixed width and `word_t, quadword_t` for platform stuff
+            if (x.number != "0")
+                return error_t{"Invalid integer number", location};
+            // TODO numeric constant can also be used for other integer types
+            return expr_t{int_derivation(), expr_t::numeric_constant_t{x.number}};
+        }
+    };
+    return std::visit(visitor{ctx, x.properties}, x.value);
+}
 expected<expr_t> check(tt::context_t ctx, parser::expr_t const& x, type_t const& expected_type)
 {
-    return std::visit(check_expr_visitor{ctx, expected_type.properties, x.properties}, x.value, expected_type.value);
+    auto expr = type_assign(ctx, x);
+    if (not expr)
+        return std::move(expr.error());
+    auto const& expected_ty = tt::type_of(expected_type.properties.derivation);
+    auto const& actual_ty = tt::type_of(expr->properties.derivation);
+    if (expected_ty != actual_ty)
+    {
+        std::ostringstream err;
+        tt::pretty_print(err << "Expression of type `", actual_ty) << '`';
+        tt::pretty_print(err << " does not typecheck with expected type `", expected_ty) << '`';
+        return error_t{err.str(), x.properties};
+    }
+    return expr;
 }
 
 } // namespace dep0::typecheck

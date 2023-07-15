@@ -65,7 +65,7 @@ BOOST_AUTO_TEST_CASE(test_0004)
     auto const module = open("test_0004.depc");
     auto const result = check(tt::context_t(), module);
     BOOST_TEST_REQUIRE(result.has_error());
-    BOOST_TEST(result.error().error == "Type mismatch between numeric constant and `unit_t`");
+    BOOST_TEST(result.error().error == "Expression of type `int` does not typecheck with expected type `unit_t`");
     BOOST_TEST(result.error().location.has_value());
 }
 
@@ -78,7 +78,7 @@ BOOST_AUTO_TEST_CASE(test_0008)
     auto const module = open("test_0008.depc");
     auto const result = check(tt::context_t(), module);
     BOOST_TEST_REQUIRE(result.has_error());
-    BOOST_TEST(result.error().error == "Type mismatch between boolean constant and `int`");
+    BOOST_TEST(result.error().error == "Expression of type `bool` does not typecheck with expected type `int`");
     BOOST_TEST(result.error().location.has_value());
 }
 
@@ -87,7 +87,7 @@ BOOST_AUTO_TEST_CASE(test_0009)
     auto const module = open("test_0009.depc");
     auto const result = check(tt::context_t(), module);
     BOOST_TEST_REQUIRE(result.has_error());
-    BOOST_TEST(result.error().error == "Type mismatch between numeric constant and `bool`");
+    BOOST_TEST(result.error().error == "Expression of type `int` does not typecheck with expected type `bool`");
     BOOST_TEST(result.error().location.has_value());
 }
 
@@ -107,7 +107,7 @@ BOOST_AUTO_TEST_CASE(test_0012)
     auto const module = open("test_0012.depc");
     auto const result = check(tt::context_t(), module);
     BOOST_TEST_REQUIRE(result.has_error());
-    BOOST_TEST(result.error().error == "Type mismatch between boolean constant and `int`");
+    BOOST_TEST(result.error().error == "Expression of type `bool` does not typecheck with expected type `int`");
     BOOST_TEST(result.error().location.has_value());
 }
 
@@ -129,5 +129,7 @@ BOOST_AUTO_TEST_CASE(test_0018) { BOOST_TEST(check(tt::context_t(), open("test_0
 BOOST_AUTO_TEST_CASE(test_0019) { BOOST_TEST(check(tt::context_t(), open("test_0019.depc"))); }
 BOOST_AUTO_TEST_CASE(test_0020) { BOOST_TEST(check(tt::context_t(), open("test_0020.depc"))); }
 BOOST_AUTO_TEST_CASE(test_0021) { BOOST_TEST(check(tt::context_t(), open("test_0021.depc"))); }
+BOOST_AUTO_TEST_CASE(test_0022) { BOOST_TEST(check(tt::context_t(), open("test_0022.depc"))); }
+BOOST_AUTO_TEST_CASE(test_0023) { BOOST_TEST(check(tt::context_t(), open("test_0023.depc")).has_error()); }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -1,0 +1,6 @@
+unit_t nop() {}
+int main()
+{
+    nop();
+    return 0;
+}

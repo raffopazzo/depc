@@ -77,7 +77,7 @@ expected<derivation_t> type_assign(context_t const& ctx, term_t const& x)
             else
             {
                 std::ostringstream err;
-                err << "Variable `"<< x.name <<"` not found in current scope";
+                err << "Variable/Function name `"<< x.name <<"` not found in current scope";
                 return error_t{err.str()};
             }
         }

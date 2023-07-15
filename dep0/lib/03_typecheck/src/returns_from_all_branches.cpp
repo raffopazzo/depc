@@ -6,8 +6,9 @@ bool returns_from_all_branches(body_t const& body)
 {
     struct visitor
     {
-        bool operator()(stmt_t::return_t const&) const { return true; }
+        bool operator()(stmt_t::fun_call_t const&) const { return false; }
         bool operator()(stmt_t::if_else_t const& x) const { return returns_from_all_branches(x); }
+        bool operator()(stmt_t::return_t const&) const { return true; }
     };
     for (auto const& s: body.stmts)
         if (std::visit(visitor{}, s.value))

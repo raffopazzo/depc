@@ -75,5 +75,7 @@ BOOST_AUTO_TEST_CASE(test_0018) { BOOST_TEST(dep0::parser::parse(testfiles / "te
 BOOST_AUTO_TEST_CASE(test_0019) { BOOST_TEST(dep0::parser::parse(testfiles / "test_0019.depc")); }
 BOOST_AUTO_TEST_CASE(test_0020) { BOOST_TEST(dep0::parser::parse(testfiles / "test_0020.depc")); }
 BOOST_AUTO_TEST_CASE(test_0021) { BOOST_TEST(dep0::parser::parse(testfiles / "test_0021.depc")); }
+BOOST_AUTO_TEST_CASE(test_0022) { BOOST_TEST(dep0::parser::parse(testfiles / "test_0022.depc")); }
+BOOST_AUTO_TEST_CASE(test_0023) { BOOST_TEST(dep0::parser::parse(testfiles / "test_0023.depc")); }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -44,7 +44,12 @@ struct expr_t
         source_text number;
         bool operator==(numeric_constant_t const&) const = default;
     };
-    using value_t = std::variant<numeric_constant_t>;
+    struct fun_call_t
+    {
+        source_text name;
+        bool operator==(fun_call_t const&) const = default;
+    };
+    using value_t = std::variant<numeric_constant_t, fun_call_t>;
 
     properties_t properties;
     value_t value;

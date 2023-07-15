@@ -55,19 +55,10 @@ BOOST_AUTO_TEST_CASE(test_0001)
     BOOST_TEST(f.name == "main");
 }
 
-BOOST_AUTO_TEST_CASE(test_0002)
-{
-    BOOST_TEST(dep0::parser::parse(testfiles / "test_0002.depc"));
-}
-
-BOOST_AUTO_TEST_CASE(test_0003)
-{
-    BOOST_TEST(dep0::parser::parse(testfiles / "test_0003.depc"));
-}
-
-BOOST_AUTO_TEST_CASE(test_0004)
-{
-    BOOST_TEST(dep0::parser::parse(testfiles / "test_0004.depc"));
-}
+BOOST_AUTO_TEST_CASE(test_0002) { BOOST_TEST(dep0::parser::parse(testfiles / "test_0002.depc")); }
+BOOST_AUTO_TEST_CASE(test_0003) { BOOST_TEST(dep0::parser::parse(testfiles / "test_0003.depc")); }
+BOOST_AUTO_TEST_CASE(test_0004) { BOOST_TEST(dep0::parser::parse(testfiles / "test_0004.depc")); }
+BOOST_AUTO_TEST_CASE(test_0005) { BOOST_TEST(dep0::parser::parse(testfiles / "test_0005.depc")); }
+BOOST_AUTO_TEST_CASE(test_0006) { BOOST_TEST(dep0::parser::parse(testfiles / "test_0006.depc")); }
 
 BOOST_AUTO_TEST_SUITE_END()

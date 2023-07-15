@@ -48,9 +48,9 @@ enum class quoting_mode
 
 static quoting_mode determine_quoting_mode(std::optional<source_loc_t> const& loc)
 {
-    if (not loc or loc->txt.txt.empty())
+    if (not loc or loc->txt.view().empty())
         return quoting_mode::dont_quote;
-    return is_single_line(loc->txt.txt) ? quoting_mode::single_line : quoting_mode::multi_line;
+    return is_single_line(loc->txt.view()) ? quoting_mode::single_line : quoting_mode::multi_line;
 }
 
 static std::ostream& without_indent(std::ostream& os, error_t const& err, std::size_t indent, std::size_t const reason)
@@ -62,12 +62,12 @@ static std::ostream& without_indent(std::ostream& os, error_t const& err, std::s
     {
         os << "at " << err.location->line << ':' << err.location->col;
         if (q == quoting_mode::single_line)
-            os << " `" << err.location->txt.txt << '`';
+            os << " `" << err.location->txt.view() << '`';
         os << ' ';
     }
     os << err.error;
     if (q == quoting_mode::multi_line)
-        quote(os, err.location->txt.txt, indent+1);
+        quote(os, err.location->txt.view(), indent+1);
     switch (err.reasons.size())
     {
     case 0ul: return os;

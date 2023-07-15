@@ -1,0 +1,5 @@
+int zero() { return 0; }
+int main()
+{
+    return zero();
+}

@@ -12,7 +12,4 @@ add_library(dep0_core_lib
 add_library(DepC::Dep0::Core ALIAS dep0_core_lib)
 target_compile_features(dep0_core_lib PUBLIC cxx_std_20)
 target_include_directories(dep0_core_lib PUBLIC include)
-target_link_libraries(dep0_core_lib
-  PRIVATE
-    Boost::Boost
-  )
+target_link_libraries(dep0_core_lib PRIVATE Boost::Boost)

@@ -13,29 +13,37 @@
 
 namespace dep0::parser {
 
-std::optional<source_text> get_text(source_text const src, antlr4::Token const* const token)
+std::optional<source_text> get_text(source_text const src, antlr4::Token const& token)
 {
     std::optional<source_text> res;
-    if (token->getStartIndex() != INVALID_INDEX and token->getStopIndex() != INVALID_INDEX)
-        res.emplace(src.substr(token->getStartIndex(), token->getStopIndex() + 1 - token->getStartIndex()));
+    if (token.getStartIndex() != INVALID_INDEX and token.getStopIndex() != INVALID_INDEX)
+        res.emplace(src.substr(token.getStartIndex(), token.getStopIndex() + 1 - token.getStartIndex()));
     return res;
 }
 
-std::optional<source_text> get_text(source_text const src, antlr4::ParserRuleContext const* const ctx)
+std::optional<source_text> get_text(source_text const src, antlr4::ParserRuleContext const& ctx)
 {
     std::optional<source_text> res;
-    if (ctx->getStart()->getTokenIndex() <= ctx->getStop()->getTokenIndex())
+    if (ctx.getStart()->getTokenIndex() <= ctx.getStop()->getTokenIndex())
         res.emplace(src.substr(
-            ctx->getStart()->getStartIndex(),
-            ctx->getStop()->getStopIndex() + 1 - ctx->getStart()->getStartIndex()));
+            ctx.getStart()->getStartIndex(),
+            ctx.getStop()->getStopIndex() + 1 - ctx.getStart()->getStartIndex()));
     return res;
 }
 
-std::optional<source_loc_t> make_source(source_text const src, antlr4::ParserRuleContext const* const ctx)
+std::optional<source_loc_t> make_source(source_text const src, antlr4::Token const& token)
+{
+    std::optional<source_loc_t> res;
+    if (auto txt = get_text(src, token))
+        res.emplace(token.getLine(), 1+token.getCharPositionInLine(), std::move(*txt));
+    return res;
+}
+
+std::optional<source_loc_t> make_source(source_text const src, antlr4::ParserRuleContext const& ctx)
 {
     std::optional<source_loc_t> res;
     if (auto txt = get_text(src, ctx))
-        res.emplace(ctx->getStart()->getLine(), 1+ctx->getStart()->getCharPositionInLine(), std::move(*txt));
+        res.emplace(ctx.getStart()->getLine(), 1+ctx.getStart()->getCharPositionInLine(), std::move(*txt));
     return res;
 }
 
@@ -58,7 +66,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
             {
                 return std::any_cast<func_def_t>(visitFuncDef(x));
             });
-        return module_t{make_source(src, ctx).value(), std::move(func_defs)};
+        return module_t{make_source(src, *ctx).value(), std::move(func_defs)};
     }
 
     virtual std::any visitFuncDef(DepCParser::FuncDefContext* ctx) override
@@ -68,18 +76,18 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         assert(ctx->ID());
         assert(ctx->body());
         return func_def_t{
-            make_source(src, ctx).value(),
+            make_source(src, *ctx).value(),
                 std::any_cast<type_t>(visitType(ctx->type())),
-                get_text(src, ctx->ID()->getSymbol()).value(),
+                get_text(src, *ctx->name).value(),
                 std::any_cast<body_t>(visitBody(ctx->body()))};
     }
 
     virtual std::any visitType(DepCParser::TypeContext* ctx) override
     {
         if (ctx->KW_UNIT_T())
-            return type_t{make_source(src, ctx).value(), type_t::unit_t{}};
+            return type_t{make_source(src, *ctx).value(), type_t::unit_t{}};
         else if (ctx->KW_INT())
-            return type_t{make_source(src, ctx).value(), type_t::int_t{}};
+            return type_t{make_source(src, *ctx).value(), type_t::int_t{}};
         else
             assert(nullptr);
     }
@@ -95,7 +103,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
             {
                 return std::any_cast<stmt_t>(visitStmt(x));
             });
-        return body_t{make_source(src, ctx).value(), std::move(stmts)};
+        return body_t{make_source(src, *ctx).value(), std::move(stmts)};
     }
 
     virtual std::any visitStmt(DepCParser::StmtContext* ctx) override
@@ -103,7 +111,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         assert(ctx);
         assert(ctx->returnStmt());
         return stmt_t{
-            make_source(src, ctx).value(),
+            make_source(src, *ctx).value(),
             std::any_cast<stmt_t::return_t>(visitReturnStmt(ctx->returnStmt()))};
     }
 
@@ -119,8 +127,11 @@ struct parse_visitor_t : dep0::DepCParserVisitor
     virtual std::any visitExpr(DepCParser::ExprContext* ctx) override
     {
         assert(ctx);
-        assert(ctx->constantExpr());
-        return visitConstantExpr(ctx->constantExpr());
+        if (ctx->constantExpr())
+            return visitConstantExpr(ctx->constantExpr());
+        if (ctx->funCallExpr())
+            return visitFunCallExpr(ctx->funCallExpr());
+        assert(nullptr);
     }
 
     virtual std::any visitConstantExpr(DepCParser::ConstantExprContext* ctx) override
@@ -128,7 +139,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         assert(ctx);
         assert(ctx->numericExpr());
         return expr_t{
-            make_source(src, ctx).value(),
+            make_source(src, *ctx).value(),
             std::any_cast<expr_t::numeric_constant_t>(visitNumericExpr(ctx->numericExpr()))};
     }
 
@@ -136,7 +147,16 @@ struct parse_visitor_t : dep0::DepCParserVisitor
     {
         assert(ctx);
         assert(ctx->NUMBER());
-        return expr_t::numeric_constant_t{get_text(src, ctx->NUMBER()->getSymbol()).value()};
+        return expr_t::numeric_constant_t{get_text(src, *ctx->value).value()};
+    }
+
+    virtual std::any visitFunCallExpr(DepCParser::FunCallExprContext* ctx) override
+    {
+        assert(ctx);
+        assert(ctx->ID());
+        return expr_t{
+            make_source(src, *ctx).value(),
+            expr_t::fun_call_t{get_text(src, *ctx->name).value()}};
     }
 };
 
@@ -190,7 +210,7 @@ struct FirstErrorListener : antlr4::ANTLRErrorListener
         std::exception_ptr) override
     {
         if (error) return;
-        auto text = token ? get_text(src, token) : std::nullopt;
+        auto text = token ? get_text(src, *token) : std::nullopt;
         // TODO substr(src.index_of(line, col), 1);
         error = error_t{msg, source_loc_t{line, 1+col, text ? std::move(*text) : src.substr(0, 0)}};
     }
@@ -201,7 +221,7 @@ expected<module_t> parse(std::filesystem::path const& path)
     auto source = mmap(path);
     if (not source)
         return source.error();
-    auto input = antlr4::ANTLRInputStream(source->txt);
+    auto input = antlr4::ANTLRInputStream(source->view());
     dep0::DepCLexer lexer(&input);
     antlr4::CommonTokenStream tokens(&lexer);
     tokens.fill();

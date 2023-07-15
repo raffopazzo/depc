@@ -36,38 +36,40 @@ struct Fixture
     }
 };
 
+using namespace dep0::typecheck;
+
 BOOST_FIXTURE_TEST_SUITE(dep0_typecheck_tests, Fixture)
 
 BOOST_AUTO_TEST_CASE(test_0000)
 {
-    BOOST_TEST(dep0::typecheck::check(open("test_0000.depc")));
+    BOOST_TEST(check(tt::context_t(), open("test_0000.depc")));
 }
 
 BOOST_AUTO_TEST_CASE(test_0001)
 {
-    BOOST_TEST(dep0::typecheck::check(open("test_0001.depc")));
+    BOOST_TEST(check(tt::context_t(), open("test_0001.depc")));
 }
 
 BOOST_AUTO_TEST_CASE(test_0002)
 {
-    auto const result = dep0::typecheck::check(open("test_0002.depc"));
+    auto const result = check(tt::context_t(), open("test_0002.depc"));
     BOOST_TEST_REQUIRE(result.has_error());
-    BOOST_TEST(result.error().error == "Expecting expression of type 'int'");
+    BOOST_TEST(result.error().error == "Expecting expression of type `int`");
     BOOST_TEST(result.error().location.has_value());
 }
 
-BOOST_AUTO_TEST_CASE(test_0003)
-{
-    BOOST_TEST(dep0::typecheck::check(open("test_0003.depc")));
-}
+BOOST_AUTO_TEST_CASE(test_0003) { BOOST_TEST(check(tt::context_t(), open("test_0003.depc"))); }
 
 BOOST_AUTO_TEST_CASE(test_0004)
 {
     auto const module = open("test_0004.depc");
-    auto const result = dep0::typecheck::check(module);
+    auto const result = check(tt::context_t(), module);
     BOOST_TEST_REQUIRE(result.has_error());
     BOOST_TEST(result.error().error == "Type mismatch between numeric constant and `unit_t`");
     BOOST_TEST(result.error().location.has_value());
 }
+
+BOOST_AUTO_TEST_CASE(test_0005) { BOOST_TEST(check(tt::context_t(), open("test_0005.depc"))); }
+BOOST_AUTO_TEST_CASE(test_0006) { BOOST_TEST(check(tt::context_t(), open("test_0006.depc"))); }
 
 BOOST_AUTO_TEST_SUITE_END()

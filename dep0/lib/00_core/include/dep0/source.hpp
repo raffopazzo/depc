@@ -82,21 +82,28 @@ struct source_text
     source_handle_t hdl;
     std::string_view txt;
 
+    source_text(source_handle_t hdl, std::string_view txt) :
+        hdl(std::move(hdl)), txt(txt)
+    { }
+
     source_text substr(std::size_t const pos, std::size_t const n) const
     {
         return {hdl, txt.substr(pos, n)};
     }
 
-    bool operator==(source_text const& that) const { return txt == that.txt; }
-    bool operator!=(source_text const& that) const { return txt != that.txt; }
+    std::string_view view() const { return txt; }
+
+    bool operator<(source_text const& that) const { return view() < that.view(); }
+    bool operator==(source_text const& that) const { return view() == that.view(); }
+    bool operator!=(source_text const& that) const { return view() != that.view(); }
 };
 
-inline bool operator==(source_text const& x, std::string_view const s) { return x.txt == s; }
-inline bool operator!=(source_text const& x, std::string_view const s) { return x.txt != s; }
-inline bool operator==(std::string_view const s, source_text const& x) { return x.txt == s; }
-inline bool operator!=(std::string_view const s, source_text const& x) { return x.txt != s; }
+inline bool operator==(source_text const& x, std::string_view const s) { return x.view() == s; }
+inline bool operator!=(source_text const& x, std::string_view const s) { return x.view() != s; }
+inline bool operator==(std::string_view const s, source_text const& x) { return x.view() == s; }
+inline bool operator!=(std::string_view const s, source_text const& x) { return x.view() != s; }
 
-inline std::ostream& operator<<(std::ostream& os, source_text const& s) { return os << s.txt; }
+inline std::ostream& operator<<(std::ostream& os, source_text const& s) { return os << s.view(); }
 
 struct source_loc_t
 {

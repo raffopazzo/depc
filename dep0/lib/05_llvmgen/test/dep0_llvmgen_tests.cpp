@@ -43,7 +43,8 @@ struct Fixture
     {
         auto const module = dep0::parser::parse(testfiles / file);
         BOOST_TEST_REQUIRE(module);
-        auto const checked = dep0::typecheck::check(*module);
+        dep0::typecheck::tt::context_t ctx;
+        auto const checked = dep0::typecheck::check(ctx, *module);
         BOOST_TEST_REQUIRE(checked.has_value());
         return *checked;
     }
@@ -82,5 +83,8 @@ BOOST_AUTO_TEST_CASE(test_0003)
 }
 
 // BOOST_AUTO_TEST_CASE(test_0004) doesn't type check
+
+BOOST_AUTO_TEST_CASE(test_0005) { BOOST_TEST(dep0::llvmgen::gen(llvm_ctx, "test.depc", open("test_0005.depc"))); }
+BOOST_AUTO_TEST_CASE(test_0006) { BOOST_TEST(dep0::llvmgen::gen(llvm_ctx, "test.depc", open("test_0006.depc"))); }
 
 BOOST_AUTO_TEST_SUITE_END()

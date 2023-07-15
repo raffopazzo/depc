@@ -1,25 +1,39 @@
 #include "dep0/typecheck/check.hpp"
 
+#include <sstream>
+
 namespace dep0::typecheck {
 
-expected<module_t> check(parser::module_t const& x)
+expected<module_t> check(tt::context_t ctx, parser::module_t const& x)
 {
     std::vector<func_def_t> fs;
     fs.reserve(x.func_defs.size());
     for (auto const& f: x.func_defs)
-        if (auto res = check(f))
+        if (auto res = check(ctx, f))
+        {
+            if (auto extended = ctx.extend(tt::term_t::var_t(f.name), tt::type_of(res->type.properties.derivation));
+                not extended)
+            {
+                return extended.error();
+            }
             fs.push_back(std::move(*res));
+        }
         else
             return std::move(res.error());
     return module_t{legal_module_t{}, std::move(fs)};
 }
 
-expected<func_def_t> check(parser::func_def_t const& f)
+expected<func_def_t> check(tt::context_t ctx, parser::func_def_t const& f)
 {
-    auto ret_type = check(f.type);
+    auto ret_type = check(ctx, f.type);
     if (not ret_type)
         return std::move(ret_type.error());
-    auto body = check(f.body, *ret_type);
+    if (auto extended = ctx.extend(tt::term_t::var_t(f.name), tt::type_of(ret_type->properties.derivation));
+        not extended)
+    {
+        return extended.error();
+    }
+    auto body = check(ctx, f.body, *ret_type);
     if (not body)
         return std::move(body.error());
 // TODO: add this check
@@ -28,30 +42,32 @@ expected<func_def_t> check(parser::func_def_t const& f)
     return func_def_t{legal_func_def_t{}, std::move(*ret_type), f.name, std::move(*body)};
 }
 
-expected<type_t> check(parser::type_t const& t)
+expected<type_t> check(tt::context_t ctx, parser::type_t const& t)
 {
     struct visitor
     {
-        // `int` and other primitives are always derivable
+        tt::context_t& ctx;
+        source_loc_t const& location;
+
         expected<type_t> operator()(parser::type_t::unit_t const&) const
         {
-            return type_t{legal_type_t{}, typename type_t::unit_t{}};
+            return type_t{tt::derivation_t(tt::derivation_t::form_t::primitive_unit()), typename type_t::unit_t{}};
         }
         expected<type_t> operator()(parser::type_t::int_t const&) const
         {
-            return type_t{legal_type_t{}, typename type_t::int_t{}};
+            return type_t{tt::derivation_t(tt::derivation_t::form_t::primitive_int()), typename type_t::int_t{}};
         }
     };
-    return std::visit(visitor{}, t.value);
+    return std::visit(visitor{ctx, t.properties}, t.value);
 }
 
-expected<body_t> check(parser::body_t const& x, type_t const& return_type)
+expected<body_t> check(tt::context_t ctx, parser::body_t const& x, type_t const& return_type)
 {
     std::vector<stmt_t> stmts;
     stmts.reserve(x.stmts.size());
     for (auto const& s: x.stmts)
     {
-        if (auto stmt = check(s, return_type))
+        if (auto stmt = check(ctx, s, return_type))
             stmts.push_back(std::move(*stmt));
         else
             return std::move(stmt.error());
@@ -59,53 +75,83 @@ expected<body_t> check(parser::body_t const& x, type_t const& return_type)
     return body_t{legal_body_t{}, std::move(stmts)};
 }
 
-expected<stmt_t> check(parser::stmt_t const& s, type_t const& return_type)
+expected<stmt_t> check(tt::context_t ctx, parser::stmt_t const& s, type_t const& return_type)
 {
     struct visitor
     {
+        tt::context_t const& ctx;
         type_t const& return_type;
         source_loc_t const& location;
         expected<stmt_t> operator()(parser::stmt_t::return_t const& x)
         {
             if (not x.expr)
-                return std::holds_alternative<type_t::unit_t>(return_type.value)
-                    ? expected<stmt_t>{std::in_place, legal_stmt_t{}, stmt_t::return_t{}}
-                    // TODO replace `int` with real type name
-                    : expected<stmt_t>{error_t{"Expecting expression of type 'int'", location}};
-            else if (auto expr = check(*x.expr, return_type))
+            {
+                if (std::holds_alternative<type_t::unit_t>(return_type.value))
+                    return expected<stmt_t>{std::in_place, legal_stmt_t{}, stmt_t::return_t{}};
+                std::ostringstream err;
+                tt::pretty_print(
+                    err << "Expecting expression of type `",
+                    tt::type_of(return_type.properties.derivation)
+                ) << '`';
+                return error_t{err.str(), location};
+            }
+            else if (auto expr = check(ctx, *x.expr, return_type))
                 return stmt_t{legal_stmt_t{}, stmt_t::return_t{std::move(*expr)}};
             else
                 return std::move(expr.error());
         }
     };
-    return std::visit(visitor{return_type, s.properties}, s.value);
+    return std::visit(visitor{ctx, return_type, s.properties}, s.value);
 }
 
-expected<expr_t> check(parser::expr_t const& x, type_t const& expected_type)
+struct check_expr_visitor
 {
-    struct visitor
+    tt::context_t const& context;
+    legal_type_t const& expected_type;
+    source_loc_t const& location;
+
+    template <typename T>
+    expected<expr_t> operator()(parser::expr_t::fun_call_t const& x, T const&) const
     {
-        source_loc_t const& location;
-
-        expected<expr_t> operator()(parser::expr_t::numeric_constant_t const& x, type_t::unit_t const&) const
+        auto fun_type = context[tt::term_t::var_t(x.name)];
+        if (not fun_type)
         {
-            return error_t{"Type mismatch between numeric constant and `unit_t`", location};
+            std::ostringstream err;
+            err << "Unknown function name `" << x.name << '`';
+            return error_t{err.str(),  location};
         }
-
-        expected<expr_t> operator()(parser::expr_t::numeric_constant_t const& x, type_t::int_t const&) const
+        else if (*fun_type != tt::type_of(expected_type.derivation))
         {
-            // TODO should check that the string represents a valid integer, for now we say that only `0` is valid
-            // the test per se is easy, I really need to decide on what primitive types I want, possible choices are:
-            // - `[unsigned] (short|int|long|long long)` with platform defined width, like C
-            // - `[iu](8|16|32|64|128)_t` with fixed width
-            // - both
-            // - both but `short, int, etc` have fixed width and `word_t, quadword_t` for platform stuff
-            if (x.number != "0")
-                return error_t{"Invalid integer number", location};
-            return expr_t{legal_expr_t{}, typename expr_t::numeric_constant_t{x.number}};
+            std::ostringstream err;
+            tt::pretty_print(err << "Type mismatch between function return type `", *fun_type);
+            tt::pretty_print(err << "` and expected type `", tt::type_of(expected_type.derivation)) << "`";
+            return error_t{err.str(), location};
         }
-    };
-    return std::visit(visitor{x.properties}, x.value, expected_type.value);
+        else
+            return expr_t{expected_type.derivation, typename expr_t::fun_call_t{x.name}};
+    }
+
+    expected<expr_t> operator()(parser::expr_t::numeric_constant_t const& x, type_t::unit_t const&) const
+    {
+        return error_t{"Type mismatch between numeric constant and `unit_t`", location};
+    }
+
+    expected<expr_t> operator()(parser::expr_t::numeric_constant_t const& x, type_t::int_t const&) const
+    {
+        // TODO should check that the string represents a valid integer, for now we say that only `0` is valid
+        // the test per se is easy, I really need to decide on what primitive types I want, possible choices are:
+        // - `[unsigned] (short|int|long|long long)` with platform defined width, like C
+        // - `[iu](8|16|32|64|128)_t` with fixed width
+        // - both
+        // - both but `short, int, etc` have fixed width and `word_t, quadword_t` for platform stuff
+        if (x.number != "0")
+            return error_t{"Invalid integer number", location};
+        return expr_t{expected_type.derivation, typename expr_t::numeric_constant_t{x.number}};
+    }
+};
+expected<expr_t> check(tt::context_t ctx, parser::expr_t const& x, type_t const& expected_type)
+{
+    return std::visit(check_expr_visitor{ctx, expected_type.properties, x.properties}, x.value, expected_type.value);
 }
 
 } // namespace dep0::typecheck

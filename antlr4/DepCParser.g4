@@ -17,8 +17,9 @@ stmt: returnStmt;
 returnStmt: 'return' expr? ';';
 
 // Expressions
-expr: constantExpr;
+expr: constantExpr | funCallExpr;
 
 constantExpr: numericExpr;
+numericExpr: value=NUMBER;
 
-numericExpr: NUMBER;
+funCallExpr: name=ID '(' ')';

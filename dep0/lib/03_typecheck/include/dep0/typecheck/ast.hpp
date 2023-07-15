@@ -1,5 +1,7 @@
 #pragma once
 
+#include "dep0/typecheck/tt/derivation.hpp"
+
 #include "dep0/ast/ast.hpp"
 #include "dep0/ast/concepts.hpp"
 
@@ -25,6 +27,13 @@ struct properties_t
 };
 static_assert(ast::Properties<properties_t>);
 
+using module_t = ast::module_t<properties_t>;
+using func_def_t = ast::func_def_t<properties_t>;
+using type_t = ast::type_t<properties_t>;
+using body_t = ast::body_t<properties_t>;
+using stmt_t = ast::stmt_t<properties_t>;
+using expr_t = ast::expr_t<properties_t>;
+
 struct legal_module_t
 {
     // here I would like to express that a module is legal if *all* its functions, types, etc are legal;
@@ -37,7 +46,7 @@ struct legal_func_def_t
 
 struct legal_type_t
 {
-    // TODO: store the derivation of the type definition
+    tt::derivation_t derivation;
 };
 
 struct legal_body_t
@@ -50,14 +59,7 @@ struct legal_stmt_t
 
 struct legal_expr_t
 {
-    // TODO: store the computed type of the expression
+    tt::derivation_t derivation;
 };
-
-using module_t = ast::module_t<properties_t>;
-using func_def_t = ast::func_def_t<properties_t>;
-using type_t = ast::type_t<properties_t>;
-using body_t = ast::body_t<properties_t>;
-using stmt_t = ast::stmt_t<properties_t>;
-using expr_t = ast::expr_t<properties_t>;
 
 } // namespace dep0::typecheck

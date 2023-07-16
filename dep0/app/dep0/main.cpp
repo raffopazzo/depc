@@ -91,7 +91,7 @@ int main(int argc, char** argv)
         if (not typechecked_module)
         {
             std::ostringstream str;
-            dep0::pretty_print(str, typechecked_module.error());
+            dep0::typecheck::pretty_print(str, typechecked_module.error());
             llvm::WithColor::error(llvm::errs(), f) << "Typecheck error: " << str.str() << '\n';
             return 1;
         }

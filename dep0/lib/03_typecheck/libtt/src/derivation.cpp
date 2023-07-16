@@ -77,7 +77,7 @@ expected<derivation_t> type_assign(context_t const& ctx, term_t const& x)
             else
             {
                 std::ostringstream err;
-                err << "Variable/Function name `"<< x.name <<"` not found in current scope";
+                err << "Variable/Function name `"<< x.name <<"` not found in current context";
                 return error_t{err.str()};
             }
         }
@@ -110,9 +110,9 @@ expected<derivation_t> type_assign(context_t const& ctx, term_t const& x)
 
         expected<derivation_t> operator()(term_t::abs_t const& x) const
         {
-            auto ext_ctx = ctx;
-            if (auto extended = ext_ctx.extend(x.var, x.var_type))
-                return extended.error();
+            auto ext_ctx = ctx.extend();
+            if (auto ok = ext_ctx.add(x.var, x.var_type))
+                return std::move(ok.error());
             if (auto body_derivation = type_assign(ext_ctx, x.body.get()))
                 return derivation_rules::abs(ctx, x.var, x.var_type, std::move(*body_derivation));
             else

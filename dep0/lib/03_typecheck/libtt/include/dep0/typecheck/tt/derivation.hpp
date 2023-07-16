@@ -28,7 +28,7 @@ struct derivation_t
         form_t& operator=(form_t&&) = default;
 
     private:
-        form_t(type_t);
+        explicit form_t(type_t);
         type_t m_ty;
     };
 

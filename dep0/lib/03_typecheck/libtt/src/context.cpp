@@ -13,22 +13,16 @@ std::shared_ptr<context_t::state_t> context_t::state_t::inherit(std::shared_ptr<
     return std::make_shared<state_t>(parent);
 }
 
-context_t::context_t() :
-    state(std::make_shared<state_t>(nullptr))
+context_t::context_t(std::shared_ptr<state_t const> parent) :
+    state(std::make_shared<state_t>(parent))
 { }
 
-context_t::context_t(context_t const& that) :
-    state(state_t::inherit(that.state))
+context_t context_t::extend() const
 {
+    return context_t(state);
 }
 
-context_t& context_t::operator=(context_t const& that)
-{
-    state = state_t::inherit(that.state);
-    return *this;
-}
-
-expected<std::true_type> context_t::extend(term_t::var_t var, type_t ty)
+expected<std::true_type> context_t::add(term_t::var_t var, type_t ty)
 {
     // we don't check if `var` is declared in `parent` to allow shadowing in a new scope
     auto const [it, inserted] = state->decls.try_emplace(std::move(var), std::move(ty));
@@ -52,6 +46,14 @@ std::optional<type_t> context_t::operator[](term_t::var_t const var) const
     }
     while (s);
     return std::nullopt;
+}
+
+std::ostream& pretty_print(std::ostream& os, context_t const& ctx)
+{
+    bool first = true;
+    for (auto const& [var, ty]: ctx.state->decls)
+        pretty_print((std::exchange(first, false) ? os : os << std::endl) << var.name << ": ", ty);
+    return os;
 }
 
 } // namespace dep0::typecheck

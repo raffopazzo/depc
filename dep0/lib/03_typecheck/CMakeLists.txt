@@ -4,9 +4,11 @@ add_subdirectory(libtt)
 add_library(dep0_typecheck_lib
   include/dep0/typecheck/ast.hpp
   include/dep0/typecheck/check.hpp
+  include/dep0/typecheck/error.hpp
   include/dep0/typecheck/returns_from_all_branches.hpp
   src/ast.cpp
   src/check.cpp
+  src/error.cpp
   src/returns_from_all_branches.cpp
   )
 add_library(DepC::Dep0::TypeCheck ALIAS dep0_typecheck_lib)

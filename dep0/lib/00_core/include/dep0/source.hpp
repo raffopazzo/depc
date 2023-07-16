@@ -19,6 +19,8 @@ class source_handle_t
 
     state_t* state = nullptr;
 
+    source_handle_t(std::nullptr_t);
+
     template <typename T>
     source_handle_t(T x) :
         state(new state_t{1ul, std::move(x)})
@@ -27,46 +29,16 @@ class source_handle_t
     template <typename U, typename... Args>
     friend source_handle_t make_handle(Args&&... args);
 
-    void release()
-    {
-        // on quick-bench this combination of likelihood attributes perfomed the best, which makes intuitive sense:
-        // if we have a source file open, we really only close it once at the end so `delete` is twice unlikely,
-        // especially if we always try to move handles
-        if (state) [[unlikely]]
-            if (0 == --state->counter) [[unlikely]]
-                delete std::exchange(state, nullptr);
-    }
+    friend source_handle_t make_null_handle();
+
+    void release();
 
 public:
-    ~source_handle_t()
-    {
-        release();
-    }
-
-    source_handle_t(source_handle_t const& that) :
-        state(that.state)
-    {
-        ++that.state->counter;
-    }
-
-    source_handle_t(source_handle_t&& that) :
-        state(std::exchange(that.state, nullptr))
-    { }
-
-    source_handle_t& operator=(source_handle_t const& that)
-    {
-        release();
-        state = that.state;
-        ++that.state->counter;
-        return *this;
-    }
-
-    source_handle_t& operator=(source_handle_t&& that)
-    {
-        release();
-        state = std::exchange(that.state, nullptr);
-        return *this;
-    }
+    ~source_handle_t();
+    source_handle_t(source_handle_t const&);
+    source_handle_t(source_handle_t&&);
+    source_handle_t& operator=(source_handle_t const&);
+    source_handle_t& operator=(source_handle_t&&);
 };
 
 template <typename U, typename... Args>
@@ -75,35 +47,35 @@ source_handle_t make_handle(Args&&... args)
     return source_handle_t(U{std::forward<Args>(args)...});
 }
 
+source_handle_t make_null_handle();
 
 // Like `std::string_view` but guarantees that the source is still open.
+// Objects constructed using `from_literal` don't manage any memory
+// since they are supposed to be passed a global literal string "...".
 struct source_text
 {
     source_handle_t hdl;
     std::string_view txt;
 
-    source_text(source_handle_t hdl, std::string_view txt) :
-        hdl(std::move(hdl)), txt(txt)
-    { }
+    source_text(source_handle_t, std::string_view);
 
-    source_text substr(std::size_t const pos, std::size_t const n) const
-    {
-        return {hdl, txt.substr(pos, n)};
-    }
+    source_text substr(std::size_t pos, std::size_t n) const;
 
-    std::string_view view() const { return txt; }
+    static source_text from_literal(char const*);
 
-    bool operator<(source_text const& that) const { return view() < that.view(); }
-    bool operator==(source_text const& that) const { return view() == that.view(); }
-    bool operator!=(source_text const& that) const { return view() != that.view(); }
+    std::string_view view() const;
+
+    bool operator<(source_text const& that) const;
+    bool operator==(source_text const& that) const;
+    bool operator!=(source_text const& that) const;
 };
 
-inline bool operator==(source_text const& x, std::string_view const s) { return x.view() == s; }
-inline bool operator!=(source_text const& x, std::string_view const s) { return x.view() != s; }
-inline bool operator==(std::string_view const s, source_text const& x) { return x.view() == s; }
-inline bool operator!=(std::string_view const s, source_text const& x) { return x.view() != s; }
+bool operator==(source_text const&, std::string_view);
+bool operator!=(source_text const&, std::string_view);
+bool operator==(std::string_view, source_text const&);
+bool operator!=(std::string_view, source_text const&);
 
-inline std::ostream& operator<<(std::ostream& os, source_text const& s) { return os << s.view(); }
+std::ostream& operator<<(std::ostream&, source_text const&);
 
 struct source_loc_t
 {
@@ -111,9 +83,7 @@ struct source_loc_t
     std::size_t col;
     source_text txt;
 
-    source_loc_t(std::size_t const line, std::size_t const col, source_text txt) :
-        line(line), col(col), txt(std::move(txt))
-    { }
+    source_loc_t(std::size_t line, std::size_t col, source_text);
 
     bool operator==(source_loc_t const&) const = default;
     bool operator!=(source_loc_t const&) const = default;

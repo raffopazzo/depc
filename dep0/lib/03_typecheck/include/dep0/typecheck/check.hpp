@@ -2,6 +2,7 @@
 
 #include "dep0/typecheck/tt/context.hpp"
 #include "dep0/typecheck/ast.hpp"
+#include "dep0/typecheck/error.hpp"
 
 #include "dep0/parser/ast.hpp"
 

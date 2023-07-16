@@ -13,15 +13,16 @@ static tt::derivation_t unit_derivation() { return tt::derivation_t(tt::derivati
 
 expected<module_t> check(tt::context_t ctx, parser::module_t const& x)
 {
+    ctx = ctx.extend();
     std::vector<func_def_t> fs;
     fs.reserve(x.func_defs.size());
     for (auto const& f: x.func_defs)
         if (auto res = check(ctx, f))
         {
-            if (auto extended = ctx.extend(tt::term_t::var_t(f.name), tt::type_of(res->type.properties.derivation));
-                not extended)
+            if (auto ok = ctx.add(tt::term_t::var_t(f.name), tt::type_of(res->type.properties.derivation));
+                not ok)
             {
-                return extended.error();
+                return error_t::from_error(ok.error(), ctx);
             }
             fs.push_back(std::move(*res));
         }
@@ -32,13 +33,14 @@ expected<module_t> check(tt::context_t ctx, parser::module_t const& x)
 
 expected<func_def_t> check(tt::context_t ctx, parser::func_def_t const& f)
 {
+    ctx = ctx.extend();
     auto ret_type = check(ctx, f.type);
     if (not ret_type)
         return std::move(ret_type.error());
-    if (auto extended = ctx.extend(tt::term_t::var_t(f.name), tt::type_of(ret_type->properties.derivation));
-        not extended)
+    if (auto ok = ctx.add(tt::term_t::var_t(f.name), tt::type_of(ret_type->properties.derivation));
+        not ok)
     {
-        return extended.error();
+        return error_t::from_error(ok.error(), ctx, tt::type_of(ret_type->properties.derivation));
     }
     auto body = check(ctx, f.body, *ret_type);
     if (not body)
@@ -49,7 +51,7 @@ expected<func_def_t> check(tt::context_t ctx, parser::func_def_t const& f)
     {
         std::ostringstream err;
         err << "In function `" << f.name << "` missing return statement";
-        return error_t{err.str(), f.properties};
+        return error_t::from_error(dep0::error_t{err.str(), f.properties}, ctx, tt::type_of(ret_type->properties.derivation));
     }
     return func_def_t{legal_func_def_t{}, std::move(*ret_type), f.name, std::move(*body)};
 }
@@ -103,6 +105,7 @@ expected<stmt_t> check(tt::context_t ctx, parser::stmt_t const& s, type_t const&
             if (auto expr = type_assign(ctx, x.expr))
                 return stmt_t{legal_stmt_t{}, stmt_t::fun_call_t{std::move(*expr)}};
             else
+                // leaving `expr.error().tgt` empty because for a function call statement there is no target type
                 return std::move(expr.error());
         }
         expected<stmt_t> operator()(parser::stmt_t::if_else_t const& x)
@@ -139,7 +142,7 @@ expected<stmt_t> check(tt::context_t ctx, parser::stmt_t const& s, type_t const&
                     err << "Expecting expression of type `",
                     tt::type_of(return_type.properties.derivation)
                 ) << '`';
-                return error_t{err.str(), location};
+                return error_t::from_error(dep0::error_t{err.str(), location}, ctx, tt::type_of(return_type.properties.derivation));
             }
             else if (auto expr = check(ctx, *x.expr, return_type))
                 return stmt_t{legal_stmt_t{}, stmt_t::return_t{std::move(*expr)}};
@@ -162,7 +165,10 @@ expected<expr_t> type_assign(tt::context_t ctx, parser::expr_t const& x)
             if (auto d = tt::type_assign(ctx, tt::term_t::var(x.name)))
                 return expr_t{std::move(*d), expr_t::fun_call_t{x.name}};
             else
-                return std::move(d.error());
+            {
+                d.error().location = location;
+                return error_t::from_error(std::move(d.error()), ctx);
+            }
         }
 
         expected<expr_t> operator()(parser::expr_t::boolean_constant_t const& x) const
@@ -179,7 +185,7 @@ expected<expr_t> type_assign(tt::context_t ctx, parser::expr_t const& x)
             // - both
             // - both but `short, int, etc` have fixed width and `word_t, quadword_t` for platform stuff
             if (x.number != "0")
-                return error_t{"Invalid integer number", location};
+                return error_t::from_error(dep0::error_t{"Invalid integer number", location}, ctx);
             // TODO numeric constant can also be used for other integer types
             return expr_t{int_derivation(), expr_t::numeric_constant_t{x.number}};
         }
@@ -190,7 +196,10 @@ expected<expr_t> check(tt::context_t ctx, parser::expr_t const& x, type_t const&
 {
     auto expr = type_assign(ctx, x);
     if (not expr)
+    {
+        expr.error().tgt = tt::type_of(expected_type.properties.derivation);
         return std::move(expr.error());
+    }
     auto const& expected_ty = tt::type_of(expected_type.properties.derivation);
     auto const& actual_ty = tt::type_of(expr->properties.derivation);
     if (expected_ty != actual_ty)
@@ -198,7 +207,7 @@ expected<expr_t> check(tt::context_t ctx, parser::expr_t const& x, type_t const&
         std::ostringstream err;
         tt::pretty_print(err << "Expression of type `", actual_ty) << '`';
         tt::pretty_print(err << " does not typecheck with expected type `", expected_ty) << '`';
-        return error_t{err.str(), x.properties};
+        return error_t::from_error(dep0::error_t{err.str(), x.properties}, ctx, expected_ty);
     }
     return expr;
 }

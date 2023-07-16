@@ -34,6 +34,11 @@ int main(int argc, char** argv)
         llvm::cl::opt<std::string>(
             "mtriple",
             llvm::cl::desc("Override target triple for module"));
+    auto typecheck_only =
+        llvm::cl::opt<bool>(
+            "t",
+            llvm::cl::desc("Stop after typechecking; don't emit any asm/obj code"),
+            llvm::cl::init(false));
 
     llvm::InitLLVM LLVM(argc, argv);
     llvm::InitializeAllTargets();
@@ -95,6 +100,11 @@ int main(int argc, char** argv)
             llvm::WithColor::error(llvm::errs(), f) << "Typecheck error: " << str.str() << '\n';
             return 1;
         }
+        if (typecheck_only or file_type == llvm::CodeGenFileType::CGFT_Null)
+        {
+            llvm::WithColor::note(llvm::outs(), f) << "Typechecks correctly" << '\n';
+            continue;
+        }
 //      ...add transformations here...
 //      auto transform_result = dep0::transform::run(*typechecked_module, ...);
         auto llvm_module = dep0::llvmgen::gen(llvm_context, f, *typechecked_module);
@@ -105,8 +115,6 @@ int main(int argc, char** argv)
             llvm::WithColor::error(llvm::errs(), f) << "Codegen error: " << str.str() << '\n';
             return 1;
         }
-        if (file_type == llvm::CodeGenFileType::CGFT_Null)
-            continue;
         std::error_code ec;
         auto out = llvm::ToolOutputFile(f + suffix, ec, oflags);
         llvm::legacy::PassManager pass_manager;

@@ -7,129 +7,74 @@
 #include <filesystem>
 #include <cstdlib>
 
-namespace dep0
-{
-
-std::ostream& operator<<(std::ostream& os, expected<parser::module_t> const& x)
-{
-    if (x) return os << "Parsing ok";
-    else return pretty_print(os << std::endl, x.error());
-}
-
-std::ostream& operator<<(std::ostream& os, expected<typecheck::module_t> const& x)
-{
-    if (x) return os << "Typechecking ok";
-    else return pretty_print(os << std::endl, x.error());
-}
-
-}
-
 struct Fixture
 {
     std::filesystem::path testfiles = std::getenv("DEP0_TESTFILES_DIR");
 
-    dep0::parser::module_t open(std::filesystem::path const& file)
+    boost::test_tools::predicate_result pass(std::filesystem::path const file)
     {
-        auto const module = dep0::parser::parse(testfiles / file);
-        BOOST_TEST_REQUIRE(module);
-        return *module;
+        auto parse_result = dep0::parser::parse(testfiles / file);
+        if (parse_result.has_error())
+        {
+            auto res = boost::test_tools::predicate_result(false);
+            dep0::pretty_print(res.message().stream(), parse_result.error());
+            return res;
+        }
+        auto check_result = dep0::typecheck::check(dep0::typecheck::tt::context_t(), *parse_result);
+        if (check_result.has_error())
+        {
+            auto res = boost::test_tools::predicate_result(false);
+            dep0::pretty_print(res.message().stream(), check_result.error());
+            return res;
+        }
+        return true;
+    }
+
+    boost::test_tools::predicate_result fail(std::filesystem::path const file)
+    {
+        auto parse_result = dep0::parser::parse(testfiles / file);
+        if (parse_result.has_error())
+        {
+            auto res = boost::test_tools::predicate_result(false);
+            dep0::pretty_print(res.message().stream(), parse_result.error());
+            return res;
+        }
+        auto check_result = dep0::typecheck::check(dep0::typecheck::tt::context_t(), *parse_result);
+        if (check_result.has_value())
+        {
+            auto res = boost::test_tools::predicate_result(false);
+            res.message() << "Was expecting typecheck to fail but it succeeded";
+            return res;
+        }
+        return true;
     }
 };
 
-using namespace dep0::typecheck;
-
 BOOST_FIXTURE_TEST_SUITE(dep0_typecheck_tests, Fixture)
 
-BOOST_AUTO_TEST_CASE(test_0000)
-{
-    BOOST_TEST(check(tt::context_t(), open("test_0000.depc")));
-}
-
-BOOST_AUTO_TEST_CASE(test_0001)
-{
-    BOOST_TEST(check(tt::context_t(), open("test_0001.depc")));
-}
-
-BOOST_AUTO_TEST_CASE(test_0002)
-{
-    auto const result = check(tt::context_t(), open("test_0002.depc"));
-    BOOST_TEST_REQUIRE(result.has_error());
-    BOOST_TEST(result.error().error == "Expecting expression of type `int`");
-    BOOST_TEST(result.error().location.has_value());
-}
-
-BOOST_AUTO_TEST_CASE(test_0003) { BOOST_TEST(check(tt::context_t(), open("test_0003.depc"))); }
-
-BOOST_AUTO_TEST_CASE(test_0004)
-{
-    auto const module = open("test_0004.depc");
-    auto const result = check(tt::context_t(), module);
-    BOOST_TEST_REQUIRE(result.has_error());
-    BOOST_TEST(result.error().error == "Expression of type `int` does not typecheck with expected type `unit_t`");
-    BOOST_TEST(result.error().location.has_value());
-}
-
-BOOST_AUTO_TEST_CASE(test_0005) { BOOST_TEST(check(tt::context_t(), open("test_0005.depc"))); }
-BOOST_AUTO_TEST_CASE(test_0006) { BOOST_TEST(check(tt::context_t(), open("test_0006.depc"))); }
-BOOST_AUTO_TEST_CASE(test_0007) { BOOST_TEST(check(tt::context_t(), open("test_0007.depc"))); }
-
-BOOST_AUTO_TEST_CASE(test_0008)
-{
-    auto const module = open("test_0008.depc");
-    auto const result = check(tt::context_t(), module);
-    BOOST_TEST_REQUIRE(result.has_error());
-    BOOST_TEST(result.error().error == "Expression of type `bool` does not typecheck with expected type `int`");
-    BOOST_TEST(result.error().location.has_value());
-}
-
-BOOST_AUTO_TEST_CASE(test_0009)
-{
-    auto const module = open("test_0009.depc");
-    auto const result = check(tt::context_t(), module);
-    BOOST_TEST_REQUIRE(result.has_error());
-    BOOST_TEST(result.error().error == "Expression of type `int` does not typecheck with expected type `bool`");
-    BOOST_TEST(result.error().location.has_value());
-}
-
-BOOST_AUTO_TEST_CASE(test_0010)
-{
-    auto const module = open("test_0010.depc");
-    auto const result = check(tt::context_t(), module);
-    BOOST_TEST_REQUIRE(result.has_error());
-    BOOST_TEST(result.error().error == "In function `main` missing return statement");
-    BOOST_TEST(result.error().location.has_value());
-}
-
-BOOST_AUTO_TEST_CASE(test_0011) { BOOST_TEST(check(tt::context_t(), open("test_0011.depc"))); }
-
-BOOST_AUTO_TEST_CASE(test_0012)
-{
-    auto const module = open("test_0012.depc");
-    auto const result = check(tt::context_t(), module);
-    BOOST_TEST_REQUIRE(result.has_error());
-    BOOST_TEST(result.error().error == "Expression of type `bool` does not typecheck with expected type `int`");
-    BOOST_TEST(result.error().location.has_value());
-}
-
-BOOST_AUTO_TEST_CASE(test_0013)
-{
-    auto const module = open("test_0013.depc");
-    auto const result = check(tt::context_t(), module);
-    BOOST_TEST_REQUIRE(result.has_error());
-    BOOST_TEST(result.error().error == "In function `main` missing return statement");
-    BOOST_TEST(result.error().location.has_value());
-}
-
-BOOST_AUTO_TEST_CASE(test_0014) { BOOST_TEST(check(tt::context_t(), open("test_0014.depc"))); }
-BOOST_AUTO_TEST_CASE(test_0015) { BOOST_TEST(check(tt::context_t(), open("test_0015.depc"))); }
-
-BOOST_AUTO_TEST_CASE(test_0016) { BOOST_TEST(check(tt::context_t(), open("test_0016.depc")).has_error()); }
-BOOST_AUTO_TEST_CASE(test_0017) { BOOST_TEST(check(tt::context_t(), open("test_0017.depc")).has_error()); }
-BOOST_AUTO_TEST_CASE(test_0018) { BOOST_TEST(check(tt::context_t(), open("test_0018.depc"))); }
-BOOST_AUTO_TEST_CASE(test_0019) { BOOST_TEST(check(tt::context_t(), open("test_0019.depc"))); }
-BOOST_AUTO_TEST_CASE(test_0020) { BOOST_TEST(check(tt::context_t(), open("test_0020.depc"))); }
-BOOST_AUTO_TEST_CASE(test_0021) { BOOST_TEST(check(tt::context_t(), open("test_0021.depc"))); }
-BOOST_AUTO_TEST_CASE(test_0022) { BOOST_TEST(check(tt::context_t(), open("test_0022.depc"))); }
-BOOST_AUTO_TEST_CASE(test_0023) { BOOST_TEST(check(tt::context_t(), open("test_0023.depc")).has_error()); }
+BOOST_AUTO_TEST_CASE(test_0000) { BOOST_TEST(pass("test_0000.depc")); }
+BOOST_AUTO_TEST_CASE(test_0001) { BOOST_TEST(pass("test_0001.depc")); }
+BOOST_AUTO_TEST_CASE(test_0002) { BOOST_TEST(fail("test_0002.depc")); }
+BOOST_AUTO_TEST_CASE(test_0003) { BOOST_TEST(pass("test_0003.depc")); }
+BOOST_AUTO_TEST_CASE(test_0004) { BOOST_TEST(fail("test_0004.depc")); }
+BOOST_AUTO_TEST_CASE(test_0005) { BOOST_TEST(pass("test_0005.depc")); }
+BOOST_AUTO_TEST_CASE(test_0006) { BOOST_TEST(pass("test_0006.depc")); }
+BOOST_AUTO_TEST_CASE(test_0007) { BOOST_TEST(pass("test_0007.depc")); }
+BOOST_AUTO_TEST_CASE(test_0008) { BOOST_TEST(fail("test_0008.depc")); }
+BOOST_AUTO_TEST_CASE(test_0009) { BOOST_TEST(fail("test_0009.depc")); }
+BOOST_AUTO_TEST_CASE(test_0010) { BOOST_TEST(fail("test_0010.depc")); }
+BOOST_AUTO_TEST_CASE(test_0011) { BOOST_TEST(pass("test_0011.depc")); }
+BOOST_AUTO_TEST_CASE(test_0012) { BOOST_TEST(fail("test_0012.depc")); }
+BOOST_AUTO_TEST_CASE(test_0013) { BOOST_TEST(fail("test_0013.depc")); }
+BOOST_AUTO_TEST_CASE(test_0014) { BOOST_TEST(pass("test_0014.depc")); }
+BOOST_AUTO_TEST_CASE(test_0015) { BOOST_TEST(pass("test_0015.depc")); }
+BOOST_AUTO_TEST_CASE(test_0016) { BOOST_TEST(fail("test_0016.depc")); }
+BOOST_AUTO_TEST_CASE(test_0017) { BOOST_TEST(fail("test_0017.depc")); }
+BOOST_AUTO_TEST_CASE(test_0018) { BOOST_TEST(pass("test_0018.depc")); }
+BOOST_AUTO_TEST_CASE(test_0019) { BOOST_TEST(pass("test_0019.depc")); }
+BOOST_AUTO_TEST_CASE(test_0020) { BOOST_TEST(pass("test_0020.depc")); }
+BOOST_AUTO_TEST_CASE(test_0021) { BOOST_TEST(pass("test_0021.depc")); }
+BOOST_AUTO_TEST_CASE(test_0022) { BOOST_TEST(pass("test_0022.depc")); }
+BOOST_AUTO_TEST_CASE(test_0023) { BOOST_TEST(fail("test_0023.depc")); }
 
 BOOST_AUTO_TEST_SUITE_END()

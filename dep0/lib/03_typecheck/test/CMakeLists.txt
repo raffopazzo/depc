@@ -9,3 +9,15 @@ target_link_libraries(dep0_typecheck_tests
     DepC::Dep0::Parser
     Boost::Boost
     )
+
+add_executable(dep0_typecheck_error_msg_tests dep0_typecheck_error_msg_tests.cpp)
+add_test(NAME dep0_typecheck_error_msg_tests COMMAND dep0_typecheck_error_msg_tests)
+set_property(TEST dep0_typecheck_error_msg_tests PROPERTY ENVIRONMENT
+    "DEP0_TESTFILES_DIR=${CMAKE_SOURCE_DIR}/testfiles"
+    )
+target_link_libraries(dep0_typecheck_error_msg_tests
+  PRIVATE
+    DepC::Dep0::TypeCheck
+    DepC::Dep0::Parser
+    Boost::Boost
+    )

@@ -87,7 +87,16 @@ llvm::Value* gen(context_t& ctx, llvm::Module& llvm_module, typecheck::func_def_
     auto const func = llvm::Function::Create(funtype, llvm::Function::ExternalLinkage, x.name.view(), llvm_module);
     ctx.fun_types[x.name] = funtype;
     ctx.values[x.name] = func;
-    gen(ctx, llvm_module.getContext(), x.body, "entry", func);
+    auto snippet = gen(ctx, llvm_module.getContext(), x.body, "entry", func);
+    if (snippet.open_blocks.size() and std::holds_alternative<typecheck::type_t::unit_t>(x.type.value))
+    {
+        auto builder = llvm::IRBuilder<>(llvm_module.getContext());
+        for (auto* const bb: snippet.open_blocks)
+        {
+            builder.SetInsertPoint(bb);
+            builder.CreateRetVoid();
+        }
+    }
     return func;
 }
 

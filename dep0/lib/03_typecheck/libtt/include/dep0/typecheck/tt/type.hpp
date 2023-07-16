@@ -2,9 +2,10 @@
 
 #include <boost/variant/recursive_wrapper.hpp>
 
+#include "dep0/source.hpp"
+
 #include <compare>
 #include <ostream>
-#include <string>
 #include <variant>
 
 namespace dep0::typecheck::tt {
@@ -15,7 +16,7 @@ struct type_t
 
     struct var_t
     {
-        std::string name;
+        source_text name;
 
         auto operator<=>(var_t const&) const = default;
     };
@@ -34,7 +35,7 @@ struct type_t
 
     bool operator==(type_t const&) const = default;
 
-    static type_t var(std::string);
+    static type_t var(source_text);
     static type_t arr(type_t, type_t);
 };
 

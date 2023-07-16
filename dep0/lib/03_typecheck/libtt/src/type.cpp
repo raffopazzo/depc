@@ -9,7 +9,7 @@ bool type_t::arr_t::operator==(type_t::arr_t const& that) const
     return std::tie(dom.get(), img.get()) == std::tie(that.dom.get(), that.img.get());
 }
 
-type_t type_t::var(std::string name)
+type_t type_t::var(source_text name)
 {
     return type_t(type_t::var_t(std::move(name)));
 }

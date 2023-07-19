@@ -8,9 +8,16 @@ KW_BOOL: 'bool';
 KW_ELSE: 'else';
 KW_FALSE: 'false';
 KW_IF: 'if';
-KW_INT: 'int';
+KW_I8_T: 'i8_t';
+KW_I16_T: 'i16_t';
+KW_I32_T: 'i32_t';
+KW_I64_T: 'i64_t';
 KW_RETURN: 'return';
 KW_TRUE: 'true';
+KW_U8_T: 'u8_t';
+KW_U16_T: 'u16_t';
+KW_U32_T: 'u32_t';
+KW_U64_T: 'u64_t';
 KW_UNIT_T: 'unit_t';
 
 LCURLY: '{';

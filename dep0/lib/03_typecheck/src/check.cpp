@@ -1,15 +1,86 @@
 #include "dep0/typecheck/check.hpp"
 #include "dep0/typecheck/returns_from_all_branches.hpp"
 
+#include <ranges>
 #include <sstream>
 
 namespace dep0::typecheck {
 
-expected<expr_t> type_assign(tt::context_t, parser::expr_t const&);
-
 static tt::derivation_t bool_derivation() { return tt::derivation_t(tt::derivation_t::form_t::primitive_bool()); }
-static tt::derivation_t int_derivation() { return tt::derivation_t(tt::derivation_t::form_t::primitive_int()); }
 static tt::derivation_t unit_derivation() { return tt::derivation_t(tt::derivation_t::form_t::primitive_unit()); }
+static tt::derivation_t i8_derivation() { return tt::derivation_t(tt::derivation_t::form_t::primitive_i8()); }
+static tt::derivation_t i16_derivation() { return tt::derivation_t(tt::derivation_t::form_t::primitive_i16()); }
+static tt::derivation_t i32_derivation() { return tt::derivation_t(tt::derivation_t::form_t::primitive_i32()); }
+static tt::derivation_t i64_derivation() { return tt::derivation_t(tt::derivation_t::form_t::primitive_i64()); }
+static tt::derivation_t u8_derivation() { return tt::derivation_t(tt::derivation_t::form_t::primitive_u8()); }
+static tt::derivation_t u16_derivation() { return tt::derivation_t(tt::derivation_t::form_t::primitive_u16()); }
+static tt::derivation_t u32_derivation() { return tt::derivation_t(tt::derivation_t::form_t::primitive_u32()); }
+static tt::derivation_t u64_derivation() { return tt::derivation_t(tt::derivation_t::form_t::primitive_u64()); }
+
+static expected<expr_t> type_assign(tt::context_t ctx, parser::expr_t const& x)
+{
+    struct visitor
+    {
+        tt::context_t const& ctx;
+        source_loc_t const& loc;
+
+        expected<expr_t> operator()(parser::expr_t::fun_call_t const& x) const
+        {
+            if (auto d = tt::type_assign(ctx, tt::term_t::var(x.name)))
+            {
+                auto type = type_from_derivation(*d);
+                return expr_t{{std::move(*d), type}, expr_t::fun_call_t{x.name}};
+            }
+            else
+            {
+                d.error().location = loc;
+                return error_t::from_error(std::move(d.error()), ctx);
+            }
+        }
+
+        expected<expr_t> operator()(parser::expr_t::boolean_constant_t const& x) const
+        {
+            return expr_t{
+                {bool_derivation(), type_from_derivation(bool_derivation())},
+                expr_t::boolean_constant_t{x.value}};
+        }
+
+        expected<expr_t> operator()(parser::expr_t::numeric_constant_t const& x) const
+        {
+            // use `check_numeric_expr()` instead
+            return error_t::from_error(dep0::error_t{"Cannot infer type of numeric constant", loc}, ctx);
+        }
+    private:
+        static type_t type_from_derivation(tt::derivation_t const& x)
+        {
+            struct visitor
+            {
+                tt::derivation_t const& d;
+                type_t operator()(tt::type_t::var_t const& x) const
+                {
+                    // WRONG `d` is the correct derivation of the value not of its type...
+                    if (x.name.view() == "bool") return type_t{d, type_t::bool_t{}};
+                    if (x.name.view() == "unit_t") return type_t{d, type_t::unit_t{}};
+                    if (x.name.view() == "i8_t") return type_t{d, type_t::i8_t{}};
+                    if (x.name.view() == "u8_t") return type_t{d, type_t::u8_t{}};
+                    if (x.name.view() == "i16_t") return type_t{d, type_t::i16_t{}};
+                    if (x.name.view() == "u16_t") return type_t{d, type_t::u16_t{}};
+                    if (x.name.view() == "i32_t") return type_t{d, type_t::i32_t{}};
+                    if (x.name.view() == "u32_t") return type_t{d, type_t::u32_t{}};
+                    if (x.name.view() == "i64_t") return type_t{d, type_t::i64_t{}};
+                    if (x.name.view() == "u64_t") return type_t{d, type_t::u64_t{}};
+                    __builtin_unreachable();
+                }
+                type_t operator()(tt::type_t::arr_t const& x) const
+                {
+                    __builtin_unreachable();
+                }
+            };
+            return std::visit(visitor{x}, tt::type_of(x).value);
+        }
+    };
+    return std::visit(visitor{ctx, x.properties}, x.value);
+}
 
 expected<module_t> check(tt::context_t ctx, parser::module_t const& x)
 {
@@ -60,23 +131,18 @@ expected<type_t> check(tt::context_t ctx, parser::type_t const& t)
 {
     struct visitor
     {
-        tt::context_t& ctx;
-        source_loc_t const& location;
-
-        expected<type_t> operator()(parser::type_t::bool_t const&) const
-        {
-            return type_t{bool_derivation(), type_t::bool_t{}};
-        }
-        expected<type_t> operator()(parser::type_t::int_t const&) const
-        {
-            return type_t{int_derivation(), type_t::int_t{}};
-        }
-        expected<type_t> operator()(parser::type_t::unit_t const&) const
-        {
-            return type_t{unit_derivation(), type_t::unit_t{}};
-        }
+        type_t operator()(parser::type_t::bool_t const&) const { return type_t{bool_derivation(), type_t::bool_t{}}; }
+        type_t operator()(parser::type_t::unit_t const&) const { return type_t{unit_derivation(), type_t::unit_t{}}; }
+        type_t operator()(parser::type_t::i8_t const&) const { return type_t{i8_derivation(), type_t::i8_t{}}; }
+        type_t operator()(parser::type_t::i16_t const&) const { return type_t{i16_derivation(), type_t::i16_t{}}; }
+        type_t operator()(parser::type_t::i32_t const&) const { return type_t{i32_derivation(), type_t::i32_t{}}; }
+        type_t operator()(parser::type_t::i64_t const&) const { return type_t{i64_derivation(), type_t::i64_t{}}; }
+        type_t operator()(parser::type_t::u8_t const&) const { return type_t{u8_derivation(), type_t::u8_t{}}; }
+        type_t operator()(parser::type_t::u16_t const&) const { return type_t{u16_derivation(), type_t::u16_t{}}; }
+        type_t operator()(parser::type_t::u32_t const&) const { return type_t{u32_derivation(), type_t::u32_t{}}; }
+        type_t operator()(parser::type_t::u64_t const&) const { return type_t{u64_derivation(), type_t::u64_t{}}; }
     };
-    return std::visit(visitor{ctx, t.properties}, t.value);
+    return expected<type_t>(std::visit(visitor{}, t.value));
 }
 
 expected<body_t> check(tt::context_t ctx, parser::body_t const& x, type_t const& return_type)
@@ -99,7 +165,7 @@ expected<stmt_t> check(tt::context_t ctx, parser::stmt_t const& s, type_t const&
     {
         tt::context_t const& ctx;
         type_t const& return_type;
-        source_loc_t const& location;
+        source_loc_t const& loc;
         expected<stmt_t> operator()(parser::stmt_t::fun_call_t const& x)
         {
             if (auto expr = type_assign(ctx, x.expr))
@@ -142,7 +208,7 @@ expected<stmt_t> check(tt::context_t ctx, parser::stmt_t const& s, type_t const&
                     err << "Expecting expression of type `",
                     tt::type_of(return_type.properties.derivation)
                 ) << '`';
-                return error_t::from_error(dep0::error_t{err.str(), location}, ctx, tt::type_of(return_type.properties.derivation));
+                return error_t::from_error(dep0::error_t{err.str(), loc}, ctx, tt::type_of(return_type.properties.derivation));
             }
             else if (auto expr = check(ctx, *x.expr, return_type))
                 return stmt_t{legal_stmt_t{}, stmt_t::return_t{std::move(*expr)}};
@@ -153,47 +219,140 @@ expected<stmt_t> check(tt::context_t ctx, parser::stmt_t const& s, type_t const&
     return std::visit(visitor{ctx, return_type, s.properties}, s.value);
 }
 
-expected<expr_t> type_assign(tt::context_t ctx, parser::expr_t const& x)
+static expected<expr_t> check_numeric_expr(
+    tt::context_t const& ctx,
+    parser::expr_t::numeric_constant_t const& x,
+    source_loc_t const& loc,
+    type_t const& expected_type)
 {
     struct visitor
     {
         tt::context_t const& ctx;
-        source_loc_t const& location;
-
-        expected<expr_t> operator()(parser::expr_t::fun_call_t const& x) const
+        parser::expr_t::numeric_constant_t const& x;
+        source_loc_t const& loc;
+        type_t const& expected_type;
+        expected<expr_t> operator()(type_t::bool_t const&) const
         {
-            if (auto d = tt::type_assign(ctx, tt::term_t::var(x.name)))
-                return expr_t{std::move(*d), expr_t::fun_call_t{x.name}};
-            else
-            {
-                d.error().location = location;
-                return error_t::from_error(std::move(d.error()), ctx);
-            }
+            return error_t::from_error(dep0::error_t{"Type mismatch between numeric constant and `bool`", loc}, ctx);
+        }
+        expected<expr_t> operator()(type_t::unit_t const&) const
+        {
+            return error_t::from_error(dep0::error_t{"Type mismatch between numeric constant and `unit_t`", loc}, ctx);
+        }
+        expected<expr_t> operator()(type_t::i8_t const& ty) const
+        {
+            std::string_view number = x.number.view();
+            skip_plus_or_minus(number);
+            skip_leading_zeros(number);
+            if (bigger_than(number, "127"))
+                return invalid_integer_number("i8_t");
+            return expr_t{{i8_derivation(), expected_type}, expr_t::numeric_constant_t{x.number}};
+        }
+        expected<expr_t> operator()(type_t::i16_t const&) const
+        {
+            std::string_view number = x.number.view();
+            skip_plus_or_minus(number);
+            skip_leading_zeros(number);
+            if (bigger_than(number, "32767"))
+                return invalid_integer_number("i16_t");
+            return expr_t{{i16_derivation(), expected_type}, expr_t::numeric_constant_t{x.number}};
+        }
+        expected<expr_t> operator()(type_t::i32_t const&) const
+        {
+            std::string_view number = x.number.view();
+            skip_plus_or_minus(number);
+            skip_leading_zeros(number);
+            if (bigger_than(number, "2147483647"))
+                return invalid_integer_number("i32_t");
+            return expr_t{{i32_derivation(), expected_type}, expr_t::numeric_constant_t{x.number}};
+        }
+        expected<expr_t> operator()(type_t::i64_t const&) const
+        {
+            std::string_view number = x.number.view();
+            skip_plus_or_minus(number);
+            skip_leading_zeros(number);
+            if (bigger_than(number, "9223372036854775807"))
+                return invalid_integer_number("i64_t");
+            return expr_t{{i64_derivation(), expected_type}, expr_t::numeric_constant_t{x.number}};
+        }
+        expected<expr_t> operator()(type_t::u8_t const&) const
+        {
+            std::string_view number = x.number.view();
+            skip_plus(number);
+            skip_leading_zeros(number);
+            if (bigger_than(number, "255"))
+                return invalid_integer_number("u8_t");
+            return expr_t{{u8_derivation(), expected_type}, expr_t::numeric_constant_t{x.number}};
+        }
+        expected<expr_t> operator()(type_t::u16_t const&) const
+        {
+            std::string_view number = x.number.view();
+            skip_plus(number);
+            skip_leading_zeros(number);
+            if (bigger_than(number, "65535"))
+                return invalid_integer_number("u16_t");
+            return expr_t{{u16_derivation(), expected_type}, expr_t::numeric_constant_t{x.number}};
+        }
+        expected<expr_t> operator()(type_t::u32_t const&) const
+        {
+            std::string_view number = x.number.view();
+            skip_plus(number);
+            skip_leading_zeros(number);
+            if (bigger_than(number, "4294967295"))
+                return invalid_integer_number("u32_t");
+            return expr_t{{u32_derivation(), expected_type}, expr_t::numeric_constant_t{x.number}};
+        }
+        expected<expr_t> operator()(type_t::u64_t const&) const
+        {
+            std::string_view number = x.number.view();
+            skip_plus(number);
+            skip_leading_zeros(number);
+            if (bigger_than(number, "18446744073709551615"))
+                return invalid_integer_number("u64_t");
+            return expr_t{{u64_derivation(), expected_type}, expr_t::numeric_constant_t{x.number}};
         }
 
-        expected<expr_t> operator()(parser::expr_t::boolean_constant_t const& x) const
+    private:
+        static void skip_plus(std::string_view& s)
         {
-            return expr_t{bool_derivation(), expr_t::boolean_constant_t{x.value}};
+            if (s.starts_with('+'))
+                s.remove_prefix(1);
         }
-
-        expected<expr_t> operator()(parser::expr_t::numeric_constant_t const& x) const
+        static void skip_plus_or_minus(std::string_view& s)
         {
-            // TODO should check that the string represents a valid integer, for now we say that only `0` is valid
-            // the test per se is easy, I really need to decide on what primitive types I want, possible choices are:
-            // - `[unsigned] (short|int|long|long long)` with platform defined width, like C
-            // - `[iu](8|16|32|64|128)_t` with fixed width
-            // - both
-            // - both but `short, int, etc` have fixed width and `word_t, quadword_t` for platform stuff
-            if (x.number != "0")
-                return error_t::from_error(dep0::error_t{"Invalid integer number", location}, ctx);
-            // TODO numeric constant can also be used for other integer types
-            return expr_t{int_derivation(), expr_t::numeric_constant_t{x.number}};
+            if (s.starts_with('+') or s.starts_with('-'))
+                s.remove_prefix(1);
+        }
+        static void skip_leading_zeros(std::string_view& s)
+        {
+            while (not s.empty() and s[0] == '0')
+                s.remove_prefix(1);
+        }
+        // assuming `a` and `b` represent positive integer numbers without leading 0s, returns whether `a > b`
+        static bool bigger_than(std::string_view a, std::string_view b)
+        {
+            if (a.size() > b.size())
+                return true;
+            if (a.size() == b.size())
+                for (auto const i: std::views::iota(0ul, a.size()))
+                    if (a[i] != b[i]) return a[i] > b[i];
+            return false;
+        }
+        expected<expr_t> invalid_integer_number(std::string_view const type) const
+        {
+            std::ostringstream err;
+            err << "Numeric constant does not fit inside `" << type << '`';
+            return error_t::from_error(dep0::error_t{err.str(), loc}, ctx);
         }
     };
-    return std::visit(visitor{ctx, x.properties}, x.value);
+    return std::visit(visitor{ctx, x, loc, expected_type}, expected_type.value);
 }
+
 expected<expr_t> check(tt::context_t ctx, parser::expr_t const& x, type_t const& expected_type)
 {
+    if (auto const* const p = std::get_if<parser::expr_t::numeric_constant_t>(&x.value))
+        return check_numeric_expr(ctx, *p, x.properties, expected_type);
+
     auto expr = type_assign(ctx, x);
     if (not expr)
     {

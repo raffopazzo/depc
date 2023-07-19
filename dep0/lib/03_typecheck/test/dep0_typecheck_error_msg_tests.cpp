@@ -64,7 +64,7 @@ BOOST_AUTO_TEST_CASE(test_0002)
 {
     auto const result = check(tt::context_t(), open("test_0002.depc"));
     BOOST_TEST_REQUIRE(result.has_error());
-    BOOST_TEST(result.error().error == "Expecting expression of type `int`");
+    BOOST_TEST(result.error().error == "Expecting expression of type `i32_t`");
     BOOST_TEST(result.error().location.has_value());
 }
 
@@ -73,7 +73,7 @@ BOOST_AUTO_TEST_CASE(test_0004)
     auto const module = open("test_0004.depc");
     auto const result = check(tt::context_t(), module);
     BOOST_TEST_REQUIRE(result.has_error());
-    BOOST_TEST(result.error().error == "Expression of type `int` does not typecheck with expected type `unit_t`");
+    BOOST_TEST(result.error().error == "Type mismatch between numeric constant and `unit_t`");
     BOOST_TEST(result.error().location.has_value());
 }
 
@@ -82,7 +82,7 @@ BOOST_AUTO_TEST_CASE(test_0008)
     auto const module = open("test_0008.depc");
     auto const result = check(tt::context_t(), module);
     BOOST_TEST_REQUIRE(result.has_error());
-    BOOST_TEST(result.error().error == "Expression of type `bool` does not typecheck with expected type `int`");
+    BOOST_TEST(result.error().error == "Expression of type `bool` does not typecheck with expected type `i32_t`");
     BOOST_TEST(result.error().location.has_value());
 }
 
@@ -91,7 +91,7 @@ BOOST_AUTO_TEST_CASE(test_0009)
     auto const module = open("test_0009.depc");
     auto const result = check(tt::context_t(), module);
     BOOST_TEST_REQUIRE(result.has_error());
-    BOOST_TEST(result.error().error == "Expression of type `int` does not typecheck with expected type `bool`");
+    BOOST_TEST(result.error().error == "Type mismatch between numeric constant and `bool`");
     BOOST_TEST(result.error().location.has_value());
 }
 
@@ -109,7 +109,7 @@ BOOST_AUTO_TEST_CASE(test_0012)
     auto const module = open("test_0012.depc");
     auto const result = check(tt::context_t(), module);
     BOOST_TEST_REQUIRE(result.has_error());
-    BOOST_TEST(result.error().error == "Expression of type `bool` does not typecheck with expected type `int`");
+    BOOST_TEST(result.error().error == "Expression of type `bool` does not typecheck with expected type `i32_t`");
     BOOST_TEST(result.error().location.has_value());
 }
 

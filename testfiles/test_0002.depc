@@ -1,4 +1,4 @@
-int main()
+i32_t main()
 {
     return; // error: this does not typecheck
 }

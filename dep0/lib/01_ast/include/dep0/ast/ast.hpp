@@ -21,14 +21,28 @@ template <Properties P> struct expr_t;
 
 // definitions
 
+enum class sign_t { signed_v, unsigned_v };
+enum class width_t { _8, _16, _32, _64 };
+
 template <Properties P>
 struct type_t
 {
+    template <sign_t S, width_t W>
+    struct integer_t { bool operator==(integer_t const&) const { return true; } };
+
+    using i8_t = integer_t<sign_t::signed_v, width_t::_8>;
+    using i16_t = integer_t<sign_t::signed_v, width_t::_16>;
+    using i32_t = integer_t<sign_t::signed_v, width_t::_32>;
+    using i64_t = integer_t<sign_t::signed_v, width_t::_64>;
+    using u8_t = integer_t<sign_t::unsigned_v, width_t::_8>;
+    using u16_t = integer_t<sign_t::unsigned_v, width_t::_16>;
+    using u32_t = integer_t<sign_t::unsigned_v, width_t::_32>;
+    using u64_t = integer_t<sign_t::unsigned_v, width_t::_64>;
+
     using properties_t = typename P::type_properties_type;
     struct bool_t { bool operator==(bool_t const&) const { return true; } };
-    struct int_t { bool operator==(int_t const&) const { return true; } };
     struct unit_t { bool operator==(unit_t const&) const { return true; } };
-    using value_t = std::variant<bool_t, int_t, unit_t>;
+    using value_t = std::variant<bool_t, unit_t, i8_t, i16_t, i32_t, i64_t, u8_t, u16_t, u32_t, u64_t>;
 
     properties_t properties;
     value_t value;

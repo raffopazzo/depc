@@ -13,14 +13,49 @@ derivation_t::form_t derivation_t::form_t::primitive_bool()
     return derivation_t::form_t(type_t::var(source_text::from_literal("bool")));
 }
 
-derivation_t::form_t derivation_t::form_t::primitive_int()
-{
-    return derivation_t::form_t(type_t::var(source_text::from_literal("int")));
-}
-
 derivation_t::form_t derivation_t::form_t::primitive_unit()
 {
     return derivation_t::form_t(type_t::var(source_text::from_literal("unit_t")));
+}
+
+derivation_t::form_t derivation_t::form_t::primitive_i8()
+{
+    return derivation_t::form_t(type_t::var(source_text::from_literal("i8_t")));
+}
+
+derivation_t::form_t derivation_t::form_t::primitive_i16()
+{
+    return derivation_t::form_t(type_t::var(source_text::from_literal("i16_t")));
+}
+
+derivation_t::form_t derivation_t::form_t::primitive_i32()
+{
+    return derivation_t::form_t(type_t::var(source_text::from_literal("i32_t")));
+}
+
+derivation_t::form_t derivation_t::form_t::primitive_i64()
+{
+    return derivation_t::form_t(type_t::var(source_text::from_literal("i64_t")));
+}
+
+derivation_t::form_t derivation_t::form_t::primitive_u8()
+{
+    return derivation_t::form_t(type_t::var(source_text::from_literal("u8_t")));
+}
+
+derivation_t::form_t derivation_t::form_t::primitive_u16()
+{
+    return derivation_t::form_t(type_t::var(source_text::from_literal("u16_t")));
+}
+
+derivation_t::form_t derivation_t::form_t::primitive_u32()
+{
+    return derivation_t::form_t(type_t::var(source_text::from_literal("u32_t")));
+}
+
+derivation_t::form_t derivation_t::form_t::primitive_u64()
+{
+    return derivation_t::form_t(type_t::var(source_text::from_literal("u64_t")));
 }
 
 derivation_t::var_t::var_t(context_t ctx, term_t::var_t var, type_t ty) :

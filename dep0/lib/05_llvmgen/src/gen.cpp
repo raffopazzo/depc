@@ -29,7 +29,7 @@ struct snippet_t
 
 // all gen functions must be forward-declared here
 
-static llvm::Type* gen_type(llvm::Module&, typecheck::type_t const&);
+static llvm::Type* gen_type(llvm::Module&, typecheck::tt::type_t const&);
 static llvm::Value* gen_fun(context_t&, llvm::Module& , typecheck::func_def_t const&);
 static snippet_t gen_body(
     context_t&,
@@ -60,30 +60,41 @@ expected<unique_ref<llvm::Module>> gen(
 
 // all gen functions must be implemented here
 
-llvm::Type* gen_type(llvm::LLVMContext& llvm_ctx, typecheck::type_t const& x)
+llvm::Type* gen_type(llvm::LLVMContext& llvm_ctx, typecheck::tt::type_t const& x)
 {
     struct visitor
     {
         llvm::LLVMContext& llvm_ctx;
-        llvm::Type* operator()(typecheck::type_t::bool_t const&) { return llvm::Type::getInt1Ty(llvm_ctx); }
-        // this may or may not be fine depending on how LLVM defines `void` (i.e. what properties it has)
-        // for instance, what does it mean to have an array of `void` types in LLVM?
-        llvm::Type* operator()(typecheck::type_t::unit_t const&) { return llvm::Type::getVoidTy(llvm_ctx); }
-        llvm::Type* operator()(typecheck::type_t::i8_t const&) { return llvm::Type::getInt8Ty(llvm_ctx); }
-        llvm::Type* operator()(typecheck::type_t::i16_t const&) { return llvm::Type::getInt16Ty(llvm_ctx); }
-        llvm::Type* operator()(typecheck::type_t::i32_t const&) { return llvm::Type::getInt32Ty(llvm_ctx); }
-        llvm::Type* operator()(typecheck::type_t::i64_t const&) { return llvm::Type::getInt64Ty(llvm_ctx); }
-        llvm::Type* operator()(typecheck::type_t::u8_t const&) { return llvm::Type::getInt8Ty(llvm_ctx); }
-        llvm::Type* operator()(typecheck::type_t::u16_t const&) { return llvm::Type::getInt16Ty(llvm_ctx); }
-        llvm::Type* operator()(typecheck::type_t::u32_t const&) { return llvm::Type::getInt32Ty(llvm_ctx); }
-        llvm::Type* operator()(typecheck::type_t::u64_t const&) { return llvm::Type::getInt64Ty(llvm_ctx); }
+        llvm::Type* operator()(typecheck::tt::type_t::var_t const& x)
+        {
+            if (x.name.view() == "bool") return llvm::Type::getInt1Ty(llvm_ctx);
+            // this may or may not be fine depending on how LLVM defines `void` (i.e. what properties it has)
+            // for instance, what does it mean to have an array of `void` types in LLVM?
+            if (x.name.view() == "unit_t") return llvm::Type::getVoidTy(llvm_ctx);
+            if (x.name.view() == "i8_t") return llvm::Type::getInt8Ty(llvm_ctx);
+            if (x.name.view() == "i16_t") return llvm::Type::getInt16Ty(llvm_ctx);
+            if (x.name.view() == "i32_t") return llvm::Type::getInt32Ty(llvm_ctx);
+            if (x.name.view() == "i64_t") return llvm::Type::getInt64Ty(llvm_ctx);
+            if (x.name.view() == "u8_t") return llvm::Type::getInt8Ty(llvm_ctx);
+            if (x.name.view() == "u16_t") return llvm::Type::getInt16Ty(llvm_ctx);
+            if (x.name.view() == "u32_t") return llvm::Type::getInt32Ty(llvm_ctx);
+            if (x.name.view() == "u64_t") return llvm::Type::getInt64Ty(llvm_ctx);
+            assert(false);
+            return nullptr;
+        }
+        llvm::Type* operator()(typecheck::tt::type_t::arr_t const& x)
+        {
+            assert(false);
+            return nullptr;
+        }
     };
     return std::visit(visitor{llvm_ctx}, x.value);
 }
 
 llvm::Value* gen_fun(context_t& ctx, llvm::Module& llvm_module, typecheck::func_def_t const& x)
 {
-    auto const funtype = llvm::FunctionType::get(gen_type(llvm_module.getContext(), x.type), {}, false);
+    auto const& ret_type = typecheck::tt::type_of(x.type.properties.derivation);
+    auto const funtype = llvm::FunctionType::get(gen_type(llvm_module.getContext(), ret_type), {}, false);
     auto const func = llvm::Function::Create(funtype, llvm::Function::ExternalLinkage, x.name.view(), llvm_module);
     ctx.fun_types[x.name] = funtype;
     ctx.values[x.name] = func;
@@ -196,7 +207,11 @@ llvm::Value* gen_val(context_t& ctx, llvm::IRBuilder<>& builder, typecheck::expr
         }
         llvm::Value* operator()(typecheck::expr_t::numeric_constant_t const& x)
         {
-            auto const type = cast<llvm::IntegerType>(gen_type(builder.getContext(), expr.properties.type));
+            auto const type =
+                cast<llvm::IntegerType>(
+                    gen_type(
+                        builder.getContext(),
+                        typecheck::tt::type_of(expr.properties.derivation)));
             return llvm::ConstantInt::get(type, x.number.view(), 10);
         }
         llvm::Value* operator()(typecheck::expr_t::fun_call_t const& x)

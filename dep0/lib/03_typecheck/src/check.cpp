@@ -27,10 +27,7 @@ static expected<expr_t> type_assign(tt::context_t ctx, parser::expr_t const& x)
         expected<expr_t> operator()(parser::expr_t::fun_call_t const& x) const
         {
             if (auto d = tt::type_assign(ctx, tt::term_t::var(x.name)))
-            {
-                auto type = type_from_derivation(*d);
-                return expr_t{{std::move(*d), type}, expr_t::fun_call_t{x.name}};
-            }
+                return expr_t{std::move(*d), expr_t::fun_call_t{x.name}};
             else
             {
                 d.error().location = loc;
@@ -40,43 +37,13 @@ static expected<expr_t> type_assign(tt::context_t ctx, parser::expr_t const& x)
 
         expected<expr_t> operator()(parser::expr_t::boolean_constant_t const& x) const
         {
-            return expr_t{
-                {bool_derivation(), type_from_derivation(bool_derivation())},
-                expr_t::boolean_constant_t{x.value}};
+            return expr_t{bool_derivation(), expr_t::boolean_constant_t{x.value}};
         }
 
         expected<expr_t> operator()(parser::expr_t::numeric_constant_t const& x) const
         {
             // use `check_numeric_expr()` instead
             return error_t::from_error(dep0::error_t{"Cannot infer type of numeric constant", loc}, ctx);
-        }
-    private:
-        static type_t type_from_derivation(tt::derivation_t const& x)
-        {
-            struct visitor
-            {
-                tt::derivation_t const& d;
-                type_t operator()(tt::type_t::var_t const& x) const
-                {
-                    // WRONG `d` is the correct derivation of the value not of its type...
-                    if (x.name.view() == "bool") return type_t{d, type_t::bool_t{}};
-                    if (x.name.view() == "unit_t") return type_t{d, type_t::unit_t{}};
-                    if (x.name.view() == "i8_t") return type_t{d, type_t::i8_t{}};
-                    if (x.name.view() == "u8_t") return type_t{d, type_t::u8_t{}};
-                    if (x.name.view() == "i16_t") return type_t{d, type_t::i16_t{}};
-                    if (x.name.view() == "u16_t") return type_t{d, type_t::u16_t{}};
-                    if (x.name.view() == "i32_t") return type_t{d, type_t::i32_t{}};
-                    if (x.name.view() == "u32_t") return type_t{d, type_t::u32_t{}};
-                    if (x.name.view() == "i64_t") return type_t{d, type_t::i64_t{}};
-                    if (x.name.view() == "u64_t") return type_t{d, type_t::u64_t{}};
-                    __builtin_unreachable();
-                }
-                type_t operator()(tt::type_t::arr_t const& x) const
-                {
-                    __builtin_unreachable();
-                }
-            };
-            return std::visit(visitor{x}, tt::type_of(x).value);
         }
     };
     return std::visit(visitor{ctx, x.properties}, x.value);
@@ -246,7 +213,7 @@ static expected<expr_t> check_numeric_expr(
             skip_leading_zeros(number);
             if (bigger_than(number, "127"))
                 return invalid_integer_number("i8_t");
-            return expr_t{{i8_derivation(), expected_type}, expr_t::numeric_constant_t{x.number}};
+            return expr_t{i8_derivation(), expr_t::numeric_constant_t{x.number}};
         }
         expected<expr_t> operator()(type_t::i16_t const&) const
         {
@@ -255,7 +222,7 @@ static expected<expr_t> check_numeric_expr(
             skip_leading_zeros(number);
             if (bigger_than(number, "32767"))
                 return invalid_integer_number("i16_t");
-            return expr_t{{i16_derivation(), expected_type}, expr_t::numeric_constant_t{x.number}};
+            return expr_t{i16_derivation(), expr_t::numeric_constant_t{x.number}};
         }
         expected<expr_t> operator()(type_t::i32_t const&) const
         {
@@ -264,7 +231,7 @@ static expected<expr_t> check_numeric_expr(
             skip_leading_zeros(number);
             if (bigger_than(number, "2147483647"))
                 return invalid_integer_number("i32_t");
-            return expr_t{{i32_derivation(), expected_type}, expr_t::numeric_constant_t{x.number}};
+            return expr_t{i32_derivation(), expr_t::numeric_constant_t{x.number}};
         }
         expected<expr_t> operator()(type_t::i64_t const&) const
         {
@@ -273,7 +240,7 @@ static expected<expr_t> check_numeric_expr(
             skip_leading_zeros(number);
             if (bigger_than(number, "9223372036854775807"))
                 return invalid_integer_number("i64_t");
-            return expr_t{{i64_derivation(), expected_type}, expr_t::numeric_constant_t{x.number}};
+            return expr_t{i64_derivation(), expr_t::numeric_constant_t{x.number}};
         }
         expected<expr_t> operator()(type_t::u8_t const&) const
         {
@@ -282,7 +249,7 @@ static expected<expr_t> check_numeric_expr(
             skip_leading_zeros(number);
             if (bigger_than(number, "255"))
                 return invalid_integer_number("u8_t");
-            return expr_t{{u8_derivation(), expected_type}, expr_t::numeric_constant_t{x.number}};
+            return expr_t{u8_derivation(), expr_t::numeric_constant_t{x.number}};
         }
         expected<expr_t> operator()(type_t::u16_t const&) const
         {
@@ -291,7 +258,7 @@ static expected<expr_t> check_numeric_expr(
             skip_leading_zeros(number);
             if (bigger_than(number, "65535"))
                 return invalid_integer_number("u16_t");
-            return expr_t{{u16_derivation(), expected_type}, expr_t::numeric_constant_t{x.number}};
+            return expr_t{u16_derivation(), expr_t::numeric_constant_t{x.number}};
         }
         expected<expr_t> operator()(type_t::u32_t const&) const
         {
@@ -300,7 +267,7 @@ static expected<expr_t> check_numeric_expr(
             skip_leading_zeros(number);
             if (bigger_than(number, "4294967295"))
                 return invalid_integer_number("u32_t");
-            return expr_t{{u32_derivation(), expected_type}, expr_t::numeric_constant_t{x.number}};
+            return expr_t{u32_derivation(), expr_t::numeric_constant_t{x.number}};
         }
         expected<expr_t> operator()(type_t::u64_t const&) const
         {
@@ -309,7 +276,7 @@ static expected<expr_t> check_numeric_expr(
             skip_leading_zeros(number);
             if (bigger_than(number, "18446744073709551615"))
                 return invalid_integer_number("u64_t");
-            return expr_t{{u64_derivation(), expected_type}, expr_t::numeric_constant_t{x.number}};
+            return expr_t{u64_derivation(), expr_t::numeric_constant_t{x.number}};
         }
 
     private:

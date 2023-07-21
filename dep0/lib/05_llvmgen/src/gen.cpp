@@ -81,10 +81,30 @@ llvm::Type* gen_type(context_t const&, llvm::LLVMContext& llvm_ctx, typecheck::t
     return std::visit(visitor{llvm_ctx}, x.value);
 }
 
+static void gen_fun_attributes(llvm::Function* const func, typecheck::func_def_t const& x)
+{
+    struct return_attr_visitor
+    {
+        llvm::Attribute::AttrKind operator()(typecheck::type_t::bool_t const&) const { return llvm::Attribute::None; }
+        llvm::Attribute::AttrKind operator()(typecheck::type_t::unit_t const&) const { return llvm::Attribute::None;; }
+        llvm::Attribute::AttrKind operator()(typecheck::type_t::i8_t const&) const { return llvm::Attribute::SExt; }
+        llvm::Attribute::AttrKind operator()(typecheck::type_t::i16_t const&) const { return llvm::Attribute::SExt; }
+        llvm::Attribute::AttrKind operator()(typecheck::type_t::i32_t const&) const { return llvm::Attribute::SExt; }
+        llvm::Attribute::AttrKind operator()(typecheck::type_t::i64_t const&) const { return llvm::Attribute::SExt; }
+        llvm::Attribute::AttrKind operator()(typecheck::type_t::u8_t const&) const { return llvm::Attribute::ZExt; }
+        llvm::Attribute::AttrKind operator()(typecheck::type_t::u16_t const&) const { return llvm::Attribute::ZExt; }
+        llvm::Attribute::AttrKind operator()(typecheck::type_t::u32_t const&) const { return llvm::Attribute::ZExt; }
+        llvm::Attribute::AttrKind operator()(typecheck::type_t::u64_t const&) const { return llvm::Attribute::ZExt; }
+    };
+    if (auto const attr = std::visit(return_attr_visitor{}, x.type.value); attr != llvm::Attribute::None)
+        func->addAttribute(llvm::AttributeList::ReturnIndex, attr);
+}
+
 llvm::Value* gen_fun(context_t& ctx, llvm::Module& llvm_module, typecheck::func_def_t const& x)
 {
     auto const funtype = llvm::FunctionType::get(gen_type(ctx, llvm_module.getContext(), x.type), {}, false);
     auto const func = llvm::Function::Create(funtype, llvm::Function::ExternalLinkage, x.name.view(), llvm_module);
+    gen_fun_attributes(func, x);
     ctx.fun_types[x.name] = funtype;
     ctx.values[x.name] = func;
     auto snippet = gen_body(ctx, llvm_module.getContext(), x.body, "entry", func);

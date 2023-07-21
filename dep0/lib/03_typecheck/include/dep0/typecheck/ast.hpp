@@ -10,7 +10,6 @@
 namespace dep0::typecheck {
 
 struct legal_module_t;
-struct legal_type_def_t;
 struct legal_func_def_t;
 struct legal_type_t;
 struct legal_body_t;
@@ -20,7 +19,6 @@ struct legal_expr_t;
 struct properties_t
 {
     using module_properties_type = legal_module_t;
-    using type_def_properties_type = legal_type_def_t;
     using func_def_properties_type = legal_func_def_t;
     using type_properties_type = legal_type_t;
     using body_properties_type = legal_body_t;
@@ -30,7 +28,6 @@ struct properties_t
 static_assert(ast::Properties<properties_t>);
 
 using module_t = ast::module_t<properties_t>;
-using type_def_t = ast::type_def_t<properties_t>;
 using func_def_t = ast::func_def_t<properties_t>;
 using type_t = ast::type_t<properties_t>;
 using body_t = ast::body_t<properties_t>;
@@ -41,11 +38,6 @@ struct legal_module_t
 {
     // here I would like to express that a module is legal if *all* its functions, types, etc are legal;
     // but this requires dependent types... which is why I'm writing DepC in the first place
-};
-
-struct legal_type_def_t
-{
-    // TODO should there be a derivation here? from the formation rule I guess?
 };
 
 struct legal_func_def_t

@@ -14,12 +14,20 @@ struct derivation_t
 {
     using rec_t = boost::recursive_wrapper<derivation_t>;
 
+    static derivation_t bool_t();
+    static derivation_t unit_t();
+    static derivation_t i8_t();
+    static derivation_t i16_t();
+    static derivation_t i32_t();
+    static derivation_t i64_t();
+    static derivation_t u8_t();
+    static derivation_t u16_t();
+    static derivation_t u32_t();
+    static derivation_t u64_t();
+
     struct form_t
     {
         auto const& ty() const { return m_ty; }
-
-        static form_t primitive_bool();
-        static form_t primitive_unit();
 
         form_t(form_t const&) = default;
         form_t(form_t&&) = default;

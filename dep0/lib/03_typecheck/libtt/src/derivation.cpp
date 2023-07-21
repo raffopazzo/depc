@@ -4,19 +4,46 @@
 
 namespace dep0::typecheck::tt {
 
+struct derivation_rules
+{
+    static derivation_t form(/*context_t ctx,*/ type_t ty)
+    {
+        return derivation_t(derivation_t::form_t(std::move(ty)));
+    }
+
+    static derivation_t var(context_t ctx, term_t::var_t x, type_t t)
+    {
+        return derivation_t(derivation_t::var_t(std::move(ctx), std::move(x), std::move(t)));
+    }
+
+    static derivation_t app(context_t ctx, derivation_t fun, derivation_t arg)
+    {
+        auto const fun_type = type_of(fun);
+        auto img_type = std::get<type_t::arr_t>(fun_type.value).img.get();
+        return derivation_t(derivation_t::app_t(std::move(ctx), std::move(fun), std::move(arg), std::move(img_type)));
+    }
+
+    static derivation_t abs(context_t ctx, term_t::var_t var, type_t var_type, derivation_t body)
+    {
+        auto ty = type_t::arr(var_type, type_of(body));
+        return derivation_t(derivation_t::abs_t(std::move(ctx), std::move(var), std::move(var_type), std::move(body), ty));
+    }
+};
+
+derivation_t derivation_t::bool_t() { return derivation_rules::form(type_t::var(source_text::from_literal("bool"))); }
+derivation_t derivation_t::unit_t() { return derivation_rules::form(type_t::var(source_text::from_literal("unit_t"))); }
+derivation_t derivation_t::i8_t() { return derivation_rules::form(type_t::var(source_text::from_literal("i8_t"))); }
+derivation_t derivation_t::i16_t() { return derivation_rules::form(type_t::var(source_text::from_literal("i16_t"))); }
+derivation_t derivation_t::i32_t() { return derivation_rules::form(type_t::var(source_text::from_literal("i32_t"))); }
+derivation_t derivation_t::i64_t() { return derivation_rules::form(type_t::var(source_text::from_literal("i64_t"))); }
+derivation_t derivation_t::u8_t() { return derivation_rules::form(type_t::var(source_text::from_literal("u8_t"))); }
+derivation_t derivation_t::u16_t() { return derivation_rules::form(type_t::var(source_text::from_literal("u16_t"))); }
+derivation_t derivation_t::u32_t() { return derivation_rules::form(type_t::var(source_text::from_literal("u32_t"))); }
+derivation_t derivation_t::u64_t() { return derivation_rules::form(type_t::var(source_text::from_literal("u64_t"))); }
+
 derivation_t::form_t::form_t(type_t ty) :
     m_ty(std::move(ty))
 { }
-
-derivation_t::form_t derivation_t::form_t::primitive_bool()
-{
-    return derivation_t::form_t(type_t::var(source_text::from_literal("bool")));
-}
-
-derivation_t::form_t derivation_t::form_t::primitive_unit()
-{
-    return derivation_t::form_t(type_t::var(source_text::from_literal("unit_t")));
-}
 
 derivation_t::var_t::var_t(context_t ctx, term_t::var_t var, type_t ty) :
     m_ctx(std::move(ctx)),
@@ -48,32 +75,6 @@ type_t const& type_of(derivation_t const& d)
 {
     return std::visit([] (auto const& d) -> auto const& { return d.ty(); }, d.value);
 }
-
-struct derivation_rules
-{
-    static derivation_t form(/*context_t ctx,*/ type_t ty)
-    {
-        return derivation_t(derivation_t::form_t(std::move(ty)));
-    }
-
-    static derivation_t var(context_t ctx, term_t::var_t x, type_t t)
-    {
-        return derivation_t(derivation_t::var_t(std::move(ctx), std::move(x), std::move(t)));
-    }
-
-    static derivation_t app(context_t ctx, derivation_t fun, derivation_t arg)
-    {
-        auto const fun_type = type_of(fun);
-        auto img_type = std::get<type_t::arr_t>(fun_type.value).img.get();
-        return derivation_t(derivation_t::app_t(std::move(ctx), std::move(fun), std::move(arg), std::move(img_type)));
-    }
-
-    static derivation_t abs(context_t ctx, term_t::var_t var, type_t var_type, derivation_t body)
-    {
-        auto ty = type_t::arr(var_type, type_of(body));
-        return derivation_t(derivation_t::abs_t(std::move(ctx), std::move(var), std::move(var_type), std::move(body), ty));
-    }
-};
 
 expected<derivation_t> type_assign(context_t const& ctx, type_t::var_t const& x)
 {

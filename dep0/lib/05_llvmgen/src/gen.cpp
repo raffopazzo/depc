@@ -30,7 +30,6 @@ struct snippet_t
 
 // all gen functions must be forward-declared here
 
-static llvm::Type* gen_type(llvm::LLVMContext&, typecheck::type_def_t const&);
 static llvm::Type* gen_type(context_t const&, llvm::LLVMContext&, typecheck::type_t const&);
 static llvm::Value* gen_fun(context_t&, llvm::Module& , typecheck::func_def_t const&);
 static snippet_t gen_body(
@@ -49,9 +48,7 @@ expected<unique_ref<llvm::Module>> gen(
 {
     context_t ctx;
     auto llvm_module = make_ref<llvm::Module>(name, llvm_ctx);
-    // TODO: allow declarations in any order with 2 pass (both for types and functions?)
-    for (auto const& t: m.type_defs)
-        ctx.types[t.name] = gen_type(llvm_ctx, t);
+    // TODO: allow declarations in any order with 2 pass
     for (auto const& f: m.func_defs)
         gen_fun(ctx, llvm_module.get(), f);
 
@@ -63,53 +60,25 @@ expected<unique_ref<llvm::Module>> gen(
 }
 
 // all gen functions must be implemented here
-llvm::Type* gen_type(llvm::LLVMContext& llvm_ctx, typecheck::type_def_t const& x)
+llvm::Type* gen_type(context_t const&, llvm::LLVMContext& llvm_ctx, typecheck::type_t const& x)
 {
     struct visitor
     {
         llvm::LLVMContext& llvm_ctx;
-        llvm::Type* operator()(typecheck::type_def_t::integer_t const& x)
-        {
-            // TOOD what about sign?
-            switch (x.width)
-            {
-            case ast::width_t::_8: return llvm::Type::getInt8Ty(llvm_ctx);
-            case ast::width_t::_16: return llvm::Type::getInt16Ty(llvm_ctx);
-            case ast::width_t::_32: return llvm::Type::getInt32Ty(llvm_ctx);
-            case ast::width_t::_64: return llvm::Type::getInt64Ty(llvm_ctx);
-            default: __builtin_unreachable();
-            }
-        }
+        llvm::Type* operator()(typecheck::type_t::bool_t const&) { return llvm::Type::getInt1Ty(llvm_ctx); }
+        // this may or may not be fine depending on how LLVM defines `void` (i.e. what properties it has)
+        // for instance, what does it mean to have an array of `void` types in LLVM?
+        llvm::Type* operator()(typecheck::type_t::unit_t const&) { return llvm::Type::getVoidTy(llvm_ctx); }
+        llvm::Type* operator()(typecheck::type_t::i8_t const&) { return llvm::Type::getInt8Ty(llvm_ctx); }
+        llvm::Type* operator()(typecheck::type_t::i16_t const&) { return llvm::Type::getInt16Ty(llvm_ctx); }
+        llvm::Type* operator()(typecheck::type_t::i32_t const&) { return llvm::Type::getInt32Ty(llvm_ctx); }
+        llvm::Type* operator()(typecheck::type_t::i64_t const&) { return llvm::Type::getInt64Ty(llvm_ctx); }
+        llvm::Type* operator()(typecheck::type_t::u8_t const&) { return llvm::Type::getInt8Ty(llvm_ctx); }
+        llvm::Type* operator()(typecheck::type_t::u16_t const&) { return llvm::Type::getInt16Ty(llvm_ctx); }
+        llvm::Type* operator()(typecheck::type_t::u32_t const&) { return llvm::Type::getInt32Ty(llvm_ctx); }
+        llvm::Type* operator()(typecheck::type_t::u64_t const&) { return llvm::Type::getInt64Ty(llvm_ctx); }
     };
     return std::visit(visitor{llvm_ctx}, x.value);
-}
-
-llvm::Type* gen_type(context_t const& ctx, llvm::LLVMContext& llvm_ctx, typecheck::type_t const& x)
-{
-    struct visitor
-    {
-        context_t const& ctx;
-        llvm::LLVMContext& llvm_ctx;
-        llvm::Type* operator()(typecheck::type_t::bool_t const& x)
-        {
-            return llvm::Type::getInt1Ty(llvm_ctx);
-        }
-
-        llvm::Type* operator()(typecheck::type_t::unit_t const& x)
-        {
-            // this may or may not be fine depending on how LLVM defines `void` (i.e. what properties it has)
-            // for instance, what does it mean to have an array of `void` types in LLVM?
-            return llvm::Type::getVoidTy(llvm_ctx);
-        }
-
-        llvm::Type* operator()(typecheck::type_t::type_ref_t const& x)
-        {
-            auto const it = ctx.types.find(x.name);
-            assert(it != ctx.types.end());
-            return it->second;
-        }
-    };
-    return std::visit(visitor{ctx, llvm_ctx}, x.value);
 }
 
 llvm::Value* gen_fun(context_t& ctx, llvm::Module& llvm_module, typecheck::func_def_t const& x)

@@ -91,8 +91,7 @@ int main(int argc, char** argv)
             llvm::WithColor::error(llvm::errs(), f) << "Parse error: " << str.str() << '\n';
             return 1;
         }
-        dep0::typecheck::tt::context_t ctx;
-        auto typechecked_module = dep0::typecheck::check(ctx, *parsed_module);
+        auto typechecked_module = dep0::typecheck::check(*parsed_module);
         if (not typechecked_module)
         {
             std::ostringstream str;

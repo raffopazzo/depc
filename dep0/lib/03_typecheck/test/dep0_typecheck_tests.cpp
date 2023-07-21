@@ -20,7 +20,7 @@ struct Fixture
             dep0::pretty_print(res.message().stream(), parse_result.error());
             return res;
         }
-        auto check_result = dep0::typecheck::check(dep0::typecheck::tt::context_t(), *parse_result);
+        auto check_result = dep0::typecheck::check(*parse_result);
         if (check_result.has_error())
         {
             auto res = boost::test_tools::predicate_result(false);
@@ -39,7 +39,7 @@ struct Fixture
             dep0::pretty_print(res.message().stream(), parse_result.error());
             return res;
         }
-        auto check_result = dep0::typecheck::check(dep0::typecheck::tt::context_t(), *parse_result);
+        auto check_result = dep0::typecheck::check(*parse_result);
         if (check_result.has_value())
         {
             auto res = boost::test_tools::predicate_result(false);

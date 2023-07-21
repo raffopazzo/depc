@@ -20,14 +20,6 @@ struct derivation_t
 
         static form_t primitive_bool();
         static form_t primitive_unit();
-        static form_t primitive_i8();
-        static form_t primitive_i16();
-        static form_t primitive_i32();
-        static form_t primitive_i64();
-        static form_t primitive_u8();
-        static form_t primitive_u16();
-        static form_t primitive_u32();
-        static form_t primitive_u64();
 
         form_t(form_t const&) = default;
         form_t(form_t&&) = default;
@@ -37,6 +29,8 @@ struct derivation_t
     private:
         explicit form_t(type_t);
         type_t m_ty;
+
+        friend struct derivation_rules;
     };
 
     struct var_t
@@ -119,6 +113,7 @@ struct derivation_t
 
 type_t const& type_of(derivation_t const&);
 
+expected<derivation_t> type_assign(context_t const&, type_t::var_t const&);
 expected<derivation_t> type_assign(context_t const&, term_t const&);
 
 }

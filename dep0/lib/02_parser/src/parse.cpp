@@ -58,6 +58,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
     virtual std::any visitModule(DepCParser::ModuleContext* ctx) override
     {
         assert(ctx);
+        std::vector<type_def_t> type_defs;
         std::vector<func_def_t> func_defs;
         std::ranges::transform(
             ctx->funcDef(),
@@ -66,7 +67,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
             {
                 return std::any_cast<func_def_t>(visitFuncDef(x));
             });
-        return module_t{make_source(src, *ctx).value(), std::move(func_defs)};
+        return module_t{make_source(src, *ctx).value(), std::move(type_defs), std::move(func_defs)};
     }
 
     virtual std::any visitFuncDef(DepCParser::FuncDefContext* ctx) override
@@ -86,14 +87,12 @@ struct parse_visitor_t : dep0::DepCParserVisitor
     {
         if (ctx->KW_BOOL()) return type_t{make_source(src, *ctx).value(), type_t::bool_t{}};
         if (ctx->KW_UNIT_T()) return type_t{make_source(src, *ctx).value(), type_t::unit_t{}};
-        if (ctx->KW_I8_T()) return type_t{make_source(src, *ctx).value(), type_t::i8_t{}};
-        if (ctx->KW_I16_T()) return type_t{make_source(src, *ctx).value(), type_t::i16_t{}};
-        if (ctx->KW_I32_T()) return type_t{make_source(src, *ctx).value(), type_t::i32_t{}};
-        if (ctx->KW_I64_T()) return type_t{make_source(src, *ctx).value(), type_t::i64_t{}};
-        if (ctx->KW_U8_T()) return type_t{make_source(src, *ctx).value(), type_t::u8_t{}};
-        if (ctx->KW_U16_T()) return type_t{make_source(src, *ctx).value(), type_t::u16_t{}};
-        if (ctx->KW_U32_T()) return type_t{make_source(src, *ctx).value(), type_t::u32_t{}};
-        if (ctx->KW_U64_T()) return type_t{make_source(src, *ctx).value(), type_t::u64_t{}};
+        if (ctx->KW_I8_T() or ctx->KW_I16_T() or ctx->KW_I32_T() or ctx->KW_I64_T() or
+            ctx->KW_U8_T() or ctx->KW_U16_T() or ctx->KW_U32_T() or ctx->KW_U64_T())
+        {
+            auto loc = make_source(src, *ctx).value();
+            return type_t{loc, type_t::type_ref_t{loc.txt}};
+        }
         assert(nullptr);
     }
 
@@ -128,7 +127,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
     {
         assert(ctx);
         assert(ctx->funCallExpr());
-        return stmt_t::fun_call_t{std::any_cast<expr_t>(visitFunCallExpr(ctx->funCallExpr()))};
+        return stmt_t::fun_call_t{get_text(src, *ctx->funCallExpr()->name).value()};
     }
 
     virtual std::any visitIfElse(DepCParser::IfElseContext* ctx) override

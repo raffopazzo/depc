@@ -1,6 +1,8 @@
 #include "dep0/typecheck/check.hpp"
 #include "dep0/typecheck/returns_from_all_branches.hpp"
 
+#include "dep0/digit_separator.hpp"
+
 #include <ranges>
 #include <sstream>
 
@@ -223,7 +225,12 @@ static expected<expr_t> check_numeric_expr(
             std::string_view const sign_chars,
             std::string_view const max_abs_value) const
         {
-            std::string_view number = x.number.view();
+            std::optional<std::string> without_separator; // keeps alive the string pointed to by `number`
+            std::string_view number;
+            if (contains_digit_separator(x.number.view()))
+                number = without_separator.emplace(remove_digit_separator(x.number.view()));
+            else
+                number = x.number.view();
             skip_zero_or_one(number, sign_chars);
             skip_any(number, "0");
             if (number.starts_with('-'))

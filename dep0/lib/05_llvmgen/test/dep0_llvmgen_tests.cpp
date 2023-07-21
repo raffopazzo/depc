@@ -5,6 +5,9 @@
 #include "dep0/typecheck/check.hpp"
 #include "dep0/llvmgen/gen.hpp"
 
+#include "llvm/IR/Constants.h"
+#include "llvm/IR/Instructions.h"
+
 #include <filesystem>
 #include <cstdlib>
 
@@ -38,6 +41,17 @@ struct Fixture
         }
         return true;
     }
+
+    dep0::unique_ref<llvm::Module> gen(std::filesystem::path const file)
+    {
+        auto parse_result = dep0::parser::parse(testfiles / file);
+        BOOST_TEST_REQUIRE(parse_result.has_value());
+        auto check_result = dep0::typecheck::check(*parse_result);
+        BOOST_TEST_REQUIRE(check_result.has_value());
+        auto gen_result = dep0::llvmgen::gen(llvm_ctx, "test.depc", *check_result);
+        BOOST_TEST_REQUIRE(gen_result.has_value());
+        return std::move(*gen_result);
+    }
 };
 
 BOOST_FIXTURE_TEST_SUITE(dep0_llvmgen_tests, Fixture)
@@ -67,6 +81,32 @@ BOOST_AUTO_TEST_CASE(test_0021) { BOOST_TEST(pass("test_0021.depc")); }
 BOOST_AUTO_TEST_CASE(test_0022) { BOOST_TEST(pass("test_0022.depc")); }
 // BOOST_AUTO_TEST_CASE(test_0023) doesn't type check
 BOOST_AUTO_TEST_CASE(test_0024) { BOOST_TEST(pass("test_0024.depc")); }
+BOOST_AUTO_TEST_CASE(ignore_digit_separator_during_codegen)
+{
+    auto llvm_module = gen("test_0024.depc");
+    auto* f235 = llvm_module->getFunction("f235");
+    auto* f237 = llvm_module->getFunction("f237");
+    auto* f238 = llvm_module->getFunction("f238");
+    BOOST_TEST_REQUIRE(f235);
+    BOOST_TEST_REQUIRE(f237);
+    BOOST_TEST_REQUIRE(f238);
+    auto* ret235 = cast<llvm::ReturnInst>(f235->getEntryBlock().getTerminator());
+    auto* ret237 = cast<llvm::ReturnInst>(f237->getEntryBlock().getTerminator());
+    auto* ret238 = cast<llvm::ReturnInst>(f238->getEntryBlock().getTerminator());
+    BOOST_TEST_REQUIRE(ret235);
+    BOOST_TEST_REQUIRE(ret237);
+    BOOST_TEST_REQUIRE(ret238);
+    auto* val235 = cast<llvm::ConstantInt>(ret235->getReturnValue());
+    auto* val237 = cast<llvm::ConstantInt>(ret237->getReturnValue());
+    auto* val238 = cast<llvm::ConstantInt>(ret238->getReturnValue());
+    BOOST_TEST_REQUIRE(val235);
+    BOOST_TEST_REQUIRE(val237);
+    BOOST_TEST_REQUIRE(val238);
+    BOOST_TEST(val235->getZExtValue() == 9999999999999999999ul);
+    BOOST_TEST(val237->getZExtValue() == 9999999999999999999ul);
+    BOOST_TEST(val238->getZExtValue() == 9999999999999999999ul);
+}
+
 // BOOST_AUTO_TEST_CASE(test_0025) doesn't type check
 // BOOST_AUTO_TEST_CASE(test_0025) doesn't type check
 // BOOST_AUTO_TEST_CASE(test_0026) doesn't type check

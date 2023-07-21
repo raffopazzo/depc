@@ -26,7 +26,7 @@ LPAREN: '(';
 RPAREN: ')';
 SEMI: ';';
 ID: ALPHA ALPHANUM*;
-NUMBER: [+-]?[0-9]+;
+NUMBER: [+-]?[0-9][0-9']*;
 WS: [ \n\t\r\f]+ -> skip;
 LINE_COMMENT: '//' .*? '\r'? '\n' -> skip;
 BLOCK_COMMENT: '/*' -> skip, pushMode(BlockComment);

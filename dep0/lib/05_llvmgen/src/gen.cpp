@@ -1,5 +1,7 @@
 #include "dep0/llvmgen/gen.hpp"
 
+#include "dep0/digit_separator.hpp"
+
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Verifier.h>
@@ -215,8 +217,10 @@ llvm::Value* gen_val(context_t& ctx, llvm::IRBuilder<>& builder, typecheck::expr
         }
         llvm::Value* operator()(typecheck::expr_t::numeric_constant_t const& x)
         {
-            auto const type = cast<llvm::IntegerType>(gen_type(ctx, builder.getContext(), expr.properties.type));
-            return llvm::ConstantInt::get(type, x.number.view(), 10);
+            return llvm::ConstantInt::get(
+                cast<llvm::IntegerType>(gen_type(ctx, builder.getContext(), expr.properties.type)),
+                contains_digit_separator(x.number.view()) ? remove_digit_separator(x.number.view()) : x.number.view(),
+                10);
         }
         llvm::Value* operator()(typecheck::expr_t::fun_call_t const& x)
         {

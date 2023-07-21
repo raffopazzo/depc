@@ -122,4 +122,17 @@ BOOST_AUTO_TEST_CASE(test_0013)
     BOOST_TEST(result.error().location.has_value());
 }
 
+BOOST_AUTO_TEST_CASE(test_0150)
+{
+    auto const module = open("test_0150.depc");
+    auto const result = check(module);
+    BOOST_TEST_REQUIRE(result.has_error());
+    BOOST_TEST(result.error().error == "Invalid negative constant for unsigned integer");
+    BOOST_TEST(result.error().location.has_value());
+    BOOST_TEST_REQUIRE(result.error().tgt.has_value());
+    std::ostringstream tgt;
+    tt::pretty_print(tgt, result.error().tgt.value());
+    BOOST_TEST(tgt.str() == "u64_t");
+}
+
 BOOST_AUTO_TEST_SUITE_END()

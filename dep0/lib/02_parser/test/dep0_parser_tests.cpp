@@ -18,6 +18,15 @@ struct Fixture
             dep0::pretty_print(res.message().stream(), parse_result.error());
         return res;
     }
+
+    boost::test_tools::predicate_result fail(std::filesystem::path const file)
+    {
+        auto parse_result = dep0::parser::parse(testfiles / file);
+        auto res = boost::test_tools::predicate_result(parse_result.has_error());
+        if (not res)
+            res.message() << "Was expecting parsing to fail but it succeeded";
+        return res;
+    }
 };
 
 BOOST_FIXTURE_TEST_SUITE(dep0_parser_tests, Fixture)
@@ -169,5 +178,10 @@ BOOST_AUTO_TEST_CASE(test_0143) { BOOST_TEST(pass("test_0143.depc")); }
 BOOST_AUTO_TEST_CASE(test_0144) { BOOST_TEST(pass("test_0144.depc")); }
 BOOST_AUTO_TEST_CASE(test_0145) { BOOST_TEST(pass("test_0145.depc")); }
 BOOST_AUTO_TEST_CASE(test_0146) { BOOST_TEST(pass("test_0146.depc")); }
+BOOST_AUTO_TEST_CASE(test_0147) { BOOST_TEST(pass("test_0147.depc")); }
+BOOST_AUTO_TEST_CASE(test_0148) { BOOST_TEST(pass("test_0148.depc")); }
+BOOST_AUTO_TEST_CASE(test_0149) { BOOST_TEST(pass("test_0149.depc")); }
+BOOST_AUTO_TEST_CASE(test_0150) { BOOST_TEST(pass("test_0150.depc")); }
+BOOST_AUTO_TEST_CASE(test_0151) { BOOST_TEST(fail("test_0151.depc")); }
 
 BOOST_AUTO_TEST_SUITE_END()

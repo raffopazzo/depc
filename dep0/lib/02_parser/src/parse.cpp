@@ -269,11 +269,14 @@ expected<module_t> parse(std::filesystem::path const& path)
         return source.error();
     auto input = antlr4::ANTLRInputStream(source->view());
     dep0::DepCLexer lexer(&input);
+    FirstErrorListener error_listener{*source};
+    lexer.removeErrorListeners();
+    lexer.addErrorListener(&error_listener);
     antlr4::CommonTokenStream tokens(&lexer);
     tokens.fill();
+    if (error_listener.error)
+        return std::move(*error_listener.error);
     dep0::DepCParser parser(&tokens);
-    // TODO: install some error handler that doesn't attempt recovery (we only want the first error)
-    FirstErrorListener error_listener{*source};
     parser.removeErrorListeners();
     parser.addErrorListener(&error_listener);
     dep0::DepCParser::ModuleContext* module = parser.module();

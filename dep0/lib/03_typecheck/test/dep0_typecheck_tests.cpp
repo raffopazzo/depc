@@ -199,5 +199,10 @@ BOOST_AUTO_TEST_CASE(test_0143) { BOOST_TEST(fail("test_0143.depc")); }
 BOOST_AUTO_TEST_CASE(test_0144) { BOOST_TEST(fail("test_0144.depc")); }
 BOOST_AUTO_TEST_CASE(test_0145) { BOOST_TEST(fail("test_0145.depc")); }
 BOOST_AUTO_TEST_CASE(test_0146) { BOOST_TEST(fail("test_0146.depc")); }
+BOOST_AUTO_TEST_CASE(test_0147) { BOOST_TEST(fail("test_0147.depc")); }
+BOOST_AUTO_TEST_CASE(test_0148) { BOOST_TEST(fail("test_0148.depc")); }
+BOOST_AUTO_TEST_CASE(test_0149) { BOOST_TEST(fail("test_0149.depc")); }
+BOOST_AUTO_TEST_CASE(test_0150) { BOOST_TEST(fail("test_0150.depc")); }
+// BOOST_AUTO_TEST_CASE(test_0151) doesn't parse
 
 BOOST_AUTO_TEST_SUITE_END()

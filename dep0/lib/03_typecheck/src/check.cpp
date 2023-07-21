@@ -195,11 +195,11 @@ static expected<expr_t> check_numeric_expr(
         type_t const& expected_type;
         expected<expr_t> operator()(type_t::bool_t const&) const
         {
-            return error_t::from_error(dep0::error_t{"Type mismatch between numeric constant and `bool`", loc}, ctx);
+            return error("Type mismatch between numeric constant and `bool`");
         }
         expected<expr_t> operator()(type_t::unit_t const&) const
         {
-            return error_t::from_error(dep0::error_t{"Type mismatch between numeric constant and `unit_t`", loc}, ctx);
+            return error("Type mismatch between numeric constant and `unit_t`");
         }
 
         expected<expr_t> operator()(type_t::i8_t const&) const { return check_integer("i8_t", "+-", "127"); }
@@ -212,6 +212,12 @@ static expected<expr_t> check_numeric_expr(
         expected<expr_t> operator()(type_t::u64_t const&) const { return check_integer("u64_t", "+", "18446744073709551615"); }
 
     private:
+        expected<expr_t> error(std::string msg) const
+        {
+            auto const tgt = tt::type_of(expected_type.properties.derivation);
+            return error_t::from_error(dep0::error_t{std::move(msg), loc}, ctx, tgt);
+        }
+
         expected<expr_t> check_integer(
             std::string_view const type_name,
             std::string_view const sign_chars,
@@ -220,11 +226,15 @@ static expected<expr_t> check_numeric_expr(
             std::string_view number = x.number.view();
             skip_zero_or_one(number, sign_chars);
             skip_any(number, "0");
+            if (number.starts_with('-'))
+                // if we were checking for signed integer we would skip the `-`, so we must be checking for unsigned
+                // TODO should we allow `-0` though? not sure...
+                return error("Invalid negative constant for unsigned integer");
             if (bigger_than(number, max_abs_value))
             {
                 std::ostringstream err;
                 err << "Numeric constant does not fit inside `" << type_name << '`';
-                return error_t::from_error(dep0::error_t{err.str(), loc}, ctx);
+                return error(err.str());
             }
             return expr_t{expected_type, expr_t::numeric_constant_t{x.number}};
         }

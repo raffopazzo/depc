@@ -15,6 +15,7 @@ struct Fixture
 {
     std::filesystem::path testfiles = std::getenv("DEP0_TESTFILES_DIR");
     llvm::LLVMContext llvm_ctx;
+    std::optional<dep0::unique_ref<llvm::Module>> pass_result;
 
     boost::test_tools::predicate_result pass(std::filesystem::path const file)
     {
@@ -32,25 +33,15 @@ struct Fixture
             dep0::pretty_print(res.message().stream(), check_result.error());
             return res;
         }
-        auto const gen_result = dep0::llvmgen::gen(llvm_ctx, "test.depc", *check_result);
+        auto gen_result = dep0::llvmgen::gen(llvm_ctx, "test.depc", *check_result);
         if (gen_result.has_error())
         {
             auto res = boost::test_tools::predicate_result(false);
             dep0::pretty_print(res.message().stream(), gen_result.error());
             return res;
         }
+        pass_result.emplace(std::move(*gen_result));
         return true;
-    }
-
-    dep0::unique_ref<llvm::Module> gen(std::filesystem::path const file)
-    {
-        auto parse_result = dep0::parser::parse(testfiles / file);
-        BOOST_TEST_REQUIRE(parse_result.has_value());
-        auto check_result = dep0::typecheck::check(*parse_result);
-        BOOST_TEST_REQUIRE(check_result.has_value());
-        auto gen_result = dep0::llvmgen::gen(llvm_ctx, "test.depc", *check_result);
-        BOOST_TEST_REQUIRE(gen_result.has_value());
-        return std::move(*gen_result);
     }
 };
 
@@ -80,28 +71,94 @@ BOOST_AUTO_TEST_CASE(test_0020) { BOOST_TEST(pass("test_0020.depc")); }
 BOOST_AUTO_TEST_CASE(test_0021) { BOOST_TEST(pass("test_0021.depc")); }
 BOOST_AUTO_TEST_CASE(test_0022) { BOOST_TEST(pass("test_0022.depc")); }
 // BOOST_AUTO_TEST_CASE(test_0023) doesn't type check
-BOOST_AUTO_TEST_CASE(test_0024) { BOOST_TEST(pass("test_0024.depc")); }
-BOOST_AUTO_TEST_CASE(ignore_digit_separator_during_codegen)
+BOOST_AUTO_TEST_CASE(test_0024)
 {
-    auto llvm_module = gen("test_0024.depc");
-    auto* f235 = llvm_module->getFunction("f235");
-    auto* f237 = llvm_module->getFunction("f237");
-    auto* f238 = llvm_module->getFunction("f238");
+    BOOST_TEST_REQUIRE(pass("test_0024.depc"));
+    auto* f0 = pass_result.value()->getFunction("f0");
+    auto* f18 = pass_result.value()->getFunction("f18");
+    auto* f42 = pass_result.value()->getFunction("f42");
+    auto* f81 = pass_result.value()->getFunction("f81");
+    auto* f141 = pass_result.value()->getFunction("f141");
+    auto* f153 = pass_result.value()->getFunction("f153");
+    auto* f169 = pass_result.value()->getFunction("f169");
+    auto* f195 = pass_result.value()->getFunction("f195");
+    auto* f235 = pass_result.value()->getFunction("f235");
+    auto* f237 = pass_result.value()->getFunction("f237");
+    auto* f238 = pass_result.value()->getFunction("f238");
+    BOOST_TEST_REQUIRE(f0);
+    BOOST_TEST_REQUIRE(f18);
+    BOOST_TEST_REQUIRE(f42);
+    BOOST_TEST_REQUIRE(f81);
+    BOOST_TEST_REQUIRE(f141);
+    BOOST_TEST_REQUIRE(f153);
+    BOOST_TEST_REQUIRE(f169);
+    BOOST_TEST_REQUIRE(f195);
     BOOST_TEST_REQUIRE(f235);
     BOOST_TEST_REQUIRE(f237);
     BOOST_TEST_REQUIRE(f238);
+    BOOST_TEST(f0->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::SExt));
+    BOOST_TEST(f18->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::SExt));
+    BOOST_TEST(f42->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::SExt));
+    BOOST_TEST(f81->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::SExt));
+    BOOST_TEST(f141->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::ZExt));
+    BOOST_TEST(f153->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::ZExt));
+    BOOST_TEST(f169->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::ZExt));
+    BOOST_TEST(f195->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::ZExt));
+    BOOST_TEST(f235->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::ZExt));
+    BOOST_TEST(f237->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::ZExt));
+    BOOST_TEST(f238->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::ZExt));
+    auto* ret0 = cast<llvm::ReturnInst>(f0->getEntryBlock().getTerminator());
+    auto* ret18 = cast<llvm::ReturnInst>(f18->getEntryBlock().getTerminator());
+    auto* ret42 = cast<llvm::ReturnInst>(f42->getEntryBlock().getTerminator());
+    auto* ret81 = cast<llvm::ReturnInst>(f81->getEntryBlock().getTerminator());
+    auto* ret141 = cast<llvm::ReturnInst>(f141->getEntryBlock().getTerminator());
+    auto* ret153 = cast<llvm::ReturnInst>(f153->getEntryBlock().getTerminator());
+    auto* ret169 = cast<llvm::ReturnInst>(f169->getEntryBlock().getTerminator());
+    auto* ret195 = cast<llvm::ReturnInst>(f195->getEntryBlock().getTerminator());
     auto* ret235 = cast<llvm::ReturnInst>(f235->getEntryBlock().getTerminator());
     auto* ret237 = cast<llvm::ReturnInst>(f237->getEntryBlock().getTerminator());
     auto* ret238 = cast<llvm::ReturnInst>(f238->getEntryBlock().getTerminator());
+    BOOST_TEST_REQUIRE(ret0);
+    BOOST_TEST_REQUIRE(ret18);
+    BOOST_TEST_REQUIRE(ret42);
+    BOOST_TEST_REQUIRE(ret81);
+    BOOST_TEST_REQUIRE(ret141);
+    BOOST_TEST_REQUIRE(ret153);
+    BOOST_TEST_REQUIRE(ret169);
+    BOOST_TEST_REQUIRE(ret195);
     BOOST_TEST_REQUIRE(ret235);
     BOOST_TEST_REQUIRE(ret237);
     BOOST_TEST_REQUIRE(ret238);
+    auto* val0 = cast<llvm::ConstantInt>(ret0->getReturnValue());
+    auto* val18 = cast<llvm::ConstantInt>(ret18->getReturnValue());
+    auto* val42 = cast<llvm::ConstantInt>(ret42->getReturnValue());
+    auto* val81 = cast<llvm::ConstantInt>(ret81->getReturnValue());
+    auto* val141 = cast<llvm::ConstantInt>(ret141->getReturnValue());
+    auto* val153 = cast<llvm::ConstantInt>(ret153->getReturnValue());
+    auto* val169 = cast<llvm::ConstantInt>(ret169->getReturnValue());
+    auto* val195 = cast<llvm::ConstantInt>(ret195->getReturnValue());
     auto* val235 = cast<llvm::ConstantInt>(ret235->getReturnValue());
     auto* val237 = cast<llvm::ConstantInt>(ret237->getReturnValue());
     auto* val238 = cast<llvm::ConstantInt>(ret238->getReturnValue());
+    BOOST_TEST_REQUIRE(val0);
+    BOOST_TEST_REQUIRE(val18);
+    BOOST_TEST_REQUIRE(val42);
+    BOOST_TEST_REQUIRE(val81);
+    BOOST_TEST_REQUIRE(val141);
+    BOOST_TEST_REQUIRE(val153);
+    BOOST_TEST_REQUIRE(val169);
+    BOOST_TEST_REQUIRE(val195);
     BOOST_TEST_REQUIRE(val235);
     BOOST_TEST_REQUIRE(val237);
     BOOST_TEST_REQUIRE(val238);
+    BOOST_TEST(val0->getSExtValue() == 127);
+    BOOST_TEST(val18->getSExtValue() == 32767);
+    BOOST_TEST(val42->getSExtValue() == 2147483647);
+    BOOST_TEST(val81->getSExtValue() == 9223372036854775807);
+    BOOST_TEST(val141->getZExtValue() == 255ul);
+    BOOST_TEST(val153->getZExtValue() == 65535ul);
+    BOOST_TEST(val169->getZExtValue() == 4294967295ul);
+    BOOST_TEST(val195->getZExtValue() == 18446744073709551615ul);
     BOOST_TEST(val235->getZExtValue() == 9999999999999999999ul);
     BOOST_TEST(val237->getZExtValue() == 9999999999999999999ul);
     BOOST_TEST(val238->getZExtValue() == 9999999999999999999ul);
@@ -235,5 +292,74 @@ BOOST_AUTO_TEST_CASE(ignore_digit_separator_during_codegen)
 // BOOST_AUTO_TEST_CASE(test_0149) doesn't type check
 // BOOST_AUTO_TEST_CASE(test_0150) doesn't type check
 // BOOST_AUTO_TEST_CASE(test_0151) doesn't parse
+BOOST_AUTO_TEST_CASE(test_0152)
+{
+    BOOST_TEST_REQUIRE(pass("test_0152.depc"));
+    auto* f_h = pass_result.value()->getFunction("h");
+    auto* f_n = pass_result.value()->getFunction("n");
+    auto* f_d = pass_result.value()->getFunction("d");
+    BOOST_TEST_REQUIRE(f_h);
+    BOOST_TEST_REQUIRE(f_n);
+    BOOST_TEST_REQUIRE(f_d);
+    BOOST_TEST(f_h->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::ZExt));
+    BOOST_TEST(f_n->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::ZExt));
+    BOOST_TEST(f_d->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::SExt));
+    auto* r_h = cast<llvm::ReturnInst>(f_h->getEntryBlock().getTerminator());
+    auto* r_n = cast<llvm::ReturnInst>(f_n->getEntryBlock().getTerminator());
+    auto* r_d = cast<llvm::ReturnInst>(f_d->getEntryBlock().getTerminator());
+    BOOST_TEST_REQUIRE(r_h);
+    BOOST_TEST_REQUIRE(r_n);
+    BOOST_TEST_REQUIRE(r_d);
+    auto* v_h = cast<llvm::ConstantInt>(r_h->getReturnValue());
+    auto* v_n = cast<llvm::ConstantInt>(r_n->getReturnValue());
+    auto* v_d = cast<llvm::ConstantInt>(r_d->getReturnValue());
+    BOOST_TEST_REQUIRE(v_h);
+    BOOST_TEST_REQUIRE(v_n);
+    BOOST_TEST_REQUIRE(v_d);
+    BOOST_TEST(v_h->getType()->getBitWidth() == 8);
+    BOOST_TEST(v_n->getType()->getBitWidth() == 32);
+    BOOST_TEST(v_d->getType()->getBitWidth() == 64);
+    BOOST_TEST(v_h->getZExtValue() == 23ul);
+    BOOST_TEST(v_n->getZExtValue() == 123456789ul);
+    BOOST_TEST(v_d->getSExtValue() == -1234567890123456789l);
+}
+
+// BOOST_AUTO_TEST_CASE(test_0153) doesn't type check
+// BOOST_AUTO_TEST_CASE(test_0154) doesn't parse
+// BOOST_AUTO_TEST_CASE(test_0155) doesn't parse
+// BOOST_AUTO_TEST_CASE(test_0156) doesn't parse
+// BOOST_AUTO_TEST_CASE(test_0157) doesn't parse
+// BOOST_AUTO_TEST_CASE(test_0158) doesn't parse
+// BOOST_AUTO_TEST_CASE(test_0159) doesn't parse
+// BOOST_AUTO_TEST_CASE(test_0160) doesn't parse
+// BOOST_AUTO_TEST_CASE(test_0161) doesn't parse
+// BOOST_AUTO_TEST_CASE(test_0162) doesn't parse
+BOOST_AUTO_TEST_CASE(test_0163)
+{
+    BOOST_TEST_REQUIRE(pass("test_0163.depc"));
+    auto* f = pass_result.value()->getFunction("zero");
+    BOOST_TEST_REQUIRE(f);
+    BOOST_TEST(f->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::SExt));
+    auto* r = cast<llvm::ReturnInst>(f->getEntryBlock().getTerminator());
+    BOOST_TEST_REQUIRE(r);
+    auto* v = cast<llvm::ConstantInt>(r->getReturnValue());
+    BOOST_TEST_REQUIRE(v);
+    BOOST_TEST(v->getSExtValue() == 0);
+    BOOST_TEST(v->getType()->getBitWidth() == 8);
+}
+
+BOOST_AUTO_TEST_CASE(test_0164)
+{
+    BOOST_TEST_REQUIRE(pass("test_0164.depc"));
+    auto* f = pass_result.value()->getFunction("zero");
+    BOOST_TEST_REQUIRE(f);
+    BOOST_TEST(f->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::ZExt));
+    auto* r = cast<llvm::ReturnInst>(f->getEntryBlock().getTerminator());
+    BOOST_TEST_REQUIRE(r);
+    auto* v = cast<llvm::ConstantInt>(r->getReturnValue());
+    BOOST_TEST_REQUIRE(v);
+    BOOST_TEST(v->getZExtValue() == 0);
+    BOOST_TEST(v->getType()->getBitWidth() == 8);
+}
 
 BOOST_AUTO_TEST_SUITE_END()

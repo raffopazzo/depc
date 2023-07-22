@@ -59,7 +59,7 @@ struct source_text
 
     source_text(source_handle_t, std::string_view);
 
-    source_text substr(std::size_t pos, std::size_t n) const;
+    source_text substr(std::size_t pos, std::size_t n = std::string_view::npos) const;
 
     static source_text from_literal(char const*);
 

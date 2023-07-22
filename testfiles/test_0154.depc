@@ -1,0 +1,2 @@
+typedef hours_t = unsigned 8 bit integer from 0 to -23;
+hours_t h() { return 0; }

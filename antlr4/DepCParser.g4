@@ -2,12 +2,19 @@ parser grammar DepCParser;
 options { tokenVocab=DepCLexer; }
 
 // Module and top level expressions
-module: funcDef* EOF;
-
+module: (typeDef | funcDef)* EOF;
 funcDef: type name=ID '(' ')' body;
+typeDef: 'typedef' name=ID '='
+    sign=('signed' | 'unsigned')
+    width=NUMBER
+    'bit' 'integer'
+    'from' min=('...' | NUMBER)
+    'to' max=('...' | NUMBER)
+    ';'
+    ;
 
 // Types
-type: 'bool' | 'unit_t' | 'i8_t' | 'i16_t' | 'i32_t' | 'i64_t' | 'u8_t' | 'u16_t' | 'u32_t' | 'u64_t';
+type: 'bool' | 'unit_t' | 'i8_t' | 'i16_t' | 'i32_t' | 'i64_t' | 'u8_t' | 'u16_t' | 'u32_t' | 'u64_t' | name=ID;
 
 // Statements
 body: '{' stmt* '}';

@@ -20,9 +20,11 @@ public:
     unique_ref& operator=(unique_ref&&) = default;
 
     T* operator->() { return ptr.get(); }
+    T& operator*() { return *ptr; }
     T& get() { return *ptr; }
 
     T const* operator->() const { return ptr.get(); }
+    T const& operator*() const { return *ptr; }
     T const& get() const { return *ptr; }
 };
 

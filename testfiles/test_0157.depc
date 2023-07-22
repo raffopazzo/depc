@@ -1,0 +1,2 @@
+typedef signal_t = signed 8 bit integer from ... to 15;
+signal_t f() { return 0; }

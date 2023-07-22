@@ -15,6 +15,7 @@ struct context_t
     std::map<source_text, llvm::Value*> values; // including function objects
     std::map<source_text, llvm::FunctionType*> fun_types;
     std::map<source_text, llvm::Type*> types;
+    std::map<source_text, typecheck::type_def_t::integer_t const&> integer_types;
     // TODO what about extending a context?
 };
 
@@ -33,6 +34,7 @@ struct snippet_t
 // all gen functions must be forward-declared here
 
 static llvm::Type* gen_type(context_t const&, llvm::LLVMContext&, typecheck::type_t const&);
+static llvm::Type* gen_type(context_t&, llvm::LLVMContext&, typecheck::type_def_t const&);
 static llvm::Value* gen_fun(context_t&, llvm::Module& , typecheck::func_def_t const&);
 static snippet_t gen_body(
     context_t&,
@@ -50,7 +52,9 @@ expected<unique_ref<llvm::Module>> gen(
 {
     context_t ctx;
     auto llvm_module = make_ref<llvm::Module>(name, llvm_ctx);
-    // TODO: allow declarations in any order with 2 pass
+    // TODO: allow declarations in any order with 2 pass (both type and function defs)
+    for (auto const& t: m.type_defs)
+        gen_type(ctx, llvm_ctx, t);
     for (auto const& f: m.func_defs)
         gen_fun(ctx, llvm_module.get(), f);
 
@@ -62,10 +66,11 @@ expected<unique_ref<llvm::Module>> gen(
 }
 
 // all gen functions must be implemented here
-llvm::Type* gen_type(context_t const&, llvm::LLVMContext& llvm_ctx, typecheck::type_t const& x)
+llvm::Type* gen_type(context_t const& ctx, llvm::LLVMContext& llvm_ctx, typecheck::type_t const& x)
 {
     struct visitor
     {
+        context_t const& ctx;
         llvm::LLVMContext& llvm_ctx;
         llvm::Type* operator()(typecheck::type_t::bool_t const&) { return llvm::Type::getInt1Ty(llvm_ctx); }
         // this may or may not be fine depending on how LLVM defines `void` (i.e. what properties it has)
@@ -79,14 +84,47 @@ llvm::Type* gen_type(context_t const&, llvm::LLVMContext& llvm_ctx, typecheck::t
         llvm::Type* operator()(typecheck::type_t::u16_t const&) { return llvm::Type::getInt16Ty(llvm_ctx); }
         llvm::Type* operator()(typecheck::type_t::u32_t const&) { return llvm::Type::getInt32Ty(llvm_ctx); }
         llvm::Type* operator()(typecheck::type_t::u64_t const&) { return llvm::Type::getInt64Ty(llvm_ctx); }
+        llvm::Type* operator()(typecheck::type_t::name_t const& name)
+        {
+            auto const it = ctx.types.find(name.name);
+            assert(it != ctx.types.end());
+            return it->second;
+        }
     };
-    return std::visit(visitor{llvm_ctx}, x.value);
+    return std::visit(visitor{ctx, llvm_ctx}, x.value);
 }
 
-static void gen_fun_attributes(llvm::Function* const func, typecheck::func_def_t const& x)
+llvm::Type* gen_type(context_t& ctx, llvm::LLVMContext& llvm_ctx, typecheck::type_def_t const& x)
+{
+    struct visitor
+    {
+        context_t& ctx;
+        llvm::LLVMContext& llvm_ctx;
+        llvm::Type* operator()(typecheck::type_def_t::integer_t const& x)
+        {
+            auto* const t = [&]
+            {
+                switch (x.width)
+                {
+                case ast::width_t::_8: return llvm::Type::getInt8Ty(llvm_ctx);
+                case ast::width_t::_16: return llvm::Type::getInt16Ty(llvm_ctx);
+                case ast::width_t::_32: return llvm::Type::getInt32Ty(llvm_ctx);
+                case ast::width_t::_64: return llvm::Type::getInt64Ty(llvm_ctx);
+                default: __builtin_unreachable();
+                }
+            }();
+            ctx.integer_types.emplace(x.name, x);
+            return ctx.types[x.name] = t;
+        }
+    };
+    return std::visit(visitor{ctx, llvm_ctx}, x.value);
+}
+
+static void gen_fun_attributes(context_t const& ctx, llvm::Function* const func, typecheck::func_def_t const& x)
 {
     struct return_attr_visitor
     {
+        context_t const& ctx;
         llvm::Attribute::AttrKind operator()(typecheck::type_t::bool_t const&) const { return llvm::Attribute::None; }
         llvm::Attribute::AttrKind operator()(typecheck::type_t::unit_t const&) const { return llvm::Attribute::None;; }
         llvm::Attribute::AttrKind operator()(typecheck::type_t::i8_t const&) const { return llvm::Attribute::SExt; }
@@ -97,8 +135,14 @@ static void gen_fun_attributes(llvm::Function* const func, typecheck::func_def_t
         llvm::Attribute::AttrKind operator()(typecheck::type_t::u16_t const&) const { return llvm::Attribute::ZExt; }
         llvm::Attribute::AttrKind operator()(typecheck::type_t::u32_t const&) const { return llvm::Attribute::ZExt; }
         llvm::Attribute::AttrKind operator()(typecheck::type_t::u64_t const&) const { return llvm::Attribute::ZExt; }
+        llvm::Attribute::AttrKind operator()(typecheck::type_t::name_t const& x) const
+        {
+            auto const it = ctx.integer_types.find(x.name);
+            return it == ctx.integer_types.end() ? llvm::Attribute::None :
+                it->second.sign == ast::sign_t::signed_v ? llvm::Attribute::SExt : llvm::Attribute::ZExt;
+        }
     };
-    if (auto const attr = std::visit(return_attr_visitor{}, x.type.value); attr != llvm::Attribute::None)
+    if (auto const attr = std::visit(return_attr_visitor{ctx}, x.type.value); attr != llvm::Attribute::None)
         func->addAttribute(llvm::AttributeList::ReturnIndex, attr);
 }
 
@@ -106,7 +150,7 @@ llvm::Value* gen_fun(context_t& ctx, llvm::Module& llvm_module, typecheck::func_
 {
     auto const funtype = llvm::FunctionType::get(gen_type(ctx, llvm_module.getContext(), x.type), {}, false);
     auto const func = llvm::Function::Create(funtype, llvm::Function::ExternalLinkage, x.name.view(), llvm_module);
-    gen_fun_attributes(func, x);
+    gen_fun_attributes(ctx, func, x);
     ctx.fun_types[x.name] = funtype;
     ctx.values[x.name] = func;
     auto snippet = gen_body(ctx, llvm_module.getContext(), x.body, "entry", func);

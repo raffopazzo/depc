@@ -1,2 +1,3 @@
+// parse error: lower and upper bound must be either both present or both missing
 typedef signal_t = signed 8 bit integer from -15 to ...;
 signal_t f() { return 0; }

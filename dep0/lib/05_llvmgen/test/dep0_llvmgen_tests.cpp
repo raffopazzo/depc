@@ -361,5 +361,7 @@ BOOST_AUTO_TEST_CASE(test_0164)
     BOOST_TEST(v->getZExtValue() == 0);
     BOOST_TEST(v->getType()->getBitWidth() == 8);
 }
+// BOOST_AUTO_TEST_CASE(test_0165) doesn't parse
+// BOOST_AUTO_TEST_CASE(test_0166) doesn't parse
 
 BOOST_AUTO_TEST_SUITE_END()

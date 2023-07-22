@@ -295,5 +295,7 @@ BOOST_AUTO_TEST_CASE(test_0161) { BOOST_TEST(fail("test_0161.depc")); }
 BOOST_AUTO_TEST_CASE(test_0162) { BOOST_TEST(fail("test_0162.depc")); }
 BOOST_AUTO_TEST_CASE(test_0163) { BOOST_TEST(pass("test_0163.depc")); }
 BOOST_AUTO_TEST_CASE(test_0164) { BOOST_TEST(pass("test_0164.depc")); }
+BOOST_AUTO_TEST_CASE(test_0165) { BOOST_TEST(fail("test_0165.depc")); }
+BOOST_AUTO_TEST_CASE(test_0166) { BOOST_TEST(fail("test_0166.depc")); }
 
 BOOST_AUTO_TEST_SUITE_END()

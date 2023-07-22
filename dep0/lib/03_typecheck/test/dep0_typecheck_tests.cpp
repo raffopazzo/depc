@@ -224,5 +224,7 @@ BOOST_AUTO_TEST_CASE(test_0153) { BOOST_TEST(fail("test_0153.depc")); }
 // BOOST_AUTO_TEST_CASE(test_0162) doesn't parse
 BOOST_AUTO_TEST_CASE(test_0163) { BOOST_TEST(pass("test_0163.depc")); }
 BOOST_AUTO_TEST_CASE(test_0164) { BOOST_TEST(pass("test_0164.depc")); }
+// BOOST_AUTO_TEST_CASE(test_0165) doesn't parse
+// BOOST_AUTO_TEST_CASE(test_0166) doesn't parse
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -1,5 +1,5 @@
-int zero() { return zero(); }
-int main()
+i32_t zero() { return zero(); }
+i32_t main()
 {
     return zero();
 }

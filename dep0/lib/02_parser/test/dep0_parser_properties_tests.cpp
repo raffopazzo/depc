@@ -26,7 +26,7 @@ BOOST_AUTO_TEST_CASE(test_0000)
 BOOST_AUTO_TEST_CASE(test_0001)
 {
     auto const result = dep0::parser::parse(testfiles / "test_0001.depc");
-    std::string const source = "int main()\n{\n    return 0;\n}";
+    std::string const source = "i32_t main()\n{\n    return 0;\n}";
     std::string const file_source = source + '\n';
     BOOST_TEST_REQUIRE(result.has_value());
     BOOST_TEST(result->properties.line == 1);
@@ -39,8 +39,8 @@ BOOST_AUTO_TEST_CASE(test_0001)
     BOOST_TEST(f.properties.txt == source);
     BOOST_TEST(f.type.properties.line == 1);
     BOOST_TEST(f.type.properties.col == 1);
-    BOOST_TEST(f.type.properties.txt == "int");
-    BOOST_TEST(std::holds_alternative<dep0::parser::type_t::int_t>(f.type.value));
+    BOOST_TEST(f.type.properties.txt == "i32_t");
+    BOOST_TEST(std::holds_alternative<dep0::parser::type_t::i32_t>(f.type.value));
     BOOST_TEST(f.name == "main");
 }
 

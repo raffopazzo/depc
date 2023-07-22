@@ -5,7 +5,7 @@ unit_t bar()
 {
     return;
 }
-int main()
+i32_t main()
 {
     return 0;
 }

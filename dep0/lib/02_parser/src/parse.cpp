@@ -85,8 +85,15 @@ struct parse_visitor_t : dep0::DepCParserVisitor
     virtual std::any visitType(DepCParser::TypeContext* ctx) override
     {
         if (ctx->KW_BOOL()) return type_t{make_source(src, *ctx).value(), type_t::bool_t{}};
-        if (ctx->KW_INT()) return type_t{make_source(src, *ctx).value(), type_t::int_t{}};
         if (ctx->KW_UNIT_T()) return type_t{make_source(src, *ctx).value(), type_t::unit_t{}};
+        if (ctx->KW_I8_T()) return type_t{make_source(src, *ctx).value(), type_t::i8_t{}};
+        if (ctx->KW_I16_T()) return type_t{make_source(src, *ctx).value(), type_t::i16_t{}};
+        if (ctx->KW_I32_T()) return type_t{make_source(src, *ctx).value(), type_t::i32_t{}};
+        if (ctx->KW_I64_T()) return type_t{make_source(src, *ctx).value(), type_t::i64_t{}};
+        if (ctx->KW_U8_T()) return type_t{make_source(src, *ctx).value(), type_t::u8_t{}};
+        if (ctx->KW_U16_T()) return type_t{make_source(src, *ctx).value(), type_t::u16_t{}};
+        if (ctx->KW_U32_T()) return type_t{make_source(src, *ctx).value(), type_t::u32_t{}};
+        if (ctx->KW_U64_T()) return type_t{make_source(src, *ctx).value(), type_t::u64_t{}};
         assert(nullptr);
     }
 
@@ -121,7 +128,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
     {
         assert(ctx);
         assert(ctx->funCallExpr());
-        return stmt_t::fun_call_t{std::any_cast<expr_t>(visitFunCallExpr(ctx->funCallExpr()))};
+        return stmt_t::fun_call_t{get_text(src, *ctx->funCallExpr()->name).value()};
     }
 
     virtual std::any visitIfElse(DepCParser::IfElseContext* ctx) override
@@ -262,11 +269,14 @@ expected<module_t> parse(std::filesystem::path const& path)
         return source.error();
     auto input = antlr4::ANTLRInputStream(source->view());
     dep0::DepCLexer lexer(&input);
+    FirstErrorListener error_listener{*source};
+    lexer.removeErrorListeners();
+    lexer.addErrorListener(&error_listener);
     antlr4::CommonTokenStream tokens(&lexer);
     tokens.fill();
+    if (error_listener.error)
+        return std::move(*error_listener.error);
     dep0::DepCParser parser(&tokens);
-    // TODO: install some error handler that doesn't attempt recovery (we only want the first error)
-    FirstErrorListener error_listener{*source};
     parser.removeErrorListeners();
     parser.addErrorListener(&error_listener);
     dep0::DepCParser::ModuleContext* module = parser.module();

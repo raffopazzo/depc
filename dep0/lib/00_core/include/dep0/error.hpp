@@ -36,7 +36,7 @@ std::ostream& pretty_print(std::ostream& os, error_t const&);
 
 // TODO use `std::expected` once available
 template <typename T, typename E = error_t>
-class expected
+class [[nodiscard]] expected
 {
     std::variant<T , E> value_;
 

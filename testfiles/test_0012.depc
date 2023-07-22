@@ -1,5 +1,5 @@
 bool false_() { return false; }
-int main()
+i32_t main()
 {
     if (false_())
     {

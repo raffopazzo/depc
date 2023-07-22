@@ -1,1 +1,1 @@
-int yes() { return true; }
+i32_t yes() { return true; }

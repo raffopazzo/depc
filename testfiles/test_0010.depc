@@ -1,4 +1,4 @@
-int main()
+i32_t main()
 {
     if (true) return 0;
 }

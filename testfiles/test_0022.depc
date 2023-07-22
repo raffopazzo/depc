@@ -1,5 +1,5 @@
 unit_t nop() {}
-int main()
+i32_t main()
 {
     nop();
     return 0;

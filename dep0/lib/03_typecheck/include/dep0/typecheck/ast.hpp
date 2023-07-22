@@ -59,7 +59,7 @@ struct legal_stmt_t
 
 struct legal_expr_t
 {
-    tt::derivation_t derivation;
+    type_t type;
 };
 
 } // namespace dep0::typecheck

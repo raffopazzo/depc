@@ -26,9 +26,16 @@ struct type_t
 {
     using properties_t = typename P::type_properties_type;
     struct bool_t { bool operator==(bool_t const&) const { return true; } };
-    struct int_t { bool operator==(int_t const&) const { return true; } };
     struct unit_t { bool operator==(unit_t const&) const { return true; } };
-    using value_t = std::variant<bool_t, int_t, unit_t>;
+    struct i8_t { bool operator==(i8_t const&) const { return true; } };
+    struct i16_t { bool operator==(i16_t const&) const { return true; } };
+    struct i32_t { bool operator==(i32_t const&) const { return true; } };
+    struct i64_t { bool operator==(i64_t const&) const { return true; } };
+    struct u8_t { bool operator==(u8_t const&) const { return true; } };
+    struct u16_t { bool operator==(u16_t const&) const { return true; } };
+    struct u32_t { bool operator==(u32_t const&) const { return true; } };
+    struct u64_t { bool operator==(u64_t const&) const { return true; } };
+    using value_t = std::variant<bool_t, unit_t, i8_t, i16_t, i32_t, i64_t, u8_t, u16_t, u32_t, u64_t>;
 
     properties_t properties;
     value_t value;
@@ -71,7 +78,7 @@ struct stmt_t
     using expr_t = ast::expr_t<P>;
     struct fun_call_t
     {
-        expr_t expr; // of type expr_t::fun_call_t
+        source_text name;
         bool operator==(fun_call_t const&) const = default;
     };
     struct if_else_t

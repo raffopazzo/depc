@@ -4,6 +4,7 @@ lexer grammar DepCLexer;
 fragment ALPHA: [A-Za-z_]+; // we treat '-' as alpha
 fragment ALPHANUM: [A-Za-z0-9_]+;
 
+// Keywords
 KW_BOOL: 'bool';
 KW_ELSE: 'else';
 KW_FALSE: 'false';
@@ -21,20 +22,25 @@ KW_U64_T: 'u64_t';
 KW_U8_T: 'u8_t';
 KW_UNIT_T: 'unit_t';
 
+// Punctuation
 ELLIPSIS: '...';
 EQ: '=';
 LCURLY: '{';
-RCURLY: '}';
 LPAREN: '(';
+RCURLY: '}';
 RPAREN: ')';
 SEMI: ';';
+
+// Tokens
 ID: ALPHA ALPHANUM*;
 NUMBER: [+-]?[0-9][0-9']*;
-WS: [ \n\t\r\f]+ -> skip;
-LINE_COMMENT: '//' .*? '\r'? '\n' -> skip;
+
+// White Spaces
 BLOCK_COMMENT: '/*' -> skip, pushMode(BlockComment);
+LINE_COMMENT: '//' .*? '\r'? '\n' -> skip;
+WS: [ \n\t\r\f]+ -> skip;
 
 mode BlockComment;
-NESTED_COMMENT: '/*' -> skip, pushMode(BlockComment);
 CLOSE_COMMENT: '*/' -> skip, popMode;
+NESTED_COMMENT: '/*' -> skip, pushMode(BlockComment);
 SKIP_COMMENT: . -> skip;

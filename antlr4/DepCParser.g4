@@ -6,7 +6,10 @@ options { tokenVocab=DepCLexer; }
     template <typename... T>
     bool one_of(T const&... patterns)
     {
-        return ((getCurrentToken()->getText() == patterns) or ...);
+        if (((getCurrentToken()->getText() == patterns) or ...))
+            return true;
+        throw antlr4::FailedPredicateException(this, "one_of", mismatched_input({patterns...}));
+        return false;
     }
 
     std::string mismatched_input(std::vector<std::string_view> const& expected)
@@ -25,13 +28,13 @@ module: (typeDef | funcDef)* EOF;
 funcDef: type name=ID '(' ')' body;
 typeDef:
     'typedef' name=ID '='
-    {one_of("signed", "unsigned")}? <fail={mismatched_input({"signed", "unsigned"})}> sign=ID
-    {one_of("8", "16", "32", "64")}? <fail={mismatched_input({"8", "16", "32", "64"})}> width=NUMBER
-    {one_of("bit")}? <fail={mismatched_input({"bit"})}> ID
-    {one_of("integer")}? <fail={mismatched_input({"integer"})}> ID
-    {one_of("from")}? <fail={mismatched_input({"from"})}> ID
+    {one_of("signed", "unsigned")}? sign=ID
+    {one_of("8", "16", "32", "64")}? width=NUMBER
+    {one_of("bit")}? ID
+    {one_of("integer")}? ID
+    {one_of("from")}? ID
     min=('...' | NUMBER)
-    {one_of("to")}? <fail={mismatched_input({"to"})}> ID
+    {one_of("to")}? ID
     max=('...' | NUMBER)
     SEMI;
 

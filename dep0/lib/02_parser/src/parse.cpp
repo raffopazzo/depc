@@ -98,8 +98,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
             width.view() == "8" ? ast::width_t::_8 :
             width.view() == "16" ? ast::width_t::_16 :
             width.view() == "32" ? ast::width_t::_32 :
-            width.view() == "64" ? ast::width_t::_64 :
-            throw error_t{"Invalid width must be 8, 16, 32 or 64", loc};
+            ast::width_t::_64;
         if (sign.view() == "unsigned")
         {
             if (not min or min->view() != "0")

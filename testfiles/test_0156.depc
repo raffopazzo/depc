@@ -1,0 +1,2 @@
+typedef hours_t = unsigned 8 bit integer from ... to 23; // parse error: unsigned lower bound must be 0
+hours_t h() { return 1; }

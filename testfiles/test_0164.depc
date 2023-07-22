@@ -1,0 +1,2 @@
+typedef zero_t = unsigned 8 bit integer from 0 to 0;
+zero_t zero() { return 0; }

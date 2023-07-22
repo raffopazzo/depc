@@ -1,2 +1,2 @@
-i32_t f() { return --1; }
+i32_t f() { return --1; } // parse error: unexpected `--`
 

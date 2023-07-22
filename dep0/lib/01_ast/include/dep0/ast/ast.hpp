@@ -13,6 +13,7 @@ namespace dep0::ast {
 // forward declarations
 
 template <Properties P> struct module_t;
+template <Properties P> struct type_def_t;
 template <Properties P> struct func_def_t;
 template <Properties P> struct type_t;
 template <Properties P> struct body_t;
@@ -35,7 +36,12 @@ struct type_t
     struct u16_t { bool operator==(u16_t const&) const { return true; } };
     struct u32_t { bool operator==(u32_t const&) const { return true; } };
     struct u64_t { bool operator==(u64_t const&) const { return true; } };
-    using value_t = std::variant<bool_t, unit_t, i8_t, i16_t, i32_t, i64_t, u8_t, u16_t, u32_t, u64_t>;
+    struct name_t
+    {
+        source_text name;
+        bool operator==(name_t const&) const = default;
+    };
+    using value_t = std::variant<bool_t, unit_t, i8_t, i16_t, i32_t, i64_t, u8_t, u16_t, u32_t, u64_t, name_t>;
 
     properties_t properties;
     value_t value;
@@ -113,6 +119,26 @@ struct body_t
     bool operator==(body_t const&) const = default;
 };
 
+enum class sign_t { signed_v, unsigned_v };
+enum class width_t { _8, _16, _32, _64 };
+
+template <Properties P>
+struct type_def_t
+{
+    struct integer_t
+    {
+        source_text name;
+        sign_t sign;
+        width_t width;
+        std::optional<source_text> max_abs_value;
+    };
+
+    using properties_t = typename P::type_def_properties_type;
+    using value_t = std::variant<integer_t>;
+    properties_t properties;
+    value_t value;
+};
+
 template <Properties P>
 struct func_def_t
 {
@@ -132,9 +158,11 @@ template <Properties P>
 struct module_t
 {
     using properties_t = typename P::module_properties_type;
+    using type_def_t = ast::type_def_t<P>;
     using func_def_t = ast::func_def_t<P>;
 
     properties_t properties;
+    std::vector<type_def_t> type_defs;
     std::vector<func_def_t> func_defs;
 
     bool operator==(module_t const&) const = default;

@@ -1,0 +1,2 @@
+typedef zero_t = singed 8 bit integer from 0 to 0; // parse error: unrecognised token `singed`
+zero_t zero() { return 0; }

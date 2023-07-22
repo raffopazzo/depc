@@ -31,7 +31,7 @@ std::optional<source_text> get_text(source_text const src, antlr4::ParserRuleCon
     return res;
 }
 
-std::optional<source_loc_t> make_source(source_text const src, antlr4::Token const& token)
+std::optional<source_loc_t> get_loc(source_text const src, antlr4::Token const& token)
 {
     std::optional<source_loc_t> res;
     if (auto txt = get_text(src, token))
@@ -39,7 +39,7 @@ std::optional<source_loc_t> make_source(source_text const src, antlr4::Token con
     return res;
 }
 
-std::optional<source_loc_t> make_source(source_text const src, antlr4::ParserRuleContext const& ctx)
+std::optional<source_loc_t> get_loc(source_text const src, antlr4::ParserRuleContext const& ctx)
 {
     std::optional<source_loc_t> res;
     if (auto txt = get_text(src, ctx))
@@ -58,7 +58,15 @@ struct parse_visitor_t : dep0::DepCParserVisitor
     virtual std::any visitModule(DepCParser::ModuleContext* ctx) override
     {
         assert(ctx);
+        std::vector<type_def_t> type_defs;
         std::vector<func_def_t> func_defs;
+        std::ranges::transform(
+            ctx->typeDef(),
+            std::back_inserter(type_defs),
+            [this] (DepCParser::TypeDefContext* x)
+            {
+                return std::any_cast<type_def_t>(visitTypeDef(x));
+            });
         std::ranges::transform(
             ctx->funcDef(),
             std::back_inserter(func_defs),
@@ -66,7 +74,50 @@ struct parse_visitor_t : dep0::DepCParserVisitor
             {
                 return std::any_cast<func_def_t>(visitFuncDef(x));
             });
-        return module_t{make_source(src, *ctx).value(), std::move(func_defs)};
+        return module_t{get_loc(src, *ctx).value(), std::move(type_defs), std::move(func_defs)};
+    }
+
+    virtual std::any visitTypeDef(DepCParser::TypeDefContext* ctx) override
+    {
+        auto const optional_if =
+            [] <typename T> (T const& x, auto const& f) -> std::optional<T>
+            {
+                return f(x) ? std::optional{x} : std::nullopt;
+            };
+        assert(ctx);
+        auto const loc = get_loc(src, *ctx).value();
+        auto const name = get_text(src, *ctx->name).value();
+        auto const sign = get_text(src, *ctx->sign).value();
+        auto const width = get_text(src, *ctx->width).value();
+        auto const min = optional_if(get_text(src, *ctx->min).value(), [] (auto const& x) { return x.view() != "..."; });
+        auto const max = optional_if(get_text(src, *ctx->max).value(), [] (auto const& x) { return x.view() != "..."; });
+        if (max and max->view().starts_with('-'))
+            throw error_t{"Upper bound must be a positive number", loc};
+        auto const max_abs = max ? std::optional{max->view().starts_with('+') ? max->substr(1) : max} : std::nullopt;
+        auto const w =
+            width.view() == "8" ? ast::width_t::_8 :
+            width.view() == "16" ? ast::width_t::_16 :
+            width.view() == "32" ? ast::width_t::_32 :
+            ast::width_t::_64;
+        if (sign.view() == "unsigned")
+        {
+            if (not min or min->view() != "0")
+                throw error_t{"Lower bound of unsigned integer must be 0", loc};
+            return type_def_t{loc, type_def_t::integer_t{name, ast::sign_t::unsigned_v, w, max_abs}};
+        }
+        else if (min.has_value() xor max.has_value())
+            throw error_t{"Lower and upper bound of signed integer must be either both present or both missing", loc};
+        else if (min)
+        {
+            if (not min->view().starts_with('-'))
+                throw error_t{"Lower bound of signed integer must be a negative number", loc};
+            auto const min_abs = min->substr(1);
+            if (min_abs != max_abs)
+                throw error_t{"Lower and upper of signed integer bound must have same absolute value", loc};
+            return type_def_t{loc, type_def_t::integer_t{name, ast::sign_t::signed_v, w, max_abs}};
+        }
+        else
+            return type_def_t{loc, type_def_t::integer_t{name, ast::sign_t::signed_v, w, std::nullopt}};
     }
 
     virtual std::any visitFuncDef(DepCParser::FuncDefContext* ctx) override
@@ -76,24 +127,25 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         assert(ctx->ID());
         assert(ctx->body());
         return func_def_t{
-            make_source(src, *ctx).value(),
-                std::any_cast<type_t>(visitType(ctx->type())),
-                get_text(src, *ctx->name).value(),
-                std::any_cast<body_t>(visitBody(ctx->body()))};
+            get_loc(src, *ctx).value(),
+            std::any_cast<type_t>(visitType(ctx->type())),
+            get_text(src, *ctx->name).value(),
+            std::any_cast<body_t>(visitBody(ctx->body()))};
     }
 
     virtual std::any visitType(DepCParser::TypeContext* ctx) override
     {
-        if (ctx->KW_BOOL()) return type_t{make_source(src, *ctx).value(), type_t::bool_t{}};
-        if (ctx->KW_UNIT_T()) return type_t{make_source(src, *ctx).value(), type_t::unit_t{}};
-        if (ctx->KW_I8_T()) return type_t{make_source(src, *ctx).value(), type_t::i8_t{}};
-        if (ctx->KW_I16_T()) return type_t{make_source(src, *ctx).value(), type_t::i16_t{}};
-        if (ctx->KW_I32_T()) return type_t{make_source(src, *ctx).value(), type_t::i32_t{}};
-        if (ctx->KW_I64_T()) return type_t{make_source(src, *ctx).value(), type_t::i64_t{}};
-        if (ctx->KW_U8_T()) return type_t{make_source(src, *ctx).value(), type_t::u8_t{}};
-        if (ctx->KW_U16_T()) return type_t{make_source(src, *ctx).value(), type_t::u16_t{}};
-        if (ctx->KW_U32_T()) return type_t{make_source(src, *ctx).value(), type_t::u32_t{}};
-        if (ctx->KW_U64_T()) return type_t{make_source(src, *ctx).value(), type_t::u64_t{}};
+        if (ctx->KW_BOOL()) return type_t{get_loc(src, *ctx).value(), type_t::bool_t{}};
+        if (ctx->KW_UNIT_T()) return type_t{get_loc(src, *ctx).value(), type_t::unit_t{}};
+        if (ctx->KW_I8_T()) return type_t{get_loc(src, *ctx).value(), type_t::i8_t{}};
+        if (ctx->KW_I16_T()) return type_t{get_loc(src, *ctx).value(), type_t::i16_t{}};
+        if (ctx->KW_I32_T()) return type_t{get_loc(src, *ctx).value(), type_t::i32_t{}};
+        if (ctx->KW_I64_T()) return type_t{get_loc(src, *ctx).value(), type_t::i64_t{}};
+        if (ctx->KW_U8_T()) return type_t{get_loc(src, *ctx).value(), type_t::u8_t{}};
+        if (ctx->KW_U16_T()) return type_t{get_loc(src, *ctx).value(), type_t::u16_t{}};
+        if (ctx->KW_U32_T()) return type_t{get_loc(src, *ctx).value(), type_t::u32_t{}};
+        if (ctx->KW_U64_T()) return type_t{get_loc(src, *ctx).value(), type_t::u64_t{}};
+        if (ctx->name) return type_t{get_loc(src, *ctx).value(), type_t::name_t{get_text(src, *ctx->name).value()}};
         assert(nullptr);
     }
 
@@ -108,19 +160,19 @@ struct parse_visitor_t : dep0::DepCParserVisitor
             {
                 return std::any_cast<stmt_t>(visitStmt(x));
             });
-        return body_t{make_source(src, *ctx).value(), std::move(stmts)};
+        return body_t{get_loc(src, *ctx).value(), std::move(stmts)};
     }
 
     virtual std::any visitStmt(DepCParser::StmtContext* ctx) override
     {
         assert(ctx);
-        auto s = make_source(src, *ctx).value();
+        auto loc = get_loc(src, *ctx).value();
         if (ctx->funCallStmt())
-            return stmt_t{std::move(s), std::any_cast<stmt_t::fun_call_t>(visitFunCallStmt(ctx->funCallStmt()))};
+            return stmt_t{std::move(loc), std::any_cast<stmt_t::fun_call_t>(visitFunCallStmt(ctx->funCallStmt()))};
         if (ctx->ifElse())
-            return stmt_t{std::move(s), std::any_cast<stmt_t::if_else_t>(visitIfElse(ctx->ifElse()))};
+            return stmt_t{std::move(loc), std::any_cast<stmt_t::if_else_t>(visitIfElse(ctx->ifElse()))};
         if (ctx->returnStmt())
-            return stmt_t{std::move(s), std::any_cast<stmt_t::return_t>(visitReturnStmt(ctx->returnStmt()))};
+            return stmt_t{std::move(loc), std::any_cast<stmt_t::return_t>(visitReturnStmt(ctx->returnStmt()))};
         assert(nullptr);
     }
 
@@ -147,7 +199,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
     {
         assert(ctx);
         if (ctx->body()) return visitBody(ctx->body());
-        if (ctx->stmt()) return body_t{make_source(src, *ctx).value(), {std::any_cast<stmt_t>(visitStmt(ctx->stmt()))}};
+        if (ctx->stmt()) return body_t{get_loc(src, *ctx).value(), {std::any_cast<stmt_t>(visitStmt(ctx->stmt()))}};
         assert(nullptr);
     }
 
@@ -173,11 +225,11 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         assert(ctx);
         if (ctx->numericExpr())
             return expr_t{
-                make_source(src, *ctx).value(),
+                get_loc(src, *ctx).value(),
                 std::any_cast<expr_t::numeric_constant_t>(visitNumericExpr(ctx->numericExpr()))};
         if (ctx->booleanExpr())
             return expr_t{
-                make_source(src, *ctx).value(),
+                get_loc(src, *ctx).value(),
                 std::any_cast<expr_t::boolean_constant_t>(visitBooleanExpr(ctx->booleanExpr()))};
         assert(nullptr);
     }
@@ -201,7 +253,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         assert(ctx);
         assert(ctx->ID());
         return expr_t{
-            make_source(src, *ctx).value(),
+            get_loc(src, *ctx).value(),
             expr_t::fun_call_t{get_text(src, *ctx->name).value()}};
     }
 };
@@ -282,8 +334,15 @@ expected<module_t> parse(std::filesystem::path const& path)
     dep0::DepCParser::ModuleContext* module = parser.module();
     if (error_listener.error)
         return std::move(*error_listener.error);
-    parse_visitor_t visitor(*source);
-    return std::any_cast<module_t>(module->accept(&visitor));
+    try
+    {
+        parse_visitor_t visitor(*source);
+        return std::any_cast<module_t>(module->accept(&visitor));
+    }
+    catch (error_t const& e) // we don't like to throw... this is an exceptional case (pun not intended)
+    {
+        return e;
+    }
 }
 
 }

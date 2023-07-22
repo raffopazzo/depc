@@ -261,10 +261,14 @@ llvm::Value* gen_val(context_t& ctx, llvm::IRBuilder<>& builder, typecheck::expr
         }
         llvm::Value* operator()(typecheck::expr_t::numeric_constant_t const& x)
         {
-            return llvm::ConstantInt::get(
-                cast<llvm::IntegerType>(gen_type(ctx, builder.getContext(), expr.properties.type)),
-                contains_digit_separator(x.number.view()) ? remove_digit_separator(x.number.view()) : x.number.view(),
-                10);
+            std::optional<std::string> without_separator;
+            std::string_view number;
+            if (contains_digit_separator(x.number))
+                number = without_separator.emplace(remove_digit_separator(x.number));
+            else
+                number = x.number;
+            auto const llvm_type = cast<llvm::IntegerType>(gen_type(ctx, builder.getContext(), expr.properties.type));
+            return llvm::ConstantInt::get(llvm_type, number, 10);
         }
         llvm::Value* operator()(typecheck::expr_t::fun_call_t const& x)
         {

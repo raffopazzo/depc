@@ -261,10 +261,10 @@ static expected<expr_t> check_numeric_expr(
         {
             std::optional<std::string> without_separator; // keeps alive the string pointed to by `number`
             std::string_view number;
-            if (contains_digit_separator(x.number.view()))
-                number = without_separator.emplace(remove_digit_separator(x.number.view()));
+            if (contains_digit_separator(x.number))
+                number = without_separator.emplace(remove_digit_separator(x.number));
             else
-                number = x.number.view();
+                number = x.number;
             skip_zero_or_one(number, sign_chars);
             skip_any(number, "0");
             if (number.starts_with('-'))
@@ -359,7 +359,7 @@ static expected<expr_t> check_numeric_expr(
                             err << "This is a compiler bug, please report it!";
                             return error(err.str());
                         }
-                        return check_integer(integer.name.view(), "+-", max_abs);
+                        return check_integer(integer.name, "+-", max_abs);
                     }
                     else
                     {
@@ -378,7 +378,7 @@ static expected<expr_t> check_numeric_expr(
                             err << "This is a compiler bug, please report it!";
                             return error(err.str());
                         }
-                        return check_integer(integer.name.view(), "+", max_abs);
+                        return check_integer(integer.name, "+", max_abs);
                     }
                 }
             };

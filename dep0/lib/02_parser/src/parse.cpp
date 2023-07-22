@@ -89,19 +89,19 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         auto const name = get_text(src, *ctx->name).value();
         auto const sign = get_text(src, *ctx->sign).value();
         auto const width = get_text(src, *ctx->width).value();
-        auto const min = optional_if(get_text(src, *ctx->min).value(), [] (auto const& x) { return x.view() != "..."; });
-        auto const max = optional_if(get_text(src, *ctx->max).value(), [] (auto const& x) { return x.view() != "..."; });
-        if (max and max->view().starts_with('-'))
+        auto const min = optional_if(get_text(src, *ctx->min).value(), [] (auto const& x) { return x != "..."; });
+        auto const max = optional_if(get_text(src, *ctx->max).value(), [] (auto const& x) { return x != "..."; });
+        if (max and max->starts_with('-'))
             throw error_t{"Upper bound must be a positive number", loc};
-        auto const max_abs = max ? std::optional{max->view().starts_with('+') ? max->substr(1) : max} : std::nullopt;
+        auto const max_abs = max ? std::optional{max->starts_with('+') ? max->substr(1) : max} : std::nullopt;
         auto const w =
-            width.view() == "8" ? ast::width_t::_8 :
-            width.view() == "16" ? ast::width_t::_16 :
-            width.view() == "32" ? ast::width_t::_32 :
+            width == "8" ? ast::width_t::_8 :
+            width == "16" ? ast::width_t::_16 :
+            width == "32" ? ast::width_t::_32 :
             ast::width_t::_64;
-        if (sign.view() == "unsigned")
+        if (sign == "unsigned")
         {
-            if (not min or min->view() != "0")
+            if (not min or min != "0")
                 throw error_t{"Lower bound of unsigned integer must be 0", loc};
             return type_def_t{loc, type_def_t::integer_t{name, ast::sign_t::unsigned_v, w, max_abs}};
         }
@@ -109,7 +109,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
             throw error_t{"Lower and upper bound of signed integer must be either both present or both missing", loc};
         else if (min)
         {
-            if (not min->view().starts_with('-'))
+            if (not min->starts_with('-'))
                 throw error_t{"Lower bound of signed integer must be a negative number", loc};
             auto const min_abs = min->substr(1);
             if (min_abs != max_abs)
@@ -319,7 +319,7 @@ expected<module_t> parse(std::filesystem::path const& path)
     auto source = mmap(path);
     if (not source)
         return source.error();
-    auto input = antlr4::ANTLRInputStream(source->view());
+    auto input = antlr4::ANTLRInputStream(*source);
     dep0::DepCLexer lexer(&input);
     FirstErrorListener error_listener{*source};
     lexer.removeErrorListeners();

@@ -376,5 +376,7 @@ BOOST_AUTO_TEST_CASE(test_0167)
     BOOST_TEST_REQUIRE(r);
     BOOST_TEST(r->getReturnValue()->getName().str() == "x");
 }
+BOOST_AUTO_TEST_CASE(test_0168) { BOOST_TEST(pass("test_0168.depc")); }
+BOOST_AUTO_TEST_CASE(test_0169) { BOOST_TEST(pass("test_0169.depc")); }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -14,6 +14,12 @@ namespace dep0::typecheck::tt {
 class context_t
 {
 public:
+    struct const_decl_t
+    {
+        term_t::const_t subject;
+        type_t type;
+        bool operator==(const_decl_t const&) const = default;
+    };
     struct type_decl_t
     {
         type_t::var_t subject;
@@ -26,7 +32,7 @@ public:
         bool operator==(var_decl_t const&) const = default;
     };
 
-    using decl_t = std::variant<type_decl_t, var_decl_t>;
+    using decl_t = std::variant<const_decl_t, type_decl_t, var_decl_t>;
 
     context_t();
     context_t(context_t const&) = default;
@@ -36,8 +42,10 @@ public:
 
     context_t extend() const;
 
+    expected<std::true_type> add(term_t::const_t, type_t);
     expected<std::true_type> add(type_t::var_t);
     expected<std::true_type> add(term_t::var_t, type_t);
+    std::optional<const_decl_t> operator[](term_t::const_t const&) const;
     std::optional<type_decl_t> operator[](type_t::var_t const&) const;
     std::optional<var_decl_t> operator[](term_t::var_t const&) const;
 

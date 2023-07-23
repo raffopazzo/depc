@@ -68,7 +68,7 @@ int main(int argc, char** argv)
             llvm::Optional<llvm::Reloc::Model>(llvm::codegen::getRelocModel()));
     if (not machine)
     {
-        llvm::WithColor::error(llvm::errs()) << "Failed to create target machine\n";
+        llvm::WithColor::error(llvm::errs()) << "failed to create target machine\n";
         return 1;
     }
     llvm::LLVMContext llvm_context;
@@ -88,7 +88,7 @@ int main(int argc, char** argv)
         {
             std::ostringstream str;
             dep0::pretty_print(str, parsed_module.error());
-            llvm::WithColor::error(llvm::errs(), f) << "Parse error: " << str.str() << '\n';
+            llvm::WithColor::error(llvm::errs(), f) << "parse error: " << str.str() << '\n';
             return 1;
         }
         auto typechecked_module = dep0::typecheck::check(*parsed_module);
@@ -96,12 +96,12 @@ int main(int argc, char** argv)
         {
             std::ostringstream str;
             dep0::typecheck::pretty_print(str, typechecked_module.error());
-            llvm::WithColor::error(llvm::errs(), f) << "Typecheck error: " << str.str() << '\n';
+            llvm::WithColor::error(llvm::errs(), f) << "typecheck error: " << str.str() << '\n';
             return 1;
         }
         if (typecheck_only or file_type == llvm::CodeGenFileType::CGFT_Null)
         {
-            llvm::WithColor::note(llvm::outs(), f) << "Typechecks correctly" << '\n';
+            llvm::WithColor::note(llvm::outs(), f) << "typechecks correctly" << '\n';
             continue;
         }
 //      ...add transformations here...
@@ -111,7 +111,7 @@ int main(int argc, char** argv)
         {
             std::ostringstream str;
             dep0::pretty_print(str, llvm_module.error());
-            llvm::WithColor::error(llvm::errs(), f) << "Codegen error: " << str.str() << '\n';
+            llvm::WithColor::error(llvm::errs(), f) << "codegen error: " << str.str() << '\n';
             return 1;
         }
         std::error_code ec;
@@ -121,7 +121,7 @@ int main(int argc, char** argv)
             pass_manager.add(llvm::createPrintModulePass(out.os()));
         else if (machine->addPassesToEmitFile(pass_manager, out.os(), nullptr, file_type))
         {
-            llvm::WithColor::error(llvm::errs(), f) << "No support for file type\n";
+            llvm::WithColor::error(llvm::errs(), f) << "no support for file type\n";
             return 1;
         }
         pass_manager.run(llvm_module->get());

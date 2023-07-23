@@ -64,7 +64,7 @@ BOOST_AUTO_TEST_CASE(test_0002)
 {
     auto const result = check(open("test_0002.depc"));
     BOOST_TEST_REQUIRE(result.has_error());
-    BOOST_TEST(result.error().error == "Expecting expression of type `i32_t`");
+    BOOST_TEST(result.error().error == "expecting expression of type `i32_t`");
     BOOST_TEST(result.error().location.has_value());
 }
 
@@ -73,7 +73,7 @@ BOOST_AUTO_TEST_CASE(test_0004)
     auto const module = open("test_0004.depc");
     auto const result = check(module);
     BOOST_TEST_REQUIRE(result.has_error());
-    BOOST_TEST(result.error().error == "Type mismatch between numeric constant and `unit_t`");
+    BOOST_TEST(result.error().error == "type mismatch between numeric constant and `unit_t`");
     BOOST_TEST(result.error().location.has_value());
 }
 
@@ -82,7 +82,7 @@ BOOST_AUTO_TEST_CASE(test_0008)
     auto const module = open("test_0008.depc");
     auto const result = check(module);
     BOOST_TEST_REQUIRE(result.has_error());
-    BOOST_TEST(result.error().error == "Expression of type `bool` does not typecheck with expected type `i32_t`");
+    BOOST_TEST(result.error().error == "expression of type `bool` does not typecheck with expected type `i32_t`");
     BOOST_TEST(result.error().location.has_value());
 }
 
@@ -91,7 +91,7 @@ BOOST_AUTO_TEST_CASE(test_0009)
     auto const module = open("test_0009.depc");
     auto const result = check(module);
     BOOST_TEST_REQUIRE(result.has_error());
-    BOOST_TEST(result.error().error == "Type mismatch between numeric constant and `bool`");
+    BOOST_TEST(result.error().error == "type mismatch between numeric constant and `bool`");
     BOOST_TEST(result.error().location.has_value());
 }
 
@@ -100,7 +100,7 @@ BOOST_AUTO_TEST_CASE(test_0010)
     auto const module = open("test_0010.depc");
     auto const result = check(module);
     BOOST_TEST_REQUIRE(result.has_error());
-    BOOST_TEST(result.error().error == "In function `main` missing return statement");
+    BOOST_TEST(result.error().error == "in function `main` missing return statement");
     BOOST_TEST(result.error().location.has_value());
 }
 
@@ -109,7 +109,7 @@ BOOST_AUTO_TEST_CASE(test_0012)
     auto const module = open("test_0012.depc");
     auto const result = check(module);
     BOOST_TEST_REQUIRE(result.has_error());
-    BOOST_TEST(result.error().error == "Expression of type `bool` does not typecheck with expected type `i32_t`");
+    BOOST_TEST(result.error().error == "expression of type `bool` does not typecheck with expected type `i32_t`");
     BOOST_TEST(result.error().location.has_value());
 }
 
@@ -118,7 +118,7 @@ BOOST_AUTO_TEST_CASE(test_0013)
     auto const module = open("test_0013.depc");
     auto const result = check(module);
     BOOST_TEST_REQUIRE(result.has_error());
-    BOOST_TEST(result.error().error == "In function `main` missing return statement");
+    BOOST_TEST(result.error().error == "in function `main` missing return statement");
     BOOST_TEST(result.error().location.has_value());
 }
 
@@ -127,7 +127,7 @@ BOOST_AUTO_TEST_CASE(test_0150)
     auto const module = open("test_0150.depc");
     auto const result = check(module);
     BOOST_TEST_REQUIRE(result.has_error());
-    BOOST_TEST(result.error().error == "Invalid negative constant for unsigned integer");
+    BOOST_TEST(result.error().error == "invalid negative constant for unsigned integer");
     BOOST_TEST(result.error().location.has_value());
     BOOST_TEST_REQUIRE(result.error().tgt.has_value());
     std::ostringstream tgt;

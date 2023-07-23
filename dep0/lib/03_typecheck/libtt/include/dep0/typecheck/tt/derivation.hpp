@@ -41,6 +41,27 @@ struct derivation_t
         friend struct derivation_rules;
     };
 
+    struct const_t
+    {
+        auto const& ctx() const { return m_ctx; }
+        auto const& value() const { return m_const.value; }
+        auto const& ty() const { return m_ty; }
+
+        const_t(const_t const&) = default;
+        const_t(const_t&&) = default;
+        const_t& operator=(const_t const&) = default;
+        const_t& operator=(const_t&&) = default;
+
+    private:
+        const_t(context_t, term_t::const_t, type_t);
+
+        context_t m_ctx;
+        term_t::const_t m_const;
+        type_t m_ty;
+
+        friend struct derivation_rules;
+    };
+
     struct var_t
     {
         auto const& ctx() const { return m_ctx; }
@@ -110,10 +131,11 @@ struct derivation_t
         friend struct derivation_rules;
     };
 
-    using value_t = std::variant<form_t, var_t, app_t, abs_t>;
+    using value_t = std::variant<form_t, const_t, var_t, app_t, abs_t>;
     value_t value;
 
     explicit derivation_t(form_t);
+    explicit derivation_t(const_t);
     explicit derivation_t(var_t);
     explicit derivation_t(app_t);
     explicit derivation_t(abs_t);

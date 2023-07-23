@@ -59,4 +59,4 @@ constantExpr: numericExpr | booleanExpr;
 numericExpr: value=NUMBER;
 booleanExpr: value=('true'|'false');
 
-funCallExpr: name=ID '(' ')';
+funCallExpr: name=ID '(' (expr (',' expr)*)? ')';

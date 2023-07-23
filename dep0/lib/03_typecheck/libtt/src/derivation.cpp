@@ -13,6 +13,11 @@ struct derivation_rules
         return derivation_t(derivation_t::form_t(std::move(ty)));
     }
 
+    static derivation_t const_(context_t ctx, term_t::const_t x, type_t t)
+    {
+        return derivation_t(derivation_t::const_t(std::move(ctx), std::move(x), std::move(t)));
+    }
+
     static derivation_t var(context_t ctx, term_t::var_t x, type_t t)
     {
         return derivation_t(derivation_t::var_t(std::move(ctx), std::move(x), std::move(t)));
@@ -47,6 +52,12 @@ derivation_t::form_t::form_t(type_t ty) :
     m_ty(std::move(ty))
 { }
 
+derivation_t::const_t::const_t(context_t ctx, term_t::const_t c, type_t ty) :
+    m_ctx(std::move(ctx)),
+    m_const(std::move(c)),
+    m_ty(std::move(ty))
+{ }
+
 derivation_t::var_t::var_t(context_t ctx, term_t::var_t var, type_t ty) :
     m_ctx(std::move(ctx)),
     m_var(std::move(var)),
@@ -69,6 +80,7 @@ derivation_t::abs_t::abs_t(context_t ctx, term_t::var_t var, type_t var_type, de
 { }
 
 derivation_t::derivation_t(form_t x) : value(std::move(x)) {}
+derivation_t::derivation_t(const_t x) : value(std::move(x)) {}
 derivation_t::derivation_t(var_t x) : value(std::move(x)) {}
 derivation_t::derivation_t(app_t x) : value(std::move(x)) {}
 derivation_t::derivation_t(abs_t x) : value(std::move(x)) {}
@@ -85,7 +97,7 @@ expected<derivation_t> type_assign(context_t const& ctx, type_t::var_t const& x)
     else
     {
         std::ostringstream err;
-        err << "Unknown type `" << x.name << '`';
+        err << "unknown type `" << x.name << '`';
         return error_t{err.str()};
     }
 }
@@ -94,6 +106,17 @@ expected<derivation_t> type_assign(context_t const& ctx, term_t const& x)
 {
     return match(
         x.value,
+        [&] (term_t::const_t const& x) -> expected<derivation_t>
+        {
+            if (auto ty = ctx[x])
+                return derivation_rules::const_(ctx, x, ty->type);
+            else
+            {
+                std::ostringstream err;
+                err << "constant `" << x.value << "` has no type in current context";
+                return error_t{err.str()};
+            }
+        },
         [&] (term_t::var_t const& x) -> expected<derivation_t>
         {
             if (auto ty = ctx[x])
@@ -101,7 +124,7 @@ expected<derivation_t> type_assign(context_t const& ctx, term_t const& x)
             else
             {
                 std::ostringstream err;
-                err << "Variable/Function name `"<< x.name <<"` not found in current context";
+                err << "variable/function name `"<< x.name <<"` not found in current context";
                 return error_t{err.str()};
             }
         },
@@ -114,7 +137,9 @@ expected<derivation_t> type_assign(context_t const& ctx, term_t const& x)
             if (not is_arr(left_type))
             {
                 std::ostringstream err;
-                pretty_print(err << "Cannot apply non-function type `", left_type) << '`';
+                pretty_print(err << "cannot apply `", x.left.get()) << '`';
+                pretty_print(err << " of non-function type `", left_type) << '`';
+                pretty_print(err << " to argument `", x.right.get()) << '`';
                 return error_t{err.str()};
             }
             auto right_d = type_assign(ctx, x.right.get());
@@ -124,7 +149,7 @@ expected<derivation_t> type_assign(context_t const& ctx, term_t const& x)
             if (dom != type_of(*right_d))
             {
                 std::ostringstream err;
-                pretty_print(err << "Type mismatch between function argument of type `", dom);
+                pretty_print(err << "type mismatch between function argument of type `", dom);
                 pretty_print(err << "` and expression of type `", type_of(*right_d)) << '`';
                 return error_t{err.str()};
             }

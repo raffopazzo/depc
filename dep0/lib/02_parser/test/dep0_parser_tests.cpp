@@ -241,44 +241,44 @@ BOOST_AUTO_TEST_CASE(test_0152)
     auto const& integer_defs_7 = std::get<dep0::parser::type_def_t::integer_t>(pass_result->type_defs[7].value);
     auto const& integer_defs_8 = std::get<dep0::parser::type_def_t::integer_t>(pass_result->type_defs[8].value);
     auto const& integer_defs_9 = std::get<dep0::parser::type_def_t::integer_t>(pass_result->type_defs[9].value);
-    BOOST_TEST(integer_defs_0.name.view() == "hours_t");
+    BOOST_TEST(integer_defs_0.name == "hours_t");
     BOOST_TEST(integer_defs_0.sign == dep0::ast::sign_t::unsigned_v);
     BOOST_TEST(integer_defs_0.width == dep0::ast::width_t::_8);
     BOOST_TEST(integer_defs_0.max_abs_value.has_value());
     BOOST_TEST(integer_defs_0.max_abs_value == "23");
-    BOOST_TEST(integer_defs_1.name.view() == "minutes_t");
+    BOOST_TEST(integer_defs_1.name == "minutes_t");
     BOOST_TEST(integer_defs_1.sign == dep0::ast::sign_t::unsigned_v);
     BOOST_TEST(integer_defs_1.width == dep0::ast::width_t::_8);
     BOOST_TEST(integer_defs_1.max_abs_value == "59");
-    BOOST_TEST(integer_defs_2.name.view() == "seconds_t");
+    BOOST_TEST(integer_defs_2.name == "seconds_t");
     BOOST_TEST(integer_defs_2.sign == dep0::ast::sign_t::unsigned_v);
     BOOST_TEST(integer_defs_2.width == dep0::ast::width_t::_8);
     BOOST_TEST(integer_defs_2.max_abs_value == "59");
-    BOOST_TEST(integer_defs_3.name.view() == "millis_t");
+    BOOST_TEST(integer_defs_3.name == "millis_t");
     BOOST_TEST(integer_defs_3.sign == dep0::ast::sign_t::unsigned_v);
     BOOST_TEST(integer_defs_3.width == dep0::ast::width_t::_16);
     BOOST_TEST(integer_defs_3.max_abs_value == "999");
-    BOOST_TEST(integer_defs_4.name.view() == "nanos_t");
+    BOOST_TEST(integer_defs_4.name == "nanos_t");
     BOOST_TEST(integer_defs_4.sign == dep0::ast::sign_t::unsigned_v);
     BOOST_TEST(integer_defs_4.width == dep0::ast::width_t::_32);
     BOOST_TEST(integer_defs_4.max_abs_value == "999'999'999");
-    BOOST_TEST(integer_defs_5.name.view() == "duration_t");
+    BOOST_TEST(integer_defs_5.name == "duration_t");
     BOOST_TEST(integer_defs_5.sign == dep0::ast::sign_t::signed_v);
     BOOST_TEST(integer_defs_5.width == dep0::ast::width_t::_64);
     BOOST_TEST(integer_defs_5.max_abs_value.has_value() == false);
-    BOOST_TEST(integer_defs_6.name.view() == "ascii_t");
+    BOOST_TEST(integer_defs_6.name == "ascii_t");
     BOOST_TEST(integer_defs_6.sign == dep0::ast::sign_t::unsigned_v);
     BOOST_TEST(integer_defs_6.width == dep0::ast::width_t::_8);
     BOOST_TEST(integer_defs_6.max_abs_value == "127");
-    BOOST_TEST(integer_defs_7.name.view() == "sign_t");
+    BOOST_TEST(integer_defs_7.name == "sign_t");
     BOOST_TEST(integer_defs_7.sign == dep0::ast::sign_t::signed_v);
     BOOST_TEST(integer_defs_7.width == dep0::ast::width_t::_8);
     BOOST_TEST(integer_defs_7.max_abs_value == "1");
-    BOOST_TEST(integer_defs_8.name.view() == "signal_t");
+    BOOST_TEST(integer_defs_8.name == "signal_t");
     BOOST_TEST(integer_defs_8.sign == dep0::ast::sign_t::signed_v);
     BOOST_TEST(integer_defs_8.width == dep0::ast::width_t::_8);
     BOOST_TEST(integer_defs_8.max_abs_value == "15");
-    BOOST_TEST(integer_defs_9.name.view() == "key_t");
+    BOOST_TEST(integer_defs_9.name == "key_t");
     BOOST_TEST(integer_defs_9.sign == dep0::ast::sign_t::unsigned_v);
     BOOST_TEST(integer_defs_9.width == dep0::ast::width_t::_64);
     BOOST_TEST(integer_defs_9.max_abs_value.has_value() == false);
@@ -297,5 +297,22 @@ BOOST_AUTO_TEST_CASE(test_0163) { BOOST_TEST(pass("test_0163.depc")); }
 BOOST_AUTO_TEST_CASE(test_0164) { BOOST_TEST(pass("test_0164.depc")); }
 BOOST_AUTO_TEST_CASE(test_0165) { BOOST_TEST(fail("test_0165.depc")); }
 BOOST_AUTO_TEST_CASE(test_0166) { BOOST_TEST(fail("test_0166.depc")); }
+BOOST_AUTO_TEST_CASE(test_0167)
+{
+    BOOST_TEST_REQUIRE(pass("test_0167.depc"));
+    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 1ul);
+    auto const& f = pass_result->func_defs[0];
+    BOOST_TEST_REQUIRE(f.args.size() == 1ul);
+    auto const& arg = f.args[0];
+    BOOST_TEST(arg.name == "x");
+    BOOST_TEST(std::holds_alternative<dep0::parser::type_t::i32_t>(arg.type.value));
+    BOOST_TEST_REQUIRE(f.body.stmts.size() == 1ul);
+    auto const* ret = std::get_if<dep0::parser::stmt_t::return_t>(&f.body.stmts[0].value);
+    BOOST_TEST_REQUIRE(ret);
+    BOOST_TEST_REQUIRE(ret->expr.has_value());
+    auto const* var = std::get_if<dep0::parser::expr_t::var_t>(&ret->expr->value);
+    BOOST_TEST_REQUIRE(var);
+    BOOST_TEST(var->name == "x");
+}
 
 BOOST_AUTO_TEST_SUITE_END()

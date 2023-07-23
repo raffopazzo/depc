@@ -4,6 +4,7 @@
 #include "dep0/antlr4/DepCParser.h"
 #include "dep0/antlr4/DepCParserVisitor.h"
 
+#include "dep0/fmap.hpp"
 #include "dep0/mmap.hpp"
 
 #include <antlr4-runtime/antlr4-runtime.h>
@@ -58,23 +59,11 @@ struct parse_visitor_t : dep0::DepCParserVisitor
     virtual std::any visitModule(DepCParser::ModuleContext* ctx) override
     {
         assert(ctx);
-        std::vector<type_def_t> type_defs;
-        std::vector<func_def_t> func_defs;
-        std::ranges::transform(
-            ctx->typeDef(),
-            std::back_inserter(type_defs),
-            [this] (DepCParser::TypeDefContext* x)
-            {
-                return std::any_cast<type_def_t>(visitTypeDef(x));
-            });
-        std::ranges::transform(
-            ctx->funcDef(),
-            std::back_inserter(func_defs),
-            [this] (DepCParser::FuncDefContext* x)
-            {
-                return std::any_cast<func_def_t>(visitFuncDef(x));
-            });
-        return module_t{get_loc(src, *ctx).value(), std::move(type_defs), std::move(func_defs)};
+        return module_t{
+            get_loc(src, *ctx).value(),
+            fmap(ctx->typeDef(), [this] (auto* x) { return std::any_cast<type_def_t>(visitTypeDef(x)); }),
+            fmap(ctx->funcDef(), [this] (auto* x) { return std::any_cast<func_def_t>(visitFuncDef(x)); })
+        };
     }
 
     virtual std::any visitTypeDef(DepCParser::TypeDefContext* ctx) override
@@ -89,19 +78,19 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         auto const name = get_text(src, *ctx->name).value();
         auto const sign = get_text(src, *ctx->sign).value();
         auto const width = get_text(src, *ctx->width).value();
-        auto const min = optional_if(get_text(src, *ctx->min).value(), [] (auto const& x) { return x.view() != "..."; });
-        auto const max = optional_if(get_text(src, *ctx->max).value(), [] (auto const& x) { return x.view() != "..."; });
-        if (max and max->view().starts_with('-'))
+        auto const min = optional_if(get_text(src, *ctx->min).value(), [] (auto const& x) { return x != "..."; });
+        auto const max = optional_if(get_text(src, *ctx->max).value(), [] (auto const& x) { return x != "..."; });
+        if (max and max->starts_with('-'))
             throw error_t{"Upper bound must be a positive number", loc};
-        auto const max_abs = max ? std::optional{max->view().starts_with('+') ? max->substr(1) : max} : std::nullopt;
+        auto const max_abs = max ? std::optional{max->starts_with('+') ? max->substr(1) : max} : std::nullopt;
         auto const w =
-            width.view() == "8" ? ast::width_t::_8 :
-            width.view() == "16" ? ast::width_t::_16 :
-            width.view() == "32" ? ast::width_t::_32 :
+            width == "8" ? ast::width_t::_8 :
+            width == "16" ? ast::width_t::_16 :
+            width == "32" ? ast::width_t::_32 :
             ast::width_t::_64;
-        if (sign.view() == "unsigned")
+        if (sign == "unsigned")
         {
-            if (not min or min->view() != "0")
+            if (not min or min != "0")
                 throw error_t{"Lower bound of unsigned integer must be 0", loc};
             return type_def_t{loc, type_def_t::integer_t{name, ast::sign_t::unsigned_v, w, max_abs}};
         }
@@ -109,7 +98,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
             throw error_t{"Lower and upper bound of signed integer must be either both present or both missing", loc};
         else if (min)
         {
-            if (not min->view().starts_with('-'))
+            if (not min->starts_with('-'))
                 throw error_t{"Lower bound of signed integer must be a negative number", loc};
             auto const min_abs = min->substr(1);
             if (min_abs != max_abs)
@@ -124,13 +113,15 @@ struct parse_visitor_t : dep0::DepCParserVisitor
     {
         assert(ctx);
         assert(ctx->type());
-        assert(ctx->ID());
+        assert(ctx->name);
         assert(ctx->body());
         return func_def_t{
             get_loc(src, *ctx).value(),
             std::any_cast<type_t>(visitType(ctx->type())),
             get_text(src, *ctx->name).value(),
-            std::any_cast<body_t>(visitBody(ctx->body()))};
+            fmap(ctx->arg(), [this] (auto* x) { return std::any_cast<func_def_t::arg_t>(visitArg(x)); }),
+            std::any_cast<body_t>(visitBody(ctx->body()))
+        };
     }
 
     virtual std::any visitType(DepCParser::TypeContext* ctx) override
@@ -149,18 +140,21 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         assert(nullptr);
     }
 
+    virtual std::any visitArg(DepCParser::ArgContext* ctx) override
+    {
+        assert(ctx);
+        assert(ctx->name);
+        assert(ctx->type());
+        return func_def_t::arg_t{std::any_cast<type_t>(visitType(ctx->type())), get_text(src, *ctx->name).value()};
+    }
+
     virtual std::any visitBody(DepCParser::BodyContext* ctx) override
     {
         assert(ctx);
-        std::vector<stmt_t> stmts;
-        std::ranges::transform(
-            ctx->stmt(),
-            std::back_inserter(stmts),
-            [this] (DepCParser::StmtContext* x)
-            {
-                return std::any_cast<stmt_t>(visitStmt(x));
-            });
-        return body_t{get_loc(src, *ctx).value(), std::move(stmts)};
+        return body_t{
+            get_loc(src, *ctx).value(),
+            fmap(ctx->stmt(), [this] (auto* x) { return std::any_cast<stmt_t>(visitStmt(x)); })
+        };
     }
 
     virtual std::any visitStmt(DepCParser::StmtContext* ctx) override
@@ -217,6 +211,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         assert(ctx);
         if (ctx->constantExpr()) return visitConstantExpr(ctx->constantExpr());
         if (ctx->funCallExpr()) return visitFunCallExpr(ctx->funCallExpr());
+        if (ctx->var) return expr_t{get_loc(src, *ctx->var).value(), expr_t::var_t{get_text(src, *ctx->var).value()}};
         assert(nullptr);
     }
 
@@ -319,7 +314,7 @@ expected<module_t> parse(std::filesystem::path const& path)
     auto source = mmap(path);
     if (not source)
         return source.error();
-    auto input = antlr4::ANTLRInputStream(source->view());
+    auto input = antlr4::ANTLRInputStream(*source);
     dep0::DepCLexer lexer(&input);
     FirstErrorListener error_listener{*source};
     lexer.removeErrorListeners();

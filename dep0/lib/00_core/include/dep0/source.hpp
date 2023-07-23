@@ -52,22 +52,38 @@ source_handle_t make_null_handle();
 // Like `std::string_view` but guarantees that the source is still open.
 // Objects constructed using `from_literal` don't manage any memory
 // since they are supposed to be passed a global literal string "...".
-struct source_text
+class source_text
 {
     source_handle_t hdl;
     std::string_view txt;
 
+public:
+    static source_text from_literal(char const*); // WARN if argument is not a global literal we'll eventually crash!
     source_text(source_handle_t, std::string_view);
+    source_text(source_text const&) = default;
+    source_text(source_text&&) = default;
+    source_text& operator=(source_text const&) = default;
+    source_text& operator=(source_text&&) = default;
+    operator std::string_view&(); // allows functions that take `std::string_view&` to modify `txt`
+    operator std::string_view const&() const; // allows that perform tests on `std::string_view const&` to use `txt`
+    std::string_view const& view() const;
 
+    // WARN do not expose `char const* data() const` because our underlying buffer is the entire source file,
+    // which is not null-terminated where you want, in fact it might not even be null-terminated at all!
+
+    bool empty() const;
+    bool starts_with(char) const;
     source_text substr(std::size_t pos, std::size_t n = std::string_view::npos) const;
-
-    static source_text from_literal(char const*);
-
-    std::string_view view() const;
 
     bool operator<(source_text const& that) const;
     bool operator==(source_text const& that) const;
     bool operator!=(source_text const& that) const;
+
+    friend bool operator==(source_text const&, std::string_view);
+    friend bool operator!=(source_text const&, std::string_view);
+    friend bool operator==(std::string_view, source_text const&);
+    friend bool operator!=(std::string_view, source_text const&);
+    friend std::ostream& operator<<(std::ostream&, source_text const&);
 };
 
 bool operator==(source_text const&, std::string_view);

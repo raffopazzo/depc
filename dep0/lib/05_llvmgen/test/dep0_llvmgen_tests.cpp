@@ -363,5 +363,18 @@ BOOST_AUTO_TEST_CASE(test_0164)
 }
 // BOOST_AUTO_TEST_CASE(test_0165) doesn't parse
 // BOOST_AUTO_TEST_CASE(test_0166) doesn't parse
+BOOST_AUTO_TEST_CASE(test_0167)
+{
+    BOOST_TEST_REQUIRE(pass("test_0167.depc"));
+    auto* f = pass_result.value()->getFunction("id");
+    BOOST_TEST_REQUIRE(f);
+    BOOST_TEST_REQUIRE(f->arg_size() == 1ul);
+    auto* x = f->getArg(0ul);
+    BOOST_TEST(x->getName().str() == "x");
+    BOOST_TEST(x->hasSExtAttr());
+    auto* r = cast<llvm::ReturnInst>(f->getEntryBlock().getTerminator());
+    BOOST_TEST_REQUIRE(r);
+    BOOST_TEST(r->getReturnValue()->getName().str() == "x");
+}
 
 BOOST_AUTO_TEST_SUITE_END()

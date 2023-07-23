@@ -226,5 +226,22 @@ BOOST_AUTO_TEST_CASE(test_0163) { BOOST_TEST(pass("test_0163.depc")); }
 BOOST_AUTO_TEST_CASE(test_0164) { BOOST_TEST(pass("test_0164.depc")); }
 // BOOST_AUTO_TEST_CASE(test_0165) doesn't parse
 // BOOST_AUTO_TEST_CASE(test_0166) doesn't parse
+BOOST_AUTO_TEST_CASE(test_0167)
+{
+    BOOST_TEST_REQUIRE(pass("test_0167.depc"));
+    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 1ul);
+    auto const& f = pass_result->func_defs[0];
+    BOOST_TEST_REQUIRE(f.args.size() == 1ul);
+    auto const& arg = f.args[0];
+    BOOST_TEST(arg.name == "x");
+    BOOST_TEST(std::holds_alternative<dep0::typecheck::type_t::i32_t>(arg.type.value));
+    BOOST_TEST_REQUIRE(f.body.stmts.size() == 1ul);
+    auto const* ret = std::get_if<dep0::typecheck::stmt_t::return_t>(&f.body.stmts[0].value);
+    BOOST_TEST_REQUIRE(ret);
+    BOOST_TEST_REQUIRE(ret->expr.has_value());
+    auto const* var = std::get_if<dep0::typecheck::expr_t::var_t>(&ret->expr->value);
+    BOOST_TEST_REQUIRE(var);
+    BOOST_TEST(var->name == "x");
+}
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -1,5 +1,7 @@
 #include "dep0/typecheck/tt/derivation.hpp"
 
+#include "dep0/match.hpp"
+
 #include <sstream>
 
 namespace dep0::typecheck::tt {
@@ -73,7 +75,7 @@ derivation_t::derivation_t(abs_t x) : value(std::move(x)) {}
 
 type_t const& type_of(derivation_t const& d)
 {
-    return std::visit([] (auto const& d) -> auto const& { return d.ty(); }, d.value);
+    return match(d.value, [] (auto const& d) -> auto const& { return d.ty(); });
 }
 
 expected<derivation_t> type_assign(context_t const& ctx, type_t::var_t const& x)
@@ -90,11 +92,9 @@ expected<derivation_t> type_assign(context_t const& ctx, type_t::var_t const& x)
 
 expected<derivation_t> type_assign(context_t const& ctx, term_t const& x)
 {
-    struct visitor
-    {
-        context_t const& ctx;
-
-        expected<derivation_t> operator()(term_t::var_t const& x) const
+    return match(
+        x.value,
+        [&] (term_t::var_t const& x) -> expected<derivation_t>
         {
             if (auto ty = ctx[x])
                 return derivation_rules::var(ctx, x, ty->type);
@@ -104,9 +104,8 @@ expected<derivation_t> type_assign(context_t const& ctx, term_t const& x)
                 err << "Variable/Function name `"<< x.name <<"` not found in current context";
                 return error_t{err.str()};
             }
-        }
-
-        expected<derivation_t> operator()(term_t::app_t const& x) const
+        },
+        [&] (term_t::app_t const& x) -> expected<derivation_t>
         {
             auto left_d = type_assign(ctx, x.left.get());
             if (not left_d)
@@ -130,9 +129,8 @@ expected<derivation_t> type_assign(context_t const& ctx, term_t const& x)
                 return error_t{err.str()};
             }
             return derivation_rules::app(ctx, std::move(*left_d), std::move(*right_d));
-        }
-
-        expected<derivation_t> operator()(term_t::abs_t const& x) const
+        },
+        [&] (term_t::abs_t const& x) -> expected<derivation_t>
         {
             auto ext_ctx = ctx.extend();
             if (auto ok = ext_ctx.add(x.var, x.var_type))
@@ -141,9 +139,7 @@ expected<derivation_t> type_assign(context_t const& ctx, term_t const& x)
                 return derivation_rules::abs(ctx, x.var, x.var_type, std::move(*body_derivation));
             else
                 return body_derivation.error();
-        }
-    };
-    return std::visit(visitor{ctx}, x.value);
+        });
 }
 
 } // namespace dep0::typecheck::tt

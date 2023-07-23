@@ -68,7 +68,12 @@ struct expr_t
         source_text name;
         bool operator==(fun_call_t const&) const = default;
     };
-    using value_t = std::variant<boolean_constant_t, numeric_constant_t, fun_call_t>;
+    struct var_t
+    {
+        source_text name;
+        bool operator==(var_t const&) const = default;
+    };
+    using value_t = std::variant<boolean_constant_t, numeric_constant_t, fun_call_t, var_t>;
 
     properties_t properties;
     value_t value;
@@ -146,9 +151,16 @@ struct func_def_t
     using type_t = ast::type_t<P>;
     using body_t = ast::body_t<P>;
 
+    struct arg_t
+    {
+        type_t type;
+        source_text name;
+    };
+
     properties_t properties;
     type_t type;
     source_text name;
+    std::vector<arg_t> args;
     body_t body;
 
     bool operator==(func_def_t const&) const = default;

@@ -101,12 +101,18 @@ expected<func_def_t> check(tt::context_t ctx, typedefs_t const& typedefs, parser
             if (auto ok = ctx.add(tt::term_t::var_t(arg.name), tt::type_of(type->properties.derivation)))
                 args.push_back(func_def_t::arg_t{std::move(*type), arg.name});
             else
+            {
+                ok.error().location = f.properties;
                 return error_t::from_error(ok.error(), ctx);
+            }
         }
         else
             return std::move(type.error());
     if (auto ok = ctx.add(tt::term_t::var_t(f.name), make_arrow_type(args, *ret_type)); not ok)
+    {
+        ok.error().location = f.properties;
         return error_t::from_error(ok.error(), ctx);
+    }
     auto body = check(ctx, typedefs, f.body, *ret_type);
     if (not body)
         return std::move(body.error());

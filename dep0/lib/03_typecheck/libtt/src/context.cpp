@@ -1,5 +1,7 @@
 #include "dep0/typecheck/tt/context.hpp"
 
+#include "dep0/match.hpp"
+
 #include <sstream>
 
 namespace dep0::typecheck::tt {
@@ -42,12 +44,12 @@ expected<std::true_type> context_t::add(type_t::var_t var)
     if (not inserted)
     {
         std::ostringstream err;
-        std::visit(
+        match(
+            it->second,
             [&] (auto const& x)
             {
                 pretty_print(err << "Conflicting declaration of `" << var.name << "` previously `", x) << '`';
-            },
-            it->second);
+            });
         return error_t{err.str()};
     }
     return expected<std::true_type>{};
@@ -60,12 +62,12 @@ expected<std::true_type> context_t::add(term_t::var_t var, type_t ty)
     if (not inserted)
     {
         std::ostringstream err;
-        std::visit(
+        match(
+            it->second,
             [&] (auto const& x)
             {
                 pretty_print(err << "Conflicting declaration of `" << var.name << "` previously `", x) << '`';
-            },
-            it->second);
+            });
         return error_t{err.str()};
     }
     return expected<std::true_type>{};
@@ -105,9 +107,7 @@ std::ostream& pretty_print(std::ostream& os, context_t const& ctx)
 {
     bool first = true;
     for (auto const& [_, decl]: ctx.state->decls)
-        std::visit(
-            [&] (auto const& x) { pretty_print((std::exchange(first, false) ? os : os << std::endl), x); },
-            decl);
+        match(decl, [&] (auto const& x) { pretty_print((std::exchange(first, false) ? os : os << std::endl), x); });
     return os;
 }
 

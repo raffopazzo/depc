@@ -13,6 +13,17 @@
 
 namespace dep0::parser {
 
+template <typename U, typename F>
+auto fmap(std::vector<U> const& xs, F const& f)
+-> std::vector<std::invoke_result_t<F const&, typename std::vector<U>::value_type>>
+{
+    std::vector<std::invoke_result_t<F const&, typename std::vector<U>::value_type>> v;
+    v.reserve(xs.size());
+    for (auto const& x: xs)
+        v.push_back(f(x));
+    return v;
+}
+
 std::optional<source_text> get_text(source_text const src, antlr4::Token const& token)
 {
     std::optional<source_text> res;
@@ -58,23 +69,11 @@ struct parse_visitor_t : dep0::DepCParserVisitor
     virtual std::any visitModule(DepCParser::ModuleContext* ctx) override
     {
         assert(ctx);
-        std::vector<type_def_t> type_defs;
-        std::vector<func_def_t> func_defs;
-        std::ranges::transform(
-            ctx->typeDef(),
-            std::back_inserter(type_defs),
-            [this] (DepCParser::TypeDefContext* x)
-            {
-                return std::any_cast<type_def_t>(visitTypeDef(x));
-            });
-        std::ranges::transform(
-            ctx->funcDef(),
-            std::back_inserter(func_defs),
-            [this] (DepCParser::FuncDefContext* x)
-            {
-                return std::any_cast<func_def_t>(visitFuncDef(x));
-            });
-        return module_t{get_loc(src, *ctx).value(), std::move(type_defs), std::move(func_defs)};
+        return module_t{
+            get_loc(src, *ctx).value(),
+            fmap(ctx->typeDef(), [this] (auto* x) { return std::any_cast<type_def_t>(visitTypeDef(x)); }),
+            fmap(ctx->funcDef(), [this] (auto* x) { return std::any_cast<func_def_t>(visitFuncDef(x)); })
+        };
     }
 
     virtual std::any visitTypeDef(DepCParser::TypeDefContext* ctx) override
@@ -124,13 +123,15 @@ struct parse_visitor_t : dep0::DepCParserVisitor
     {
         assert(ctx);
         assert(ctx->type());
-        assert(ctx->ID());
+        assert(ctx->name);
         assert(ctx->body());
         return func_def_t{
             get_loc(src, *ctx).value(),
             std::any_cast<type_t>(visitType(ctx->type())),
             get_text(src, *ctx->name).value(),
-            std::any_cast<body_t>(visitBody(ctx->body()))};
+            fmap(ctx->arg(), [this] (auto* x) { return std::any_cast<func_def_t::arg_t>(visitArg(x)); }),
+            std::any_cast<body_t>(visitBody(ctx->body()))
+        };
     }
 
     virtual std::any visitType(DepCParser::TypeContext* ctx) override
@@ -149,18 +150,21 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         assert(nullptr);
     }
 
+    virtual std::any visitArg(DepCParser::ArgContext* ctx) override
+    {
+        assert(ctx);
+        assert(ctx->name);
+        assert(ctx->type());
+        return func_def_t::arg_t{std::any_cast<type_t>(visitType(ctx->type())), get_text(src, *ctx->name).value()};
+    }
+
     virtual std::any visitBody(DepCParser::BodyContext* ctx) override
     {
         assert(ctx);
-        std::vector<stmt_t> stmts;
-        std::ranges::transform(
-            ctx->stmt(),
-            std::back_inserter(stmts),
-            [this] (DepCParser::StmtContext* x)
-            {
-                return std::any_cast<stmt_t>(visitStmt(x));
-            });
-        return body_t{get_loc(src, *ctx).value(), std::move(stmts)};
+        return body_t{
+            get_loc(src, *ctx).value(),
+            fmap(ctx->stmt(), [this] (auto* x) { return std::any_cast<stmt_t>(visitStmt(x)); })
+        };
     }
 
     virtual std::any visitStmt(DepCParser::StmtContext* ctx) override
@@ -217,6 +221,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         assert(ctx);
         if (ctx->constantExpr()) return visitConstantExpr(ctx->constantExpr());
         if (ctx->funCallExpr()) return visitFunCallExpr(ctx->funCallExpr());
+        if (ctx->var) return expr_t{get_loc(src, *ctx->var).value(), expr_t::var_t{get_text(src, *ctx->var).value()}};
         assert(nullptr);
     }
 

@@ -1,12 +1,14 @@
 #include "dep0/llvmgen/gen.hpp"
 
 #include "dep0/digit_separator.hpp"
+#include "dep0/match.hpp"
 
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Verifier.h>
 
 #include <algorithm>
+#include <ranges>
 
 namespace dep0::llvmgen {
 
@@ -68,39 +70,33 @@ expected<unique_ref<llvm::Module>> gen(
 // all gen functions must be implemented here
 llvm::Type* gen_type(context_t const& ctx, llvm::LLVMContext& llvm_ctx, typecheck::type_t const& x)
 {
-    struct visitor
-    {
-        context_t const& ctx;
-        llvm::LLVMContext& llvm_ctx;
-        llvm::Type* operator()(typecheck::type_t::bool_t const&) { return llvm::Type::getInt1Ty(llvm_ctx); }
+    return match(
+        x.value,
+        [&] (typecheck::type_t::bool_t const&) -> llvm::Type* { return llvm::Type::getInt1Ty(llvm_ctx); },
         // this may or may not be fine depending on how LLVM defines `void` (i.e. what properties it has)
         // for instance, what does it mean to have an array of `void` types in LLVM?
-        llvm::Type* operator()(typecheck::type_t::unit_t const&) { return llvm::Type::getVoidTy(llvm_ctx); }
-        llvm::Type* operator()(typecheck::type_t::i8_t const&) { return llvm::Type::getInt8Ty(llvm_ctx); }
-        llvm::Type* operator()(typecheck::type_t::i16_t const&) { return llvm::Type::getInt16Ty(llvm_ctx); }
-        llvm::Type* operator()(typecheck::type_t::i32_t const&) { return llvm::Type::getInt32Ty(llvm_ctx); }
-        llvm::Type* operator()(typecheck::type_t::i64_t const&) { return llvm::Type::getInt64Ty(llvm_ctx); }
-        llvm::Type* operator()(typecheck::type_t::u8_t const&) { return llvm::Type::getInt8Ty(llvm_ctx); }
-        llvm::Type* operator()(typecheck::type_t::u16_t const&) { return llvm::Type::getInt16Ty(llvm_ctx); }
-        llvm::Type* operator()(typecheck::type_t::u32_t const&) { return llvm::Type::getInt32Ty(llvm_ctx); }
-        llvm::Type* operator()(typecheck::type_t::u64_t const&) { return llvm::Type::getInt64Ty(llvm_ctx); }
-        llvm::Type* operator()(typecheck::type_t::name_t const& name)
+        [&] (typecheck::type_t::unit_t const&) -> llvm::Type* { return llvm::Type::getVoidTy(llvm_ctx); },
+        [&] (typecheck::type_t::i8_t const&) -> llvm::Type* { return llvm::Type::getInt8Ty(llvm_ctx); },
+        [&] (typecheck::type_t::i16_t const&) -> llvm::Type* { return llvm::Type::getInt16Ty(llvm_ctx); },
+        [&] (typecheck::type_t::i32_t const&) -> llvm::Type* { return llvm::Type::getInt32Ty(llvm_ctx); },
+        [&] (typecheck::type_t::i64_t const&) -> llvm::Type* { return llvm::Type::getInt64Ty(llvm_ctx); },
+        [&] (typecheck::type_t::u8_t const&) -> llvm::Type* { return llvm::Type::getInt8Ty(llvm_ctx); },
+        [&] (typecheck::type_t::u16_t const&) -> llvm::Type* { return llvm::Type::getInt16Ty(llvm_ctx); },
+        [&] (typecheck::type_t::u32_t const&) -> llvm::Type* { return llvm::Type::getInt32Ty(llvm_ctx); },
+        [&] (typecheck::type_t::u64_t const&) -> llvm::Type* { return llvm::Type::getInt64Ty(llvm_ctx); },
+        [&] (typecheck::type_t::name_t const& name) -> llvm::Type*
         {
             auto const it = ctx.types.find(name.name);
             assert(it != ctx.types.end());
             return it->second;
-        }
-    };
-    return std::visit(visitor{ctx, llvm_ctx}, x.value);
+        });
 }
 
 llvm::Type* gen_type(context_t& ctx, llvm::LLVMContext& llvm_ctx, typecheck::type_def_t const& x)
 {
-    struct visitor
-    {
-        context_t& ctx;
-        llvm::LLVMContext& llvm_ctx;
-        llvm::Type* operator()(typecheck::type_def_t::integer_t const& x)
+    return match(
+        x.value,
+        [&] (typecheck::type_def_t::integer_t const& x)
         {
             auto* const t = [&]
             {
@@ -115,41 +111,56 @@ llvm::Type* gen_type(context_t& ctx, llvm::LLVMContext& llvm_ctx, typecheck::typ
             }();
             ctx.integer_types.emplace(x.name, x);
             return ctx.types[x.name] = t;
-        }
-    };
-    return std::visit(visitor{ctx, llvm_ctx}, x.value);
+        });
 }
 
-static void gen_fun_attributes(context_t const& ctx, llvm::Function* const func, typecheck::func_def_t const& x)
+llvm::Attribute::AttrKind get_sign_ext_attribute(context_t const& ctx, typecheck::type_t const& x)
 {
-    struct return_attr_visitor
-    {
-        context_t const& ctx;
-        llvm::Attribute::AttrKind operator()(typecheck::type_t::bool_t const&) const { return llvm::Attribute::None; }
-        llvm::Attribute::AttrKind operator()(typecheck::type_t::unit_t const&) const { return llvm::Attribute::None;; }
-        llvm::Attribute::AttrKind operator()(typecheck::type_t::i8_t const&) const { return llvm::Attribute::SExt; }
-        llvm::Attribute::AttrKind operator()(typecheck::type_t::i16_t const&) const { return llvm::Attribute::SExt; }
-        llvm::Attribute::AttrKind operator()(typecheck::type_t::i32_t const&) const { return llvm::Attribute::SExt; }
-        llvm::Attribute::AttrKind operator()(typecheck::type_t::i64_t const&) const { return llvm::Attribute::SExt; }
-        llvm::Attribute::AttrKind operator()(typecheck::type_t::u8_t const&) const { return llvm::Attribute::ZExt; }
-        llvm::Attribute::AttrKind operator()(typecheck::type_t::u16_t const&) const { return llvm::Attribute::ZExt; }
-        llvm::Attribute::AttrKind operator()(typecheck::type_t::u32_t const&) const { return llvm::Attribute::ZExt; }
-        llvm::Attribute::AttrKind operator()(typecheck::type_t::u64_t const&) const { return llvm::Attribute::ZExt; }
-        llvm::Attribute::AttrKind operator()(typecheck::type_t::name_t const& x) const
+    return match(
+        x.value,
+        [] (typecheck::type_t::bool_t const&) { return llvm::Attribute::None; },
+        [] (typecheck::type_t::unit_t const&) { return llvm::Attribute::None;; },
+        [] (typecheck::type_t::i8_t const&) { return llvm::Attribute::SExt; },
+        [] (typecheck::type_t::i16_t const&) { return llvm::Attribute::SExt; },
+        [] (typecheck::type_t::i32_t const&) { return llvm::Attribute::SExt; },
+        [] (typecheck::type_t::i64_t const&) { return llvm::Attribute::SExt; },
+        [] (typecheck::type_t::u8_t const&) { return llvm::Attribute::ZExt; },
+        [] (typecheck::type_t::u16_t const&) { return llvm::Attribute::ZExt; },
+        [] (typecheck::type_t::u32_t const&) { return llvm::Attribute::ZExt; },
+        [] (typecheck::type_t::u64_t const&) { return llvm::Attribute::ZExt; },
+        [&] (typecheck::type_t::name_t const& x)
         {
             auto const it = ctx.integer_types.find(x.name);
             return it == ctx.integer_types.end() ? llvm::Attribute::None :
                 it->second.sign == ast::sign_t::signed_v ? llvm::Attribute::SExt : llvm::Attribute::ZExt;
-        }
-    };
-    if (auto const attr = std::visit(return_attr_visitor{ctx}, x.type.value); attr != llvm::Attribute::None)
+        });
+}
+
+static void gen_fun_attributes(context_t const& ctx, llvm::Function* const func, typecheck::func_def_t const& x)
+{
+    if (auto const attr = get_sign_ext_attribute(ctx, x.type); attr != llvm::Attribute::None)
         func->addAttribute(llvm::AttributeList::ReturnIndex, attr);
 }
 
 llvm::Value* gen_fun(context_t& ctx, llvm::Module& llvm_module, typecheck::func_def_t const& x)
 {
-    auto const funtype = llvm::FunctionType::get(gen_type(ctx, llvm_module.getContext(), x.type), {}, false);
-    auto const func = llvm::Function::Create(funtype, llvm::Function::ExternalLinkage, x.name.view(), llvm_module);
+    auto* const funtype = [&]
+    {
+        std::vector<llvm::Type*> arg_types;
+        arg_types.reserve(x.args.size());
+        for (auto const& arg: x.args)
+            arg_types.push_back(gen_type(ctx, llvm_module.getContext(), arg.type));
+        return llvm::FunctionType::get(gen_type(ctx, llvm_module.getContext(), x.type), arg_types, false);
+    }();
+    auto* const func = llvm::Function::Create(funtype, llvm::Function::ExternalLinkage, x.name.view(), llvm_module);
+    for (auto const i: std::views::iota(0ul, x.args.size()))
+    {
+        auto* const arg = func->getArg(i);
+        arg->setName(x.args[i].name.view());
+        if (auto const attr = get_sign_ext_attribute(ctx, x.args[i].type); attr != llvm::Attribute::None)
+            arg->addAttr(attr);
+        ctx.values[x.args[i].name] = arg;
+    }
     gen_fun_attributes(ctx, func, x);
     ctx.fun_types[x.name] = funtype;
     ctx.values[x.name] = func;
@@ -208,17 +219,13 @@ void gen_stmt(
     typecheck::stmt_t const& x,
     llvm::Function* const func)
 {
-    struct visitor
-    {
-        context_t& ctx;
-        snippet_t& snipppet;
-        llvm::IRBuilder<>& builder;
-        llvm::Function* const func;
-        void operator()(typecheck::stmt_t::fun_call_t const& x)
+    match(
+        x.value,
+        [&] (typecheck::stmt_t::fun_call_t const& x)
         {
             builder.CreateCall(ctx.fun_types[x.name], ctx.values[x.name]);
-        }
-        void operator()(typecheck::stmt_t::if_else_t const& x)
+        },
+        [&] (typecheck::stmt_t::if_else_t const& x)
         {
             auto* cond = gen_val(ctx, builder, x.cond);
             auto then = gen_body(ctx, builder.getContext(), x.true_branch, "then", func);
@@ -235,31 +242,25 @@ void gen_stmt(
                 builder.CreateCondBr(cond, then.entry_block, else_);
                 snipppet.open_blocks.push_back(else_);
             }
-        }
-        void operator()(typecheck::stmt_t::return_t const& x)
+        },
+        [&] (typecheck::stmt_t::return_t const& x)
         {
             if (x.expr)
                 builder.CreateRet(gen_val(ctx, builder, *x.expr));
             else
                 builder.CreateRetVoid();
-        }
-    };
-    std::visit(visitor{ctx, snipppet, builder, func}, x.value);
+        });
 }
 
 llvm::Value* gen_val(context_t& ctx, llvm::IRBuilder<>& builder, typecheck::expr_t const& expr)
 {
-    struct visitor
-    {
-        context_t& ctx;
-        llvm::IRBuilder<>& builder;
-        typecheck::expr_t const& expr;
-
-        llvm::Value* operator()(typecheck::expr_t::boolean_constant_t const& x)
+    return match(
+        expr.value,
+        [&] (typecheck::expr_t::boolean_constant_t const& x) -> llvm::Value*
         {
             return llvm::ConstantInt::getBool(builder.getContext(), x.value == "true");
-        }
-        llvm::Value* operator()(typecheck::expr_t::numeric_constant_t const& x)
+        },
+        [&] (typecheck::expr_t::numeric_constant_t const& x) -> llvm::Value*
         {
             std::optional<std::string> without_separator;
             std::string_view number;
@@ -269,13 +270,15 @@ llvm::Value* gen_val(context_t& ctx, llvm::IRBuilder<>& builder, typecheck::expr
                 number = x.number;
             auto const llvm_type = cast<llvm::IntegerType>(gen_type(ctx, builder.getContext(), expr.properties.type));
             return llvm::ConstantInt::get(llvm_type, number, 10);
-        }
-        llvm::Value* operator()(typecheck::expr_t::fun_call_t const& x)
+        },
+        [&] (typecheck::expr_t::fun_call_t const& x) -> llvm::Value*
         {
             return builder.CreateCall(ctx.fun_types[x.name], ctx.values[x.name]);
-        }
-    };
-    return std::visit(visitor{ctx, builder, expr}, expr.value);
+        },
+        [&] (typecheck::expr_t::var_t const& x) -> llvm::Value*
+        {
+            return ctx.values[x.name];
+        });
 }
 
 }

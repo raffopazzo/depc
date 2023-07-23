@@ -25,7 +25,7 @@ options { tokenVocab=DepCLexer; }
 
 // Module and top level expressions
 module: (typeDef | funcDef)* EOF;
-funcDef: type name=ID '(' ')' body;
+funcDef: type name=ID '(' (arg (',' arg)*)? ')' body;
 typeDef:
     'typedef' name=ID '='
     {one_of("signed", "unsigned")}? sign=ID
@@ -37,6 +37,7 @@ typeDef:
     {one_of("to")}? ID
     max=('...' | NUMBER)
     SEMI;
+arg: type name=ID;
 
 // Types
 type: 'bool' | 'unit_t' | 'i8_t' | 'i16_t' | 'i32_t' | 'i64_t' | 'u8_t' | 'u16_t' | 'u32_t' | 'u64_t' | name=ID;
@@ -44,7 +45,7 @@ type: 'bool' | 'unit_t' | 'i8_t' | 'i16_t' | 'i32_t' | 'i64_t' | 'u8_t' | 'u16_t
 // Statements
 body: '{' stmt* '}';
 
-stmt: funCallStmt | ifElse | returnStmt ;
+stmt: funCallStmt | ifElse | returnStmt;
 
 funCallStmt: funCallExpr ';';
 ifElse: 'if' '(' cond=expr ')' true_branch=bodyOrStmt ('else' false_branch=bodyOrStmt)?;
@@ -52,7 +53,7 @@ bodyOrStmt: body | stmt;
 returnStmt: 'return' expr? ';';
 
 // Expressions
-expr: constantExpr | funCallExpr;
+expr: constantExpr | funCallExpr | var=ID;
 
 constantExpr: numericExpr | booleanExpr;
 numericExpr: value=NUMBER;

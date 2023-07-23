@@ -23,6 +23,7 @@ KW_U8_T: 'u8_t';
 KW_UNIT_T: 'unit_t';
 
 // Punctuation
+COMMA: ',';
 ELLIPSIS: '...';
 EQ: '=';
 LCURLY: '{';

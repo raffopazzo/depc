@@ -2,11 +2,13 @@ add_subdirectory(test)
 add_library(dep0_core_lib
     include/dep0/digit_separator.hpp
     include/dep0/error.hpp
+    include/dep0/match.hpp
     include/dep0/mmap.hpp
     include/dep0/source.hpp
     include/dep0/unique_ref.hpp
     src/digit_separator.cpp
     src/error.cpp
+    src/match.cpp
     src/mmap.cpp
     src/source.cpp
     src/unique_ref.cpp

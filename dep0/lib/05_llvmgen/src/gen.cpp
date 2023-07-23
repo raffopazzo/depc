@@ -1,6 +1,7 @@
 #include "dep0/llvmgen/gen.hpp"
 
 #include "dep0/digit_separator.hpp"
+#include "dep0/fmap.hpp"
 #include "dep0/match.hpp"
 
 #include <llvm/IR/IRBuilder.h>
@@ -144,14 +145,11 @@ static void gen_fun_attributes(context_t const& ctx, llvm::Function* const func,
 
 llvm::Value* gen_fun(context_t& ctx, llvm::Module& llvm_module, typecheck::func_def_t const& x)
 {
-    auto* const funtype = [&]
-    {
-        std::vector<llvm::Type*> arg_types;
-        arg_types.reserve(x.args.size());
-        for (auto const& arg: x.args)
-            arg_types.push_back(gen_type(ctx, llvm_module.getContext(), arg.type));
-        return llvm::FunctionType::get(gen_type(ctx, llvm_module.getContext(), x.type), arg_types, false);
-    }();
+    auto* const funtype =
+        llvm::FunctionType::get(
+            gen_type(ctx, llvm_module.getContext(), x.type),
+            fmap(x.args, [&] (auto const& arg) { return gen_type(ctx, llvm_module.getContext(), arg.type); }),
+            /*isVarArg*/false);
     auto* const func = llvm::Function::Create(funtype, llvm::Function::ExternalLinkage, x.name.view(), llvm_module);
     for (auto const i: std::views::iota(0ul, x.args.size()))
     {

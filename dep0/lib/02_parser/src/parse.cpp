@@ -4,6 +4,7 @@
 #include "dep0/antlr4/DepCParser.h"
 #include "dep0/antlr4/DepCParserVisitor.h"
 
+#include "dep0/fmap.hpp"
 #include "dep0/mmap.hpp"
 
 #include <antlr4-runtime/antlr4-runtime.h>
@@ -12,17 +13,6 @@
 #include <optional>
 
 namespace dep0::parser {
-
-template <typename U, typename F>
-auto fmap(std::vector<U> const& xs, F const& f)
--> std::vector<std::invoke_result_t<F const&, typename std::vector<U>::value_type>>
-{
-    std::vector<std::invoke_result_t<F const&, typename std::vector<U>::value_type>> v;
-    v.reserve(xs.size());
-    for (auto const& x: xs)
-        v.push_back(f(x));
-    return v;
-}
 
 std::optional<source_text> get_text(source_text const src, antlr4::Token const& token)
 {

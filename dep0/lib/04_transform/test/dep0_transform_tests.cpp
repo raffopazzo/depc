@@ -3,6 +3,8 @@
 
 #include "dep0/transform/run.hpp"
 
+#include "dep0/typecheck/check.hpp"
+
 dep0::expected<std::true_type> fail(dep0::typecheck::module_t&) { return dep0::error_t{"Test failure"}; }
 static_assert(dep0::transform::Transform<decltype(fail)>);
 
@@ -17,7 +19,7 @@ BOOST_AUTO_TEST_CASE(run_all)
     auto g = [&] (typecheck::module_t&) -> expected<std::true_type> { g_called = true; return std::true_type{}; };
     static_assert(transform::Transform<decltype(f)>);
     static_assert(transform::Transform<decltype(g)>);
-    typecheck::module_t m;
+    auto m = typecheck::check(parser::module_t{source_loc_t{0, 0, source_text::from_literal("")}}).value();
     auto result1 = transform::run(m, std::vector<transform::transform_t>{f, g});
     BOOST_TEST(result1.has_value());
     BOOST_TEST(f_called);
@@ -38,7 +40,7 @@ BOOST_AUTO_TEST_CASE(stop_at_first_error)
     bool f_called = false;
     auto f = [&] (typecheck::module_t&) -> expected<std::true_type> { f_called = true; return std::true_type{}; };
     static_assert(transform::Transform<decltype(f)>);
-    typecheck::module_t m;
+    auto m = typecheck::check(parser::module_t{source_loc_t{0, 0, source_text::from_literal("")}}).value();
     auto result1 = transform::run(m, std::vector<transform::transform_t>{fail, f});
     BOOST_TEST(result1.has_error());
     BOOST_TEST(result1.error().error == "Test failure");

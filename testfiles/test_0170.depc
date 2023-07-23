@@ -1,0 +1,2 @@
+i32_t foo() { return 0; }
+i32_t foo() { return 0; } // typecheck error: already defined

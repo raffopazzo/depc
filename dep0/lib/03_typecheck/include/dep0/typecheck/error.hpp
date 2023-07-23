@@ -13,7 +13,7 @@ struct error_t : dep0::error_t
     tt::context_t ctx;
     std::optional<tt::type_t> tgt;
 
-    static error_t from_error(dep0::error_t err, tt::context_t ctx)
+    static error_t from_error(dep0::error_t err, tt::context_t ctx = {})
     {
         return error_t{std::move(err), std::move(ctx)};
     }

@@ -11,119 +11,149 @@
 
 namespace dep0::typecheck {
 
+struct derivation_rules // TODO move to derivation.cpp and derivation_impl.hpp? (in private library)
+{
+    template <typename T>
+    static derivation_t<T> make_derivation()
+    {
+        return derivation_t<T>{};
+    }
+};
+
+template <typename... Args>
+module_t make_legal_module(Args&&... args)
+{
+    return module_t{derivation_rules::make_derivation<module_t>(), std::forward<Args>(args)...};
+}
+
+template <typename... Args>
+type_def_t make_legal_type_def(Args&&... args)
+{
+    return type_def_t{derivation_rules::make_derivation<type_def_t>(), std::forward<Args>(args)...};
+}
+
+template <typename... Args>
+func_def_t make_legal_func_def(Args&&... args)
+{
+    return func_def_t{derivation_rules::make_derivation<func_def_t>(), std::forward<Args>(args)...};
+}
+
+template <typename... Args>
+type_t make_legal_type(Args&&... args)
+{
+    return type_t{derivation_rules::make_derivation<type_t>(), std::forward<Args>(args)...};
+}
+
+template <typename... Args>
+body_t make_legal_body(Args&&... args)
+{
+    return body_t{derivation_rules::make_derivation<body_t>(), std::forward<Args>(args)...};
+}
+
+template <typename... Args>
+stmt_t make_legal_stmt(Args&&... args)
+{
+    return stmt_t{derivation_rules::make_derivation<stmt_t>(), std::forward<Args>(args)...};
+}
+
+template <typename... Args>
+expr_t make_legal_expr(type_t expected_type, Args&&... args)
+{
+    return expr_t{derivation_rules::make_derivation<expr_t>(), std::move(expected_type), std::forward<Args>(args)...};
+}
+
 struct func_proto_t // this should really be in the AST
 {
+    type_t ret_type;
     std::vector<func_def_t::arg_t> args;
 };
 
 // TODO: improve... maybe define `typecheck::context_t` (with extension operations) with typedefs and `tt::context_t`
 using typedefs_t = std::map<source_text, type_def_t>;
 using fnprotos_t = std::map<source_text, func_proto_t>; // yeah both of these need to be scoped...
+using argsmap_t = std::map<source_text, func_def_t::arg_t>; // also in context, local to function definition
 
 // forward declarations
-static expected<type_def_t> check(tt::context_t, parser::type_def_t const&);
-static expected<func_def_t> check(tt::context_t, fnprotos_t&, typedefs_t const&, parser::func_def_t const&);
-static expected<func_def_t::arg_t> check(tt::context_t, typedefs_t const&, parser::func_def_t::arg_t const&);
-static expected<type_t> check(tt::context_t, typedefs_t const&, parser::type_t const&);
-static expected<body_t> check(tt::context_t, fnprotos_t const&, typedefs_t const&, parser::body_t const&, type_t const& return_type);
-static expected<stmt_t> check(tt::context_t, fnprotos_t const&, typedefs_t const&, parser::stmt_t const&, type_t const& return_type);
-static expected<expr_t> check(tt::context_t, fnprotos_t const&, typedefs_t const&, parser::expr_t const&, type_t const& expected_type);
-
-static tt::type_t make_arrow_type(std::vector<func_def_t::arg_t> const& args, type_t const& ret)
-{
-    auto const first = args.begin();
-    auto const last = args.end();
-    return first == last
-        ? tt::type_of(ret.properties.derivation)
-        : tt::type_t::arr(
-            tt::type_of(first->type.properties.derivation),
-            std::accumulate( // right-associative accumulate, from last to 2nd function argument
-                args.rbegin(), std::make_reverse_iterator(std::next(first)),
-                tt::type_of(ret.properties.derivation),
-                [] (tt::type_t img, func_def_t::arg_t const& arg)
-                {
-                    return tt::type_t::arr(tt::type_of(arg.type.properties.derivation), std::move(img));
-                }));
-}
+static expected<type_def_t> check(parser::type_def_t const&);
+static expected<func_def_t> check(fnprotos_t&, typedefs_t const&, parser::func_def_t const&);
+static expected<func_def_t::arg_t> check(typedefs_t const&, parser::func_def_t::arg_t const&);
+static expected<type_t> check(typedefs_t const&, parser::type_t const&);
+static expected<body_t> check(fnprotos_t const&, typedefs_t const&, argsmap_t const&, parser::body_t const&, type_t const& return_type);
+static expected<stmt_t> check(fnprotos_t const&, typedefs_t const&, argsmap_t const&, parser::stmt_t const&, type_t const& return_type);
+static expected<expr_t> check(fnprotos_t const&, typedefs_t const&, argsmap_t const&, parser::expr_t const&, type_t const& expected_type);
 
 expected<module_t> check(parser::module_t const& x)
 {
-    tt::context_t ctx;
     typedefs_t typedefs;
     fnprotos_t protos;
     std::vector<type_def_t> type_defs;
     std::vector<func_def_t> func_defs;
     type_defs.reserve(x.type_defs.size());
     func_defs.reserve(x.func_defs.size());
+
     for (auto const& t: x.type_defs)
-        if (auto res = check(ctx, t))
+        if (auto res = check(t))
         {
             auto const name = match(t.value, [] (auto const& x) { return x.name; });
-            if (auto ok = ctx.add(tt::type_t::var_t(name));
-                not ok)
+            auto const [it, inserted] = typedefs.try_emplace(name, *res);
+            if (not inserted)
             {
-                ok.error().location = t.properties;
-                return error_t::from_error(std::move(ok.error()), ctx);
+                std::ostringstream err;
+                err << "typedef `" << name << "` already defined in current context"; // TODO also say where
+                return error_t::from_error(dep0::error_t{err.str(), t.properties}, /*ctx=*/{});
             }
-            typedefs.emplace(name, *res);
-            type_defs.push_back(std::move(*res));
+            type_defs.push_back(std::move(*res)); // TODO introduce `fmap_or_error()`
         }
         else
             return std::move(res.error());
     for (auto const& f: x.func_defs)
-        if (auto res = check(ctx, protos, typedefs, f))
-        {
-            if (auto ok = ctx.add(tt::term_t::var_t(f.name), make_arrow_type(res->args, res->type));
-                not ok)
-            {
-                ok.error().location = f.properties;
-                return error_t::from_error(std::move(ok.error()), ctx);
-            }
+        if (auto res = check(protos, typedefs, f))
             func_defs.push_back(std::move(*res));
-        }
         else
             return std::move(res.error());
-    return module_t{legal_module_t{}, std::move(type_defs), std::move(func_defs)};
+    return make_legal_module(std::move(type_defs), std::move(func_defs));
 }
 
 // implementations
-expected<type_def_t> check(tt::context_t ctx, parser::type_def_t const& type_def)
+expected<type_def_t> check(parser::type_def_t const& type_def)
 {
     return match(
         type_def.value,
         [] (parser::type_def_t::integer_t const& x) -> expected<type_def_t>
         {
-            return type_def_t{legal_type_def_t{}, type_def_t::integer_t{x.name, x.sign, x.width, x.max_abs_value}};
+            return make_legal_type_def(type_def_t::integer_t{x.name, x.sign, x.width, x.max_abs_value});
         });
 }
 
-expected<func_def_t> check(tt::context_t ctx, fnprotos_t& protos, typedefs_t const& typedefs, parser::func_def_t const& f)
+expected<func_def_t> check(fnprotos_t& protos, typedefs_t const& typedefs, parser::func_def_t const& f)
 {
-    ctx = ctx.extend();
-    auto ret_type = check(ctx, typedefs, f.type);
+    auto ret_type = check(typedefs, f.type);
     if (not ret_type)
         return std::move(ret_type.error());
     std::vector<func_def_t::arg_t> args;
+    argsmap_t args_map; // TODO move in scoped context
     for (auto const& arg: f.args)
-        if (auto type = check(ctx, typedefs, arg.type))
+        if (auto type = check(typedefs, arg.type))
         {
-            if (auto ok = ctx.add(tt::term_t::var_t(arg.name), tt::type_of(type->properties.derivation)))
-                args.push_back(func_def_t::arg_t{std::move(*type), arg.name});
-            else
+            auto const [it, inserted] = args_map.try_emplace(arg.name, std::move(*type), arg.name);
+            if (not inserted)
             {
-                ok.error().location = f.properties;
-                return error_t::from_error(ok.error(), ctx);
+                std::ostringstream err;
+                err << "found duplicate argument name `" << arg.name << '`'; // TODO say where, and previous type too?
+                return error_t::from_error(dep0::error_t{err.str(), f.properties}, /*ctx=*/{});
             }
+            args.push_back(it->second); // TODO `fmap_or_error()`
         }
         else
             return std::move(type.error());
-    if (auto ok = ctx.add(tt::term_t::var_t(f.name), make_arrow_type(args, *ret_type)); not ok)
+    auto const [it, inserted] = protos.try_emplace(f.name, *ret_type, args); // TODO we could bail out quicker for duplicates...
+    if (not inserted)
     {
-        ok.error().location = f.properties;
-        return error_t::from_error(ok.error(), ctx);
+        std::ostringstream err;
+        err << "function `" << f.name << "` already defined"; // TODO should also say where
+        return error_t::from_error(dep0::error_t{err.str(), f.properties}, /*ctx=*/{});
     }
-    protos[f.name].args = args;
-    auto body = check(ctx, protos, typedefs, f.body, *ret_type);
+    auto body = check(protos, typedefs, args_map, f.body, *ret_type);
     if (not body)
         return std::move(body.error());
     // so far so good, but we now need to make sure that all branches contain a return statement,
@@ -132,142 +162,119 @@ expected<func_def_t> check(tt::context_t ctx, fnprotos_t& protos, typedefs_t con
     {
         std::ostringstream err;
         err << "in function `" << f.name << "` missing return statement";
-        return error_t::from_error(dep0::error_t{err.str(), f.properties}, ctx, tt::type_of(ret_type->properties.derivation));
+        return error_t::from_error(dep0::error_t{err.str(), f.properties}, /*ctx=*/{});
     }
-    return func_def_t{legal_func_def_t{}, std::move(*ret_type), f.name, std::move(args), std::move(*body)};
+    return make_legal_func_def(std::move(*ret_type), f.name, std::move(args), std::move(*body));
 }
 
-expected<type_t> check(tt::context_t ctx, typedefs_t const& typedefs, parser::type_t const& t)
+expected<type_t> check(typedefs_t const& typedefs, parser::type_t const& t)
 {
     auto const loc = t.properties;
     return match(
         t.value,
-        [&] (parser::type_t::bool_t const&) -> expected<type_t>
-        {
-            return type_t{tt::derivation_t::bool_t(), type_t::bool_t{}};
-        },
-        [&] (parser::type_t::unit_t const&) -> expected<type_t>
-        {
-            return type_t{tt::derivation_t::unit_t(), type_t::unit_t{}};
-        },
-        [&] (parser::type_t::i8_t const&) -> expected<type_t>
-        {
-            return type_t{tt::derivation_t::i8_t(), type_t::i8_t{}};
-        },
-        [&] (parser::type_t::i16_t const&) -> expected<type_t>
-        {
-            return type_t{tt::derivation_t::i16_t(), type_t::i16_t{}};
-        },
-        [&] (parser::type_t::i32_t const&) -> expected<type_t>
-        {
-            return type_t{tt::derivation_t::i32_t(), type_t::i32_t{}};
-        },
-        [&] (parser::type_t::i64_t const&) -> expected<type_t>
-        {
-            return type_t{tt::derivation_t::i64_t(), type_t::i64_t{}};
-        },
-        [&] (parser::type_t::u8_t const&) -> expected<type_t>
-        {
-            return type_t{tt::derivation_t::u8_t(), type_t::u8_t{}};
-        },
-        [&] (parser::type_t::u16_t const&) -> expected<type_t>
-        {
-            return type_t{tt::derivation_t::u16_t(), type_t::u16_t{}};
-        },
-        [&] (parser::type_t::u32_t const&) -> expected<type_t>
-        {
-            return type_t{tt::derivation_t::u32_t(), type_t::u32_t{}};
-        },
-        [&] (parser::type_t::u64_t const&) -> expected<type_t>
-        {
-            return type_t{tt::derivation_t::u64_t(), type_t::u64_t{}};
-        },
+        [&] (parser::type_t::bool_t const&) -> expected<type_t> { return make_legal_type(type_t::bool_t{}); },
+        [&] (parser::type_t::unit_t const&) -> expected<type_t> { return make_legal_type(type_t::unit_t{}); },
+        [&] (parser::type_t::i8_t const&) -> expected<type_t> { return make_legal_type(type_t::i8_t{}); },
+        [&] (parser::type_t::i16_t const&) -> expected<type_t> { return make_legal_type(type_t::i16_t{}); },
+        [&] (parser::type_t::i32_t const&) -> expected<type_t> { return make_legal_type(type_t::i32_t{}); },
+        [&] (parser::type_t::i64_t const&) -> expected<type_t> { return make_legal_type(type_t::i64_t{}); },
+        [&] (parser::type_t::u8_t const&) -> expected<type_t> { return make_legal_type(type_t::u8_t{}); },
+        [&] (parser::type_t::u16_t const&) -> expected<type_t> { return make_legal_type(type_t::u16_t{}); },
+        [&] (parser::type_t::u32_t const&) -> expected<type_t> { return make_legal_type(type_t::u32_t{}); },
+        [&] (parser::type_t::u64_t const&) -> expected<type_t> { return make_legal_type(type_t::u64_t{}); },
         [&] (parser::type_t::name_t const& name) -> expected<type_t>
         {
-            if (auto d = tt::type_assign(ctx, tt::type_t::var_t(name.name)))
-                return type_t{std::move(*d), type_t::name_t{name.name}};
+            if (typedefs.contains(name.name))
+                return make_legal_type(type_t::name_t{name.name});
             else
             {
-                d.error().location = loc;
-                return error_t::from_error(std::move(d.error()), ctx);
+                std::ostringstream err;
+                err << "unknown type `" << name.name << '`';
+                return error_t::from_error(dep0::error_t{err.str(), t.properties}, /*ctx=*/{});
             }
         });
 }
 
-expected<body_t> check(tt::context_t ctx, fnprotos_t const& protos, typedefs_t const& typedefs, parser::body_t const& x, type_t const& return_type)
+expected<body_t> check(
+    fnprotos_t const& protos,
+    typedefs_t const& typedefs,
+    argsmap_t const& args_map,
+    parser::body_t const& x,
+    type_t const& return_type)
 {
     std::vector<stmt_t> stmts;
     stmts.reserve(x.stmts.size());
     for (auto const& s: x.stmts)
     {
-        if (auto stmt = check(ctx, protos, typedefs, s, return_type))
+        if (auto stmt = check(protos, typedefs, args_map, s, return_type))
             stmts.push_back(std::move(*stmt));
         else
             return std::move(stmt.error());
     }
-    return body_t{legal_body_t{}, std::move(stmts)};
+    return make_legal_body(std::move(stmts));
 }
 
-expected<stmt_t> check(tt::context_t ctx, fnprotos_t const& protos, typedefs_t const& typedefs, parser::stmt_t const& s, type_t const& return_type)
+expected<stmt_t> check(
+    fnprotos_t const& protos,
+    typedefs_t const& typedefs,
+    argsmap_t const& args_map,
+    parser::stmt_t const& s,
+    type_t const& return_type)
 {
     auto const loc = s.properties;
     return match(
         s.value,
         [&] (parser::stmt_t::fun_call_t const& x) -> expected<stmt_t>
         {
-            if (auto d = tt::type_assign(ctx, tt::term_t::var(x.name)))
-                return stmt_t{legal_stmt_t{}, stmt_t::fun_call_t{x.name}};
+            if (protos.contains(x.name))
+                return make_legal_stmt(stmt_t::fun_call_t{x.name});
             else
             {
-                d.error().location = loc;
-                return error_t::from_error(std::move(d.error()), ctx);
+                std::ostringstream err;
+                err << "unknown function `" << x.name << '`';
+                return error_t::from_error(dep0::error_t{err.str(), loc}/*, ctx, tgt */);
             }
         },
         [&] (parser::stmt_t::if_else_t const& x) -> expected<stmt_t>
         {
-            auto cond = check(ctx, protos, typedefs, x.cond, type_t{tt::derivation_t::bool_t(), type_t::bool_t{}});
+            auto cond = check(protos, typedefs, args_map, x.cond, make_legal_type(type_t::bool_t{}));
             if (not cond)
                 return std::move(cond.error());
-            auto true_branch = check(ctx, protos, typedefs, x.true_branch, return_type);
+            auto true_branch = check(protos, typedefs, args_map, x.true_branch, return_type);
             if (not true_branch)
                 return std::move(true_branch.error());
             std::optional<body_t> false_branch;
             if (x.false_branch)
             {
-                if (auto f = check(ctx, protos, typedefs, *x.false_branch, return_type))
+                if (auto f = check(protos, typedefs, args_map, *x.false_branch, return_type))
                     false_branch.emplace(std::move(*f));
                 else
                     return std::move(f.error());
             }
-            return stmt_t{
-                legal_stmt_t{},
+            return make_legal_stmt(
                 stmt_t::if_else_t{
                     std::move(*cond),
                     std::move(*true_branch),
-                    std::move(false_branch)}};
+                    std::move(false_branch)});
         },
         [&] (parser::stmt_t::return_t const& x) -> expected<stmt_t>
         {
             if (not x.expr)
             {
                 if (std::holds_alternative<type_t::unit_t>(return_type.value))
-                    return expected<stmt_t>{std::in_place, legal_stmt_t{}, stmt_t::return_t{}};
+                    return make_legal_stmt(stmt_t::return_t{});
                 std::ostringstream err;
-                tt::pretty_print(
-                    err << "expecting expression of type `",
-                    tt::type_of(return_type.properties.derivation)
-                ) << '`';
-                return error_t::from_error(dep0::error_t{err.str(), loc}, ctx, tt::type_of(return_type.properties.derivation));
+                err << "expecting expression of type `" << "TODO" << '`'; // TODO print expcted type
+                return error_t::from_error(dep0::error_t{err.str(), loc}/*, ctx, tgt */);
             }
-            else if (auto expr = check(ctx, protos, typedefs, *x.expr, return_type))
-                return stmt_t{legal_stmt_t{}, stmt_t::return_t{std::move(*expr)}};
+            else if (auto expr = check(protos, typedefs, args_map, *x.expr, return_type))
+                return make_legal_stmt(stmt_t::return_t{std::move(*expr)});
             else
                 return std::move(expr.error());
         });
 }
 
 static expected<expr_t> check_numeric_expr(
-    tt::context_t const& ctx,
     typedefs_t const& typedefs,
     parser::expr_t::numeric_constant_t const& x,
     source_loc_t const& loc,
@@ -275,8 +282,8 @@ static expected<expr_t> check_numeric_expr(
 {
     auto const error = [&] (std::string msg) -> expected<expr_t>
     {
-        auto const tgt = tt::type_of(expected_type.properties.derivation);
-        return error_t::from_error(dep0::error_t{std::move(msg), loc}, ctx, tgt);
+//      auto const tgt = tt::type_of(expected_type.properties.derivation);
+        return error_t::from_error(dep0::error_t{std::move(msg), loc}/*, ctx, tgt */);
     };
     auto const check_integer = [&] (
         std::string_view const type_name,
@@ -328,7 +335,7 @@ static expected<expr_t> check_numeric_expr(
             err << "numeric constant does not fit inside `" << type_name << '`';
             return error(err.str());
         }
-        return expr_t{expected_type, expr_t::numeric_constant_t{x.number}};
+        return make_legal_expr(expected_type, expr_t::numeric_constant_t{x.number});
     };
     return match(
         expected_type.value,
@@ -398,73 +405,23 @@ static expected<expr_t> check_numeric_expr(
         });
 }
 
-// TODO is `next_constant_id` a valid approach? it probably works for type checking but it won't work for term finding
-static tt::term_t term_from_expr(tt::context_t&, std::size_t& next_constant_id, expr_t::fun_call_t const&);
-static tt::term_t term_from_expr(tt::context_t& ctx, std::size_t& next_constant_id, expr_t const& expr)
-{
-    return match(
-        expr.value,
-        [&] (expr_t::boolean_constant_t const& x)
-        {
-            auto d = tt::type_of(expr.properties.type.properties.derivation);
-            do
-            {
-                auto c = tt::term_t::const_t(next_constant_id++, x.value);
-                if (ctx.add(c, d))
-                    return tt::term_t(c);
-            }
-            while (true);
-        },
-        [&] (expr_t::numeric_constant_t const& x)
-        {
-            auto d = tt::type_of(expr.properties.type.properties.derivation);
-            do
-            {
-                auto c = tt::term_t::const_t(next_constant_id++, x.number);
-                if (ctx.add(c, d))
-                    return tt::term_t(c);
-            }
-            while (true);
-        },
-        [&] (expr_t::fun_call_t const& x)
-        {
-            return term_from_expr(ctx, next_constant_id, x);
-        },
-        [&] (expr_t::var_t const& x)
-        {
-            return tt::term_t::var(x.name);
-        });
-}
-
-tt::term_t term_from_expr(tt::context_t& ctx, std::size_t& next_constant_id, expr_t::fun_call_t const& x)
-{
-    auto const it = x.args.begin();
-    return it == x.args.end()
-        ? tt::term_t::var(x.name)
-        : std::accumulate(
-            std::next(it), x.args.end(),
-            tt::term_t::app(tt::term_t::var(x.name), term_from_expr(ctx, next_constant_id, *it)),
-            [&] (tt::term_t left, expr_t const& x)
-            {
-                return tt::term_t::app(std::move(left), term_from_expr(ctx, next_constant_id, x));
-            });
-}
-
 expected<expr_t> check(
-    tt::context_t ctx,
     fnprotos_t const& protos,
     typedefs_t const& typedefs,
+    argsmap_t const& args_map,
     parser::expr_t const& x,
     type_t const& expected_type)
 {
     auto const loc = x.properties;
-    auto const tgt = tt::type_of(expected_type.properties.derivation);
-    auto const type_error = [&] (tt::type_t const& actual_ty)
+//  auto const tgt = tt::type_of(expected_type.properties.derivation);
+    auto const type_error = [&] (type_t const& actual_ty)
     {
         std::ostringstream err;
-        tt::pretty_print(err << "expression of type `", actual_ty) << '`';
-        tt::pretty_print(err << " does not typecheck with expected type `", tgt) << '`';
-        return error_t::from_error(dep0::error_t{err.str(), loc}, ctx, tgt);
+        err << "expression of type `" << "TODO" << '`'; // TODO print types
+        err << " does not typecheck with expected type `" << "TODO" << '`';
+//      tt::pretty_print(err << "expression of type `", actual_ty) << '`';
+//      tt::pretty_print(err << " does not typecheck with expected type `", tgt) << '`';
+        return error_t::from_error(dep0::error_t{err.str(), loc}/*, ctx, tgt */);
     };
     return match(
         x.value,
@@ -474,7 +431,7 @@ expected<expr_t> check(
             {
                 std::ostringstream err;
                 err << "invocation of function `" << x.name << "` does not typecheck";
-                return error_t::from_error(dep0::error_t{err.str(), loc, std::move(reasons)}, ctx, tgt);
+                return error_t::from_error(dep0::error_t{err.str(), loc, std::move(reasons)}/*, ctx, tgt */);
             };
             auto const proto_it = protos.find(x.name);
             if (proto_it == protos.end())
@@ -488,47 +445,38 @@ expected<expr_t> check(
             std::vector<expr_t> args;
             std::vector<dep0::error_t> reasons;
             for (auto const i: std::views::iota(0ul, x.args.size()))
-                if (auto expr = check(ctx, protos, typedefs, x.args[i], proto_it->second.args[i].type))
+                if (auto expr = check(protos, typedefs, args_map, x.args[i], proto_it->second.args[i].type))
                     args.push_back(std::move(*expr));
                 else
                     reasons.push_back(std::move(expr.error()));
             if (not reasons.empty())
                 return error(std::move(reasons));
-            std::size_t next_constant_id = 0ul;
-            auto call = expr_t::fun_call_t{x.name, std::move(args)};
-            ctx = ctx.extend(); // temporarily extend a new context to hold the constant expressions
-            auto term = term_from_expr(ctx, next_constant_id, call);
-            auto d = tt::type_assign(ctx, term);
-            if (not d)
-            {
-                d.error().location = loc;
-                return error_t::from_error(std::move(d.error()), ctx, tgt);
-            }
-            if (tt::type_of(*d) != tgt)
-                return type_error(tt::type_of(*d));
-            return expr_t{legal_expr_t{expected_type}, std::move(call)};
+            if (proto_it->second.ret_type != expected_type)
+                return type_error(proto_it->second.ret_type);
+            return make_legal_expr(expected_type, expr_t::fun_call_t{x.name, std::move(args)});
         },
         [&] (parser::expr_t::boolean_constant_t const& x) -> expected<expr_t>
         {
-            if (tgt != tt::type_of(tt::derivation_t::bool_t()))
-                return type_error(tt::type_of(tt::derivation_t::bool_t()));
-            return expr_t{legal_expr_t{expected_type}, expr_t::boolean_constant_t{x.value}};
+            if (not std::holds_alternative<type_t::bool_t>(expected_type.value))
+                return type_error(make_legal_type(type_t::bool_t{}));
+            return make_legal_expr(expected_type, expr_t::boolean_constant_t{x.value});
         },
         [&] (parser::expr_t::numeric_constant_t const& x) -> expected<expr_t>
         {
-            return check_numeric_expr(ctx, typedefs, x, loc, expected_type);
+            return check_numeric_expr(typedefs, x, loc, expected_type);
         },
         [&] (parser::expr_t::var_t const& x) -> expected<expr_t>
         {
-            auto d = tt::type_assign(ctx, tt::term_t::var(x.name));
-            if (not d)
+            auto const it = args_map.find(x.name);
+            if (it == args_map.end())
             {
-                d.error().location = loc;
-                return error_t::from_error(std::move(d.error()), ctx, tgt);
+                std::ostringstream err;
+                err << "unknown variable `" << x.name << "` in current context";
+                return error_t::from_error(dep0::error_t{err.str(), loc}/*, ctx, tgt */);
             }
-            if (tt::type_of(*d) != tgt)
-                return type_error(tt::type_of(*d));
-            return expr_t{legal_expr_t{expected_type}, expr_t::var_t{x.name}};
+            if (it->second.type != expected_type)
+                return type_error(it->second.type);
+            return make_legal_expr(expected_type, expr_t::var_t{x.name});
         });
 }
 

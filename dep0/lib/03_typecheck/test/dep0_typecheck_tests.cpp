@@ -282,5 +282,7 @@ BOOST_AUTO_TEST_CASE(test_0169)
     BOOST_TEST(expr0->number == "0");
     BOOST_TEST(expr1->number == "1");
 }
+BOOST_AUTO_TEST_CASE(test_0170) { BOOST_TEST(fail("test_0170.depc")); }
+BOOST_AUTO_TEST_CASE(test_0171) { BOOST_TEST(fail("test_0171.depc")); }
 
 BOOST_AUTO_TEST_SUITE_END()

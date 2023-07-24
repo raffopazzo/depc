@@ -6,9 +6,9 @@ std::ostream& pretty_print(std::ostream& os, error_t const& err)
 {
     dep0::pretty_print(os, err) << std::endl;
     os << "In context:" << std::endl;
-    tt::pretty_print(os, err.ctx);
+    pretty_print(os, err.ctx);
     if (err.tgt)
-        tt::pretty_print(os << std::endl << "------------" << std::endl, *err.tgt);
+        pretty_print(os << std::endl << "------------" << std::endl, *err.tgt);
     return os;
 }
 

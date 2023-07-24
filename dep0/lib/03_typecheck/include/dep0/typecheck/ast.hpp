@@ -4,6 +4,7 @@
 #include "dep0/ast/concepts.hpp"
 
 #include <optional>
+#include <ostream>
 
 namespace dep0::typecheck {
 
@@ -96,5 +97,8 @@ struct legal_expr_t
     type_t type;
     bool operator==(legal_expr_t const&) const = default;
 };
+
+std::ostream& pretty_print(std::ostream&, type_t const&);
+std::ostream& pretty_print(std::ostream&, expr_t const&);
 
 } // namespace dep0::typecheck

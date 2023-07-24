@@ -23,43 +23,6 @@ using namespace dep0::typecheck;
 
 BOOST_FIXTURE_TEST_SUITE(dep0_typecheck_tests, Fixture)
 
-BOOST_AUTO_TEST_CASE(error_with_context)
-{
-    tt::context_t ctx;
-    auto const foo = tt::type_t::var(dep0::source_text::from_literal("foo"));
-    auto const bar = tt::type_t::var(dep0::source_text::from_literal("bar"));
-    std::ignore = ctx.add(tt::term_t::var_t(dep0::source_text::from_literal("z")), foo);
-    std::ignore = ctx.add(tt::term_t::var_t(dep0::source_text::from_literal("y")), bar);
-    auto err = dep0::typecheck::error_t::from_error(dep0::error_t{"Test"}, ctx);
-    std::ostringstream out;
-    pretty_print(out, err);
-    std::string expected = R"(Test
-In context:
-y: bar
-z: foo)";
-    BOOST_TEST(out.str() == expected);
-}
-
-BOOST_AUTO_TEST_CASE(error_with_context_and_target_type)
-{
-    tt::context_t ctx;
-    auto const foo = tt::type_t::var(dep0::source_text::from_literal("foo"));
-    auto const bar = tt::type_t::var(dep0::source_text::from_literal("bar"));
-    std::ignore = ctx.add(tt::term_t::var_t(dep0::source_text::from_literal("z")), foo);
-    std::ignore = ctx.add(tt::term_t::var_t(dep0::source_text::from_literal("y")), bar);
-    auto err = dep0::typecheck::error_t::from_error(dep0::error_t{"Test"}, ctx);
-    err.tgt = tt::type_t::arr(bar, foo);
-    std::ostringstream out;
-    pretty_print(out, err);
-    std::string expected = R"(Test
-In context:
-y: bar
-z: foo
-------------
-(bar) -> foo)";
-    BOOST_TEST(out.str() == expected);
-}
-
 BOOST_AUTO_TEST_CASE(test_0002)
 {
     auto const result = check(open("test_0002.depc"));
@@ -131,7 +94,7 @@ BOOST_AUTO_TEST_CASE(test_0150)
     BOOST_TEST(result.error().location.has_value());
     BOOST_TEST_REQUIRE(result.error().tgt.has_value());
     std::ostringstream tgt;
-    tt::pretty_print(tgt, result.error().tgt.value());
+    pretty_print(tgt, result.error().tgt.value());
     BOOST_TEST(tgt.str() == "u64_t");
 }
 

@@ -177,7 +177,9 @@ struct parse_visitor_t : dep0::DepCParserVisitor
     {
         assert(ctx);
         assert(ctx->funCallExpr());
-        return stmt_t::fun_call_t{get_text(src, *ctx->funCallExpr()->name).value()};
+        return stmt_t::fun_call_t{
+            get_text(src, *ctx->funCallExpr()->name).value(),
+            fmap(ctx->funCallExpr()->expr(), [this] (auto* ctx) { return std::any_cast<expr_t>(visitExpr(ctx)); })};
     }
 
     virtual std::any visitIfElse(DepCParser::IfElseContext* ctx) override

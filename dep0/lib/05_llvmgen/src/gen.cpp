@@ -3,6 +3,7 @@
 #include "dep0/digit_separator.hpp"
 #include "dep0/fmap.hpp"
 #include "dep0/match.hpp"
+#include "dep0/scope_map.hpp"
 
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/LLVMContext.h>
@@ -15,11 +16,32 @@ namespace dep0::llvmgen {
 
 struct context_t
 {
-    std::map<source_text, llvm::Value*> values; // including function objects
-    std::map<source_text, llvm::FunctionType*> fun_types;
-    std::map<source_text, llvm::Type*> types;
-    std::map<source_text, typecheck::type_def_t::integer_t const&> integer_types;
-    // TODO what about extending a context?
+    scope_map<source_text, llvm::Value*> values; // including function objects
+    scope_map<source_text, llvm::FunctionType*> fun_types;
+    scope_map<source_text, llvm::Type*> types;
+    scope_map<source_text, typecheck::type_def_t::integer_t> integer_types;
+
+    context_t() = default;
+    context_t(
+        scope_map<source_text, llvm::Value*> values,
+        scope_map<source_text, llvm::FunctionType*> fun_types,
+        scope_map<source_text, llvm::Type*> types,
+        scope_map<source_text, typecheck::type_def_t::integer_t> integer_types
+    ) : values(std::move(values)),
+        fun_types(std::move(fun_types)),
+        types(std::move(types)),
+        integer_types(std::move(integer_types))
+    { }
+
+    context_t extend() const
+    {
+        return context_t(
+            values.extend(),
+            fun_types.extend(),
+            types.extend(),
+            integer_types.extend()
+        );
+    }
 };
 
 // Snippet is a model of a block of IR code that is being built,
@@ -40,13 +62,19 @@ static llvm::Type* gen_type(context_t const&, llvm::LLVMContext&, typecheck::typ
 static llvm::Type* gen_type(context_t&, llvm::LLVMContext&, typecheck::type_def_t const&);
 static llvm::Value* gen_fun(context_t&, llvm::Module& , typecheck::func_def_t const&);
 static snippet_t gen_body(
-    context_t&,
+    context_t const&,
     llvm::LLVMContext&,
     typecheck::body_t const&,
     std::string_view,
     llvm::Function*);
-static void gen_stmt(context_t&, snippet_t&, llvm::IRBuilder<>&, typecheck::stmt_t const&, llvm::Function*);
-static llvm::Value* gen_val(context_t&, llvm::IRBuilder<>& , typecheck::expr_t const&);
+static void gen_stmt(context_t const&, snippet_t&, llvm::IRBuilder<>&, typecheck::stmt_t const&, llvm::Function*);
+static llvm::Value* gen_val(context_t const&, llvm::IRBuilder<>& , typecheck::expr_t const&);
+static llvm::CallInst*
+    gen_fun_call(
+        context_t const&,
+        llvm::IRBuilder<>&,
+        source_text const&,
+        std::vector<typecheck::expr_t> const&);
 
 expected<unique_ref<llvm::Module>> gen(
     llvm::LLVMContext& llvm_ctx,
@@ -87,9 +115,9 @@ llvm::Type* gen_type(context_t const& ctx, llvm::LLVMContext& llvm_ctx, typechec
         [&] (typecheck::type_t::u64_t const&) -> llvm::Type* { return llvm::Type::getInt64Ty(llvm_ctx); },
         [&] (typecheck::type_t::name_t const& name) -> llvm::Type*
         {
-            auto const it = ctx.types.find(name.name);
-            assert(it != ctx.types.end());
-            return it->second;
+            auto t = ctx.types[name.name];
+            assert(t);
+            return *t;
         });
 }
 
@@ -97,7 +125,7 @@ llvm::Type* gen_type(context_t& ctx, llvm::LLVMContext& llvm_ctx, typecheck::typ
 {
     return match(
         x.value,
-        [&] (typecheck::type_def_t::integer_t const& x)
+        [&] (typecheck::type_def_t::integer_t const& x) -> llvm::Type*
         {
             auto* const t = [&]
             {
@@ -110,8 +138,17 @@ llvm::Type* gen_type(context_t& ctx, llvm::LLVMContext& llvm_ctx, typecheck::typ
                 default: __builtin_unreachable();
                 }
             }();
-            ctx.integer_types.emplace(x.name, x);
-            return ctx.types[x.name] = t;
+            if (not std::get<bool>(ctx.integer_types.try_emplace(x.name, x)))
+            {
+                assert(false);
+                return nullptr;
+            }
+            if (not std::get<bool>(ctx.types.try_emplace(x.name, t)))
+            {
+                assert(false);
+                return nullptr;
+            }
+            return t;
         });
 }
 
@@ -131,9 +168,11 @@ llvm::Attribute::AttrKind get_sign_ext_attribute(context_t const& ctx, typecheck
         [] (typecheck::type_t::u64_t const&) { return llvm::Attribute::ZExt; },
         [&] (typecheck::type_t::name_t const& x)
         {
-            auto const it = ctx.integer_types.find(x.name);
-            return it == ctx.integer_types.end() ? llvm::Attribute::None :
-                it->second.sign == ast::sign_t::signed_v ? llvm::Attribute::SExt : llvm::Attribute::ZExt;
+            auto const t = ctx.integer_types[x.name];
+            return
+                not t ? llvm::Attribute::None :
+                t->sign == ast::sign_t::signed_v ? llvm::Attribute::SExt
+                : llvm::Attribute::ZExt;
         });
 }
 
@@ -151,18 +190,33 @@ llvm::Value* gen_fun(context_t& ctx, llvm::Module& llvm_module, typecheck::func_
             fmap(x.args, [&] (auto const& arg) { return gen_type(ctx, llvm_module.getContext(), arg.type); }),
             /*isVarArg*/false);
     auto* const func = llvm::Function::Create(funtype, llvm::Function::ExternalLinkage, x.name.view(), llvm_module);
+    // add function type and object to the parent context;
+    // but generation must happen in the function context
+    if (not std::get<bool>(ctx.fun_types.try_emplace(x.name, funtype)))
+    {
+        assert(false);
+        return nullptr;
+    }
+    if (not std::get<bool>(ctx.values.try_emplace(x.name, func)))
+    {
+        assert(false);
+        return nullptr;
+    }
+    auto f_ctx = ctx.extend();
     for (auto const i: std::views::iota(0ul, x.args.size()))
     {
         auto* const arg = func->getArg(i);
         arg->setName(x.args[i].name.view());
-        if (auto const attr = get_sign_ext_attribute(ctx, x.args[i].type); attr != llvm::Attribute::None)
+        if (auto const attr = get_sign_ext_attribute(f_ctx, x.args[i].type); attr != llvm::Attribute::None)
             arg->addAttr(attr);
-        ctx.values[x.args[i].name] = arg;
+        if (not std::get<bool>(f_ctx.values.try_emplace(x.args[i].name, arg)))
+        {
+            assert(false);
+            return nullptr;
+        }
     }
-    gen_fun_attributes(ctx, func, x);
-    ctx.fun_types[x.name] = funtype;
-    ctx.values[x.name] = func;
-    auto snippet = gen_body(ctx, llvm_module.getContext(), x.body, "entry", func);
+    gen_fun_attributes(f_ctx, func, x);
+    auto snippet = gen_body(f_ctx, llvm_module.getContext(), x.body, "entry", func);
     if (snippet.open_blocks.size() and std::holds_alternative<typecheck::type_t::unit_t>(x.type.value))
     {
         auto builder = llvm::IRBuilder<>(llvm_module.getContext());
@@ -176,7 +230,7 @@ llvm::Value* gen_fun(context_t& ctx, llvm::Module& llvm_module, typecheck::func_
 }
 
 snippet_t gen_body(
-    context_t& ctx,
+    context_t const& ctx,
     llvm::LLVMContext& llvm_ctx,
     typecheck::body_t const& x,
     std::string_view const entry_block_name,
@@ -211,7 +265,7 @@ snippet_t gen_body(
 }
 
 void gen_stmt(
-    context_t& ctx,
+    context_t const& ctx,
     snippet_t& snipppet,
     llvm::IRBuilder<>& builder,
     typecheck::stmt_t const& x,
@@ -221,7 +275,7 @@ void gen_stmt(
         x.value,
         [&] (typecheck::stmt_t::fun_call_t const& x)
         {
-            builder.CreateCall(ctx.fun_types[x.name], ctx.values[x.name]);
+            gen_fun_call(ctx, builder, x.name, x.args);
         },
         [&] (typecheck::stmt_t::if_else_t const& x)
         {
@@ -250,7 +304,7 @@ void gen_stmt(
         });
 }
 
-llvm::Value* gen_val(context_t& ctx, llvm::IRBuilder<>& builder, typecheck::expr_t const& expr)
+llvm::Value* gen_val(context_t const& ctx, llvm::IRBuilder<>& builder, typecheck::expr_t const& expr)
 {
     return match(
         expr.value,
@@ -271,15 +325,28 @@ llvm::Value* gen_val(context_t& ctx, llvm::IRBuilder<>& builder, typecheck::expr
         },
         [&] (typecheck::expr_t::fun_call_t const& x) -> llvm::Value*
         {
-            return builder.CreateCall(
-                ctx.fun_types[x.name],
-                ctx.values[x.name],
-                fmap(x.args, [&] (auto const& arg) { return gen_val(ctx, builder, arg); }));
+            return gen_fun_call(ctx, builder, x.name, x.args);
         },
         [&] (typecheck::expr_t::var_t const& x) -> llvm::Value*
         {
-            return ctx.values[x.name];
+            auto const v = ctx.values[x.name];
+            assert(v);
+            return *v;
         });
+}
+
+static llvm::CallInst*
+    gen_fun_call(
+        context_t const& ctx,
+        llvm::IRBuilder<>& builder,
+        source_text const& name,
+        std::vector<typecheck::expr_t> const& args)
+{
+    auto const ty = ctx.fun_types[name];
+    auto const f = ctx.values[name];
+    assert(ty);
+    assert(f);
+    return builder.CreateCall(*ty, *f, fmap(args, [&] (auto const& arg) { return gen_val(ctx, builder, arg); }));
 }
 
 }

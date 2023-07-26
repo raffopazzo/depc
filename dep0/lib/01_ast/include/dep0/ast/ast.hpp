@@ -91,6 +91,7 @@ struct stmt_t
     struct fun_call_t
     {
         source_text name;
+        std::vector<expr_t> args;
         bool operator==(fun_call_t const&) const = default;
     };
     struct if_else_t

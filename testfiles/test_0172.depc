@@ -1,0 +1,6 @@
+i32_t first(i32_t x, u32_t y) { return x; }
+i32_t main()
+{
+    first(0, 1);
+    return 0;
+}

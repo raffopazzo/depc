@@ -20,5 +20,4 @@ target_link_libraries(dep0_typecheck_lib
   PUBLIC
     DepC::Dep0::Ast
     DepC::Dep0::Parser
-    DepC::Dep0::TypeCheck::TT
   )

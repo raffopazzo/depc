@@ -13,13 +13,6 @@ struct term_t
 {
     using rec_t = boost::recursive_wrapper<term_t>;
 
-    struct const_t
-    {
-        std::size_t id;
-        source_text value;
-        bool operator<(const_t const& that) const = default;
-        bool operator==(const_t const& that) const = default;
-    };
     struct var_t
     {
         source_text name;
@@ -45,13 +38,12 @@ struct term_t
         bool operator==(abs_t const&) const;
     };
 
-    using value_t = std::variant<const_t, var_t, app_t, abs_t>;
+    using value_t = std::variant<var_t, app_t, abs_t>;
 
     value_t value;
 
     bool operator==(term_t const&) const = default;
 
-    static term_t const_(std::size_t, source_text);
     static term_t var(source_text);
     static term_t app(term_t, term_t);
     static term_t abs(source_text, type_t, term_t);
@@ -61,7 +53,5 @@ struct term_t
 inline bool is_var(term_t const& x) { return std::holds_alternative<term_t::var_t>(x.value); }
 inline bool is_app(term_t const& x) { return std::holds_alternative<term_t::app_t>(x.value); }
 inline bool is_abs(term_t const& x) { return std::holds_alternative<term_t::abs_t>(x.value); }
-
-std::ostream& pretty_print(std::ostream&, term_t const&);
 
 } // namespace dep0::typecheck::tt

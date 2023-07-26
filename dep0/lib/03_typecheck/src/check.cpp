@@ -64,7 +64,20 @@ expr_t make_legal_expr(type_t expected_type, Args&&... args)
     return expr_t{derivation_rules::make_derivation<expr_t>(), std::move(expected_type), std::forward<Args>(args)...};
 }
 
+struct legal_fun_call_t
+{
+    source_text name;
+    type_t ret_type;
+    std::vector<expr_t> args;
+};
+
 // forward declarations
+static dep0::expected<legal_fun_call_t>
+    type_assign_fun_call(
+        context_t const&,
+        source_loc_t const& loc,
+        source_text const& f_name,
+        std::vector<parser::expr_t> const& f_args);
 static expected<type_def_t> check(context_t const&, parser::type_def_t const&);
 static expected<func_def_t> check(context_t const&, parser::func_def_t const&);
 static expected<func_def_t::arg_t> check(context_t const&, parser::func_def_t::arg_t const&);
@@ -129,6 +142,39 @@ expected<module_t> check(parser::module_t const& x)
 }
 
 // implementations
+
+dep0::expected<legal_fun_call_t> type_assign_fun_call(
+    context_t const& ctx,
+    source_loc_t const& loc,
+    source_text const& f_name,
+    std::vector<parser::expr_t> const& f_args)
+{
+    auto const error = [&] (std::vector<dep0::error_t> reasons)
+    {
+        std::ostringstream err;
+        err << "invocation of function `" << f_name << "` does not typecheck";
+        return dep0::error_t{err.str(), loc, std::move(reasons)};
+    };
+    auto const proto = ctx.find_proto(f_name);
+    if (not proto)
+        return error({dep0::error_t{"function prototype not found"}});
+    if (proto->value.args.size() != f_args.size())
+    {
+        std::ostringstream err;
+        err << "passed " << f_args.size() << " arguments but was expecting " << proto->value.args.size();
+        return error({dep0::error_t{err.str()}});
+    }
+    std::vector<expr_t> args;
+    std::vector<dep0::error_t> reasons;
+    for (auto const i: std::views::iota(0ul, f_args.size()))
+        if (auto expr = check(ctx, f_args[i], proto->value.args[i].type))
+            args.push_back(std::move(*expr));
+        else
+            reasons.push_back(std::move(expr.error()));
+    if (not reasons.empty())
+        return error(std::move(reasons));
+    return legal_fun_call_t{f_name, proto->value.ret_type, std::move(args)};
+}
 
 expected<type_def_t> check(context_t const&, parser::type_def_t const& type_def)
 {
@@ -232,14 +278,10 @@ expected<stmt_t> check(context_t const& ctx, parser::stmt_t const& s, type_t con
         s.value,
         [&] (parser::stmt_t::fun_call_t const& x) -> expected<stmt_t>
         {
-            if (ctx.find_proto(x.name))
-                return make_legal_stmt(stmt_t::fun_call_t{x.name});
+            if (auto f = type_assign_fun_call(ctx, loc, x.name, x.args))
+                return make_legal_stmt(stmt_t::fun_call_t{x.name, std::move(f->args)});
             else
-            {
-                std::ostringstream err;
-                err << "unknown function `" << x.name << '`';
-                return error_t::from_error(dep0::error_t{err.str(), loc}, ctx, return_type);
-            }
+                return error_t::from_error(std::move(f.error()), ctx);
         },
         [&] (parser::stmt_t::if_else_t const& x) -> expected<stmt_t>
         {
@@ -425,33 +467,15 @@ expected<expr_t> check(context_t const& ctx, parser::expr_t const& x, type_t con
         x.value,
         [&] (parser::expr_t::fun_call_t const& x) -> expected<expr_t>
         {
-            auto const error = [&] (std::vector<dep0::error_t> reasons)
+            if (auto f = type_assign_fun_call(ctx, loc, x.name, x.args))
             {
-                std::ostringstream err;
-                err << "invocation of function `" << x.name << "` does not typecheck";
-                return error_t::from_error(dep0::error_t{err.str(), loc, std::move(reasons)}, ctx, expected_type);
-            };
-            auto const proto = ctx.find_proto(x.name);
-            if (not proto)
-                return error({dep0::error_t{"function prototype not found"}});
-            if (proto->value.args.size() != x.args.size())
-            {
-                std::ostringstream err;
-                err << "passed " << x.args.size() << " arguments but was expecting " << proto->value.args.size();
-                return error({dep0::error_t{err.str()}});
-            }
-            std::vector<expr_t> args;
-            std::vector<dep0::error_t> reasons;
-            for (auto const i: std::views::iota(0ul, x.args.size()))
-                if (auto expr = check(ctx, x.args[i], proto->value.args[i].type))
-                    args.push_back(std::move(*expr));
+                if (f->ret_type == expected_type)
+                    return make_legal_expr(expected_type, expr_t::fun_call_t{x.name, std::move(f->args)});
                 else
-                    reasons.push_back(std::move(expr.error()));
-            if (not reasons.empty())
-                return error(std::move(reasons));
-            if (proto->value.ret_type != expected_type)
-                return type_error(proto->value.ret_type);
-            return make_legal_expr(expected_type, expr_t::fun_call_t{x.name, std::move(args)});
+                    return type_error(f->ret_type);
+            }
+            else
+                return error_t::from_error(std::move(f.error()), ctx, expected_type);
         },
         [&] (parser::expr_t::boolean_constant_t const& x) -> expected<expr_t>
         {

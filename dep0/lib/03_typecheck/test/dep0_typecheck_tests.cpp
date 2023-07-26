@@ -284,5 +284,23 @@ BOOST_AUTO_TEST_CASE(test_0169)
 }
 BOOST_AUTO_TEST_CASE(test_0170) { BOOST_TEST(fail("test_0170.depc")); }
 BOOST_AUTO_TEST_CASE(test_0171) { BOOST_TEST(fail("test_0171.depc")); }
+BOOST_AUTO_TEST_CASE(test_0172)
+{
+    BOOST_TEST_REQUIRE(pass("test_0172.depc"));
+    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 2ul);
+    auto const& f = pass_result->func_defs[1];
+    BOOST_TEST(f.name == "main");
+    BOOST_TEST_REQUIRE(f.body.stmts.size() == 2ul);
+    auto const* call = std::get_if<dep0::typecheck::stmt_t::fun_call_t>(&f.body.stmts[0].value);
+    BOOST_TEST_REQUIRE(call);
+    BOOST_TEST(call->name == "first");
+    BOOST_TEST_REQUIRE(call->args.size() == 2ul);
+    auto const *expr0 = std::get_if<dep0::typecheck::expr_t::numeric_constant_t>(&call->args[0].value);
+    auto const *expr1 = std::get_if<dep0::typecheck::expr_t::numeric_constant_t>(&call->args[1].value);
+    BOOST_TEST_REQUIRE(expr0);
+    BOOST_TEST_REQUIRE(expr1);
+    BOOST_TEST(expr0->number == "0");
+    BOOST_TEST(expr1->number == "1");
+}
 
 BOOST_AUTO_TEST_SUITE_END()

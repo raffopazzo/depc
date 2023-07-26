@@ -376,9 +376,45 @@ BOOST_AUTO_TEST_CASE(test_0167)
     BOOST_TEST_REQUIRE(r);
     BOOST_TEST(r->getReturnValue()->getName().str() == "x");
 }
-BOOST_AUTO_TEST_CASE(test_0168) { BOOST_TEST(pass("test_0168.depc")); }
+BOOST_AUTO_TEST_CASE(test_0168)
+{
+    BOOST_TEST_REQUIRE(pass("test_0168.depc"));
+    auto* f1 = pass_result.value()->getFunction("id");
+    auto* f2 = pass_result.value()->getFunction("main");
+    BOOST_TEST_REQUIRE(f1);
+    BOOST_TEST_REQUIRE(f2);
+    auto *r = cast<llvm::ReturnInst>(f2->getEntryBlock().getTerminator());
+    BOOST_TEST_REQUIRE(r);
+    auto* call = cast<llvm::CallInst>(r->getReturnValue());
+    BOOST_TEST_REQUIRE(call);
+    BOOST_TEST_REQUIRE(call->getCalledFunction() == f1);
+    BOOST_TEST_REQUIRE(call->arg_size() == 1);
+    BOOST_TEST(call->paramHasAttr(0, llvm::Attribute::SExt));
+}
 BOOST_AUTO_TEST_CASE(test_0169) { BOOST_TEST(pass("test_0169.depc")); }
 // BOOST_AUTO_TEST_CASE(test_0170) doesn't type check
 // BOOST_AUTO_TEST_CASE(test_0171) doesn't type check
+BOOST_AUTO_TEST_CASE(test_0172)
+{
+    BOOST_TEST_REQUIRE(pass("test_0172.depc"));
+    auto* f1 = pass_result.value()->getFunction("first");
+    auto* f2 = pass_result.value()->getFunction("main");
+    BOOST_TEST_REQUIRE(f1);
+    BOOST_TEST_REQUIRE(f2);
+    auto const& b = f2->getEntryBlock();
+    BOOST_TEST_REQUIRE(b.size() == 2ul);
+    auto* call = cast<llvm::CallInst>(&*b.begin());
+    BOOST_TEST_REQUIRE(call);
+    BOOST_TEST_REQUIRE(call->getCalledFunction() == f1);
+    BOOST_TEST_REQUIRE(call->arg_size() == 2);
+    BOOST_TEST(call->paramHasAttr(0, llvm::Attribute::SExt));
+    BOOST_TEST(call->paramHasAttr(1, llvm::Attribute::ZExt));
+    auto* arg0 = cast<llvm::ConstantInt>(*call->arg_begin());
+    auto* arg1 = cast<llvm::ConstantInt>(*std::next(call->arg_begin()));
+    BOOST_TEST_REQUIRE(arg0);
+    BOOST_TEST_REQUIRE(arg1);
+    BOOST_TEST(arg0->getSExtValue() == 0);
+    BOOST_TEST(arg1->getSExtValue() == 1);
+}
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -271,7 +271,10 @@ llvm::Value* gen_val(context_t& ctx, llvm::IRBuilder<>& builder, typecheck::expr
         },
         [&] (typecheck::expr_t::fun_call_t const& x) -> llvm::Value*
         {
-            return builder.CreateCall(ctx.fun_types[x.name], ctx.values[x.name]);
+            return builder.CreateCall(
+                ctx.fun_types[x.name],
+                ctx.values[x.name],
+                fmap(x.args, [&] (auto const& arg) { return gen_val(ctx, builder, arg); }));
         },
         [&] (typecheck::expr_t::var_t const& x) -> llvm::Value*
         {

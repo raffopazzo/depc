@@ -66,6 +66,7 @@ struct expr_t
     struct fun_call_t
     {
         source_text name;
+        std::vector<expr_t> args;
         bool operator==(fun_call_t const&) const = default;
     };
     struct var_t
@@ -155,6 +156,7 @@ struct func_def_t
     {
         type_t type;
         source_text name;
+        source_loc_t loc;
     };
 
     properties_t properties;

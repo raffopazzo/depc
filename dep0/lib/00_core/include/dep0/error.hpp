@@ -41,6 +41,9 @@ class [[nodiscard]] expected
     std::variant<T , E> value_;
 
 public:
+    using value_type = T;
+    using error_type = E;
+
     expected() = default;
 
     /*implicit*/expected(T v) : value_(std::move(v)) { }

@@ -81,7 +81,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         auto const min = optional_if(get_text(src, *ctx->min).value(), [] (auto const& x) { return x != "..."; });
         auto const max = optional_if(get_text(src, *ctx->max).value(), [] (auto const& x) { return x != "..."; });
         if (max and max->starts_with('-'))
-            throw error_t{"Upper bound must be a positive number", loc};
+            throw error_t{"upper bound must be a positive number", loc};
         auto const max_abs = max ? std::optional{max->starts_with('+') ? max->substr(1) : max} : std::nullopt;
         auto const w =
             width == "8" ? ast::width_t::_8 :
@@ -91,18 +91,18 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         if (sign == "unsigned")
         {
             if (not min or min != "0")
-                throw error_t{"Lower bound of unsigned integer must be 0", loc};
+                throw error_t{"lower bound of unsigned integer must be 0", loc};
             return type_def_t{loc, type_def_t::integer_t{name, ast::sign_t::unsigned_v, w, max_abs}};
         }
         else if (min.has_value() xor max.has_value())
-            throw error_t{"Lower and upper bound of signed integer must be either both present or both missing", loc};
+            throw error_t{"lower and upper bound of signed integer must be either both present or both missing", loc};
         else if (min)
         {
             if (not min->starts_with('-'))
-                throw error_t{"Lower bound of signed integer must be a negative number", loc};
+                throw error_t{"lower bound of signed integer must be a negative number", loc};
             auto const min_abs = min->substr(1);
             if (min_abs != max_abs)
-                throw error_t{"Lower and upper of signed integer bound must have same absolute value", loc};
+                throw error_t{"lower and upper of signed integer bound must have same absolute value", loc};
             return type_def_t{loc, type_def_t::integer_t{name, ast::sign_t::signed_v, w, max_abs}};
         }
         else
@@ -145,7 +145,10 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         assert(ctx);
         assert(ctx->name);
         assert(ctx->type());
-        return func_def_t::arg_t{std::any_cast<type_t>(visitType(ctx->type())), get_text(src, *ctx->name).value()};
+        return func_def_t::arg_t{
+            std::any_cast<type_t>(visitType(ctx->type())),
+                get_text(src, *ctx->name).value(),
+                get_loc(src, *ctx->name).value()};
     }
 
     virtual std::any visitBody(DepCParser::BodyContext* ctx) override
@@ -249,7 +252,9 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         assert(ctx->ID());
         return expr_t{
             get_loc(src, *ctx).value(),
-            expr_t::fun_call_t{get_text(src, *ctx->name).value()}};
+            expr_t::fun_call_t{
+                get_text(src, *ctx->name).value(),
+                fmap(ctx->expr(), [this] (auto* ctx) { return std::any_cast<expr_t>(visitExpr(ctx)); })}};
     }
 };
 

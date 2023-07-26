@@ -156,6 +156,7 @@ struct func_def_t
     {
         type_t type;
         source_text name;
+        source_loc_t loc;
     };
 
     properties_t properties;

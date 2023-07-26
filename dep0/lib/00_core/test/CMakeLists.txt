@@ -13,3 +13,11 @@ target_link_libraries(dep0_core_match_tests
     DepC::Dep0::Core
     Boost::Boost
     )
+
+add_executable(dep0_core_scope_map_tests dep0_core_scope_map_tests.cpp)
+add_test(NAME dep0_core_scope_map_tests COMMAND dep0_core_scope_map_tests)
+target_link_libraries(dep0_core_scope_map_tests
+  PRIVATE
+    DepC::Dep0::Core
+    Boost::Boost
+    )

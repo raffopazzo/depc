@@ -145,7 +145,10 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         assert(ctx);
         assert(ctx->name);
         assert(ctx->type());
-        return func_def_t::arg_t{std::any_cast<type_t>(visitType(ctx->type())), get_text(src, *ctx->name).value()};
+        return func_def_t::arg_t{
+            std::any_cast<type_t>(visitType(ctx->type())),
+                get_text(src, *ctx->name).value(),
+                get_loc(src, *ctx->name).value()};
     }
 
     virtual std::any visitBody(DepCParser::BodyContext* ctx) override

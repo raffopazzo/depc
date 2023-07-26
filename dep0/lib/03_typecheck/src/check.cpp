@@ -78,8 +78,8 @@ static dep0::expected<legal_fun_call_t>
         source_loc_t const& loc,
         source_text const& f_name,
         std::vector<parser::expr_t> const& f_args);
-static expected<type_def_t> check(context_t const&, parser::type_def_t const&);
-static expected<func_def_t> check(context_t const&, parser::func_def_t const&);
+static expected<type_def_t> check(context_t&, parser::type_def_t const&);
+static expected<func_def_t> check(context_t&, parser::func_def_t const&);
 static expected<func_def_t::arg_t> check(context_t const&, parser::func_def_t::arg_t const&);
 static expected<type_t> check(context_t const&, parser::type_t const&);
 static expected<body_t> check(context_t const&, parser::body_t const&, type_t const& return_type);
@@ -95,47 +95,10 @@ expected<module_t> check(parser::module_t const& x)
 {
     context_t ctx;
     // TODO maybe one day typedefs can depend on function definitions? if so we will need 2 passes
-    auto type_defs =
-        fmap_or_error(
-            x.type_defs,
-            [&] (parser::type_def_t const& t) -> expected<type_def_t>
-            {
-                auto result = check(ctx, t);
-                if (result)
-                {
-                    auto const name = match(t.value, [](auto const &x) {return x.name; });
-                    auto const [it, inserted] = ctx.try_emplace_typedef(name, t.properties, *result);
-                    if (not inserted)
-                    {
-                        std::ostringstream err;
-                        print_location(err << "typedef `" << name << "` already defined at ", it->second.loc);
-                        return error_t::from_error(dep0::error_t{err.str(), t.properties}, ctx);
-                    }
-                }
-                return result;
-            });
+    auto type_defs = fmap_or_error(x.type_defs, [&] (parser::type_def_t const& t) { return check(ctx, t); });
     if (not type_defs)
         return std::move(type_defs.error());
-
-    auto func_defs =
-        fmap_or_error(
-            x.func_defs,
-            [&] (parser::func_def_t const& f) -> expected<func_def_t>
-            {
-                auto result = check(ctx, f);
-                if (result)
-                {
-                    auto const [it, inserted] = ctx.try_emplace_proto(f.name, f.properties, result->type, result->args);
-                    if (not inserted)
-                    {
-                        std::ostringstream err;
-                        print_location(err << "function `" << f.name << "` already defined at ", it->second.loc);
-                        pretty_print(err << " with type `", it->second.value) << '`';
-                        return error_t::from_error(dep0::error_t{err.str(), f.properties}, ctx);
-                    }
-                }
-                return result;
-            });
+    auto func_defs = fmap_or_error(x.func_defs, [&] (parser::func_def_t const& f) { return check(ctx, f); });
     if (not func_defs)
         return std::move(func_defs.error());
     return make_legal_module(std::move(*type_defs), std::move(*func_defs));
@@ -176,27 +139,39 @@ dep0::expected<legal_fun_call_t> type_assign_fun_call(
     return legal_fun_call_t{f_name, proto->value.ret_type, std::move(args)};
 }
 
-expected<type_def_t> check(context_t const&, parser::type_def_t const& type_def)
+expected<type_def_t> check(context_t& ctx, parser::type_def_t const& type_def)
 {
     return match(
         type_def.value,
-        [] (parser::type_def_t::integer_t const& x) -> expected<type_def_t>
+        [&] (parser::type_def_t::integer_t const& x) -> expected<type_def_t>
         {
-            return make_legal_type_def(type_def_t::integer_t{x.name, x.sign, x.width, x.max_abs_value});
+            auto const [it, inserted] =
+                ctx.try_emplace_typedef(
+                    x.name,
+                    type_def.properties,
+                    make_legal_type_def(type_def_t::integer_t{x.name, x.sign, x.width, x.max_abs_value}));
+            if (not inserted)
+            {
+                std::ostringstream err;
+                print_location(err << "typedef `" << x.name << "` already defined at ", it->second.loc);
+                return error_t::from_error(dep0::error_t{err.str(), type_def.properties}, ctx);
+            }
+            return it->second.value;
         });
 }
 
-expected<func_def_t> check(context_t const& ctx, parser::func_def_t const& f)
+expected<func_def_t> check(context_t& ctx, parser::func_def_t const& f)
 {
-    auto ret_type = check(ctx, f.type);
+    // NB check must happen in function context but once prototype typechecks it must be added to the parent context
+    auto f_ctx = ctx.extend();
+    auto ret_type = check(f_ctx, f.type);
     if (not ret_type)
         return std::move(ret_type.error());
-    auto f_ctx = ctx.extend();
     auto args = fmap_or_error(
         f.args,
         [&] (parser::func_def_t::arg_t const& x) -> expected<func_def_t::arg_t>
         {
-            auto arg_type = check(ctx, x.type);
+            auto arg_type = check(f_ctx, x.type);
             if (not arg_type)
                 return std::move(arg_type.error());
             auto const [it, inserted] = f_ctx.try_emplace_arg(x.name, x.loc, std::move(*arg_type), x.name, x.loc);
@@ -205,15 +180,13 @@ expected<func_def_t> check(context_t const& ctx, parser::func_def_t const& f)
                 std::ostringstream err;
                 print_location(err << "function argument `" << x.name << "` already defined at ", it->second.loc);
                 pretty_print(err << " with type `", it->second.value.type) << '`';
-                return error_t::from_error(dep0::error_t{err.str(), x.loc}, ctx);
+                return error_t::from_error(dep0::error_t{err.str(), x.loc}, f_ctx);
             }
             return it->second.value;
         });
     if (not args)
         return std::move(args.error());
-    // NB we're adding the prototype to the current function context in case it needs to call itself,
-    // once this entire function definition successfully typechecks we'll also add it to the parent context
-    auto const [it, inserted] = f_ctx.try_emplace_proto(f.name, f.properties, *ret_type, *args);
+    auto const [it, inserted] = ctx.try_emplace_proto(f.name, f.properties, *ret_type, *args);
     if (not inserted)
     {
         std::ostringstream err;
@@ -230,7 +203,7 @@ expected<func_def_t> check(context_t const& ctx, parser::func_def_t const& f)
     {
         std::ostringstream err;
         err << "in function `" << f.name << "` missing return statement";
-        return error_t::from_error(dep0::error_t{err.str(), f.properties}, ctx);
+        return error_t::from_error(dep0::error_t{err.str(), f.properties}, f_ctx);
     }
     return make_legal_func_def(std::move(*ret_type), f.name, std::move(*args), std::move(*body));
 }

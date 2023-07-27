@@ -417,4 +417,62 @@ BOOST_AUTO_TEST_CASE(test_0172)
     BOOST_TEST(arg1->getSExtValue() == 1);
 }
 
+BOOST_AUTO_TEST_CASE(test_0173)
+{
+    BOOST_TEST_REQUIRE(pass("test_0173.depc"));
+    auto* f = pass_result.value()->getFunction("three");
+    BOOST_TEST_REQUIRE(f);
+    auto const& b = f->getEntryBlock();
+    BOOST_TEST_REQUIRE(b.size() == 1ul);
+    auto* r = cast<llvm::ReturnInst>(f->getEntryBlock().getTerminator());
+    BOOST_TEST_REQUIRE(r);
+    auto* v = cast<llvm::ConstantInt>(r->getReturnValue());
+    BOOST_TEST_REQUIRE(v);
+    BOOST_TEST(v->getSExtValue() == 3);
+}
+
+BOOST_AUTO_TEST_CASE(test_0174)
+{
+    BOOST_TEST_REQUIRE(pass("test_0174.depc"));
+    auto* f = pass_result.value()->getFunction("three");
+    BOOST_TEST_REQUIRE(f);
+    auto const& b = f->getEntryBlock();
+    BOOST_TEST_REQUIRE(b.size() == 1ul);
+    auto* r = cast<llvm::ReturnInst>(f->getEntryBlock().getTerminator());
+    BOOST_TEST_REQUIRE(r);
+    auto* v = cast<llvm::ConstantInt>(r->getReturnValue());
+    BOOST_TEST_REQUIRE(v);
+    BOOST_TEST(v->getSExtValue() == 3);
+}
+
+BOOST_AUTO_TEST_CASE(test_0175)
+{
+    BOOST_TEST_REQUIRE(pass("test_0175.depc"));
+    auto* f = pass_result.value()->getFunction("three");
+    BOOST_TEST_REQUIRE(f);
+    auto const& b = f->getEntryBlock();
+    BOOST_TEST_REQUIRE(b.size() == 1ul);
+    auto* r = cast<llvm::ReturnInst>(f->getEntryBlock().getTerminator());
+    BOOST_TEST_REQUIRE(r);
+    auto* v = cast<llvm::ConstantInt>(r->getReturnValue());
+    BOOST_TEST_REQUIRE(v);
+    BOOST_TEST(v->getSExtValue() == 3);
+}
+
+BOOST_AUTO_TEST_CASE(test_0176)
+{
+    BOOST_TEST_REQUIRE(pass("test_0176.depc"));
+    auto* f = pass_result.value()->getFunction("minus_one");
+    BOOST_TEST_REQUIRE(f);
+    auto const& b = f->getEntryBlock();
+    BOOST_TEST_REQUIRE(b.size() == 1ul);
+    auto* r = cast<llvm::ReturnInst>(f->getEntryBlock().getTerminator());
+    BOOST_TEST_REQUIRE(r);
+    auto* v = cast<llvm::ConstantInt>(r->getReturnValue());
+    BOOST_TEST_REQUIRE(v);
+    BOOST_TEST(v->getSExtValue() == -1);
+}
+
+// BOOST_AUTO_TEST_CASE(test_0177) doesn't type check
+
 BOOST_AUTO_TEST_SUITE_END()

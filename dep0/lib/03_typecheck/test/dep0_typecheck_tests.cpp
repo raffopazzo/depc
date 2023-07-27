@@ -253,7 +253,7 @@ BOOST_AUTO_TEST_CASE(test_0168)
     auto const* ret = std::get_if<dep0::typecheck::stmt_t::return_t>(&f.body.stmts[0].value);
     BOOST_TEST_REQUIRE(ret);
     BOOST_TEST_REQUIRE(ret->expr.has_value());
-    auto const* call = std::get_if<dep0::typecheck::expr_t::fun_call_t>(&ret->expr->value);
+    auto const* call = std::get_if<dep0::typecheck::func_call_t>(&ret->expr->value);
     BOOST_TEST_REQUIRE(call);
     BOOST_TEST(call->name == "id");
     BOOST_TEST_REQUIRE(call->args.size() == 1ul);
@@ -271,7 +271,7 @@ BOOST_AUTO_TEST_CASE(test_0169)
     auto const* ret = std::get_if<dep0::typecheck::stmt_t::return_t>(&f.body.stmts[0].value);
     BOOST_TEST_REQUIRE(ret);
     BOOST_TEST_REQUIRE(ret->expr.has_value());
-    auto const* call = std::get_if<dep0::typecheck::expr_t::fun_call_t>(&ret->expr->value);
+    auto const* call = std::get_if<dep0::typecheck::func_call_t>(&ret->expr->value);
     BOOST_TEST_REQUIRE(call);
     BOOST_TEST(call->name == "first");
     BOOST_TEST_REQUIRE(call->args.size() == 2ul);
@@ -291,7 +291,7 @@ BOOST_AUTO_TEST_CASE(test_0172)
     auto const& f = pass_result->func_defs[1];
     BOOST_TEST(f.name == "main");
     BOOST_TEST_REQUIRE(f.body.stmts.size() == 2ul);
-    auto const* call = std::get_if<dep0::typecheck::stmt_t::fun_call_t>(&f.body.stmts[0].value);
+    auto const* call = std::get_if<dep0::typecheck::func_call_t>(&f.body.stmts[0].value);
     BOOST_TEST_REQUIRE(call);
     BOOST_TEST(call->name == "first");
     BOOST_TEST_REQUIRE(call->args.size() == 2ul);
@@ -302,5 +302,105 @@ BOOST_AUTO_TEST_CASE(test_0172)
     BOOST_TEST(expr0->number == "0");
     BOOST_TEST(expr1->number == "1");
 }
+
+BOOST_AUTO_TEST_CASE(test_0173)
+{
+    BOOST_TEST_REQUIRE(pass("test_0173.depc"));
+    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 1ul);
+    auto const& f = pass_result->func_defs[0];
+    BOOST_TEST(f.name == "three");
+    BOOST_TEST_REQUIRE(f.body.stmts.size() == 1ul);
+    auto const* ret = std::get_if<dep0::typecheck::stmt_t::return_t>(&f.body.stmts[0].value);
+    BOOST_TEST_REQUIRE(ret);
+    BOOST_TEST_REQUIRE(ret->expr.has_value());
+    auto const* expr = std::get_if<dep0::typecheck::expr_t::arith_expr_t>(&ret->expr->value);
+    BOOST_TEST_REQUIRE(expr);
+    auto const* plus = std::get_if<dep0::typecheck::expr_t::arith_expr_t::plus_t>(&expr->value);
+    BOOST_TEST_REQUIRE(plus);
+    auto const* lhs = std::get_if<dep0::typecheck::expr_t::numeric_constant_t>(&plus->lhs.get().value);
+    auto const* rhs = std::get_if<dep0::typecheck::expr_t::numeric_constant_t>(&plus->rhs.get().value);
+    BOOST_TEST_REQUIRE(lhs);
+    BOOST_TEST_REQUIRE(rhs);
+    BOOST_TEST(not lhs->sign.has_value());
+    BOOST_TEST(not rhs->sign.has_value());
+    BOOST_TEST(lhs->number == "1");
+    BOOST_TEST(rhs->number == "2");
+}
+
+BOOST_AUTO_TEST_CASE(test_0174)
+{
+    BOOST_TEST_REQUIRE(pass("test_0174.depc"));
+    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 1ul);
+    auto const& f = pass_result->func_defs[0];
+    BOOST_TEST(f.name == "three");
+    BOOST_TEST_REQUIRE(f.body.stmts.size() == 1ul);
+    auto const* ret = std::get_if<dep0::typecheck::stmt_t::return_t>(&f.body.stmts[0].value);
+    BOOST_TEST_REQUIRE(ret);
+    BOOST_TEST_REQUIRE(ret->expr.has_value());
+    auto const* expr = std::get_if<dep0::typecheck::expr_t::arith_expr_t>(&ret->expr->value);
+    BOOST_TEST_REQUIRE(expr);
+    auto const* plus = std::get_if<dep0::typecheck::expr_t::arith_expr_t::plus_t>(&expr->value);
+    BOOST_TEST_REQUIRE(plus);
+    auto const* lhs = std::get_if<dep0::typecheck::expr_t::numeric_constant_t>(&plus->lhs.get().value);
+    auto const* rhs = std::get_if<dep0::typecheck::expr_t::numeric_constant_t>(&plus->rhs.get().value);
+    BOOST_TEST_REQUIRE(lhs);
+    BOOST_TEST_REQUIRE(rhs);
+    BOOST_TEST(not lhs->sign.has_value());
+    BOOST_TEST(not rhs->sign.has_value());
+    BOOST_TEST(lhs->number == "1");
+    BOOST_TEST(rhs->number == "2");
+}
+
+BOOST_AUTO_TEST_CASE(test_0175)
+{
+    BOOST_TEST_REQUIRE(pass("test_0175.depc"));
+    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 1ul);
+    auto const& f = pass_result->func_defs[0];
+    BOOST_TEST(f.name == "three");
+    BOOST_TEST_REQUIRE(f.body.stmts.size() == 1ul);
+    auto const* ret = std::get_if<dep0::typecheck::stmt_t::return_t>(&f.body.stmts[0].value);
+    BOOST_TEST_REQUIRE(ret);
+    BOOST_TEST_REQUIRE(ret->expr.has_value());
+    auto const* expr = std::get_if<dep0::typecheck::expr_t::arith_expr_t>(&ret->expr->value);
+    BOOST_TEST_REQUIRE(expr);
+    auto const* plus = std::get_if<dep0::typecheck::expr_t::arith_expr_t::plus_t>(&expr->value);
+    BOOST_TEST_REQUIRE(plus);
+    auto const* lhs = std::get_if<dep0::typecheck::expr_t::numeric_constant_t>(&plus->lhs.get().value);
+    auto const* rhs = std::get_if<dep0::typecheck::expr_t::numeric_constant_t>(&plus->rhs.get().value);
+    BOOST_TEST_REQUIRE(lhs);
+    BOOST_TEST_REQUIRE(rhs);
+    BOOST_TEST(not lhs->sign.has_value());
+    BOOST_TEST_REQUIRE(rhs->sign.has_value());
+    BOOST_TEST(lhs->number == "1");
+    BOOST_TEST(rhs->sign.value() == '+');
+    BOOST_TEST(rhs->number == "2");
+}
+
+BOOST_AUTO_TEST_CASE(test_0176)
+{
+    BOOST_TEST_REQUIRE(pass("test_0176.depc"));
+    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 1ul);
+    auto const& f = pass_result->func_defs[0];
+    BOOST_TEST(f.name == "minus_one");
+    BOOST_TEST_REQUIRE(f.body.stmts.size() == 1ul);
+    auto const* ret = std::get_if<dep0::typecheck::stmt_t::return_t>(&f.body.stmts[0].value);
+    BOOST_TEST_REQUIRE(ret);
+    BOOST_TEST_REQUIRE(ret->expr.has_value());
+    auto const* expr = std::get_if<dep0::typecheck::expr_t::arith_expr_t>(&ret->expr->value);
+    BOOST_TEST_REQUIRE(expr);
+    auto const* plus = std::get_if<dep0::typecheck::expr_t::arith_expr_t::plus_t>(&expr->value);
+    BOOST_TEST_REQUIRE(plus);
+    auto const* lhs = std::get_if<dep0::typecheck::expr_t::numeric_constant_t>(&plus->lhs.get().value);
+    auto const* rhs = std::get_if<dep0::typecheck::expr_t::numeric_constant_t>(&plus->rhs.get().value);
+    BOOST_TEST_REQUIRE(lhs);
+    BOOST_TEST_REQUIRE(rhs);
+    BOOST_TEST(not lhs->sign.has_value());
+    BOOST_TEST_REQUIRE(rhs->sign.has_value());
+    BOOST_TEST(lhs->number == "1");
+    BOOST_TEST(rhs->sign.value() == '-');
+    BOOST_TEST(rhs->number == "2");
+}
+
+BOOST_AUTO_TEST_CASE(test_0177) { BOOST_TEST_REQUIRE(fail("test_0177.depc")); }
 
 BOOST_AUTO_TEST_SUITE_END()

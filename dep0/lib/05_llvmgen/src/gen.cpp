@@ -69,12 +69,7 @@ static snippet_t gen_body(
     llvm::Function*);
 static void gen_stmt(context_t const&, snippet_t&, llvm::IRBuilder<>&, typecheck::stmt_t const&, llvm::Function*);
 static llvm::Value* gen_val(context_t const&, llvm::IRBuilder<>& , typecheck::expr_t const&);
-static llvm::CallInst*
-    gen_fun_call(
-        context_t const&,
-        llvm::IRBuilder<>&,
-        source_text const&,
-        std::vector<typecheck::expr_t> const&);
+static llvm::CallInst* gen_func_call(context_t const&, llvm::IRBuilder<>&, typecheck::func_call_t const&);
 
 expected<unique_ref<llvm::Module>> gen(
     llvm::LLVMContext& llvm_ctx,
@@ -273,9 +268,9 @@ void gen_stmt(
 {
     match(
         x.value,
-        [&] (typecheck::stmt_t::fun_call_t const& x)
+        [&] (typecheck::func_call_t const& x)
         {
-            gen_fun_call(ctx, builder, x.name, x.args);
+            gen_func_call(ctx, builder, x);
         },
         [&] (typecheck::stmt_t::if_else_t const& x)
         {
@@ -308,24 +303,43 @@ llvm::Value* gen_val(context_t const& ctx, llvm::IRBuilder<>& builder, typecheck
 {
     return match(
         expr.value,
+        [&] (typecheck::func_call_t const& x) -> llvm::Value*
+        {
+            return gen_func_call(ctx, builder, x);
+        },
+        [&] (typecheck::expr_t::arith_expr_t const& x) -> llvm::Value*
+        {
+            return match(
+                x.value,
+                [&] (typecheck::expr_t::arith_expr_t::plus_t const& x) -> llvm::Value*
+                {
+                    // TODO add NUW/NSW but probably depends on decision whether typechecking `plus_t` requires proofs?
+                    return builder.CreateAdd(
+                        gen_val(ctx, builder, x.lhs.get()),
+                        gen_val(ctx, builder, x.rhs.get()));
+                });
+        },
         [&] (typecheck::expr_t::boolean_constant_t const& x) -> llvm::Value*
         {
             return llvm::ConstantInt::getBool(builder.getContext(), x.value == "true");
         },
         [&] (typecheck::expr_t::numeric_constant_t const& x) -> llvm::Value*
         {
-            std::optional<std::string> without_separator;
+            std::optional<std::string> tmp;
             std::string_view number;
-            if (contains_digit_separator(x.number))
-                number = without_separator.emplace(remove_digit_separator(x.number));
+            if (x.sign or contains_digit_separator(x.number))
+            {
+                auto& s = tmp.emplace();
+                s.reserve(x.number.size() + 1);
+                if (x.sign)
+                    s.push_back(*x.sign);
+                remove_digit_separator(x.number, s);
+                number = s;
+            }
             else
                 number = x.number;
             auto const llvm_type = cast<llvm::IntegerType>(gen_type(ctx, builder.getContext(), expr.properties.type));
             return llvm::ConstantInt::get(llvm_type, number, 10);
-        },
-        [&] (typecheck::expr_t::fun_call_t const& x) -> llvm::Value*
-        {
-            return gen_fun_call(ctx, builder, x.name, x.args);
         },
         [&] (typecheck::expr_t::var_t const& x) -> llvm::Value*
         {
@@ -335,18 +349,13 @@ llvm::Value* gen_val(context_t const& ctx, llvm::IRBuilder<>& builder, typecheck
         });
 }
 
-static llvm::CallInst*
-    gen_fun_call(
-        context_t const& ctx,
-        llvm::IRBuilder<>& builder,
-        source_text const& name,
-        std::vector<typecheck::expr_t> const& args)
+static llvm::CallInst* gen_func_call(context_t const& ctx, llvm::IRBuilder<>& builder, typecheck::func_call_t const& f)
 {
-    auto const ty = ctx.fun_types[name];
-    auto const f = ctx.values[name];
+    auto const ty = ctx.fun_types[f.name];
+    auto const fn = ctx.values[f.name];
     assert(ty);
-    assert(f);
-    return builder.CreateCall(*ty, *f, fmap(args, [&] (auto const& arg) { return gen_val(ctx, builder, arg); }));
+    assert(fn);
+    return builder.CreateCall(*ty, *fn, fmap(f.args, [&] (auto const& arg) { return gen_val(ctx, builder, arg); }));
 }
 
 }

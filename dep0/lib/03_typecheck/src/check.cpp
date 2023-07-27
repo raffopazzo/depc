@@ -41,6 +41,12 @@ func_def_t make_legal_func_def(Args&&... args)
 }
 
 template <typename... Args>
+func_call_t make_legal_func_call(type_t ret_type, Args&&... args)
+{
+    return func_call_t{derivation_rules::make_derivation<func_call_t>(), std::move(ret_type), std::forward<Args>(args)...};
+}
+
+template <typename... Args>
 type_t make_legal_type(Args&&... args)
 {
     return type_t{derivation_rules::make_derivation<type_t>(), std::forward<Args>(args)...};
@@ -64,20 +70,8 @@ expr_t make_legal_expr(type_t expected_type, Args&&... args)
     return expr_t{derivation_rules::make_derivation<expr_t>(), std::move(expected_type), std::forward<Args>(args)...};
 }
 
-struct legal_fun_call_t
-{
-    source_text name;
-    type_t ret_type;
-    std::vector<expr_t> args;
-};
-
 // forward declarations
-static dep0::expected<legal_fun_call_t>
-    type_assign_fun_call(
-        context_t const&,
-        source_loc_t const& loc,
-        source_text const& f_name,
-        std::vector<parser::expr_t> const& f_args);
+static dep0::expected<func_call_t> type_assign_func_call(context_t const&, parser::func_call_t const&);
 static expected<type_def_t> check(context_t&, parser::type_def_t const&);
 static expected<func_def_t> check(context_t&, parser::func_def_t const&);
 static expected<func_def_t::arg_t> check(context_t const&, parser::func_def_t::arg_t const&);
@@ -106,37 +100,33 @@ expected<module_t> check(parser::module_t const& x)
 
 // implementations
 
-dep0::expected<legal_fun_call_t> type_assign_fun_call(
-    context_t const& ctx,
-    source_loc_t const& loc,
-    source_text const& f_name,
-    std::vector<parser::expr_t> const& f_args)
+dep0::expected<func_call_t> type_assign_func_call(context_t const& ctx, parser::func_call_t const& f)
 {
     auto const error = [&] (std::vector<dep0::error_t> reasons)
     {
         std::ostringstream err;
-        err << "invocation of function `" << f_name << "` does not typecheck";
-        return dep0::error_t{err.str(), loc, std::move(reasons)};
+        err << "invocation of function `" << f.name << "` does not typecheck";
+        return dep0::error_t{err.str(), f.properties, std::move(reasons)};
     };
-    auto const proto = ctx.find_proto(f_name);
+    auto const proto = ctx.find_proto(f.name);
     if (not proto)
         return error({dep0::error_t{"function prototype not found"}});
-    if (proto->value.args.size() != f_args.size())
+    if (proto->value.args.size() != f.args.size())
     {
         std::ostringstream err;
-        err << "passed " << f_args.size() << " arguments but was expecting " << proto->value.args.size();
+        err << "passed " << f.args.size() << " arguments but was expecting " << proto->value.args.size();
         return error({dep0::error_t{err.str()}});
     }
     std::vector<expr_t> args;
     std::vector<dep0::error_t> reasons;
-    for (auto const i: std::views::iota(0ul, f_args.size()))
-        if (auto expr = check(ctx, f_args[i], proto->value.args[i].type))
+    for (auto const i: std::views::iota(0ul, f.args.size()))
+        if (auto expr = check(ctx, f.args[i], proto->value.args[i].type))
             args.push_back(std::move(*expr));
         else
             reasons.push_back(std::move(expr.error()));
     if (not reasons.empty())
         return error(std::move(reasons));
-    return legal_fun_call_t{f_name, proto->value.ret_type, std::move(args)};
+    return make_legal_func_call(proto->value.ret_type, f.name, std::move(args));
 }
 
 expected<type_def_t> check(context_t& ctx, parser::type_def_t const& type_def)
@@ -246,13 +236,12 @@ expected<body_t> check(context_t const& ctx, parser::body_t const& x, type_t con
 
 expected<stmt_t> check(context_t const& ctx, parser::stmt_t const& s, type_t const& return_type)
 {
-    auto const loc = s.properties;
     return match(
         s.value,
-        [&] (parser::stmt_t::fun_call_t const& x) -> expected<stmt_t>
+        [&] (parser::func_call_t const& x) -> expected<stmt_t>
         {
-            if (auto f = type_assign_fun_call(ctx, loc, x.name, x.args))
-                return make_legal_stmt(stmt_t::fun_call_t{x.name, std::move(f->args)});
+            if (auto f = type_assign_func_call(ctx, x))
+                return make_legal_stmt(std::move(*f));
             else
                 return error_t::from_error(std::move(f.error()), ctx);
         },
@@ -287,7 +276,7 @@ expected<stmt_t> check(context_t const& ctx, parser::stmt_t const& s, type_t con
                     return make_legal_stmt(stmt_t::return_t{});
                 std::ostringstream err;
                 pretty_print(err << "expecting expression of type `", return_type) << '`';
-                return error_t::from_error(dep0::error_t{err.str(), loc}, ctx, return_type);
+                return error_t::from_error(dep0::error_t{err.str(), s.properties}, ctx, return_type);
             }
             else if (auto expr = check(ctx, *x.expr, return_type))
                 return make_legal_stmt(stmt_t::return_t{std::move(*expr)});
@@ -318,15 +307,6 @@ static expected<expr_t> check_numeric_expr(
                 if (s.starts_with(c))
                     s.remove_prefix(1);
         };
-        auto const skip_zero_or_one = [] (std::string_view& s, std::string_view const chars)
-        {
-            for (auto const c: chars)
-                if (s.starts_with(c))
-                {
-                    s.remove_prefix(1);
-                    return;
-                }
-        };
         // assuming `a` and `b` represent positive integer numbers without leading 0s, returns whether `a > b`
         auto const bigger_than = [] (std::string_view const a, std::string_view const b)
         {
@@ -344,19 +324,16 @@ static expected<expr_t> check_numeric_expr(
             number = without_separator.emplace(remove_digit_separator(x.number));
         else
             number = x.number;
-        skip_zero_or_one(number, sign_chars);
+        if (x.sign and sign_chars.find(*x.sign) == std::string_view::npos)
+            return error("invalid sign for numeric constant");
         skip_any(number, "0");
-        if (number.starts_with('-'))
-            // if we were checking for signed integer we would skip the `-`, so we must be checking for unsigned
-            // TODO should we allow `-0` though? not sure...
-            return error("invalid negative constant for unsigned integer");
         if (bigger_than(number, max_abs_value))
         {
             std::ostringstream err;
             err << "numeric constant does not fit inside `" << type_name << '`';
             return error(err.str());
         }
-        return make_legal_expr(expected_type, expr_t::numeric_constant_t{x.number});
+        return make_legal_expr(expected_type, expr_t::numeric_constant_t{x.sign, x.number});
     };
     return match(
         expected_type.value,
@@ -438,17 +415,40 @@ expected<expr_t> check(context_t const& ctx, parser::expr_t const& x, type_t con
     };
     return match(
         x.value,
-        [&] (parser::expr_t::fun_call_t const& x) -> expected<expr_t>
+        [&] (parser::func_call_t const& x) -> expected<expr_t>
         {
-            if (auto f = type_assign_fun_call(ctx, loc, x.name, x.args))
+            if (auto f = type_assign_func_call(ctx, x))
             {
-                if (f->ret_type == expected_type)
-                    return make_legal_expr(expected_type, expr_t::fun_call_t{x.name, std::move(f->args)});
+                if (f->properties.ret_type == expected_type)
+                    return make_legal_expr(expected_type, std::move(*f));
                 else
-                    return type_error(f->ret_type);
+                    return type_error(f->properties.ret_type);
             }
             else
                 return error_t::from_error(std::move(f.error()), ctx, expected_type);
+        },
+        [&] (parser::expr_t::arith_expr_t const& x) -> expected<expr_t>
+        {
+            return match(
+                x.value,
+                [&] (parser::expr_t::arith_expr_t::plus_t const& x) -> expected<expr_t>
+                {
+                    // TODO: would be nice to check both lhs and rhs and if both failed gather both reasons
+                    // but currently we can only nest `dep0::error_t` not `typecheck::error_t` and we would
+                    // end up losing context and target information of the failed operand
+                    auto lhs = check(ctx, x.lhs.get(), expected_type);
+                    if (not lhs) return std::move(lhs.error());
+                    auto rhs = check(ctx, x.rhs.get(), expected_type);
+                    if (not rhs) return std::move(rhs.error());
+                    return make_legal_expr(
+                        expected_type,
+                        expr_t::arith_expr_t{
+                            // TODO require proof that it doesn't overflow; user can always appeal to `believe_me()`
+                            expr_t::arith_expr_t::plus_t{
+                                std::move(*lhs),
+                                std::move(*rhs)}});
+                });
+            return error_t::from_error(dep0::error_t{"not implemented yet"}, ctx, expected_type);
         },
         [&] (parser::expr_t::boolean_constant_t const& x) -> expected<expr_t>
         {

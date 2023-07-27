@@ -48,6 +48,7 @@ source_text::operator std::string_view&() { return txt; }
 source_text::operator std::string_view const&() const { return txt; }
 std::string_view const& source_text::view() const { return txt; }
 
+std::size_t source_text::size() const { return txt.size(); }
 bool source_text::empty() const { return txt.empty(); }
 bool source_text::starts_with(char const c) const { return txt.starts_with(c); }
 

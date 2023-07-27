@@ -26,9 +26,7 @@ std::ostream& pretty_print(std::ostream& os, expr_t const& x)
 {
     match(
         x.value,
-        [&] (expr_t::boolean_constant_t const& x) { os << x.value; },
-        [&] (expr_t::numeric_constant_t const& x) { os << x.number; },
-        [&] (expr_t::fun_call_t const& x)
+        [&] (func_call_t const& x)
         {
             os << x.name << '(';
             bool first = true;
@@ -36,6 +34,19 @@ std::ostream& pretty_print(std::ostream& os, expr_t const& x)
                 pretty_print(std::exchange(first, false) ? os : os << ", ", arg);
             os << ')';
         },
+        [&] (expr_t::arith_expr_t const& x)
+        {
+            match(
+                x.value,
+                [&] (expr_t::arith_expr_t::plus_t const& x)
+                {
+                    pretty_print(os, x.lhs.get());
+                    os << " + ";
+                    pretty_print(os, x.rhs.get());
+                });
+        },
+        [&] (expr_t::boolean_constant_t const& x) { os << x.value; },
+        [&] (expr_t::numeric_constant_t const& x) { os << x.number; },
         [&] (expr_t::var_t const& x) { os << x.name; });
     return pretty_print(os << " : ", x.properties.type);
 }

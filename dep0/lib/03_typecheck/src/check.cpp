@@ -448,7 +448,6 @@ expected<expr_t> check(context_t const& ctx, parser::expr_t const& x, type_t con
                                 std::move(*lhs),
                                 std::move(*rhs)}});
                 });
-            return error_t::from_error(dep0::error_t{"not implemented yet"}, ctx, expected_type);
         },
         [&] (parser::expr_t::boolean_constant_t const& x) -> expected<expr_t>
         {

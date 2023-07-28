@@ -35,13 +35,13 @@ funcDef: type name=ID '(' (arg (',' arg)*)? ')' body;
 typeDef:
     'typedef' name=ID '='
     {one_of("signed", "unsigned")}? sign=ID
-    {one_of("8", "16", "32", "64")}? width=NUMBER
+    {one_of("8", "16", "32", "64")}? width=INT
     {one_of("bit")}? ID
     {one_of("integer")}? ID
     {one_of("from")}? ID
-    min=('...' | NUMBER)
+    ('...' | '-' min=INT | {one_of("0")}? zero=INT)
     {one_of("to")}? ID
-    max=('...' | NUMBER)
+    ('...' | '+'? max=INT)
     SEMI;
 arg: type name=ID;
 
@@ -51,18 +51,19 @@ type: 'bool' | 'unit_t' | 'i8_t' | 'i16_t' | 'i32_t' | 'i64_t' | 'u8_t' | 'u16_t
 // Statements
 body: '{' stmt* '}';
 
-stmt: funCallStmt | ifElse | returnStmt;
+stmt: funcCallStmt | ifElse | returnStmt;
 
-funCallStmt: funCallExpr ';';
+funcCallStmt: funcCall ';';
 ifElse: 'if' '(' cond=expr ')' true_branch=bodyOrStmt ('else' false_branch=bodyOrStmt)?;
 bodyOrStmt: body | stmt;
 returnStmt: 'return' expr? ';';
 
 // Expressions
-expr: constantExpr | funCallExpr | var=ID;
+expr: lhs=expr '+' rhs=expr # plusExpr
+  | sign=('+' | '-')? value=INT # numericExpr
+  | value=('true'|'false') # booleanExpr
+  | funcCall # funcCallExpr
+  | var=ID # varExpr
+  ;
 
-constantExpr: numericExpr | booleanExpr;
-numericExpr: value=NUMBER;
-booleanExpr: value=('true'|'false');
-
-funCallExpr: name=ID '(' (expr (',' expr)*)? ')';
+funcCall: name=ID '(' (expr (',' expr)*)? ')';

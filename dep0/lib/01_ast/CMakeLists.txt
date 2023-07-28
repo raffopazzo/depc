@@ -11,6 +11,5 @@ target_include_directories(dep0_ast_lib PUBLIC include)
 target_link_libraries(dep0_ast_lib
   PUBLIC
     DepC::Dep0::Core
-  PRIVATE
     Boost::Boost
     )

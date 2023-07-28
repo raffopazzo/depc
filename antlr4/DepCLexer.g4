@@ -26,6 +26,8 @@ KW_UNIT_T: 'unit_t';
 COMMA: ',';
 ELLIPSIS: '...';
 EQ: '=';
+PLUS: '+';
+MINUS: '-';
 LCURLY: '{';
 LPAREN: '(';
 RCURLY: '}';
@@ -34,7 +36,7 @@ SEMI: ';';
 
 // Tokens
 ID: ALPHA ALPHANUM*;
-NUMBER: [+-]?[0-9][0-9']*;
+INT: [0-9][0-9']*;
 
 // White Spaces
 BLOCK_COMMENT: '/*' -> skip, pushMode(BlockComment);

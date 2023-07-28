@@ -1,0 +1,4 @@
+i32_t three()
+{
+    return 1 +2; // no space; should parse `1 + 2` not as `1` and `+2`
+}

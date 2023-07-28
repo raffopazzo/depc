@@ -4,6 +4,8 @@
 
 #include "dep0/source.hpp"
 
+#include <boost/variant/recursive_wrapper.hpp>
+
 #include <optional>
 #include <vector>
 #include <variant>
@@ -15,6 +17,7 @@ namespace dep0::ast {
 template <Properties P> struct module_t;
 template <Properties P> struct type_def_t;
 template <Properties P> struct func_def_t;
+template <Properties P> struct func_call_t;
 template <Properties P> struct type_t;
 template <Properties P> struct body_t;
 template <Properties P> struct stmt_t;
@@ -50,9 +53,31 @@ struct type_t
 };
 
 template <Properties P>
+struct func_call_t
+{
+    using properties_t = typename P::func_call_properties_type;
+    using expr_t = ast::expr_t<P>;
+    properties_t properties;
+    source_text name;
+    std::vector<expr_t> args;
+    bool operator==(func_call_t const&) const = default;
+};
+
+template <Properties P>
 struct expr_t
 {
+    using rec_t = boost::recursive_wrapper<expr_t>;
     using properties_t = typename P::expr_properties_type;
+    struct arith_expr_t
+    {
+        struct plus_t
+        {
+            rec_t lhs;
+            rec_t rhs;
+        };
+        using value_t = std::variant<plus_t>;
+        value_t value;
+    };
     struct boolean_constant_t
     {
         source_text value;
@@ -60,21 +85,16 @@ struct expr_t
     };
     struct numeric_constant_t
     {
+        std::optional<char> sign;
         source_text number;
         bool operator==(numeric_constant_t const&) const = default;
-    };
-    struct fun_call_t
-    {
-        source_text name;
-        std::vector<expr_t> args;
-        bool operator==(fun_call_t const&) const = default;
     };
     struct var_t
     {
         source_text name;
         bool operator==(var_t const&) const = default;
     };
-    using value_t = std::variant<boolean_constant_t, numeric_constant_t, fun_call_t, var_t>;
+    using value_t = std::variant<func_call_t<P>, arith_expr_t, boolean_constant_t, numeric_constant_t, var_t>;
 
     properties_t properties;
     value_t value;
@@ -88,12 +108,6 @@ struct stmt_t
     using properties_t = typename P::stmt_properties_type;
     using body_t = ast::body_t<P>;
     using expr_t = ast::expr_t<P>;
-    struct fun_call_t
-    {
-        source_text name;
-        std::vector<expr_t> args;
-        bool operator==(fun_call_t const&) const = default;
-    };
     struct if_else_t
     {
         expr_t cond;
@@ -106,7 +120,7 @@ struct stmt_t
         std::optional<expr_t> expr;
         bool operator==(return_t const&) const = default;
     };
-    using value_t = std::variant<fun_call_t, if_else_t, return_t>;
+    using value_t = std::variant<func_call_t<P>, if_else_t, return_t>;
 
     properties_t properties;
     value_t value;

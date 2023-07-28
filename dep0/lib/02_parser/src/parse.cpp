@@ -78,11 +78,17 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         auto const name = get_text(src, *ctx->name).value();
         auto const sign = get_text(src, *ctx->sign).value();
         auto const width = get_text(src, *ctx->width).value();
-        auto const min = optional_if(get_text(src, *ctx->min).value(), [] (auto const& x) { return x != "..."; });
-        auto const max = optional_if(get_text(src, *ctx->max).value(), [] (auto const& x) { return x != "..."; });
-        if (max and max->starts_with('-'))
-            throw error_t{"upper bound must be a positive number", loc};
-        auto const max_abs = max ? std::optional{max->starts_with('+') ? max->substr(1) : max} : std::nullopt;
+        std::optional<source_text> min, max;
+        // if we don't have 2 ellipsis, there's at least one of min (which could be 0) and max
+        if (ctx->ELLIPSIS().size() < 2ul)
+        {
+            if (ctx->min)
+                min = get_text(src, *ctx->min).value();
+            else if (ctx->zero)
+                min = get_text(src, *ctx->zero).value();
+            if (ctx->max)
+                max = get_text(src, *ctx->max).value();
+        }
         auto const w =
             width == "8" ? ast::width_t::_8 :
             width == "16" ? ast::width_t::_16 :
@@ -92,18 +98,15 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         {
             if (not min or min != "0")
                 throw error_t{"lower bound of unsigned integer must be 0", loc};
-            return type_def_t{loc, type_def_t::integer_t{name, ast::sign_t::unsigned_v, w, max_abs}};
+            return type_def_t{loc, type_def_t::integer_t{name, ast::sign_t::unsigned_v, w, max}};
         }
         else if (min.has_value() xor max.has_value())
             throw error_t{"lower and upper bound of signed integer must be either both present or both missing", loc};
         else if (min)
         {
-            if (not min->starts_with('-'))
-                throw error_t{"lower bound of signed integer must be a negative number", loc};
-            auto const min_abs = min->substr(1);
-            if (min_abs != max_abs)
-                throw error_t{"lower and upper of signed integer bound must have same absolute value", loc};
-            return type_def_t{loc, type_def_t::integer_t{name, ast::sign_t::signed_v, w, max_abs}};
+            if (min != max)
+                throw error_t{"lower and upper bound of signed integer must have same absolute value", loc};
+            return type_def_t{loc, type_def_t::integer_t{name, ast::sign_t::signed_v, w, max}};
         }
         else
             return type_def_t{loc, type_def_t::integer_t{name, ast::sign_t::signed_v, w, std::nullopt}};
@@ -163,23 +166,19 @@ struct parse_visitor_t : dep0::DepCParserVisitor
     virtual std::any visitStmt(DepCParser::StmtContext* ctx) override
     {
         assert(ctx);
-        auto loc = get_loc(src, *ctx).value();
-        if (ctx->funCallStmt())
-            return stmt_t{std::move(loc), std::any_cast<stmt_t::fun_call_t>(visitFunCallStmt(ctx->funCallStmt()))};
-        if (ctx->ifElse())
-            return stmt_t{std::move(loc), std::any_cast<stmt_t::if_else_t>(visitIfElse(ctx->ifElse()))};
-        if (ctx->returnStmt())
-            return stmt_t{std::move(loc), std::any_cast<stmt_t::return_t>(visitReturnStmt(ctx->returnStmt()))};
+        if (ctx->funcCallStmt()) return std::any_cast<stmt_t>(visitFuncCallStmt(ctx->funcCallStmt()));
+        if (ctx->ifElse()) return std::any_cast<stmt_t>(visitIfElse(ctx->ifElse()));
+        if (ctx->returnStmt()) return std::any_cast<stmt_t>(visitReturnStmt(ctx->returnStmt()));
         assert(nullptr);
     }
 
-    virtual std::any visitFunCallStmt(DepCParser::FunCallStmtContext* ctx)override
+    virtual std::any visitFuncCallStmt(DepCParser::FuncCallStmtContext* ctx) override
     {
         assert(ctx);
-        assert(ctx->funCallExpr());
-        return stmt_t::fun_call_t{
-            get_text(src, *ctx->funCallExpr()->name).value(),
-            fmap(ctx->funCallExpr()->expr(), [this] (auto* ctx) { return std::any_cast<expr_t>(visitExpr(ctx)); })};
+        assert(ctx->funcCall());
+        return stmt_t{
+            get_loc(src, *ctx).value(),
+            std::any_cast<func_call_t>(visitFuncCall(ctx->funcCall()))};
     }
 
     virtual std::any visitIfElse(DepCParser::IfElseContext* ctx) override
@@ -187,11 +186,25 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         assert(ctx);
         assert(ctx->cond);
         assert(ctx->true_branch);
-        return stmt_t::if_else_t{
-            std::any_cast<expr_t>(visitExpr(ctx->cond)),
-            std::any_cast<body_t>(visitBodyOrStmt(ctx->true_branch)),
-            ctx->false_branch ? std::optional{std::any_cast<body_t>(visitBodyOrStmt(ctx->false_branch))} : std::nullopt
-        };
+        return stmt_t{
+            get_loc(src, *ctx).value(),
+            stmt_t::if_else_t{
+                visitExpr(ctx->cond),
+                std::any_cast<body_t>(visitBodyOrStmt(ctx->true_branch)),
+                ctx->false_branch
+                    ? std::optional{std::any_cast<body_t>(visitBodyOrStmt(ctx->false_branch))}
+                    : std::nullopt}};
+    }
+
+    virtual std::any visitReturnStmt(DepCParser::ReturnStmtContext* ctx) override
+    {
+        assert(ctx);
+        return stmt_t{
+            get_loc(src, *ctx).value(),
+            stmt_t::return_t{
+                ctx->expr()
+                    ? std::optional{visitExpr(ctx->expr())}
+                    : std::nullopt}};
     }
 
     virtual std::any visitBodyOrStmt(DepCParser::BodyOrStmtContext* ctx) override
@@ -202,61 +215,77 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         assert(nullptr);
     }
 
-    virtual std::any visitReturnStmt(DepCParser::ReturnStmtContext* ctx) override
+    virtual std::any visitPlusExpr(DepCParser::PlusExprContext* ctx) override
     {
         assert(ctx);
-        if (ctx->expr())
-            return stmt_t::return_t{std::any_cast<expr_t>(visitExpr(ctx->expr()))};
-        else
-            return stmt_t::return_t{std::nullopt};
+        assert(ctx->lhs);
+        assert(ctx->rhs);
+        return expr_t{
+            get_loc(src, *ctx).value(),
+            expr_t::arith_expr_t{
+                expr_t::arith_expr_t::plus_t{
+                    visitExpr(ctx->lhs),
+                    visitExpr(ctx->rhs)}}};
     }
 
-    virtual std::any visitExpr(DepCParser::ExprContext* ctx) override
+    virtual std::any visitVarExpr(DepCParser::VarExprContext* ctx) override
     {
         assert(ctx);
-        if (ctx->constantExpr()) return visitConstantExpr(ctx->constantExpr());
-        if (ctx->funCallExpr()) return visitFunCallExpr(ctx->funCallExpr());
-        if (ctx->var) return expr_t{get_loc(src, *ctx->var).value(), expr_t::var_t{get_text(src, *ctx->var).value()}};
-        assert(nullptr);
-    }
-
-    virtual std::any visitConstantExpr(DepCParser::ConstantExprContext* ctx) override
-    {
-        assert(ctx);
-        if (ctx->numericExpr())
-            return expr_t{
-                get_loc(src, *ctx).value(),
-                std::any_cast<expr_t::numeric_constant_t>(visitNumericExpr(ctx->numericExpr()))};
-        if (ctx->booleanExpr())
-            return expr_t{
-                get_loc(src, *ctx).value(),
-                std::any_cast<expr_t::boolean_constant_t>(visitBooleanExpr(ctx->booleanExpr()))};
-        assert(nullptr);
+        assert(ctx->var);
+        return expr_t{get_loc(src, *ctx->var).value(), expr_t::var_t{get_text(src, *ctx->var).value()}};
     }
 
     virtual std::any visitBooleanExpr(DepCParser::BooleanExprContext* ctx)
     {
         assert(ctx);
         assert(ctx->value);
-        return expr_t::boolean_constant_t{get_text(src, *ctx->value).value()};
+        return expr_t{
+            get_loc(src, *ctx).value(),
+            expr_t::boolean_constant_t{get_text(src, *ctx->value).value()}};
     }
 
     virtual std::any visitNumericExpr(DepCParser::NumericExprContext* ctx)
     {
         assert(ctx);
         assert(ctx->value);
-        return expr_t::numeric_constant_t{get_text(src, *ctx->value).value()};
-    }
-
-    virtual std::any visitFunCallExpr(DepCParser::FunCallExprContext* ctx) override
-    {
-        assert(ctx);
-        assert(ctx->ID());
         return expr_t{
             get_loc(src, *ctx).value(),
-            expr_t::fun_call_t{
-                get_text(src, *ctx->name).value(),
-                fmap(ctx->expr(), [this] (auto* ctx) { return std::any_cast<expr_t>(visitExpr(ctx)); })}};
+            expr_t::numeric_constant_t{
+                ctx->sign ? std::optional{get_text(src, *ctx->sign)->view()[0]} : std::nullopt,
+                get_text(src, *ctx->value).value()}};
+    }
+
+    virtual std::any visitFuncCallExpr(DepCParser::FuncCallExprContext* ctx) override
+    {
+        assert(ctx);
+        assert(ctx->funcCall());
+        return expr_t{get_loc(src, *ctx).value(), std::any_cast<func_call_t>(visitFuncCall(ctx->funcCall()))};
+    }
+
+    virtual std::any visitFuncCall(DepCParser::FuncCallContext* ctx) override
+    {
+        assert(ctx);
+        assert(ctx->name);
+        return func_call_t{
+            get_loc(src, *ctx).value(),
+            get_text(src, *ctx->name).value(),
+            fmap(ctx->expr(), [this] (auto* ctx) { return visitExpr(ctx); })};
+    }
+
+    expr_t visitExpr(DepCParser::ExprContext* ctx)
+    {
+        assert(ctx);
+        if (auto p = dynamic_cast<DepCParser::PlusExprContext*>(ctx))
+            return std::any_cast<expr_t>(visitPlusExpr(p));
+        if (auto p = dynamic_cast<DepCParser::NumericExprContext*>(ctx))
+            return std::any_cast<expr_t>(visitNumericExpr(p));
+        if (auto p = dynamic_cast<DepCParser::BooleanExprContext*>(ctx))
+            return std::any_cast<expr_t>(visitBooleanExpr(p));
+        if (auto p = dynamic_cast<DepCParser::FuncCallExprContext*>(ctx))
+            return std::any_cast<expr_t>(visitFuncCallExpr(p));
+        if (auto p = dynamic_cast<DepCParser::VarExprContext*>(ctx))
+            return std::any_cast<expr_t>(visitVarExpr(p));
+        assert(nullptr);
     }
 };
 

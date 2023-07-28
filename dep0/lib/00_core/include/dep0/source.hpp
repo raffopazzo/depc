@@ -71,6 +71,7 @@ public:
     // WARN do not expose `char const* data() const` because our underlying buffer is the entire source file,
     // which is not null-terminated where you want, in fact it might not even be null-terminated at all!
 
+    std::size_t size() const;
     bool empty() const;
     bool starts_with(char) const;
     source_text substr(std::size_t pos, std::size_t n = std::string_view::npos) const;

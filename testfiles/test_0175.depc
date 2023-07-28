@@ -1,0 +1,1 @@
+i32_t three() { return 1 + + 2; }

@@ -108,7 +108,7 @@ llvm::Type* gen_type(context_t const& ctx, llvm::LLVMContext& llvm_ctx, typechec
         [&] (typecheck::type_t::u16_t const&) -> llvm::Type* { return llvm::Type::getInt16Ty(llvm_ctx); },
         [&] (typecheck::type_t::u32_t const&) -> llvm::Type* { return llvm::Type::getInt32Ty(llvm_ctx); },
         [&] (typecheck::type_t::u64_t const&) -> llvm::Type* { return llvm::Type::getInt64Ty(llvm_ctx); },
-        [&] (typecheck::type_t::name_t const& name) -> llvm::Type*
+        [&] (typecheck::type_t::var_t const& name) -> llvm::Type*
         {
             auto t = ctx.types[name.name];
             assert(t);
@@ -125,7 +125,7 @@ llvm::Type* gen_type(context_t const& ctx, llvm::LLVMContext& llvm_ctx, typechec
                     {
                         return match(
                             t,
-                            [&] (typecheck::type_t::name_t const& t) -> llvm::Type*
+                            [&] (typecheck::type_t::var_t const& t) -> llvm::Type*
                             {
                                 assert(false and "cannot generate llvm types for a pi-type");
                                 return nullptr;
@@ -184,7 +184,7 @@ llvm::Attribute::AttrKind get_sign_ext_attribute(context_t const& ctx, typecheck
         [] (typecheck::type_t::u16_t const&) { return llvm::Attribute::ZExt; },
         [] (typecheck::type_t::u32_t const&) { return llvm::Attribute::ZExt; },
         [] (typecheck::type_t::u64_t const&) { return llvm::Attribute::ZExt; },
-        [&] (typecheck::type_t::name_t const& x)
+        [&] (typecheck::type_t::var_t const& x)
         {
             auto const t = ctx.integer_types[x.name];
             return

@@ -52,15 +52,15 @@ struct type_t
     struct u16_t { bool operator==(u16_t const&) const { return true; } };
     struct u32_t { bool operator==(u32_t const&) const { return true; } };
     struct u64_t { bool operator==(u64_t const&) const { return true; } };
-    struct name_t // TODO rename to `var_t`
+    struct var_t
     {
         source_text name;
-        bool operator==(name_t const&) const = default;
+        bool operator==(var_t const&) const = default;
     };
     struct arr_t
     {
-        // in lambda-2, an arrow can either introduce new type names (pi-types) or refer to existing types
-        std::vector<std::variant<name_t, type_t>> arg_types;
+        // in lambda-2, an arrow can either introduce new type variables (pi-types) or refer to existing types
+        std::vector<std::variant<var_t, type_t>> arg_types;
         rec_t ret_type;
         bool operator==(arr_t const& that) const
         {
@@ -70,7 +70,7 @@ struct type_t
     using value_t =
         std::variant<
             bool_t, unit_t, i8_t, i16_t, i32_t, i64_t, u8_t, u16_t, u32_t, u64_t,
-            name_t, arr_t>;
+            var_t, arr_t>;
 
     properties_t properties;
     value_t value;

@@ -116,9 +116,9 @@ dep0::expected<std::pair<type_t, expr_t::app_t>>
     auto proto_ = proto->value;
     std::vector<expr_t> args;
     std::vector<dep0::error_t> reasons;
-    auto const subst = [] (type_t const& x, type_t::name_t const& name, type_t const& y)
+    auto const subst = [] (type_t const& x, type_t::var_t const& name, type_t const& y)
     {
-        if (auto const p = std::get_if<type_t::name_t>(&x.value))
+        if (auto const p = std::get_if<type_t::var_t>(&x.value))
             if (*p == name)
                 return y;
         return x;
@@ -126,7 +126,7 @@ dep0::expected<std::pair<type_t, expr_t::app_t>>
     for (auto const i: std::views::iota(0ul, f.args.size()))
         match(
             proto_.arg_types[i],
-            [&] (type_t::name_t const& t)
+            [&] (type_t::var_t const& t)
             {
                 if (auto type = check(ctx, f.args[i], ast::typename_t{}))
                 {
@@ -135,7 +135,7 @@ dep0::expected<std::pair<type_t, expr_t::app_t>>
                     for (auto const j: std::views::iota(i, f.args.size()))
                         match(
                             proto_.arg_types[j],
-                            [&] (type_t::name_t const&)
+                            [&] (type_t::var_t const&)
                             {
                                 // TODO substitution should stop if the new binding variable has the same name
                             },
@@ -246,11 +246,11 @@ expected<func_def_t> check(context_t& ctx, parser::func_def_t const& f)
                 args,
                 [] (expr_t::abs_t::arg_t const& arg)
                 {
-                    using res_t = std::variant<type_t::name_t, type_t>;
+                    using res_t = std::variant<type_t::var_t, type_t>;
                     return match(
                         arg.sort,
                         [&] (type_t const& t) -> res_t { return t; },
-                        [&] (ast::typename_t const&) -> res_t { return type_t::name_t{arg.name}; });
+                        [&] (ast::typename_t const&) -> res_t { return type_t::var_t{arg.name}; });
                 });
             auto const [it, inserted] = ctx.try_emplace_proto(f.name, f.properties, std::move(arg_types), ret_type);
             if (not inserted)
@@ -287,29 +287,29 @@ expected<type_t> check(context_t const& ctx, parser::type_t const& t)
         [&] (parser::type_t::u16_t const&) -> expected<type_t> { return make_legal_type(type_t::u16_t{}); },
         [&] (parser::type_t::u32_t const&) -> expected<type_t> { return make_legal_type(type_t::u32_t{}); },
         [&] (parser::type_t::u64_t const&) -> expected<type_t> { return make_legal_type(type_t::u64_t{}); },
-        [&] (parser::type_t::name_t const& name) -> expected<type_t>
+        [&] (parser::type_t::var_t const& name) -> expected<type_t>
         {
             if (ctx.find_typedef(name.name)) // TODO `typename` args should shadow typedefs
-                return make_legal_type(type_t::name_t{name.name});
+                return make_legal_type(type_t::var_t{name.name});
             if (auto arg = ctx.find_arg(name.name))
                 if (std::holds_alternative<ast::typename_t>(arg->value.sort))
-                    return make_legal_type(type_t::name_t{name.name});
+                    return make_legal_type(type_t::var_t{name.name});
             std::ostringstream err;
             err << "unknown type `" << name.name << '`';
             return error_t::from_error(dep0::error_t{err.str(), t.properties}, ctx);
         },
         [&] (parser::type_t::arr_t const& x) -> expected<type_t>
         {
-            using arg_t = std::variant<type_t::name_t, type_t>;
+            using arg_t = std::variant<type_t::var_t, type_t>;
             auto arg_types =
                 fmap_or_error(
                     x.arg_types,
                     [&] (auto const& x)
                     {
                         return match(x,
-                            [&] (parser::type_t::name_t const& x) -> expected<arg_t>
+                            [&] (parser::type_t::var_t const& x) -> expected<arg_t>
                             {
-                                return expected<arg_t>{std::in_place, type_t::name_t{x.name}};
+                                return expected<arg_t>{std::in_place, type_t::var_t{x.name}};
                             },
                             [&] (parser::type_t const& x) -> expected<arg_t>
                             {
@@ -453,7 +453,7 @@ static expected<expr_t> check_numeric_expr(
         [&] (type_t::u16_t const&) { return check_integer("u16_t", "+", "65535"); },
         [&] (type_t::u32_t const&) { return check_integer("u32_t", "+", "4294967295"); },
         [&] (type_t::u64_t const&) { return check_integer("u64_t", "+", "18446744073709551615"); },
-        [&] (type_t::name_t const& name) -> expected<expr_t>
+        [&] (type_t::var_t const& name) -> expected<expr_t>
         {
             auto t = ctx.find_typedef(name.name);
             if (not t)

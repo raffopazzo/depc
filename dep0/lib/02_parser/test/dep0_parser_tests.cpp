@@ -512,7 +512,7 @@ BOOST_AUTO_TEST_CASE(test_0178)
     BOOST_TEST(std::holds_alternative<dep0::ast::typename_t>(id.value.args[0ul].sort));
     auto const s1 = std::get_if<dep0::parser::type_t>(&id.value.args[1ul].sort);
     BOOST_TEST_REQUIRE(s1);
-    auto const t1 = std::get_if<dep0::parser::type_t::name_t>(&s1->value);
+    auto const t1 = std::get_if<dep0::parser::type_t::var_t>(&s1->value);
     BOOST_TEST_REQUIRE(t1);
     BOOST_TEST_REQUIRE(t1->name == "t");
     BOOST_TEST_REQUIRE(id.value.body.stmts.size() == 1ul);

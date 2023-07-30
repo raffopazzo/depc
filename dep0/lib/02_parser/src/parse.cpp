@@ -140,7 +140,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         if (ctx->KW_U16_T()) return type_t{get_loc(src, *ctx).value(), type_t::u16_t{}};
         if (ctx->KW_U32_T()) return type_t{get_loc(src, *ctx).value(), type_t::u32_t{}};
         if (ctx->KW_U64_T()) return type_t{get_loc(src, *ctx).value(), type_t::u64_t{}};
-        if (ctx->name) return type_t{get_loc(src, *ctx).value(), type_t::name_t{get_text(src, *ctx->name).value()}};
+        if (ctx->name) return type_t{get_loc(src, *ctx).value(), type_t::var_t{get_text(src, *ctx->name).value()}};
         assert(nullptr);
     }
 

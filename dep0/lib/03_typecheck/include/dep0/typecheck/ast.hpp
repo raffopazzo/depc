@@ -11,7 +11,6 @@ namespace dep0::typecheck {
 struct legal_module_t;
 struct legal_type_def_t;
 struct legal_func_def_t;
-struct legal_func_call_t;
 struct legal_type_t;
 struct legal_body_t;
 struct legal_stmt_t;
@@ -22,7 +21,6 @@ struct properties_t
     using module_properties_type = legal_module_t;
     using type_def_properties_type = legal_type_def_t;
     using func_def_properties_type = legal_func_def_t;
-    using func_call_properties_type = legal_func_call_t;
     using type_properties_type = legal_type_t;
     using body_properties_type = legal_body_t;
     using stmt_properties_type = legal_stmt_t;
@@ -33,7 +31,6 @@ static_assert(ast::Properties<properties_t>);
 using module_t = ast::module_t<properties_t>;
 using type_def_t = ast::type_def_t<properties_t>;
 using func_def_t = ast::func_def_t<properties_t>;
-using func_call_t = ast::func_call_t<properties_t>;
 using type_t = ast::type_t<properties_t>;
 using body_t = ast::body_t<properties_t>;
 using stmt_t = ast::stmt_t<properties_t>;
@@ -81,13 +78,6 @@ struct legal_func_def_t
 {
     derivation_t<func_def_t> derivation;
     bool operator==(legal_func_def_t const&) const = default;
-};
-
-struct legal_func_call_t
-{
-    derivation_t<func_call_t> derivation;
-    type_t ret_type;
-    bool operator==(legal_func_call_t const&) const = default;
 };
 
 struct legal_body_t

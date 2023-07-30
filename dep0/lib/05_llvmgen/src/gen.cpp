@@ -60,7 +60,7 @@ struct snippet_t
 
 static llvm::Type* gen_type(context_t const&, llvm::LLVMContext&, typecheck::type_t const&);
 static llvm::Type* gen_type(context_t&, llvm::LLVMContext&, typecheck::type_def_t const&);
-static llvm::Value* gen_fun(context_t&, llvm::Module& , typecheck::func_def_t const&);
+static llvm::Value* gen_func(context_t&, llvm::Module& , typecheck::func_def_t const&);
 static snippet_t gen_body(
     context_t const&,
     llvm::LLVMContext&,
@@ -69,7 +69,7 @@ static snippet_t gen_body(
     llvm::Function*);
 static void gen_stmt(context_t const&, snippet_t&, llvm::IRBuilder<>&, typecheck::stmt_t const&, llvm::Function*);
 static llvm::Value* gen_val(context_t const&, llvm::IRBuilder<>& , typecheck::expr_t const&);
-static llvm::CallInst* gen_func_call(context_t const&, llvm::IRBuilder<>&, typecheck::func_call_t const&);
+static llvm::CallInst* gen_func_call(context_t const&, llvm::IRBuilder<>&, typecheck::expr_t::app_t const&);
 
 expected<unique_ref<llvm::Module>> gen(
     llvm::LLVMContext& llvm_ctx,
@@ -82,7 +82,7 @@ expected<unique_ref<llvm::Module>> gen(
     for (auto const& t: m.type_defs)
         gen_type(ctx, llvm_ctx, t);
     for (auto const& f: m.func_defs)
-        gen_fun(ctx, llvm_module.get(), f);
+        gen_func(ctx, llvm_module.get(), f);
 
     std::string err;
     llvm::raw_string_ostream ostream(err);
@@ -177,7 +177,7 @@ static void gen_fun_attributes(context_t const& ctx, llvm::Function* const func,
         func->addAttribute(llvm::AttributeList::ReturnIndex, attr);
 }
 
-llvm::Value* gen_fun(context_t& ctx, llvm::Module& llvm_module, typecheck::func_def_t const& x)
+llvm::Value* gen_func(context_t& ctx, llvm::Module& llvm_module, typecheck::func_def_t const& x)
 {
     auto const is_typename = [](typecheck::expr_t::abs_t::arg_t const& arg)
     {
@@ -277,7 +277,7 @@ void gen_stmt(
 {
     match(
         x.value,
-        [&] (typecheck::func_call_t const& x)
+        [&] (typecheck::expr_t::app_t const& x)
         {
             gen_func_call(ctx, builder, x);
         },
@@ -312,10 +312,6 @@ llvm::Value* gen_val(context_t const& ctx, llvm::IRBuilder<>& builder, typecheck
 {
     return match(
         expr.value,
-        [&] (typecheck::func_call_t const& x) -> llvm::Value*
-        {
-            return gen_func_call(ctx, builder, x);
-        },
         [&] (typecheck::expr_t::arith_expr_t const& x) -> llvm::Value*
         {
             return match(
@@ -355,10 +351,24 @@ llvm::Value* gen_val(context_t const& ctx, llvm::IRBuilder<>& builder, typecheck
             auto const v = ctx.values[x.name];
             assert(v);
             return *v;
+        },
+        [&] (typecheck::expr_t::app_t const& x) -> llvm::Value*
+        {
+            return gen_func_call(ctx, builder, x);
+        },
+        [&] (typecheck::expr_t::abs_t const& x) -> llvm::Value*
+        {
+            assert(false and "Generation of abstraction expression not yet implemented");
+            return nullptr;
+        },
+        [&] (typecheck::expr_t::type_t const& x) -> llvm::Value*
+        {
+            assert(false and "Generation of type expression not yet implemented");
+            return nullptr;
         });
 }
 
-static llvm::CallInst* gen_func_call(context_t const& ctx, llvm::IRBuilder<>& builder, typecheck::func_call_t const& f)
+static llvm::CallInst* gen_func_call(context_t const& ctx, llvm::IRBuilder<>& builder, typecheck::expr_t::app_t const& f)
 {
     auto const ty = ctx.fun_types[f.name];
     auto const fn = ctx.values[f.name];

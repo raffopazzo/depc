@@ -27,7 +27,7 @@ public:
 private:
     scope_map<source_text, entry_t<type_def_t>> m_typedefs;
     scope_map<source_text, entry_t<func_proto_t>> m_protos;
-    scope_map<source_text, entry_t<expr_t::abs_t::arg_t>> m_args;
+    scope_map<source_text, entry_t<expr_t::abs_t::arg_t>> m_args; // TODO also local variables at some point
 
     context_t(
         scope_map<source_text, entry_t<type_def_t>>,

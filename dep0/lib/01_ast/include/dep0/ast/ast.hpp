@@ -17,7 +17,6 @@ namespace dep0::ast {
 template <Properties P> struct module_t;
 template <Properties P> struct type_def_t;
 template <Properties P> struct func_def_t;
-template <Properties P> struct func_call_t;
 template <Properties P> struct type_t;
 template <Properties P> struct body_t;
 template <Properties P> struct stmt_t;
@@ -64,17 +63,6 @@ struct type_t
     bool operator==(type_t const&) const = default;
 };
 
-template <Properties P>
-struct func_call_t // TODO should be `expr_t::app_t`
-{
-    using properties_t = typename P::func_call_properties_type;
-    using expr_t = ast::expr_t<P>;
-    properties_t properties;
-    source_text name;
-    std::vector<expr_t> args;
-    bool operator==(func_call_t const&) const = default;
-};
-
 struct typename_t // TODO should be replaced with kind_t?
 {
     bool operator==(typename_t const&) const { return true; }
@@ -116,6 +104,12 @@ struct expr_t
         source_text name;
         bool operator==(var_t const&) const = default;
     };
+    struct app_t
+    {
+        source_text name; // TODO should really be `expr_t` since you can invoke the result of another expression
+        std::vector<expr_t> args;
+        bool operator==(app_t const&) const = default;
+    };
     struct abs_t
     {
         struct arg_t
@@ -132,11 +126,11 @@ struct expr_t
 
     using value_t =
         std::variant<
-            func_call_t<P>,
             arith_expr_t,
             boolean_constant_t,
             numeric_constant_t,
             var_t,
+            app_t,
             abs_t,
             type_t>;
 
@@ -164,7 +158,7 @@ struct stmt_t
         std::optional<expr_t> expr;
         bool operator==(return_t const&) const = default;
     };
-    using value_t = std::variant<func_call_t<P>, if_else_t, return_t>;
+    using value_t = std::variant<typename expr_t::app_t, if_else_t, return_t>;
 
     properties_t properties;
     value_t value;

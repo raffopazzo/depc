@@ -41,12 +41,6 @@ func_def_t make_legal_func_def(Args&&... args)
 }
 
 template <typename... Args>
-func_call_t make_legal_func_call(type_t ret_type, Args&&... args)
-{
-    return func_call_t{derivation_rules::make_derivation<func_call_t>(), std::move(ret_type), std::forward<Args>(args)...};
-}
-
-template <typename... Args>
 type_t make_legal_type(Args&&... args)
 {
     return type_t{derivation_rules::make_derivation<type_t>(), std::forward<Args>(args)...};
@@ -71,7 +65,8 @@ expr_t make_legal_expr(sort_t sort, Args&&... args)
 }
 
 // forward declarations
-static dep0::expected<func_call_t> type_assign_func_call(context_t const&, parser::func_call_t const&);
+static dep0::expected<std::pair<type_t, expr_t::app_t>>
+    type_assign_func_call(context_t const&, parser::expr_t::app_t const&);
 static expected<type_def_t> check(context_t&, parser::type_def_t const&);
 static expected<func_def_t> check(context_t&, parser::func_def_t const&);
 static expected<type_t> check(context_t const&, parser::type_t const&);
@@ -100,13 +95,14 @@ expected<module_t> check(parser::module_t const& x)
 
 // implementations
 
-dep0::expected<func_call_t> type_assign_func_call(context_t const& ctx, parser::func_call_t const& f)
+dep0::expected<std::pair<type_t, expr_t::app_t>>
+    type_assign_func_call(context_t const& ctx, parser::expr_t::app_t const& f)
 {
     auto const error = [&] (std::vector<dep0::error_t> reasons)
     {
         std::ostringstream err;
         err << "invocation of function `" << f.name << "` does not typecheck";
-        return dep0::error_t{err.str(), f.properties, std::move(reasons)};
+        return dep0::error_t{err.str(), std::move(reasons)};
     };
     auto const proto = ctx.find_proto(f.name);
     if (not proto)
@@ -157,7 +153,7 @@ dep0::expected<func_call_t> type_assign_func_call(context_t const& ctx, parser::
             });
     if (not reasons.empty())
         return error(std::move(reasons));
-    return make_legal_func_call(proto_.ret_type, f.name, std::move(args));
+    return std::make_pair(proto_.ret_type, expr_t::app_t{f.name, std::move(args)});
 }
 
 expected<type_def_t> check(context_t& ctx, parser::type_def_t const& type_def)
@@ -303,12 +299,16 @@ expected<stmt_t> check(context_t const& ctx, parser::stmt_t const& s, type_t con
 {
     return match(
         s.value,
-        [&] (parser::func_call_t const& x) -> expected<stmt_t>
+        [&] (parser::expr_t::app_t const& x) -> expected<stmt_t>
         {
             if (auto f = type_assign_func_call(ctx, x))
-                return make_legal_stmt(std::move(*f));
+                return make_legal_stmt(std::move(f->second));
             else
+            {
+                if (not f.error().location)
+                    f.error().location = s.properties;
                 return error_t::from_error(std::move(f.error()), ctx);
+            }
         },
         [&] (parser::stmt_t::if_else_t const& x) -> expected<stmt_t>
         {
@@ -480,17 +480,21 @@ expected<expr_t> check(context_t const& ctx, parser::expr_t const& x, type_t con
     };
     return match(
         x.value,
-        [&] (parser::func_call_t const& x) -> expected<expr_t>
+        [&] (parser::expr_t::app_t const& x) -> expected<expr_t>
         {
             if (auto f = type_assign_func_call(ctx, x))
             {
-                if (f->properties.ret_type == expected_type)
-                    return make_legal_expr(expected_type, std::move(*f));
+                if (f->first == expected_type)
+                    return make_legal_expr(expected_type, std::move(f->second));
                 else
-                    return type_error(f->properties.ret_type);
+                    return type_error(f->first);
             }
             else
+            {
+                if (not f.error().location)
+                    f.error().location = loc;
                 return error_t::from_error(std::move(f.error()), ctx, expected_type);
+            }
         },
         [&] (parser::expr_t::arith_expr_t const& x) -> expected<expr_t>
         {
@@ -571,13 +575,14 @@ expected<expr_t> check(context_t const& ctx, parser::expr_t const& x, type_t con
 
 expected<type_t> check(context_t const& ctx, parser::expr_t const& x, ast::typename_t const& expected_type)
 {
+    auto const loc = x.properties;
     auto const error = [&] (std::string err)
     {
         return error_t::from_error(dep0::error_t{std::move(err), x.properties}, ctx, expected_type);
     };
     return match(
         x.value,
-        [&] (parser::func_call_t const& x) -> expected<type_t>
+        [&] (parser::expr_t::app_t const& x) -> expected<type_t>
         {
             // in lambda-2 a function cannot return a type, so we could bail out immediately;
             // but we want to give nice error messages, so just perform typechecking as usual;
@@ -586,13 +591,17 @@ expected<type_t> check(context_t const& ctx, parser::expr_t const& x, ast::typen
             {
                 std::ostringstream err;
                 pretty_print(
-                    err << "type mismatch between invocation of function `" << f->name << "` with return type `",
-                    f->properties.ret_type
+                    err << "type mismatch between invocation of function `" << x.name << "` with return type `",
+                    f->first
                 ) << "` and `typename`";
                 return error(err.str());
             }
             else
+            {
+                if (not f.error().location)
+                    f.error().location = loc;
                 return error_t::from_error(std::move(f.error()), ctx, expected_type);
+            }
         },
         [&] (parser::expr_t::arith_expr_t const& x) -> expected<type_t>
         {

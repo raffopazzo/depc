@@ -326,7 +326,7 @@ BOOST_AUTO_TEST_CASE(test_0168)
     auto const* ret = std::get_if<dep0::parser::stmt_t::return_t>(&f.value.body.stmts[0].value);
     BOOST_TEST_REQUIRE(ret);
     BOOST_TEST_REQUIRE(ret->expr.has_value());
-    auto const* call = std::get_if<dep0::parser::func_call_t>(&ret->expr->value);
+    auto const* call = std::get_if<dep0::parser::expr_t::app_t>(&ret->expr->value);
     BOOST_TEST_REQUIRE(call);
     BOOST_TEST(call->name == "id");
     BOOST_TEST_REQUIRE(call->args.size() == 1ul);
@@ -344,7 +344,7 @@ BOOST_AUTO_TEST_CASE(test_0169)
     auto const* ret = std::get_if<dep0::parser::stmt_t::return_t>(&f.value.body.stmts[0].value);
     BOOST_TEST_REQUIRE(ret);
     BOOST_TEST_REQUIRE(ret->expr.has_value());
-    auto const* call = std::get_if<dep0::parser::func_call_t>(&ret->expr->value);
+    auto const* call = std::get_if<dep0::parser::expr_t::app_t>(&ret->expr->value);
     BOOST_TEST_REQUIRE(call);
     BOOST_TEST(call->name == "first");
     BOOST_TEST_REQUIRE(call->args.size() == 2ul);
@@ -364,7 +364,7 @@ BOOST_AUTO_TEST_CASE(test_0172)
     auto const& f = pass_result->func_defs[1];
     BOOST_TEST(f.name == "main");
     BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 2ul);
-    auto const* call = std::get_if<dep0::parser::func_call_t>(&f.value.body.stmts[0].value);
+    auto const* call = std::get_if<dep0::parser::expr_t::app_t>(&f.value.body.stmts[0].value);
     BOOST_TEST_REQUIRE(call);
     BOOST_TEST(call->name == "first");
     BOOST_TEST_REQUIRE(call->args.size() == 2ul);
@@ -529,7 +529,7 @@ BOOST_AUTO_TEST_CASE(test_0178)
     auto const ret_f = std::get_if<dep0::parser::stmt_t::return_t>(&f.value.body.stmts[0ul].value);
     BOOST_TEST_REQUIRE(ret_f);
     BOOST_TEST_REQUIRE(ret_f->expr.has_value());
-    auto const expr_f = std::get_if<dep0::parser::func_call_t>(&ret_f->expr->value);
+    auto const expr_f = std::get_if<dep0::parser::expr_t::app_t>(&ret_f->expr->value);
     BOOST_TEST_REQUIRE(expr_f);
     BOOST_TEST_REQUIRE(expr_f->name == "id");
     BOOST_TEST_REQUIRE(expr_f->args.size() == 2ul);

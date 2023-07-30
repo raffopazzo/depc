@@ -7,7 +7,7 @@ namespace dep0::typecheck {
 // TODO indentation
 static std::ostream& pretty_print(std::ostream&, body_t const&);
 static std::ostream& pretty_print(std::ostream&, stmt_t const&);
-static std::ostream& pretty_print(std::ostream&, func_call_t const&);
+static std::ostream& pretty_print(std::ostream&, expr_t::app_t const&);
 static std::ostream& pretty_print(std::ostream&, ast::typename_t);
 
 std::ostream& pretty_print(std::ostream& os, body_t const& x)
@@ -23,7 +23,7 @@ std::ostream& pretty_print(std::ostream& os, stmt_t const& x)
 {
     match(
         x.value,
-        [&] (func_call_t const& x)
+        [&] (expr_t::app_t const& x)
         {
             pretty_print(os, x) << ';';
         },
@@ -44,7 +44,7 @@ std::ostream& pretty_print(std::ostream& os, stmt_t const& x)
     return os;
 }
 
-std::ostream& pretty_print(std::ostream& os, func_call_t const& x)
+std::ostream& pretty_print(std::ostream& os, expr_t::app_t const& x)
 {
     os << x.name << '(';
     bool first = true;
@@ -81,10 +81,6 @@ std::ostream& pretty_print(std::ostream& os, expr_t const& x)
 {
     match(
         x.value,
-        [&] (func_call_t const& x)
-        {
-            pretty_print(os, x);
-        },
         [&] (expr_t::arith_expr_t const& x)
         {
             match(
@@ -99,6 +95,10 @@ std::ostream& pretty_print(std::ostream& os, expr_t const& x)
         [&] (expr_t::boolean_constant_t const& x) { os << x.value; },
         [&] (expr_t::numeric_constant_t const& x) { os << x.number; },
         [&] (expr_t::var_t const& x) { os << x.name; },
+        [&] (expr_t::app_t const& x)
+        {
+            pretty_print(os, x);
+        },
         [&] (expr_t::abs_t const& x)
         {
             os << '(';

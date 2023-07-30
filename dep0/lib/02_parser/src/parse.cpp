@@ -181,7 +181,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         assert(ctx->funcCall());
         return stmt_t{
             get_loc(src, *ctx).value(),
-            std::any_cast<func_call_t>(visitFuncCall(ctx->funcCall()))};
+            std::any_cast<expr_t::app_t>(visitFuncCall(ctx->funcCall()))};
     }
 
     virtual std::any visitIfElse(DepCParser::IfElseContext* ctx) override
@@ -269,15 +269,14 @@ struct parse_visitor_t : dep0::DepCParserVisitor
     {
         assert(ctx);
         assert(ctx->funcCall());
-        return expr_t{get_loc(src, *ctx).value(), std::any_cast<func_call_t>(visitFuncCall(ctx->funcCall()))};
+        return expr_t{get_loc(src, *ctx).value(), std::any_cast<expr_t::app_t>(visitFuncCall(ctx->funcCall()))};
     }
 
     virtual std::any visitFuncCall(DepCParser::FuncCallContext* ctx) override
     {
         assert(ctx);
         assert(ctx->name);
-        return func_call_t{
-            get_loc(src, *ctx).value(),
+        return expr_t::app_t{
             get_text(src, *ctx->name).value(),
             fmap(ctx->expr(), [this] (auto* ctx) { return visitExpr(ctx); })};
     }

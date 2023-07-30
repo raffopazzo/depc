@@ -6,18 +6,9 @@
 
 namespace dep0::typecheck {
 
-std::ostream& pretty_print(std::ostream& os, func_proto_t const& proto)
-{
-    os << '(';
-    bool first = true;
-    for (auto const& arg: proto.args)
-        pretty_print(std::exchange(first, false) ? os : os << ", ", arg.sort);
-    return pretty_print(os << ") -> ", proto.ret_type);
-}
-
 context_t::context_t(
     scope_map<source_text, entry_t<type_def_t>> typedefs,
-    scope_map<source_text, entry_t<func_proto_t>> protos,
+    scope_map<source_text, entry_t<type_t::arr_t>> protos,
     scope_map<source_text, entry_t<expr_t::abs_t::arg_t>> args
 ) : m_typedefs(std::move(typedefs)),
     m_protos(std::move(protos)),
@@ -68,7 +59,7 @@ auto context_t::find_typedef(source_text const& name) const -> entry_t<type_def_
     return m_typedefs[name];
 }
 
-auto context_t::find_proto(source_text const& name) const -> entry_t<func_proto_t> const*
+auto context_t::find_proto(source_text const& name) const -> entry_t<type_t::arr_t> const*
 {
     return m_protos[name];
 }

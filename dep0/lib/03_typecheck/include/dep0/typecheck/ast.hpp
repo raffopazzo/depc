@@ -100,6 +100,7 @@ struct legal_expr_t
 };
 
 std::ostream& pretty_print(std::ostream&, type_t const&);
+std::ostream& pretty_print(std::ostream&, type_t::arr_t const&);
 std::ostream& pretty_print(std::ostream&, expr_t const&);
 std::ostream& pretty_print(std::ostream&, sort_t const&);
 

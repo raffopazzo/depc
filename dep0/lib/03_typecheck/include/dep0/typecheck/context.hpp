@@ -7,14 +7,6 @@
 
 namespace dep0::typecheck {
 
-struct func_proto_t // TODO this should be `type_t::arr_t`
-{
-    type_t ret_type;
-    std::vector<expr_t::abs_t::arg_t> args;
-};
-
-std::ostream& pretty_print(std::ostream&, func_proto_t const&);
-
 class context_t
 {
 public:
@@ -25,22 +17,23 @@ public:
         T value;
     };
 private:
+    // TODO alternatively consider having only one `scope_map<>` of `variant<>` for a more robust shadowing check
     scope_map<source_text, entry_t<type_def_t>> m_typedefs;
-    scope_map<source_text, entry_t<func_proto_t>> m_protos;
+    scope_map<source_text, entry_t<type_t::arr_t>> m_protos; // TODO should this be types in general?
     scope_map<source_text, entry_t<expr_t::abs_t::arg_t>> m_args; // TODO also local variables at some point
 
     context_t(
         scope_map<source_text, entry_t<type_def_t>>,
-        scope_map<source_text, entry_t<func_proto_t>>,
+        scope_map<source_text, entry_t<type_t::arr_t>>,
         scope_map<source_text, entry_t<expr_t::abs_t::arg_t>>);
 
 public:
     using typedefs_iterator = typename scope_map<source_text, entry_t<type_def_t>>::iterator;
-    using protos_iterator = typename scope_map<source_text, entry_t<func_proto_t>>::iterator;
+    using protos_iterator = typename scope_map<source_text, entry_t<type_t::arr_t>>::iterator;
     using args_iterator = typename scope_map<source_text, entry_t<expr_t::abs_t::arg_t>>::iterator;
 
     using typedefs_const_iterator = typename scope_map<source_text, entry_t<type_def_t>>::const_iterator;
-    using protos_const_iterator = typename scope_map<source_text, entry_t<func_proto_t>>::const_iterator;
+    using protos_const_iterator = typename scope_map<source_text, entry_t<type_t::arr_t>>::const_iterator;
     using args_const_iterator = typename scope_map<source_text, entry_t<expr_t::abs_t::arg_t>>::const_iterator;
 
     context_t() = default;
@@ -61,7 +54,7 @@ public:
     args_const_iterator args_end() const;
 
     entry_t<type_def_t> const* find_typedef(source_text const&) const;
-    entry_t<func_proto_t> const* find_proto(source_text const&) const;
+    entry_t<type_t::arr_t> const* find_proto(source_text const&) const;
     entry_t<expr_t::abs_t::arg_t> const* find_arg(source_text const&) const;
 
     template <typename... Args>
@@ -73,7 +66,7 @@ public:
     template <typename... Args>
     auto try_emplace_proto(source_text name, source_loc_t loc, Args&&... args)
     {
-        return m_protos.try_emplace(std::move(name), loc, func_proto_t{std::forward<Args>(args)...});
+        return m_protos.try_emplace(std::move(name), loc, type_t::arr_t{std::forward<Args>(args)...});
     }
 
     template <typename... Args>

@@ -113,6 +113,29 @@ llvm::Type* gen_type(context_t const& ctx, llvm::LLVMContext& llvm_ctx, typechec
             auto t = ctx.types[name.name];
             assert(t);
             return *t;
+        },
+        [&] (typecheck::type_t::arr_t const& x) -> llvm::Type*
+        {
+            bool constexpr is_var_arg = false;
+            return llvm::FunctionType::get(
+                gen_type(ctx, llvm_ctx, x.ret_type.get()),
+                fmap(
+                    x.arg_types,
+                    [&] (auto const& t)
+                    {
+                        return match(
+                            t,
+                            [&] (typecheck::type_t::name_t const& t) -> llvm::Type*
+                            {
+                                assert(false and "cannot generate llvm types for a pi-type");
+                                return nullptr;
+                            },
+                            [&] (typecheck::type_t const& t)
+                            {
+                                return gen_type(ctx, llvm_ctx, t);
+                            });
+                    }),
+                is_var_arg);
         });
 }
 
@@ -168,7 +191,8 @@ llvm::Attribute::AttrKind get_sign_ext_attribute(context_t const& ctx, typecheck
                 not t ? llvm::Attribute::None :
                 t->sign == ast::sign_t::signed_v ? llvm::Attribute::SExt
                 : llvm::Attribute::ZExt;
-        });
+        },
+        [] (typecheck::type_t::arr_t const&) { return llvm::Attribute::None;; });
 }
 
 static void gen_fun_attributes(context_t const& ctx, llvm::Function* const func, typecheck::func_def_t const& x)
@@ -184,13 +208,16 @@ llvm::Value* gen_func(context_t& ctx, llvm::Module& llvm_module, typecheck::func
         return std::holds_alternative<ast::typename_t>(arg.sort);
     };
     if (std::any_of(x.value.args.begin(), x.value.args.end(), is_typename))
+    {
+        assert(false and "cannot generate function a pi-type");
         return nullptr;
+    }
     auto* const funtype =
         llvm::FunctionType::get(
             gen_type(ctx, llvm_module.getContext(), x.value.ret_type),
             fmap(x.value.args, [&] (auto const& arg)
             {
-                return gen_type(ctx, llvm_module.getContext(), std::get<typecheck::type_t>(arg.type));
+                return gen_type(ctx, llvm_module.getContext(), std::get<typecheck::type_t>(arg.sort));
             }),
             /*isVarArg*/false);
     auto* const func = llvm::Function::Create(funtype, llvm::Function::ExternalLinkage, x.name.view(), llvm_module);
@@ -211,8 +238,11 @@ llvm::Value* gen_func(context_t& ctx, llvm::Module& llvm_module, typecheck::func
     {
         auto* const arg = func->getArg(i);
         arg->setName(x.value.args[i].name.view());
-        if (auto const attr = get_sign_ext_attribute(f_ctx, x.value.args[i].type); attr != llvm::Attribute::None)
+        if (auto const attr = get_sign_ext_attribute(f_ctx, std::get<typecheck::type_t>(x.value.args[i].sort));
+            attr != llvm::Attribute::None)
+        {
             arg->addAttr(attr);
+        }
         if (not std::get<bool>(f_ctx.values.try_emplace(x.value.args[i].name, arg)))
         {
             assert(false);
@@ -310,6 +340,11 @@ void gen_stmt(
 
 llvm::Value* gen_val(context_t const& ctx, llvm::IRBuilder<>& builder, typecheck::expr_t const& expr)
 {
+    if (std::holds_alternative<ast::typename_t>(expr.properties.sort))
+    {
+        assert(false and "cannot generate a value for a type variable");
+        return nullptr;
+    }
     return match(
         expr.value,
         [&] (typecheck::expr_t::arith_expr_t const& x) -> llvm::Value*
@@ -343,7 +378,9 @@ llvm::Value* gen_val(context_t const& ctx, llvm::IRBuilder<>& builder, typecheck
             }
             else
                 number = x.number;
-            auto const llvm_type = cast<llvm::IntegerType>(gen_type(ctx, builder.getContext(), expr.properties.type));
+            auto const llvm_type =
+                cast<llvm::IntegerType>(
+                    gen_type(ctx, builder.getContext(), std::get<typecheck::type_t>(expr.properties.sort)));
             return llvm::ConstantInt::get(llvm_type, number, 10);
         },
         [&] (typecheck::expr_t::var_t const& x) -> llvm::Value*

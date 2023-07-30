@@ -107,53 +107,56 @@ dep0::expected<std::pair<type_t, expr_t::app_t>>
     auto const proto = ctx.find_proto(f.name);
     if (not proto)
         return error({dep0::error_t{"function prototype not found"}});
-    if (proto->value.args.size() != f.args.size())
+    if (proto->value.arg_types.size() != f.args.size())
     {
         std::ostringstream err;
-        err << "passed " << f.args.size() << " arguments but was expecting " << proto->value.args.size();
+        err << "passed " << f.args.size() << " arguments but was expecting " << proto->value.arg_types.size();
         return error({dep0::error_t{err.str()}});
     }
     auto proto_ = proto->value;
     std::vector<expr_t> args;
     std::vector<dep0::error_t> reasons;
-    auto const subst = [] (type_t const& x, source_text const& name, type_t const& y)
+    auto const subst = [] (type_t const& x, type_t::name_t const& name, type_t const& y)
     {
         if (auto const p = std::get_if<type_t::name_t>(&x.value))
-            if (p->name == name)
+            if (*p == name)
                 return y;
         return x;
     };
     for (auto const i: std::views::iota(0ul, f.args.size()))
         match(
-            proto_.args[i].sort,
+            proto_.arg_types[i],
+            [&] (type_t::name_t const& t)
+            {
+                if (auto type = check(ctx, f.args[i], ast::typename_t{}))
+                {
+                    args.push_back(make_legal_expr(ast::typename_t{}, *type));
+                    proto_.ret_type = subst(proto_.ret_type.get(), t, *type);
+                    for (auto const j: std::views::iota(i, f.args.size()))
+                        match(
+                            proto_.arg_types[j],
+                            [&] (type_t::name_t const&)
+                            {
+                                // TODO substitution should stop if the new binding variable has the same name
+                            },
+                            [&] (type_t const& x)
+                            {
+                                proto_.arg_types[j] = subst(x, t, *type);
+                            });
+                }
+                else
+                    reasons.push_back(std::move(type.error()));
+            },
             [&] (type_t const& t)
             {
                 if (auto expr = check(ctx, f.args[i], t))
                     args.push_back(std::move(*expr));
                 else
                     reasons.push_back(std::move(expr.error()));
-            },
-            [&] (ast::typename_t const& t)
-            {
-                if (auto type = check(ctx, f.args[i], t))
-                {
-                    args.push_back(make_legal_expr(t, *type));
-                    proto_.ret_type = subst(proto_.ret_type, proto_.args[i].name, *type);
-                    for (auto const j: std::views::iota(i, f.args.size()))
-                        match(
-                            proto_.args[j].sort,
-                            [&] (type_t const& t)
-                            {
-                                proto_.args[j].sort = subst(t, proto_.args[i].name, *type);
-                            },
-                            [&] (ast::typename_t const&) { /* nop */});
-                }
-                else
-                    reasons.push_back(std::move(type.error()));
             });
     if (not reasons.empty())
         return error(std::move(reasons));
-    return std::make_pair(proto_.ret_type, expr_t::app_t{f.name, std::move(args)});
+    return std::make_pair(proto_.ret_type.get(), expr_t::app_t{f.name, std::move(args)});
 }
 
 expected<type_def_t> check(context_t& ctx, parser::type_def_t const& type_def)
@@ -239,7 +242,17 @@ expected<func_def_t> check(context_t& ctx, parser::func_def_t const& f)
         [&] (type_t const& ret_type, std::vector<expr_t::abs_t::arg_t> const& args)
             -> expected<std::true_type>
         {
-            auto const [it, inserted] = ctx.try_emplace_proto(f.name, f.properties, ret_type, args);
+            auto arg_types = fmap(
+                args,
+                [] (expr_t::abs_t::arg_t const& arg)
+                {
+                    using res_t = std::variant<type_t::name_t, type_t>;
+                    return match(
+                        arg.sort,
+                        [&] (type_t const& t) -> res_t { return t; },
+                        [&] (ast::typename_t const&) -> res_t { return type_t::name_t{arg.name}; });
+                });
+            auto const [it, inserted] = ctx.try_emplace_proto(f.name, f.properties, std::move(arg_types), ret_type);
             if (not inserted)
             {
                 std::ostringstream err;
@@ -284,6 +297,34 @@ expected<type_t> check(context_t const& ctx, parser::type_t const& t)
             std::ostringstream err;
             err << "unknown type `" << name.name << '`';
             return error_t::from_error(dep0::error_t{err.str(), t.properties}, ctx);
+        },
+        [&] (parser::type_t::arr_t const& x) -> expected<type_t>
+        {
+            using arg_t = std::variant<type_t::name_t, type_t>;
+            auto arg_types =
+                fmap_or_error(
+                    x.arg_types,
+                    [&] (auto const& x)
+                    {
+                        return match(x,
+                            [&] (parser::type_t::name_t const& x) -> expected<arg_t>
+                            {
+                                return expected<arg_t>{std::in_place, type_t::name_t{x.name}};
+                            },
+                            [&] (parser::type_t const& x) -> expected<arg_t>
+                            {
+                                if (auto t = check(ctx, x))
+                                    return expected<arg_t>{std::in_place, std::move(*t)};
+                                else
+                                    return std::move(t.error());
+                            });
+                    });
+            if (not arg_types)
+                return std::move(arg_types.error());
+            if (auto ret_type = check(ctx, x.ret_type.get()))
+                return make_legal_type(type_t::arr_t{std::move(*arg_types), std::move(*ret_type)});
+            else
+                return std::move(ret_type.error());
         });
 }
 
@@ -465,6 +506,12 @@ static expected<expr_t> check_numeric_expr(
                         return check_integer(integer.name, "+", max_abs);
                     }
                 });
+        },
+        [&] (type_t::arr_t const& x)
+        {
+            std::ostringstream err;
+            pretty_print(err << "type mismatch between numeric constant and `", x) << '`';
+            return error(err.str());
         });
 }
 
@@ -480,22 +527,6 @@ expected<expr_t> check(context_t const& ctx, parser::expr_t const& x, type_t con
     };
     return match(
         x.value,
-        [&] (parser::expr_t::app_t const& x) -> expected<expr_t>
-        {
-            if (auto f = type_assign_func_call(ctx, x))
-            {
-                if (f->first == expected_type)
-                    return make_legal_expr(expected_type, std::move(f->second));
-                else
-                    return type_error(f->first);
-            }
-            else
-            {
-                if (not f.error().location)
-                    f.error().location = loc;
-                return error_t::from_error(std::move(f.error()), ctx, expected_type);
-            }
-        },
         [&] (parser::expr_t::arith_expr_t const& x) -> expected<expr_t>
         {
             return match(
@@ -546,6 +577,22 @@ expected<expr_t> check(context_t const& ctx, parser::expr_t const& x, type_t con
             }
             return make_legal_expr(expected_type, expr_t::var_t{x.name});
         },
+        [&] (parser::expr_t::app_t const& x) -> expected<expr_t>
+        {
+            if (auto f = type_assign_func_call(ctx, x))
+            {
+                if (f->first == expected_type)
+                    return make_legal_expr(expected_type, std::move(f->second));
+                else
+                    return type_error(f->first);
+            }
+            else
+            {
+                if (not f.error().location)
+                    f.error().location = loc;
+                return error_t::from_error(std::move(f.error()), ctx, expected_type);
+            }
+        },
         [&] (parser::expr_t::abs_t const& f) -> expected<expr_t>
         {
             // abstraction expressions are anonymous, so recursion is not possible because we do not have
@@ -582,6 +629,22 @@ expected<type_t> check(context_t const& ctx, parser::expr_t const& x, ast::typen
     };
     return match(
         x.value,
+        [&] (parser::expr_t::arith_expr_t const& x) -> expected<type_t>
+        {
+            return error("type mismatch between arithmetic expression and `typename`");
+        },
+        [&] (parser::expr_t::boolean_constant_t const& x) -> expected<type_t>
+        {
+            return error("type mismatch between boolean constant and `typename`");
+        },
+        [&] (parser::expr_t::numeric_constant_t const& x) -> expected<type_t>
+        {
+            return error("type mismatch between numeric constant and `typename`");
+        },
+        [&] (parser::expr_t::var_t const& x) -> expected<type_t>
+        {
+            return error("not implemented");
+        },
         [&] (parser::expr_t::app_t const& x) -> expected<type_t>
         {
             // in lambda-2 a function cannot return a type, so we could bail out immediately;
@@ -602,22 +665,6 @@ expected<type_t> check(context_t const& ctx, parser::expr_t const& x, ast::typen
                     f.error().location = loc;
                 return error_t::from_error(std::move(f.error()), ctx, expected_type);
             }
-        },
-        [&] (parser::expr_t::arith_expr_t const& x) -> expected<type_t>
-        {
-            return error("type mismatch between arithmetic expression and `typename`");
-        },
-        [&] (parser::expr_t::boolean_constant_t const& x) -> expected<type_t>
-        {
-            return error("type mismatch between boolean constant and `typename`");
-        },
-        [&] (parser::expr_t::numeric_constant_t const& x) -> expected<type_t>
-        {
-            return error("type mismatch between numeric constant and `typename`");
-        },
-        [&] (parser::expr_t::var_t const& x) -> expected<type_t>
-        {
-            return error("not implemented");
         },
         [&] (parser::expr_t::abs_t const& x) -> expected<type_t>
         {

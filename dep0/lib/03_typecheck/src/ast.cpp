@@ -73,8 +73,20 @@ std::ostream& pretty_print(std::ostream& os, type_t const& t)
         [&] (type_t::u16_t const&) { os << "u16_t"; },
         [&] (type_t::u32_t const&) { os << "u32_t"; },
         [&] (type_t::u64_t const&) { os << "u64_t"; },
-        [&] (type_t::name_t const& x) { os << x.name; });
+        [&] (type_t::name_t const& x) { os << x.name; },
+        [&] (type_t::arr_t const& x) { pretty_print(os, x); });
     return os;
+}
+
+std::ostream& pretty_print(std::ostream& os, type_t::arr_t const& x)
+{
+    os << '(';
+    bool first = true;
+    for (auto const& t: x.arg_types)
+        match(t,
+            [&] (type_t::name_t const& x) { os << "typename " << x.name; },
+            [&] (type_t const& x) { pretty_print(os, x); });
+    return pretty_print(os << ") -> ", x.ret_type.get());
 }
 
 std::ostream& pretty_print(std::ostream& os, expr_t const& x)

@@ -489,7 +489,7 @@ BOOST_AUTO_TEST_CASE(test_0178)
     BOOST_TEST_REQUIRE(r);
     auto const v = r->getReturnValue();
     BOOST_TEST_REQUIRE(v);
-    BOOST_TEST(x->getName().str() == "x");
+    BOOST_TEST(v->getName().str() == "x");
 }
 
 BOOST_AUTO_TEST_SUITE_END()

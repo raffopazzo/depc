@@ -38,6 +38,7 @@ using type_t = ast::type_t<properties_t>;
 using body_t = ast::body_t<properties_t>;
 using stmt_t = ast::stmt_t<properties_t>;
 using expr_t = ast::expr_t<properties_t>;
+using sort_t = ast::sort_t<properties_t>;
 
 template <typename>
 struct derivation_t // TODO move to derivation.hpp
@@ -104,11 +105,12 @@ struct legal_stmt_t
 struct legal_expr_t
 {
     derivation_t<expr_t> derivation;
-    type_t type;
+    sort_t sort;
     bool operator==(legal_expr_t const&) const = default;
 };
 
 std::ostream& pretty_print(std::ostream&, type_t const&);
 std::ostream& pretty_print(std::ostream&, expr_t const&);
+std::ostream& pretty_print(std::ostream&, sort_t const&);
 
 } // namespace dep0::typecheck

@@ -35,6 +35,10 @@ private:
         scope_map<source_text, entry_t<func_def_t::arg_t>>);
 
 public:
+    using typedefs_iterator = typename scope_map<source_text, entry_t<type_def_t>>::iterator;
+    using protos_iterator = typename scope_map<source_text, entry_t<func_proto_t>>::iterator;
+    using args_iterator = typename scope_map<source_text, entry_t<func_def_t::arg_t>>::iterator;
+
     using typedefs_const_iterator = typename scope_map<source_text, entry_t<type_def_t>>::const_iterator;
     using protos_const_iterator = typename scope_map<source_text, entry_t<func_proto_t>>::const_iterator;
     using args_const_iterator = typename scope_map<source_text, entry_t<func_def_t::arg_t>>::const_iterator;
@@ -59,9 +63,6 @@ public:
     entry_t<type_def_t> const* find_typedef(source_text const&) const;
     entry_t<func_proto_t> const* find_proto(source_text const&) const;
     entry_t<func_def_t::arg_t> const* find_arg(source_text const&) const;
-
-    // TODO add some way to store where a certain typedef/proto/arg was encountered,
-    // so if we find duplicates we can inform the user where the previous definition/declaration was
 
     template <typename... Args>
     auto try_emplace_typedef(source_text name, source_loc_t loc, Args&&... args)

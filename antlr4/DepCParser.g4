@@ -31,7 +31,9 @@ options { tokenVocab=DepCLexer; }
 
 // Module and top level expressions
 module: (typeDef | funcDef)* EOF;
-funcDef: type name=ID '(' (arg (',' arg)*)? ')' body;
+funcDef: type name=ID '(' (arg (',' arg)*)? ')' body
+    | 'auto' name=ID '(' (arg (',' arg)*)? ')' '->' type body
+    ;
 typeDef:
     'typedef' name=ID '='
     {one_of("signed", "unsigned")}? sign=ID
@@ -43,7 +45,7 @@ typeDef:
     {one_of("to")}? ID
     ('...' | '+'? max=INT)
     SEMI;
-arg: type name=ID;
+arg: (type | 'typename') name=ID;
 
 // Types
 type: 'bool' | 'unit_t' | 'i8_t' | 'i16_t' | 'i32_t' | 'i64_t' | 'u8_t' | 'u16_t' | 'u32_t' | 'u64_t' | name=ID;
@@ -60,10 +62,11 @@ returnStmt: 'return' expr? ';';
 
 // Expressions
 expr: lhs=expr '+' rhs=expr # plusExpr
-  | sign=('+' | '-')? value=INT # numericExpr
-  | value=('true'|'false') # booleanExpr
-  | funcCall # funcCallExpr
-  | var=ID # varExpr
-  ;
+    | sign=('+' | '-')? value=INT # numericExpr
+    | value=('true'|'false') # booleanExpr
+    | funcCall # funcCallExpr
+    | var=ID # varExpr
+    | type # typeExpr // in an expression `f(x)` x should be parsed as `var` so this rule must come after `var`
+    ;
 
 funcCall: name=ID '(' (expr (',' expr)*)? ')';

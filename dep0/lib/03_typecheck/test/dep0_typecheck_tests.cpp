@@ -234,7 +234,9 @@ BOOST_AUTO_TEST_CASE(test_0167)
     BOOST_TEST_REQUIRE(f.args.size() == 1ul);
     auto const& arg = f.args[0];
     BOOST_TEST(arg.name == "x");
-    BOOST_TEST(std::holds_alternative<dep0::typecheck::type_t::i32_t>(arg.type.value));
+    auto const arg_type = std::get_if<dep0::typecheck::type_t>(&arg.sort);
+    BOOST_TEST_REQUIRE(arg_type);
+    BOOST_TEST(std::holds_alternative<dep0::typecheck::type_t::i32_t>(arg_type->value));
     BOOST_TEST_REQUIRE(f.body.stmts.size() == 1ul);
     auto const* ret = std::get_if<dep0::typecheck::stmt_t::return_t>(&f.body.stmts[0].value);
     BOOST_TEST_REQUIRE(ret);
@@ -402,5 +404,47 @@ BOOST_AUTO_TEST_CASE(test_0176)
 }
 
 BOOST_AUTO_TEST_CASE(test_0177) { BOOST_TEST_REQUIRE(fail("test_0177.depc")); }
+
+BOOST_AUTO_TEST_CASE(test_0178)
+{
+    BOOST_TEST_REQUIRE(pass("test_0178.depc"));
+    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 5ul);
+
+    auto const& id = pass_result->func_defs[0ul];
+    BOOST_TEST(id.name == "id");
+    BOOST_TEST_REQUIRE(id.args.size() == 2ul);
+    BOOST_TEST(id.args[0ul].name == "t");
+    BOOST_TEST(id.args[1ul].name == "x");
+    BOOST_TEST(std::holds_alternative<dep0::ast::typename_t>(id.args[0ul].sort));
+    auto const s1 = std::get_if<dep0::typecheck::type_t>(&id.args[1ul].sort);
+    BOOST_TEST_REQUIRE(s1);
+    auto const t1 = std::get_if<dep0::typecheck::type_t::name_t>(&s1->value);
+    BOOST_TEST_REQUIRE(t1);
+    BOOST_TEST_REQUIRE(t1->name == "t");
+    BOOST_TEST_REQUIRE(id.body.stmts.size() == 1ul);
+    auto const ret_id = std::get_if<dep0::typecheck::stmt_t::return_t>(&id.body.stmts[0ul].value);
+    BOOST_TEST_REQUIRE(ret_id);
+    BOOST_TEST_REQUIRE(ret_id->expr.has_value());
+    auto const expr_id = std::get_if<dep0::typecheck::expr_t::var_t>(&ret_id->expr->value);
+    BOOST_TEST_REQUIRE(expr_id);
+    BOOST_TEST(expr_id->name == "x");
+
+    auto const& f = pass_result->func_defs[1ul];
+    BOOST_TEST(f.name == "f");
+    BOOST_TEST_REQUIRE(f.body.stmts.size() == 1ul);
+    auto const ret_f = std::get_if<dep0::typecheck::stmt_t::return_t>(&f.body.stmts[0ul].value);
+    BOOST_TEST_REQUIRE(ret_f);
+    BOOST_TEST_REQUIRE(ret_f->expr.has_value());
+    auto const expr_f = std::get_if<dep0::typecheck::func_call_t>(&ret_f->expr->value);
+    BOOST_TEST_REQUIRE(expr_f);
+    BOOST_TEST_REQUIRE(expr_f->name == "id");
+    BOOST_TEST_REQUIRE(expr_f->args.size() == 2ul);
+    auto const expr_f_arg0 = std::get_if<dep0::typecheck::type_t>(&expr_f->args[0ul].value);
+    auto const expr_f_arg1 = std::get_if<dep0::typecheck::expr_t::var_t>(&expr_f->args[1ul].value);
+    BOOST_TEST_REQUIRE(expr_f_arg0);
+    BOOST_TEST_REQUIRE(expr_f_arg1);
+    BOOST_TEST(std::holds_alternative<dep0::typecheck::type_t::i32_t>(expr_f_arg0->value));
+    BOOST_TEST(expr_f_arg1->name == "x");
+}
 
 BOOST_AUTO_TEST_SUITE_END()

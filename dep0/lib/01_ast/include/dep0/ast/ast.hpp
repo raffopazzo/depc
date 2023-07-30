@@ -94,7 +94,14 @@ struct expr_t
         source_text name;
         bool operator==(var_t const&) const = default;
     };
-    using value_t = std::variant<func_call_t<P>, arith_expr_t, boolean_constant_t, numeric_constant_t, var_t>;
+    using value_t =
+        std::variant<
+            func_call_t<P>,
+            arith_expr_t,
+            boolean_constant_t,
+            numeric_constant_t,
+            var_t,
+            type_t<P>>;
 
     properties_t properties;
     value_t value;
@@ -160,6 +167,14 @@ struct type_def_t
     value_t value;
 };
 
+struct typename_t // TODO should be replaced with kind_t?
+{
+    bool operator==(typename_t const&) const { return true; }
+};
+
+template <Properties P>
+using sort_t = std::variant<type_t<P>, typename_t>;
+
 template <Properties P>
 struct func_def_t
 {
@@ -169,7 +184,7 @@ struct func_def_t
 
     struct arg_t
     {
-        type_t type;
+        sort_t<P> sort;
         source_text name;
         source_loc_t loc;
     };

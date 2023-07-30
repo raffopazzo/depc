@@ -47,8 +47,20 @@ std::ostream& pretty_print(std::ostream& os, expr_t const& x)
         },
         [&] (expr_t::boolean_constant_t const& x) { os << x.value; },
         [&] (expr_t::numeric_constant_t const& x) { os << x.number; },
-        [&] (expr_t::var_t const& x) { os << x.name; });
-    return pretty_print(os << " : ", x.properties.type);
+        [&] (expr_t::var_t const& x) { os << x.name; },
+        [&] (type_t const& x) { pretty_print(os, x); });
+    return pretty_print(os << " : ", x.properties.sort);
+}
+
+static std::ostream& pretty_print(std::ostream& os, ast::typename_t)
+{
+    return os << "typename";
+}
+
+std::ostream& pretty_print(std::ostream& os, sort_t const& x)
+{
+    match(x, [&] (auto const& x) { pretty_print(os, x); });
+    return os;
 }
 
 } // names pace dep0::typecheck

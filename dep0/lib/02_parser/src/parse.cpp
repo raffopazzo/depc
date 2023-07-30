@@ -147,11 +147,13 @@ struct parse_visitor_t : dep0::DepCParserVisitor
     {
         assert(ctx);
         assert(ctx->name);
-        assert(ctx->type());
+        assert(ctx->type() or ctx->KW_TYPENAME());
         return func_def_t::arg_t{
-            std::any_cast<type_t>(visitType(ctx->type())),
-                get_text(src, *ctx->name).value(),
-                get_loc(src, *ctx->name).value()};
+            ctx->type()
+                ? sort_t(std::any_cast<type_t>(visitType(ctx->type())))
+                : sort_t(ast::typename_t{}),
+            get_text(src, *ctx->name).value(),
+            get_loc(src, *ctx->name).value()};
     }
 
     virtual std::any visitBody(DepCParser::BodyContext* ctx) override
@@ -235,6 +237,13 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         return expr_t{get_loc(src, *ctx->var).value(), expr_t::var_t{get_text(src, *ctx->var).value()}};
     }
 
+    virtual std::any visitTypeExpr(DepCParser::TypeExprContext* ctx) override
+    {
+        assert(ctx);
+        assert(ctx->type());
+        return expr_t{get_loc(src, *ctx->type()).value(), std::any_cast<type_t>(visitType(ctx->type()))};
+    }
+
     virtual std::any visitBooleanExpr(DepCParser::BooleanExprContext* ctx)
     {
         assert(ctx);
@@ -285,6 +294,8 @@ struct parse_visitor_t : dep0::DepCParserVisitor
             return std::any_cast<expr_t>(visitFuncCallExpr(p));
         if (auto p = dynamic_cast<DepCParser::VarExprContext*>(ctx))
             return std::any_cast<expr_t>(visitVarExpr(p));
+        if (auto p = dynamic_cast<DepCParser::TypeExprContext*>(ctx))
+            return std::any_cast<expr_t>(visitTypeExpr(p));
         assert(nullptr);
     }
 };
@@ -294,8 +305,9 @@ struct FirstErrorListener : antlr4::ANTLRErrorListener
     source_text const src;
     std::optional<error_t> error;
 
-    explicit FirstErrorListener(source_text const src) : src(src){
-    }
+    explicit FirstErrorListener(source_text const src) :
+        src(src)
+    { }
 
     void reportAmbiguity(antlr4::Parser*,
         antlr4::dfa::DFA const&,

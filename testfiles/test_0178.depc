@@ -1,0 +1,24 @@
+auto id(typename t, t x) -> t
+{
+    return x; // TODO try `x+1`
+}
+
+i32_t f(i32_t x)
+{
+    return id(i32_t, x);
+}
+
+u32_t g(u32_t x)
+{
+    return id(u32_t, x);
+}
+
+i32_t foo()
+{
+    return f(-1);
+}
+
+u32_t bar()
+{
+    return g(1);
+}

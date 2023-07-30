@@ -179,10 +179,19 @@ static void gen_fun_attributes(context_t const& ctx, llvm::Function* const func,
 
 llvm::Value* gen_fun(context_t& ctx, llvm::Module& llvm_module, typecheck::func_def_t const& x)
 {
+    auto const is_typename = [](typecheck::func_def_t::arg_t const& arg)
+    {
+        return std::holds_alternative<ast::typename_t>(arg.sort);
+    };
+    if (std::any_of(x.args.begin(), x.args.end(), is_typename))
+        return nullptr;
     auto* const funtype =
         llvm::FunctionType::get(
             gen_type(ctx, llvm_module.getContext(), x.type),
-            fmap(x.args, [&] (auto const& arg) { return gen_type(ctx, llvm_module.getContext(), arg.type); }),
+            fmap(x.args, [&] (auto const& arg)
+            {
+                return gen_type(ctx, llvm_module.getContext(), std::get<typecheck::type_t>(arg.type));
+            }),
             /*isVarArg*/false);
     auto* const func = llvm::Function::Create(funtype, llvm::Function::ExternalLinkage, x.name.view(), llvm_module);
     // add function type and object to the parent context;

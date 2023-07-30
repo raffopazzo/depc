@@ -11,13 +11,13 @@ namespace dep0::typecheck {
 struct error_t : dep0::error_t
 {
     context_t ctx;
-    std::optional<type_t> tgt;
+    std::optional<sort_t> tgt;
 
     static error_t from_error(dep0::error_t err, context_t ctx = {})
     {
         return error_t{std::move(err), std::move(ctx)};
     }
-    static error_t from_error(dep0::error_t err, context_t ctx, type_t tgt)
+    static error_t from_error(dep0::error_t err, context_t ctx, sort_t tgt)
     {
         return error_t{std::move(err), std::move(ctx), std::move(tgt)};
     }

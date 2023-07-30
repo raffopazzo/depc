@@ -28,5 +28,6 @@ using type_t = ast::type_t<properties_t>;
 using body_t = ast::body_t<properties_t>;
 using stmt_t = ast::stmt_t<properties_t>;
 using expr_t = ast::expr_t<properties_t>;
+using sort_t = ast::sort_t<properties_t>;
 
 } // namespace dep0::parser

@@ -1,4 +1,6 @@
 #include "dep0/typecheck/context.hpp"
+#include "dep0/fmap.hpp"
+#include "dep0/match.hpp"
 
 #include <ranges>
 
@@ -8,8 +10,8 @@ std::ostream& pretty_print(std::ostream& os, func_proto_t const& proto)
 {
     os << '(';
     bool first = true;
-    for (auto const& t: proto.args)
-        pretty_print(std::exchange(first, false) ? os : os << ", ", t.type);
+    for (auto const& arg: proto.args)
+        pretty_print(std::exchange(first, false) ? os : os << ", ", arg.sort);
     return pretty_print(os << ") -> ", proto.ret_type);
 }
 
@@ -103,7 +105,7 @@ std::ostream& pretty_print(std::ostream& os, context_t const& ctx)
         std::ranges::subrange(ctx.args_begin(), ctx.args_end()),
         [&] (auto const& x)
         {
-            pretty_print(os << x.first << ": ", x.second.value.type);
+            pretty_print(os << x.first << ": ", x.second.value.sort);
         });
     return os;
 }

@@ -388,7 +388,7 @@ BOOST_AUTO_TEST_CASE(test_0168)
     auto* call = cast<llvm::CallInst>(r->getReturnValue());
     BOOST_TEST_REQUIRE(call);
     BOOST_TEST_REQUIRE(call->getCalledFunction() == f1);
-    BOOST_TEST_REQUIRE(call->arg_size() == 1);
+    BOOST_TEST_REQUIRE(call->arg_size() == 1ul);
     BOOST_TEST(call->paramHasAttr(0, llvm::Attribute::SExt));
 }
 BOOST_AUTO_TEST_CASE(test_0169) { BOOST_TEST(pass("test_0169.depc")); }
@@ -406,7 +406,7 @@ BOOST_AUTO_TEST_CASE(test_0172)
     auto* call = cast<llvm::CallInst>(&*b.begin());
     BOOST_TEST_REQUIRE(call);
     BOOST_TEST_REQUIRE(call->getCalledFunction() == f1);
-    BOOST_TEST_REQUIRE(call->arg_size() == 2);
+    BOOST_TEST_REQUIRE(call->arg_size() == 2ul);
     BOOST_TEST(call->paramHasAttr(0, llvm::Attribute::SExt));
     BOOST_TEST(call->paramHasAttr(1, llvm::Attribute::ZExt));
     auto* arg0 = cast<llvm::ConstantInt>(*call->arg_begin());
@@ -474,5 +474,22 @@ BOOST_AUTO_TEST_CASE(test_0176)
 }
 
 // BOOST_AUTO_TEST_CASE(test_0177) doesn't type check
+
+BOOST_AUTO_TEST_CASE(test_0178)
+{
+    BOOST_TEST_REQUIRE(pass("test_0178.depc"));
+    auto const f = pass_result.value()->getFunction("f");
+    BOOST_TEST_REQUIRE(f);
+    BOOST_TEST_REQUIRE(f->arg_size() == 1ul);
+    auto const arg_ty = cast<llvm::IntegerType>(f->arg_begin()->getType());
+    BOOST_TEST_REQUIRE(arg_ty);
+    BOOST_TEST(arg_ty->getBitWidth() == 32ul);
+    BOOST_TEST_REQUIRE(f->getEntryBlock().size() == 1ul);
+    auto const r = cast<llvm::ReturnInst>(f->getEntryBlock().getTerminator());
+    BOOST_TEST_REQUIRE(r);
+    auto const v = r->getReturnValue();
+    BOOST_TEST_REQUIRE(v);
+    BOOST_TEST(x->getName().str() == "x");
+}
 
 BOOST_AUTO_TEST_SUITE_END()

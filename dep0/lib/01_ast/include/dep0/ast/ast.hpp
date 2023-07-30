@@ -26,6 +26,18 @@ template <Properties P> struct expr_t;
 // definitions
 
 template <Properties P>
+struct body_t
+{
+    using properties_t = typename P::body_properties_type;
+    using stmt_t = ast::stmt_t<P>;
+
+    properties_t properties;
+    std::vector<stmt_t> stmts;
+
+    bool operator==(body_t const&) const = default;
+};
+
+template <Properties P>
 struct type_t
 {
     using properties_t = typename P::type_properties_type;
@@ -53,7 +65,7 @@ struct type_t
 };
 
 template <Properties P>
-struct func_call_t
+struct func_call_t // TODO should be `expr_t::app_t`
 {
     using properties_t = typename P::func_call_properties_type;
     using expr_t = ast::expr_t<P>;
@@ -63,11 +75,21 @@ struct func_call_t
     bool operator==(func_call_t const&) const = default;
 };
 
+struct typename_t // TODO should be replaced with kind_t?
+{
+    bool operator==(typename_t const&) const { return true; }
+};
+
+template <Properties P>
+using sort_t = std::variant<type_t<P>, typename_t>;
+
 template <Properties P>
 struct expr_t
 {
     using rec_t = boost::recursive_wrapper<expr_t>;
     using properties_t = typename P::expr_properties_type;
+    using body_t = ast::body_t<P>;
+    using type_t = ast::type_t<P>;
     struct arith_expr_t
     {
         struct plus_t
@@ -94,6 +116,20 @@ struct expr_t
         source_text name;
         bool operator==(var_t const&) const = default;
     };
+    struct abs_t
+    {
+        struct arg_t
+        {
+            sort_t<P> sort;
+            source_text name;
+            source_loc_t loc;
+        };
+
+        std::vector<arg_t> args;
+        type_t ret_type;
+        body_t body;
+    };
+
     using value_t =
         std::variant<
             func_call_t<P>,
@@ -101,7 +137,8 @@ struct expr_t
             boolean_constant_t,
             numeric_constant_t,
             var_t,
-            type_t<P>>;
+            abs_t,
+            type_t>;
 
     properties_t properties;
     value_t value;
@@ -135,18 +172,6 @@ struct stmt_t
     bool operator==(stmt_t const&) const = default;
 };
 
-template <Properties P>
-struct body_t
-{
-    using properties_t = typename P::body_properties_type;
-    using stmt_t = ast::stmt_t<P>;
-
-    properties_t properties;
-    std::vector<stmt_t> stmts;
-
-    bool operator==(body_t const&) const = default;
-};
-
 enum class sign_t { signed_v, unsigned_v };
 enum class width_t { _8, _16, _32, _64 };
 
@@ -167,33 +192,14 @@ struct type_def_t
     value_t value;
 };
 
-struct typename_t // TODO should be replaced with kind_t?
-{
-    bool operator==(typename_t const&) const { return true; }
-};
-
-template <Properties P>
-using sort_t = std::variant<type_t<P>, typename_t>;
-
 template <Properties P>
 struct func_def_t
 {
     using properties_t = typename P::func_def_properties_type;
-    using type_t = ast::type_t<P>;
-    using body_t = ast::body_t<P>;
-
-    struct arg_t
-    {
-        sort_t<P> sort;
-        source_text name;
-        source_loc_t loc;
-    };
 
     properties_t properties;
-    type_t type;
     source_text name;
-    std::vector<arg_t> args;
-    body_t body;
+    expr_t<P>::abs_t value;
 
     bool operator==(func_def_t const&) const = default;
 };

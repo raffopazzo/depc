@@ -7,10 +7,10 @@
 
 namespace dep0::typecheck {
 
-struct func_proto_t // this should really be in the AST
+struct func_proto_t // TODO this should be `type_t::arr_t`
 {
     type_t ret_type;
-    std::vector<func_def_t::arg_t> args;
+    std::vector<expr_t::abs_t::arg_t> args;
 };
 
 std::ostream& pretty_print(std::ostream&, func_proto_t const&);
@@ -27,21 +27,21 @@ public:
 private:
     scope_map<source_text, entry_t<type_def_t>> m_typedefs;
     scope_map<source_text, entry_t<func_proto_t>> m_protos;
-    scope_map<source_text, entry_t<func_def_t::arg_t>> m_args;
+    scope_map<source_text, entry_t<expr_t::abs_t::arg_t>> m_args;
 
     context_t(
         scope_map<source_text, entry_t<type_def_t>>,
         scope_map<source_text, entry_t<func_proto_t>>,
-        scope_map<source_text, entry_t<func_def_t::arg_t>>);
+        scope_map<source_text, entry_t<expr_t::abs_t::arg_t>>);
 
 public:
     using typedefs_iterator = typename scope_map<source_text, entry_t<type_def_t>>::iterator;
     using protos_iterator = typename scope_map<source_text, entry_t<func_proto_t>>::iterator;
-    using args_iterator = typename scope_map<source_text, entry_t<func_def_t::arg_t>>::iterator;
+    using args_iterator = typename scope_map<source_text, entry_t<expr_t::abs_t::arg_t>>::iterator;
 
     using typedefs_const_iterator = typename scope_map<source_text, entry_t<type_def_t>>::const_iterator;
     using protos_const_iterator = typename scope_map<source_text, entry_t<func_proto_t>>::const_iterator;
-    using args_const_iterator = typename scope_map<source_text, entry_t<func_def_t::arg_t>>::const_iterator;
+    using args_const_iterator = typename scope_map<source_text, entry_t<expr_t::abs_t::arg_t>>::const_iterator;
 
     context_t() = default;
     context_t(context_t const&) = default;
@@ -62,7 +62,7 @@ public:
 
     entry_t<type_def_t> const* find_typedef(source_text const&) const;
     entry_t<func_proto_t> const* find_proto(source_text const&) const;
-    entry_t<func_def_t::arg_t> const* find_arg(source_text const&) const;
+    entry_t<expr_t::abs_t::arg_t> const* find_arg(source_text const&) const;
 
     template <typename... Args>
     auto try_emplace_typedef(source_text name, source_loc_t loc, Args&&... args)
@@ -79,7 +79,7 @@ public:
     template <typename... Args>
     auto try_emplace_arg(source_text name, source_loc_t loc, Args&&... args)
     {
-        return m_args.try_emplace(std::move(name), loc, func_def_t::arg_t{std::forward<Args>(args)...});
+        return m_args.try_emplace(std::move(name), loc, expr_t::abs_t::arg_t{std::forward<Args>(args)...});
     }
 };
 

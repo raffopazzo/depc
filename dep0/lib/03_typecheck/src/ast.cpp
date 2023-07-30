@@ -4,6 +4,61 @@
 
 namespace dep0::typecheck {
 
+// TODO indentation
+static std::ostream& pretty_print(std::ostream&, body_t const&);
+static std::ostream& pretty_print(std::ostream&, stmt_t const&);
+static std::ostream& pretty_print(std::ostream&, func_call_t const&);
+static std::ostream& pretty_print(std::ostream&, ast::typename_t);
+
+std::ostream& pretty_print(std::ostream& os, body_t const& x)
+{
+    os << '{';
+    for (auto const& s: x.stmts)
+        pretty_print(os << std::endl, s);
+    os << std::endl << '}';
+    return os;
+}
+
+std::ostream& pretty_print(std::ostream& os, stmt_t const& x)
+{
+    match(
+        x.value,
+        [&] (func_call_t const& x)
+        {
+            pretty_print(os, x) << ';';
+        },
+        [&] (stmt_t::if_else_t const& x)
+        {
+            pretty_print(os << "if (", x.cond) << ')';
+            pretty_print(os << std::endl, x.true_branch);
+            if (x.false_branch)
+                pretty_print(os << "else" << std::endl, *x.false_branch);
+        },
+        [&] (stmt_t::return_t const& x)
+        {
+            if (x.expr)
+                pretty_print(os << "return ", *x.expr) << ';';
+            else
+                os << "return;";
+        });
+    return os;
+}
+
+std::ostream& pretty_print(std::ostream& os, func_call_t const& x)
+{
+    os << x.name << '(';
+    bool first = true;
+    for (auto const& arg: x.args)
+        pretty_print(std::exchange(first, false) ? os : os << ", ", arg);
+    os << ')';
+    return os;
+}
+
+std::ostream& pretty_print(std::ostream& os, ast::typename_t)
+{
+    return os << "typename";
+}
+
 std::ostream& pretty_print(std::ostream& os, type_t const& t)
 {
     match(
@@ -28,11 +83,7 @@ std::ostream& pretty_print(std::ostream& os, expr_t const& x)
         x.value,
         [&] (func_call_t const& x)
         {
-            os << x.name << '(';
-            bool first = true;
-            for (auto const& arg: x.args)
-                pretty_print(std::exchange(first, false) ? os : os << ", ", arg);
-            os << ')';
+            pretty_print(os, x);
         },
         [&] (expr_t::arith_expr_t const& x)
         {
@@ -48,13 +99,17 @@ std::ostream& pretty_print(std::ostream& os, expr_t const& x)
         [&] (expr_t::boolean_constant_t const& x) { os << x.value; },
         [&] (expr_t::numeric_constant_t const& x) { os << x.number; },
         [&] (expr_t::var_t const& x) { os << x.name; },
+        [&] (expr_t::abs_t const& x)
+        {
+            os << '(';
+            bool first = true;
+            for (auto const& arg: x.args)
+                pretty_print(std::exchange(first, false) ? os : os << ", ", arg.sort) << ' ' << arg.name;
+            pretty_print(os << ") -> ", x.ret_type);
+            pretty_print(os << std::endl, x.body);
+        },
         [&] (type_t const& x) { pretty_print(os, x); });
     return pretty_print(os << " : ", x.properties.sort);
-}
-
-static std::ostream& pretty_print(std::ostream& os, ast::typename_t)
-{
-    return os << "typename";
 }
 
 std::ostream& pretty_print(std::ostream& os, sort_t const& x)

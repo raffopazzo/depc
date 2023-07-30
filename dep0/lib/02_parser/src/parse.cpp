@@ -120,11 +120,12 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         assert(ctx->body());
         return func_def_t{
             get_loc(src, *ctx).value(),
-            std::any_cast<type_t>(visitType(ctx->type())),
             get_text(src, *ctx->name).value(),
-            fmap(ctx->arg(), [this] (auto* x) { return std::any_cast<func_def_t::arg_t>(visitArg(x)); }),
-            std::any_cast<body_t>(visitBody(ctx->body()))
-        };
+            expr_t::abs_t{
+                fmap(ctx->arg(), [this] (auto* x) { return std::any_cast<expr_t::abs_t::arg_t>(visitArg(x)); }),
+                std::any_cast<type_t>(visitType(ctx->type())),
+                std::any_cast<body_t>(visitBody(ctx->body()))
+            }};
     }
 
     virtual std::any visitType(DepCParser::TypeContext* ctx) override
@@ -148,7 +149,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         assert(ctx);
         assert(ctx->name);
         assert(ctx->type() or ctx->KW_TYPENAME());
-        return func_def_t::arg_t{
+        return expr_t::abs_t::arg_t{
             ctx->type()
                 ? sort_t(std::any_cast<type_t>(visitType(ctx->type())))
                 : sort_t(ast::typename_t{}),

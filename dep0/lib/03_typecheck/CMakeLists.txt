@@ -1,5 +1,4 @@
 add_subdirectory(test)
-add_subdirectory(libtt)
 
 add_library(dep0_typecheck_lib
   include/dep0/typecheck/ast.hpp

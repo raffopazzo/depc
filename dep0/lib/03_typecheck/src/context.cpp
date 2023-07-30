@@ -18,7 +18,7 @@ std::ostream& pretty_print(std::ostream& os, func_proto_t const& proto)
 context_t::context_t(
     scope_map<source_text, entry_t<type_def_t>> typedefs,
     scope_map<source_text, entry_t<func_proto_t>> protos,
-    scope_map<source_text, entry_t<func_def_t::arg_t>> args
+    scope_map<source_text, entry_t<expr_t::abs_t::arg_t>> args
 ) : m_typedefs(std::move(typedefs)),
     m_protos(std::move(protos)),
     m_args(std::move(args))
@@ -73,7 +73,7 @@ auto context_t::find_proto(source_text const& name) const -> entry_t<func_proto_
     return m_protos[name];
 }
 
-auto context_t::find_arg(source_text const& name) const -> entry_t<func_def_t::arg_t> const*
+auto context_t::find_arg(source_text const& name) const -> entry_t<expr_t::abs_t::arg_t> const*
 {
     return m_args[name];
 }

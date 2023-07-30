@@ -173,22 +173,22 @@ llvm::Attribute::AttrKind get_sign_ext_attribute(context_t const& ctx, typecheck
 
 static void gen_fun_attributes(context_t const& ctx, llvm::Function* const func, typecheck::func_def_t const& x)
 {
-    if (auto const attr = get_sign_ext_attribute(ctx, x.type); attr != llvm::Attribute::None)
+    if (auto const attr = get_sign_ext_attribute(ctx, x.value.ret_type); attr != llvm::Attribute::None)
         func->addAttribute(llvm::AttributeList::ReturnIndex, attr);
 }
 
 llvm::Value* gen_fun(context_t& ctx, llvm::Module& llvm_module, typecheck::func_def_t const& x)
 {
-    auto const is_typename = [](typecheck::func_def_t::arg_t const& arg)
+    auto const is_typename = [](typecheck::expr_t::abs_t::arg_t const& arg)
     {
         return std::holds_alternative<ast::typename_t>(arg.sort);
     };
-    if (std::any_of(x.args.begin(), x.args.end(), is_typename))
+    if (std::any_of(x.value.args.begin(), x.value.args.end(), is_typename))
         return nullptr;
     auto* const funtype =
         llvm::FunctionType::get(
-            gen_type(ctx, llvm_module.getContext(), x.type),
-            fmap(x.args, [&] (auto const& arg)
+            gen_type(ctx, llvm_module.getContext(), x.value.ret_type),
+            fmap(x.value.args, [&] (auto const& arg)
             {
                 return gen_type(ctx, llvm_module.getContext(), std::get<typecheck::type_t>(arg.type));
             }),
@@ -207,21 +207,21 @@ llvm::Value* gen_fun(context_t& ctx, llvm::Module& llvm_module, typecheck::func_
         return nullptr;
     }
     auto f_ctx = ctx.extend();
-    for (auto const i: std::views::iota(0ul, x.args.size()))
+    for (auto const i: std::views::iota(0ul, x.value.args.size()))
     {
         auto* const arg = func->getArg(i);
-        arg->setName(x.args[i].name.view());
-        if (auto const attr = get_sign_ext_attribute(f_ctx, x.args[i].type); attr != llvm::Attribute::None)
+        arg->setName(x.value.args[i].name.view());
+        if (auto const attr = get_sign_ext_attribute(f_ctx, x.value.args[i].type); attr != llvm::Attribute::None)
             arg->addAttr(attr);
-        if (not std::get<bool>(f_ctx.values.try_emplace(x.args[i].name, arg)))
+        if (not std::get<bool>(f_ctx.values.try_emplace(x.value.args[i].name, arg)))
         {
             assert(false);
             return nullptr;
         }
     }
     gen_fun_attributes(f_ctx, func, x);
-    auto snippet = gen_body(f_ctx, llvm_module.getContext(), x.body, "entry", func);
-    if (snippet.open_blocks.size() and std::holds_alternative<typecheck::type_t::unit_t>(x.type.value))
+    auto snippet = gen_body(f_ctx, llvm_module.getContext(), x.value.body, "entry", func);
+    if (snippet.open_blocks.size() and std::holds_alternative<typecheck::type_t::unit_t>(x.value.ret_type.value))
     {
         auto builder = llvm::IRBuilder<>(llvm_module.getContext());
         for (auto* const bb: snippet.open_blocks)

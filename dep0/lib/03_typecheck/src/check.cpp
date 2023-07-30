@@ -74,7 +74,6 @@ expr_t make_legal_expr(sort_t sort, Args&&... args)
 static dep0::expected<func_call_t> type_assign_func_call(context_t const&, parser::func_call_t const&);
 static expected<type_def_t> check(context_t&, parser::type_def_t const&);
 static expected<func_def_t> check(context_t&, parser::func_def_t const&);
-static expected<func_def_t::arg_t> check(context_t const&, parser::func_def_t::arg_t const&);
 static expected<type_t> check(context_t const&, parser::type_t const&);
 static expected<body_t> check(context_t const&, parser::body_t const&, type_t const& return_type);
 static expected<stmt_t> check(context_t const&, parser::stmt_t const&, type_t const& return_type);
@@ -182,13 +181,13 @@ expected<type_def_t> check(context_t& ctx, parser::type_def_t const& type_def)
         });
 }
 
-expected<func_def_t> check(context_t& ctx, parser::func_def_t const& f)
+template <typename BeforeBodyHook>
+expected<expr_t::abs_t> check(context_t const& ctx, parser::expr_t::abs_t const& f, BeforeBodyHook&& hook)
 {
-    // NB check must happen in function context but once prototype typechecks it must be added to the parent context
     auto f_ctx = ctx.extend();
     auto args = fmap_or_error(
         f.args,
-        [&] (parser::func_def_t::arg_t const& x) -> expected<func_def_t::arg_t>
+        [&] (parser::expr_t::abs_t::arg_t const& x) -> expected<expr_t::abs_t::arg_t>
         {
             auto ok =
                 match(
@@ -220,29 +219,48 @@ expected<func_def_t> check(context_t& ctx, parser::func_def_t const& f)
         });
     if (not args)
         return std::move(args.error());
-    auto ret_type = check(f_ctx, f.type);
+    auto ret_type = check(f_ctx, f.ret_type);
     if (not ret_type)
         return std::move(ret_type.error());
-    auto const [it, inserted] = ctx.try_emplace_proto(f.name, f.properties, *ret_type, *args);
-    if (not inserted)
-    {
-        std::ostringstream err;
-        print_location(err << "function `" << f.name << "` already defined at ", it->second.loc);
-        pretty_print(err << " with type `", it->second.value) << '`';
-        return error_t::from_error(dep0::error_t{err.str(), f.properties}, ctx);
-    }
+    if (auto ok = hook(*ret_type, *args); not ok)
+        return std::move(ok.error());
     auto body = check(f_ctx, f.body, *ret_type);
     if (not body)
         return std::move(body.error());
     // so far so good, but we now need to make sure that all branches contain a return statement,
     // with the only exception of functions returning `unit_t` because the return statement is optional;
     if (not std::holds_alternative<type_t::unit_t>(ret_type->value) and not returns_from_all_branches(*body))
+        return error_t::from_error(dep0::error_t{"missing return statement"}, f_ctx);
+    return expr_t::abs_t{std::move(*args), std::move(*ret_type), std::move(*body)};
+}
+
+expected<func_def_t> check(context_t& ctx, parser::func_def_t const& f)
+{
+    // top level function definitions can be recursive;
+    // to make recursion work we need to add the function prototype to the context
+    // before we check the body, so pass in a `BeforeBodyHook`
+    auto const try_add_proto =
+        [&] (type_t const& ret_type, std::vector<expr_t::abs_t::arg_t> const& args)
+            -> expected<std::true_type>
+        {
+            auto const [it, inserted] = ctx.try_emplace_proto(f.name, f.properties, ret_type, args);
+            if (not inserted)
+            {
+                std::ostringstream err;
+                print_location(err << "function `" << f.name << "` already defined at ", it->second.loc);
+                pretty_print(err << " with type `", it->second.value) << '`';
+                return error_t::from_error(dep0::error_t{err.str(), f.properties}, ctx);
+            }
+            return std::true_type{};
+        };
+    if (auto abs = check(ctx, f.value, try_add_proto))
+        return make_legal_func_def(f.name, std::move(*abs));
+    else
     {
-        std::ostringstream err;
-        err << "in function `" << f.name << "` missing return statement";
-        return error_t::from_error(dep0::error_t{err.str(), f.properties}, f_ctx);
+        if (not abs.error().location)
+            abs.error().location = f.properties;
+        return std::move(abs.error());
     }
-    return make_legal_func_def(std::move(*ret_type), f.name, std::move(*args), std::move(*body));
 }
 
 expected<type_t> check(context_t const& ctx, parser::type_t const& t)
@@ -524,6 +542,23 @@ expected<expr_t> check(context_t const& ctx, parser::expr_t const& x, type_t con
             }
             return make_legal_expr(expected_type, expr_t::var_t{x.name});
         },
+        [&] (parser::expr_t::abs_t const& f) -> expected<expr_t>
+        {
+            // abstraction expressions are anonymous, so recursion is not possible because we do not have
+            // a name to register the prototype in the current context; so we pass a no-op lambda;
+            auto abs = check(ctx, f, [] (auto&&...) -> expected<std::true_type> { return std::true_type{}; });
+            if (not abs)
+            {
+                if (not abs.error().location)
+                    abs.error().location = loc;
+                return std::move(abs.error());
+            }
+            // TODO check expected_type
+            return error_t::from_error(
+                dep0::error_t{"Abstraction expressions not yet supported", loc},
+                ctx,
+                expected_type);
+        },
         [&] (parser::type_t const& x) -> expected<expr_t>
         {
             std::ostringstream err;
@@ -574,6 +609,10 @@ expected<type_t> check(context_t const& ctx, parser::expr_t const& x, ast::typen
         [&] (parser::expr_t::var_t const& x) -> expected<type_t>
         {
             return error("not implemented");
+        },
+        [&] (parser::expr_t::abs_t const& x) -> expected<type_t>
+        {
+            return error("type mismatch between abstraction expression and `typename`");
         },
         [&] (parser::type_t const& x) -> expected<type_t>
         {

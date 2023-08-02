@@ -60,7 +60,8 @@ struct type_t
     struct arr_t
     {
         // in lambda-2, an arrow can either introduce new type variables (pi-types) or refer to existing types
-        std::vector<std::variant<var_t, type_t>> arg_types;
+        using arg_type_t = std::variant<var_t, type_t>;
+        std::vector<arg_type_t> arg_types;
         rec_t ret_type;
         bool operator==(arr_t const& that) const
         {
@@ -85,6 +86,18 @@ struct typename_t // TODO should be replaced with kind_t?
 
 template <Properties P>
 using sort_t = std::variant<type_t<P>, typename_t>;
+
+template <Properties P>
+bool is_type(sort_t<P> const& s)
+{
+    return std::holds_alternative<type_t<P>>(s);
+}
+
+template <Properties P>
+bool is_typename(sort_t<P> const& s)
+{
+    return std::holds_alternative<typename_t>(s);
+}
 
 template <Properties P>
 struct expr_t
@@ -208,7 +221,7 @@ struct func_def_t
 
     properties_t properties;
     source_text name;
-    expr_t<P>::abs_t value;
+    expr_t<P>::abs_t value; // TODO rename to `abs` (or `f`?)
 
     bool operator==(func_def_t const&) const = default;
 };

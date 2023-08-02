@@ -431,6 +431,11 @@ BOOST_AUTO_TEST_CASE(test_0178)
 
     auto const& f = pass_result->func_defs[1ul];
     BOOST_TEST(f.name == "f");
+    BOOST_TEST_REQUIRE(f.value.args.size() == 1ul);
+    auto const t = std::get_if<dep0::typecheck::type_t>(&f.value.args[0ul].sort);
+    BOOST_TEST_REQUIRE(t);
+    BOOST_TEST(std::holds_alternative<dep0::typecheck::type_t::i32_t>(t->value));
+    BOOST_TEST(f.value.args[0ul].name == "x");
     BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
     auto const ret_f = std::get_if<dep0::typecheck::stmt_t::return_t>(&f.value.body.stmts[0ul].value);
     BOOST_TEST_REQUIRE(ret_f);

@@ -6,11 +6,13 @@ add_library(dep0_typecheck_lib
   include/dep0/typecheck/context.hpp
   include/dep0/typecheck/error.hpp
   include/dep0/typecheck/returns_from_all_branches.hpp
+  include/dep0/typecheck/substitute.hpp
   src/ast.cpp
   src/check.cpp
   src/context.cpp
   src/error.cpp
   src/returns_from_all_branches.cpp
+  src/substitute.cpp
   )
 add_library(DepC::Dep0::TypeCheck ALIAS dep0_typecheck_lib)
 target_compile_features(dep0_typecheck_lib PUBLIC cxx_std_20)

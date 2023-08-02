@@ -1,5 +1,7 @@
 #include "dep0/llvmgen/gen.hpp"
 
+#include "dep0/typecheck/substitute.hpp"
+
 #include "dep0/digit_separator.hpp"
 #include "dep0/fmap.hpp"
 #include "dep0/match.hpp"
@@ -11,35 +13,46 @@
 
 #include <algorithm>
 #include <ranges>
+#include <sstream>
 
 namespace dep0::llvmgen {
+
+struct specialized_func_t
+{
+    llvm::FunctionType* type;
+    llvm::Value* func;
+};
 
 struct context_t
 {
     scope_map<source_text, llvm::Value*> values; // including function objects
-    scope_map<source_text, llvm::FunctionType*> fun_types;
+    scope_map<source_text, llvm::FunctionType*> func_types;
     scope_map<source_text, llvm::Type*> types;
     scope_map<source_text, typecheck::type_def_t::integer_t> integer_types;
+    scope_map<std::string, specialized_func_t> specialized_functions; // key is mangled name
 
     context_t() = default;
     context_t(
         scope_map<source_text, llvm::Value*> values,
-        scope_map<source_text, llvm::FunctionType*> fun_types,
+        scope_map<source_text, llvm::FunctionType*> func_types,
         scope_map<source_text, llvm::Type*> types,
-        scope_map<source_text, typecheck::type_def_t::integer_t> integer_types
+        scope_map<source_text, typecheck::type_def_t::integer_t> integer_types,
+        scope_map<std::string, specialized_func_t> specialized_functions
     ) : values(std::move(values)),
-        fun_types(std::move(fun_types)),
+        func_types(std::move(func_types)),
         types(std::move(types)),
-        integer_types(std::move(integer_types))
+        integer_types(std::move(integer_types)),
+        specialized_functions(std::move(specialized_functions))
     { }
 
     context_t extend() const
     {
         return context_t(
             values.extend(),
-            fun_types.extend(),
+            func_types.extend(),
             types.extend(),
-            integer_types.extend()
+            integer_types.extend(),
+            specialized_functions.extend()
         );
     }
 };
@@ -56,11 +69,29 @@ struct snippet_t
     std::vector<llvm::BasicBlock*> open_blocks;
 };
 
+struct llvm_func_proto_t
+{
+    struct arg_t
+    {
+        source_text name;
+        typecheck::type_t type;
+    };
+    std::vector<arg_t> args;
+    typecheck::type_t ret_type;
+};
+
 // all gen functions must be forward-declared here
 
 static llvm::Type* gen_type(context_t const&, llvm::LLVMContext&, typecheck::type_t const&);
 static llvm::Type* gen_type(context_t&, llvm::LLVMContext&, typecheck::type_def_t const&);
-static llvm::Value* gen_func(context_t&, llvm::Module& , typecheck::func_def_t const&);
+static llvm::Value* gen_func(context_t&, llvm::Module&, source_text const&, typecheck::expr_t::abs_t const&);
+static llvm::Value* gen_specialized_func(
+    context_t&,
+    llvm::Module&,
+    std::string mangled_name,
+    typecheck::expr_t::abs_t const&,
+    std::vector<typecheck::expr_t> const&);
+
 static snippet_t gen_body(
     context_t const&,
     llvm::LLVMContext&,
@@ -71,6 +102,100 @@ static void gen_stmt(context_t const&, snippet_t&, llvm::IRBuilder<>&, typecheck
 static llvm::Value* gen_val(context_t const&, llvm::IRBuilder<>& , typecheck::expr_t const&);
 static llvm::CallInst* gen_func_call(context_t const&, llvm::IRBuilder<>&, typecheck::expr_t::app_t const&);
 
+static bool is_first_order_abstraction(typecheck::expr_t::abs_t const& f)
+{
+    return std::ranges::all_of(f.args, [] (auto const& x) { return ast::is_type(x.sort); });
+}
+
+static std::ostream& mangled_print(std::ostream& os, typecheck::type_t const& t)
+{
+    match(
+        t.value,
+        [&] (typecheck::type_t::bool_t const&) { os << "bool"; },
+        [&] (typecheck::type_t::unit_t const&) { os << "unit_t"; },
+        [&] (typecheck::type_t::i8_t const&) { os << "i8_t"; },
+        [&] (typecheck::type_t::i16_t const&) { os << "i16_t"; },
+        [&] (typecheck::type_t::i32_t const&) { os << "i32_t"; },
+        [&] (typecheck::type_t::i64_t const&) { os << "i64_t"; },
+        [&] (typecheck::type_t::u8_t const&) { os << "u8_t"; },
+        [&] (typecheck::type_t::u16_t const&) { os << "u16_t"; },
+        [&] (typecheck::type_t::u32_t const&) { os << "u32_t"; },
+        [&] (typecheck::type_t::u64_t const&) { os << "u64_t"; },
+        [&] (typecheck::type_t::var_t const& x) { os << x.name; },
+        [&] (typecheck::type_t::arr_t const& x)
+        {
+            os << "$-";
+            bool first = true;
+            for (auto const& t: x.arg_types)
+            {
+                if (not std::exchange(first, false))
+                    os << '.';
+                match(t,
+                    [&] (typecheck::type_t::var_t const& x) { os << x.name; },
+                    [&] (typecheck::type_t const& x) { mangled_print(os, x); });
+            }
+            mangled_print(os << "-$", x.ret_type.get());
+        });
+    return os;
+}
+
+static std::string make_mangled_name(source_text const& name, std::vector<typecheck::type_t> types)
+{
+    std::ostringstream s;
+    s << name;
+    for (auto const& t: types)
+        mangled_print(s << '.', t);
+    return s.str();
+}
+
+// TODO could perhaps replace with a super-generic `ast::for_each_node`, maybe `ast::traverse()` ?
+template <typename F> void for_each_application(typecheck::body_t const&, F&&);
+template <typename F> void for_each_application(typecheck::expr_t const&, F&&);
+
+template <typename F>
+void for_each_application(typecheck::body_t const& body, F&& f)
+{
+    for (auto const& s: body.stmts)
+        match(
+            s.value,
+            [&] (typecheck::expr_t::app_t const& x) { f(x); },
+            [&] (typecheck::stmt_t::if_else_t const& x)
+            {
+                for_each_application(x.cond, f);
+                for_each_application(x.true_branch, f);
+                if (x.false_branch)
+                    for_each_application(*x.false_branch, f);
+            },
+            [&] (typecheck::stmt_t::return_t const& x)
+            {
+                if (x.expr)
+                    for_each_application(*x.expr, f);
+            });
+}
+
+template <typename F>
+void for_each_application(typecheck::expr_t const& expr, F&& f)
+{
+    match(
+        expr.value,
+        [&] (typecheck::expr_t::arith_expr_t const& x)
+        {
+            match(
+                x.value,
+                [&] (typecheck::expr_t::arith_expr_t::plus_t const& x)
+                {
+                    for_each_application(x.lhs.get(), f);
+                    for_each_application(x.rhs.get(), f);
+                });
+        },
+        [&] (typecheck::expr_t::boolean_constant_t const&) {},
+        [&] (typecheck::expr_t::numeric_constant_t const&) {},
+        [&] (typecheck::expr_t::var_t const&) {},
+        [&] (typecheck::expr_t::app_t const& x) { f(x); },
+        [&] (typecheck::expr_t::abs_t const& x) { for_each_application(x.body, f); },
+        [&] (typecheck::type_t const&) { });
+}
+
 expected<unique_ref<llvm::Module>> gen(
     llvm::LLVMContext& llvm_ctx,
     std::string_view const name,
@@ -79,10 +204,42 @@ expected<unique_ref<llvm::Module>> gen(
     context_t ctx;
     auto llvm_module = make_ref<llvm::Module>(name, llvm_ctx);
     // TODO: allow declarations in any order with 2 pass (both type and function defs)
-    for (auto const& t: m.type_defs)
-        gen_type(ctx, llvm_ctx, t);
-    for (auto const& f: m.func_defs)
-        gen_func(ctx, llvm_module.get(), f);
+    for (auto const& def: m.type_defs)
+        gen_type(ctx, llvm_ctx, def);
+    for (auto const& def: m.func_defs)
+    {
+        if (is_first_order_abstraction(def.value))
+            gen_func(ctx, llvm_module.get(), def.name, def.value);
+        else
+        {
+            // we can only generate llvm functions for 1st order abstractions;
+            // for 2nd order abstractions we generate a specialized function for each 2nd order application
+            // (aka monomorphization) but they can be anywhere, so need to scan all function definitions
+            // TODO: currently we don't allow 2 pass definitions, so there's no need to restart from the
+            // beginning of the module
+            for (auto const& g: m.func_defs)
+                for_each_application(
+                    g.value.body,
+                    [&] (typecheck::expr_t::app_t const& app)
+                    {
+                        if (app.name != def.name)
+                            return;
+                        // TODO shall we also specialize for constant expressions (aka constant propagation)?
+                        // maybe behind some aggressive optimisation flag?
+                        auto mangled_name = [&]
+                        {
+                            std::vector<typecheck::type_t> type_args;
+                            type_args.reserve(app.args.size());
+                            for (auto const& arg: app.args)
+                                if (auto const p = std::get_if<typecheck::type_t>(&arg.value))
+                                    type_args.push_back(*p);
+                            return make_mangled_name(app.name, type_args);
+                        }();
+                        if (not ctx.specialized_functions[mangled_name])
+                            gen_specialized_func(ctx, llvm_module.get(), std::move(mangled_name), def.value, app.args);
+                    });
+        }
+    }
 
     std::string err;
     llvm::raw_string_ostream ostream(err);
@@ -116,6 +273,14 @@ llvm::Type* gen_type(context_t const& ctx, llvm::LLVMContext& llvm_ctx, typechec
         },
         [&] (typecheck::type_t::arr_t const& x) -> llvm::Type*
         {
+            assert(
+                std::ranges::all_of(
+                    x.arg_types,
+                    [] (auto const& t)
+                    {
+                        return std::holds_alternative<typecheck::type_t>(t);
+                    })
+                and "can only generate an llvm function type if all arguments have a concrete type");
             bool constexpr is_var_arg = false;
             return llvm::FunctionType::get(
                 gen_type(ctx, llvm_ctx, x.ret_type.get()),
@@ -123,17 +288,7 @@ llvm::Type* gen_type(context_t const& ctx, llvm::LLVMContext& llvm_ctx, typechec
                     x.arg_types,
                     [&] (auto const& t)
                     {
-                        return match(
-                            t,
-                            [&] (typecheck::type_t::var_t const& t) -> llvm::Type*
-                            {
-                                assert(false and "cannot generate llvm types for a pi-type");
-                                return nullptr;
-                            },
-                            [&] (typecheck::type_t const& t)
-                            {
-                                return gen_type(ctx, llvm_ctx, t);
-                            });
+                        return gen_type(ctx, llvm_ctx, std::get<typecheck::type_t>(t));
                     }),
                 is_var_arg);
         });
@@ -195,95 +350,154 @@ llvm::Attribute::AttrKind get_sign_ext_attribute(context_t const& ctx, typecheck
         [] (typecheck::type_t::arr_t const&) { return llvm::Attribute::None;; });
 }
 
-static void gen_fun_attributes(context_t const& ctx, llvm::Function* const func, typecheck::func_def_t const& x)
+static llvm::FunctionType* gen_func_type(context_t& ctx, llvm::LLVMContext& llvm_ctx, llvm_func_proto_t const& f)
 {
-    if (auto const attr = get_sign_ext_attribute(ctx, x.value.ret_type); attr != llvm::Attribute::None)
-        func->addAttribute(llvm::AttributeList::ReturnIndex, attr);
+    bool constexpr is_var_arg = false;
+    return llvm::FunctionType::get(
+        gen_type(ctx, llvm_ctx, f.ret_type),
+        fmap(f.args, [&] (auto const& arg) { return gen_type(ctx, llvm_ctx, arg.type); }),
+        is_var_arg);
 }
 
-llvm::Value* gen_func(context_t& ctx, llvm::Module& llvm_module, typecheck::func_def_t const& x)
+static void gen_func_args(context_t& ctx, llvm_func_proto_t const& f, llvm::Function* const llvm_f)
 {
-    auto const is_typename = [](typecheck::expr_t::abs_t::arg_t const& arg)
+    for (auto const i: std::views::iota(0ul, f.args.size()))
     {
-        return std::holds_alternative<ast::typename_t>(arg.sort);
-    };
-    if (std::any_of(x.value.args.begin(), x.value.args.end(), is_typename))
-    {
-        assert(false and "cannot generate function a pi-type");
-        return nullptr;
-    }
-    auto* const funtype =
-        llvm::FunctionType::get(
-            gen_type(ctx, llvm_module.getContext(), x.value.ret_type),
-            fmap(x.value.args, [&] (auto const& arg)
-            {
-                return gen_type(ctx, llvm_module.getContext(), std::get<typecheck::type_t>(arg.sort));
-            }),
-            /*isVarArg*/false);
-    auto* const func = llvm::Function::Create(funtype, llvm::Function::ExternalLinkage, x.name.view(), llvm_module);
-    // add function type and object to the parent context;
-    // but generation must happen in the function context
-    if (not std::get<bool>(ctx.fun_types.try_emplace(x.name, funtype)))
-    {
-        assert(false);
-        return nullptr;
-    }
-    if (not std::get<bool>(ctx.values.try_emplace(x.name, func)))
-    {
-        assert(false);
-        return nullptr;
-    }
-    auto f_ctx = ctx.extend();
-    for (auto const i: std::views::iota(0ul, x.value.args.size()))
-    {
-        auto* const arg = func->getArg(i);
-        arg->setName(x.value.args[i].name.view());
-        if (auto const attr = get_sign_ext_attribute(f_ctx, std::get<typecheck::type_t>(x.value.args[i].sort));
-            attr != llvm::Attribute::None)
-        {
-            arg->addAttr(attr);
-        }
-        if (not std::get<bool>(f_ctx.values.try_emplace(x.value.args[i].name, arg)))
-        {
+        auto* const llvm_arg = llvm_f->getArg(i);
+        llvm_arg->setName(f.args[i].name.view());
+        if (auto const attr = get_sign_ext_attribute(ctx, f.args[i].type); attr != llvm::Attribute::None)
+            llvm_arg->addAttr(attr);
+        if (not std::get<bool>(ctx.values.try_emplace(f.args[i].name, llvm_arg)))
             assert(false);
-            return nullptr;
-        }
     }
-    gen_fun_attributes(f_ctx, func, x);
-    auto snippet = gen_body(f_ctx, llvm_module.getContext(), x.value.body, "entry", func);
-    if (snippet.open_blocks.size() and std::holds_alternative<typecheck::type_t::unit_t>(x.value.ret_type.value))
+}
+
+static void gen_func_attributes(context_t const& ctx, llvm_func_proto_t const& f, llvm::Function* const llvm_f)
+{
+    if (auto const attr = get_sign_ext_attribute(ctx, f.ret_type); attr != llvm::Attribute::None)
+        llvm_f->addAttribute(llvm::AttributeList::ReturnIndex, attr);
+}
+
+static void gen_func_body(
+    context_t const& ctx,
+    llvm::LLVMContext& llvm_ctx,
+    llvm_func_proto_t const& f,
+    typecheck::body_t const& body,
+    llvm::Function* const llvm_f)
+{
+    auto snippet = gen_body(ctx, llvm_ctx, body, "entry", llvm_f);
+    if (snippet.open_blocks.size() and std::holds_alternative<typecheck::type_t::unit_t>(f.ret_type.value))
     {
-        auto builder = llvm::IRBuilder<>(llvm_module.getContext());
+        auto builder = llvm::IRBuilder<>(llvm_ctx);
         for (auto* const bb: snippet.open_blocks)
         {
             builder.SetInsertPoint(bb);
             builder.CreateRetVoid();
         }
     }
-    return func;
+}
+
+llvm::Value* gen_func(
+    context_t& ctx,
+    llvm::Module& llvm_module,
+    source_text const& name,
+    typecheck::expr_t::abs_t const& f)
+{
+    assert(
+        std::ranges::all_of(f.args, [] (auto const& arg) { return ast::is_type(arg.sort); })
+        and "can only generate an llvm function if all arguments have a concrete type");
+    auto const proto =
+        llvm_func_proto_t{
+            fmap(
+                f.args,
+                [] (auto const& arg)
+                {
+                    return llvm_func_proto_t::arg_t{arg.name, std::get<typecheck::type_t>(arg.sort)};
+                }),
+            f.ret_type};
+    auto* const func_type = gen_func_type(ctx, llvm_module.getContext(), proto);
+    auto* const llvm_f = llvm::Function::Create(func_type, llvm::Function::ExternalLinkage, name.view(), llvm_module);
+    // add function type and object to the parent context; but generation must happen in the function context
+    if (not std::get<bool>(ctx.func_types.try_emplace(name, func_type)))
+    {
+        assert(false);
+        return nullptr;
+    }
+    if (not std::get<bool>(ctx.values.try_emplace(name, llvm_f)))
+    {
+        assert(false);
+        return nullptr;
+    }
+    auto f_ctx = ctx.extend();
+    gen_func_args(f_ctx, proto, llvm_f);
+    gen_func_attributes(f_ctx, proto, llvm_f);
+    gen_func_body(f_ctx, llvm_module.getContext(), proto, f.body, llvm_f);
+    return llvm_f;
+}
+
+llvm::Value* gen_specialized_func(
+    context_t& ctx,
+    llvm::Module& llvm_module,
+    std::string mangled_name,
+    typecheck::expr_t::abs_t const& f,
+    std::vector<typecheck::expr_t> const& args)
+{
+    assert(f.args.size() == args.size());
+    llvm_func_proto_t proto{{}, f.ret_type};
+    proto.args.reserve(args.size());
+    auto i = 0ul;
+    for (auto const& arg: args)
+    {
+        auto const& arg_name = f.args[i++].name;
+        match(
+            arg.properties.sort,
+            [&] (typecheck::type_t const& t)
+            {
+                proto.args.emplace_back(arg_name, t);
+            },
+            [&] (ast::typename_t const&)
+            {
+                // I'm not particularly pleased with this...
+                // Substitution was already preformed during typechecking, we should somehow reuse that result...
+                substitute(proto.ret_type, arg_name, std::get<typecheck::type_t>(arg.value));
+            });
+    }
+    auto* const func_type = gen_func_type(ctx, llvm_module.getContext(), proto);
+    // add specialized function to parent context; but generation must happen in the function context
+    auto *const llvm_f = llvm::Function::Create(func_type, llvm::Function::PrivateLinkage, mangled_name, llvm_module);
+    if (not std::get<bool>(ctx.specialized_functions.try_emplace(std::move(mangled_name), func_type, llvm_f)))
+    {
+        assert(false);
+        return nullptr;
+    }
+    auto f_ctx = ctx.extend();
+    gen_func_args(f_ctx, proto, llvm_f);
+    gen_func_attributes(f_ctx, proto, llvm_f);
+    gen_func_body(f_ctx, llvm_module.getContext(), proto, f.body, llvm_f);
+    return llvm_f;
 }
 
 snippet_t gen_body(
     context_t const& ctx,
     llvm::LLVMContext& llvm_ctx,
-    typecheck::body_t const& x,
+    typecheck::body_t const& body,
     std::string_view const entry_block_name,
-    llvm::Function* const func)
+    llvm::Function* const llvm_f)
 {
     snippet_t snippet;
     auto builder = llvm::IRBuilder<>(llvm_ctx);
-    builder.SetInsertPoint(snippet.entry_block = llvm::BasicBlock::Create(llvm_ctx, entry_block_name, func));
-    auto it = x.stmts.begin();
-    if (it == x.stmts.end())
+    builder.SetInsertPoint(snippet.entry_block = llvm::BasicBlock::Create(llvm_ctx, entry_block_name, llvm_f));
+    auto it = body.stmts.begin();
+    if (it == body.stmts.end())
         snippet.open_blocks.push_back(snippet.entry_block);
     else
     {
-        gen_stmt(ctx, snippet, builder, *it, func);
-        while (++it != x.stmts.end())
+        gen_stmt(ctx, snippet, builder, *it, llvm_f);
+        while (++it != body.stmts.end())
         {
             if (snippet.open_blocks.size())
             {
-                auto next = llvm::BasicBlock::Create(llvm_ctx, "next", func);
+                auto next = llvm::BasicBlock::Create(llvm_ctx, "next", llvm_f);
                 for (auto& bb: snippet.open_blocks)
                 {
                     builder.SetInsertPoint(bb);
@@ -292,7 +506,7 @@ snippet_t gen_body(
                 snippet.open_blocks.clear();
                 builder.SetInsertPoint(next);
             }
-            gen_stmt(ctx, snippet, builder, *it, func);
+            gen_stmt(ctx, snippet, builder, *it, llvm_f);
         }
     }
     return snippet;
@@ -302,11 +516,11 @@ void gen_stmt(
     context_t const& ctx,
     snippet_t& snipppet,
     llvm::IRBuilder<>& builder,
-    typecheck::stmt_t const& x,
-    llvm::Function* const func)
+    typecheck::stmt_t const& stmt,
+    llvm::Function* const llvm_f)
 {
     match(
-        x.value,
+        stmt.value,
         [&] (typecheck::expr_t::app_t const& x)
         {
             gen_func_call(ctx, builder, x);
@@ -314,17 +528,17 @@ void gen_stmt(
         [&] (typecheck::stmt_t::if_else_t const& x)
         {
             auto* cond = gen_val(ctx, builder, x.cond);
-            auto then = gen_body(ctx, builder.getContext(), x.true_branch, "then", func);
+            auto then = gen_body(ctx, builder.getContext(), x.true_branch, "then", llvm_f);
             std::ranges::copy(then.open_blocks, std::back_inserter(snipppet.open_blocks));
             if (x.false_branch)
             {
-                auto else_ = gen_body(ctx, builder.getContext(), *x.false_branch, "else", func);
+                auto else_ = gen_body(ctx, builder.getContext(), *x.false_branch, "else", llvm_f);
                 std::ranges::copy(else_.open_blocks, std::back_inserter(snipppet.open_blocks));
                 builder.CreateCondBr(cond, then.entry_block, else_.entry_block);
             }
             else
             {
-                auto else_ = llvm::BasicBlock::Create(builder.getContext(), "else", func);
+                auto else_ = llvm::BasicBlock::Create(builder.getContext(), "else", llvm_f);
                 builder.CreateCondBr(cond, then.entry_block, else_);
                 snipppet.open_blocks.push_back(else_);
             }
@@ -398,20 +612,43 @@ llvm::Value* gen_val(context_t const& ctx, llvm::IRBuilder<>& builder, typecheck
             assert(false and "Generation of abstraction expression not yet implemented");
             return nullptr;
         },
-        [&] (typecheck::expr_t::type_t const& x) -> llvm::Value*
+        [&] (typecheck::type_t const& x) -> llvm::Value*
         {
-            assert(false and "Generation of type expression not yet implemented");
+            assert(false and "Generation of an llvm value from a type expression is not possible");
             return nullptr;
         });
 }
 
 static llvm::CallInst* gen_func_call(context_t const& ctx, llvm::IRBuilder<>& builder, typecheck::expr_t::app_t const& f)
 {
-    auto const ty = ctx.fun_types[f.name];
-    auto const fn = ctx.values[f.name];
-    assert(ty);
-    assert(fn);
-    return builder.CreateCall(*ty, *fn, fmap(f.args, [&] (auto const& arg) { return gen_val(ctx, builder, arg); }));
+    // the llvm function being called could have been generated by either:
+    //   - a 1st order abstraction, in which case we should find its type in `func_types`
+    //   - or a 2nd order abstraction, in which case we should find a specialization for the types it is applied to
+    if (auto const ty = ctx.func_types[f.name])
+    {
+        auto const fn = ctx.values[f.name];
+        assert(fn);
+        return builder.CreateCall(*ty, *fn, fmap(f.args, [&] (auto const& arg) { return gen_val(ctx, builder, arg); }));
+    }
+    else
+    {
+        std::vector<typecheck::type_t> type_args;
+        std::vector<typecheck::expr_t> expr_args;
+        type_args.reserve(f.args.size());
+        expr_args.reserve(f.args.size());
+        for (auto const& arg: f.args)
+            if (auto const p = std::get_if<typecheck::type_t>(&arg.value))
+                type_args.push_back(*p);
+            else
+                expr_args.push_back(arg);
+        auto const mangled_name = make_mangled_name(f.name, type_args);
+        auto const specialized_func = ctx.specialized_functions[mangled_name];
+        assert(specialized_func);
+        return builder.CreateCall(
+            specialized_func->type,
+            specialized_func->func,
+            fmap(expr_args, [&] (auto const& arg) { return gen_val(ctx, builder, arg); }));
+    }
 }
 
 }

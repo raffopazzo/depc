@@ -1,6 +1,7 @@
 #include "dep0/typecheck/check.hpp"
-#include "dep0/typecheck/returns_from_all_branches.hpp"
 #include "dep0/typecheck/substitute.hpp"
+
+#include "private/returns_from_all_branches.hpp"
 
 #include "dep0/digit_separator.hpp"
 #include "dep0/fmap.hpp"

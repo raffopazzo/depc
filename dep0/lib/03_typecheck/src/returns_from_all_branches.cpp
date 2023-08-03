@@ -1,4 +1,4 @@
-#include "dep0/typecheck/returns_from_all_branches.hpp"
+#include "private/returns_from_all_branches.hpp"
 
 namespace dep0::typecheck {
 

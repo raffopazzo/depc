@@ -1,12 +1,15 @@
 add_subdirectory(test)
 
 add_library(dep0_typecheck_lib
+  # public headers
   include/dep0/typecheck/ast.hpp
   include/dep0/typecheck/check.hpp
   include/dep0/typecheck/context.hpp
   include/dep0/typecheck/error.hpp
-  include/dep0/typecheck/returns_from_all_branches.hpp
   include/dep0/typecheck/substitute.hpp
+  # private headers
+  src/private/returns_from_all_branches.hpp
+  # source files
   src/ast.cpp
   src/check.cpp
   src/context.cpp

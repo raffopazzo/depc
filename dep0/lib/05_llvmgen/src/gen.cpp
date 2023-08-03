@@ -4,6 +4,8 @@
 
 #include "dep0/typecheck/substitute.hpp"
 
+#include "dep0/ast/traverse.hpp"
+
 #include "dep0/digit_separator.hpp"
 #include "dep0/fmap.hpp"
 #include "dep0/match.hpp"
@@ -111,54 +113,6 @@ static bool is_first_order_abstraction(typecheck::expr_t::abs_t const& f)
     return std::ranges::all_of(f.args, [] (auto const& x) { return ast::is_type(x.sort); });
 }
 
-// TODO could perhaps replace with a super-generic `ast::for_each_node`, maybe `ast::traverse()` ?
-template <typename F> void for_each_application(typecheck::body_t const&, F&&);
-template <typename F> void for_each_application(typecheck::expr_t const&, F&&);
-
-template <typename F>
-void for_each_application(typecheck::body_t const& body, F&& f)
-{
-    for (auto const& s: body.stmts)
-        match(
-            s.value,
-            [&] (typecheck::expr_t::app_t const& x) { f(x); },
-            [&] (typecheck::stmt_t::if_else_t const& x)
-            {
-                for_each_application(x.cond, f);
-                for_each_application(x.true_branch, f);
-                if (x.false_branch)
-                    for_each_application(*x.false_branch, f);
-            },
-            [&] (typecheck::stmt_t::return_t const& x)
-            {
-                if (x.expr)
-                    for_each_application(*x.expr, f);
-            });
-}
-
-template <typename F>
-void for_each_application(typecheck::expr_t const& expr, F&& f)
-{
-    match(
-        expr.value,
-        [&] (typecheck::expr_t::arith_expr_t const& x)
-        {
-            match(
-                x.value,
-                [&] (typecheck::expr_t::arith_expr_t::plus_t const& x)
-                {
-                    for_each_application(x.lhs.get(), f);
-                    for_each_application(x.rhs.get(), f);
-                });
-        },
-        [&] (typecheck::expr_t::boolean_constant_t const&) {},
-        [&] (typecheck::expr_t::numeric_constant_t const&) {},
-        [&] (typecheck::expr_t::var_t const&) {},
-        [&] (typecheck::expr_t::app_t const& x) { f(x); },
-        [&] (typecheck::expr_t::abs_t const& x) { for_each_application(x.body, f); },
-        [&] (typecheck::type_t const&) { });
-}
-
 expected<unique_ref<llvm::Module>> gen(
     llvm::LLVMContext& llvm_ctx,
     std::string_view const name,
@@ -180,27 +134,26 @@ expected<unique_ref<llvm::Module>> gen(
             // (aka monomorphization) but they can be anywhere, so need to scan all function definitions
             // TODO: currently we don't allow 2 pass definitions, so there's no need to restart from the
             // beginning of the module
-            for (auto const& g: m.func_defs)
-                for_each_application(
-                    g.value.body,
-                    [&] (typecheck::expr_t::app_t const& app)
+            ast::traverse(
+                m,
+                [&] (typecheck::expr_t::app_t const& app)
+                {
+                    if (app.name != def.name)
+                        return;
+                    // TODO shall we also specialize for constant expressions (aka constant propagation)?
+                    // maybe behind some aggressive optimisation flag?
+                    auto mangled_name = [&]
                     {
-                        if (app.name != def.name)
-                            return;
-                        // TODO shall we also specialize for constant expressions (aka constant propagation)?
-                        // maybe behind some aggressive optimisation flag?
-                        auto mangled_name = [&]
-                        {
-                            std::vector<typecheck::type_t> type_args;
-                            type_args.reserve(app.args.size());
-                            for (auto const& arg: app.args)
-                                if (auto const p = std::get_if<typecheck::type_t>(&arg.value))
-                                    type_args.push_back(*p);
-                            return make_mangled_name(app.name, type_args);
-                        }();
-                        if (not ctx.specialized_functions[mangled_name])
-                            gen_specialized_func(ctx, llvm_module.get(), std::move(mangled_name), def.value, app.args);
-                    });
+                        std::vector<typecheck::type_t> type_args;
+                        type_args.reserve(app.args.size());
+                        for (auto const& arg: app.args)
+                            if (auto const p = std::get_if<typecheck::type_t>(&arg.value))
+                                type_args.push_back(*p);
+                        return make_mangled_name(app.name, type_args);
+                    }();
+                    if (not ctx.specialized_functions[mangled_name])
+                        gen_specialized_func(ctx, llvm_module.get(), std::move(mangled_name), def.value, app.args);
+                });
         }
     }
 

@@ -19,7 +19,6 @@
 
 #include <algorithm>
 #include <ranges>
-#include <sstream>
 
 namespace dep0::llvmgen {
 
@@ -113,6 +112,11 @@ static bool is_first_order_abstraction(typecheck::expr_t::abs_t const& f)
     return std::ranges::all_of(f.args, [] (auto const& x) { return ast::is_type(x.sort); });
 }
 
+static bool is_first_order_function_type(typecheck::type_t::arr_t const& x)
+{
+    return std::ranges::all_of(x.arg_types, [](auto const& t) { return std::holds_alternative<typecheck::type_t>(t); });
+}
+
 expected<unique_ref<llvm::Module>> gen(
     llvm::LLVMContext& llvm_ctx,
     std::string_view const name,
@@ -189,14 +193,7 @@ llvm::Type* gen_type(context_t const& ctx, llvm::LLVMContext& llvm_ctx, typechec
         },
         [&] (typecheck::type_t::arr_t const& x) -> llvm::Type*
         {
-            assert(
-                std::ranges::all_of(
-                    x.arg_types,
-                    [] (auto const& t)
-                    {
-                        return std::holds_alternative<typecheck::type_t>(t);
-                    })
-                and "can only generate an llvm function type if all arguments have a concrete type");
+            assert(is_first_order_function_type(x) and "can only generate an llvm type for 1st order function types");
             bool constexpr is_var_arg = false;
             return llvm::FunctionType::get(
                 gen_type(ctx, llvm_ctx, x.ret_type.get()),
@@ -333,7 +330,7 @@ llvm::Value* gen_func(
     auto* const func_type = gen_func_type(ctx, llvm_module.getContext(), proto);
     auto* const llvm_f = llvm::Function::Create(func_type, llvm::Function::ExternalLinkage, name.view(), llvm_module);
     // add function type and object to the parent context; but generation must happen in the function context
-    auto const inserted = std::get<bool>(ctx.functions.try_emplace(name, func_type, llvm_f));
+    bool const inserted = ctx.functions.try_emplace(name, func_type, llvm_f).second;
     assert(inserted);
     auto f_ctx = ctx.extend();
     gen_func_args(f_ctx, proto, llvm_f);
@@ -369,11 +366,8 @@ llvm::Value* gen_specialized_func(
     auto* const func_type = gen_func_type(ctx, llvm_module.getContext(), proto);
     // add specialized function to parent context; but generation must happen in the function context
     auto *const llvm_f = llvm::Function::Create(func_type, llvm::Function::PrivateLinkage, mangled_name, llvm_module);
-    if (not std::get<bool>(ctx.specialized_functions.try_emplace(std::move(mangled_name), func_type, llvm_f)))
-    {
-        assert(false);
-        return nullptr;
-    }
+    bool const inserted = ctx.specialized_functions.try_emplace(std::move(mangled_name), func_type, llvm_f).second;
+    assert(inserted);
     auto f_ctx = ctx.extend();
     gen_func_args(f_ctx, proto, llvm_f);
     gen_func_attributes(f_ctx, proto, llvm_f);
@@ -458,11 +452,8 @@ void gen_stmt(
 
 llvm::Value* gen_val(context_t const& ctx, llvm::IRBuilder<>& builder, typecheck::expr_t const& expr)
 {
-    if (std::holds_alternative<ast::typename_t>(expr.properties.sort))
-    {
-        assert(false and "cannot generate a value for a type variable");
-        return nullptr;
-    }
+    auto* const type = std::get_if<typecheck::type_t>(&expr.properties.sort);
+    assert(type and "cannot generate a value for a type variable");
     return match(
         expr.value,
         [&] (typecheck::expr_t::arith_expr_t const& x) -> llvm::Value*
@@ -496,9 +487,7 @@ llvm::Value* gen_val(context_t const& ctx, llvm::IRBuilder<>& builder, typecheck
             }
             else
                 number = x.number;
-            auto const llvm_type =
-                cast<llvm::IntegerType>(
-                    gen_type(ctx, builder.getContext(), std::get<typecheck::type_t>(expr.properties.sort)));
+            auto const llvm_type = cast<llvm::IntegerType>(gen_type(ctx, builder.getContext(), *type));
             return llvm::ConstantInt::get(llvm_type, number, 10);
         },
         [&] (typecheck::expr_t::var_t const& x) -> llvm::Value*

@@ -1,3 +1,5 @@
+typedef int = signed 32 bit integer from ... to ...;
+
 auto id(typename t, t x) -> t
 {
     return x;
@@ -13,6 +15,11 @@ u32_t g(u32_t x)
     return id(u32_t, x);
 }
 
+int h(int x)
+{
+    return id(int, x);
+}
+
 i32_t foo()
 {
     return f(-1);
@@ -21,4 +28,9 @@ i32_t foo()
 u32_t bar()
 {
     return g(1);
+}
+
+int baz()
+{
+    return h(-1);
 }

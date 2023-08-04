@@ -476,7 +476,7 @@ static expected<expr_t> check_numeric_expr(
         [&] (type_t::u64_t const&) { return check_integer("u64_t", "+", "18446744073709551615"); },
         [&] (type_t::var_t const& name) -> expected<expr_t>
         {
-            auto t = ctx.find_typedef(name.name);
+            auto const t = ctx.find_typedef(name.name);
             if (not t)
             {
                 std::ostringstream err;
@@ -665,7 +665,11 @@ expected<type_t> check(context_t const& ctx, parser::expr_t const& x, ast::typen
         },
         [&] (parser::expr_t::var_t const& x) -> expected<type_t>
         {
-            return error("not implemented");
+            if (ctx.find_typedef(x.name))
+                return make_legal_type(type_t::var_t{x.name});
+            std::ostringstream err;
+            err << "unknown type `" << x.name << '`';
+            return error(err.str());
         },
         [&] (parser::expr_t::app_t const& x) -> expected<type_t>
         {

@@ -221,7 +221,7 @@ struct func_def_t
 
     properties_t properties;
     source_text name;
-    expr_t<P>::abs_t value; // TODO rename to `abs` (or `f`?)
+    expr_t<P>::abs_t value;
 
     bool operator==(func_def_t const&) const = default;
 };

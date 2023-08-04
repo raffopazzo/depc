@@ -452,4 +452,6 @@ BOOST_AUTO_TEST_CASE(test_0178)
     BOOST_TEST(expr_f_arg1->name == "x");
 }
 
+BOOST_AUTO_TEST_CASE(test_0179) { BOOST_TEST_REQUIRE(fail("test_0179.depc")); }
+
 BOOST_AUTO_TEST_SUITE_END()

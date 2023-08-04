@@ -541,4 +541,33 @@ BOOST_AUTO_TEST_CASE(test_0178)
     BOOST_TEST(expr_f_arg1->name == "x");
 }
 
+BOOST_AUTO_TEST_CASE(test_0179)
+{
+    BOOST_TEST_REQUIRE(pass("test_0179.depc"));
+    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 1ul);
+
+    auto const& succ = pass_result->func_defs[0ul];
+    BOOST_TEST(succ.name == "succ");
+    BOOST_TEST_REQUIRE(succ.value.args.size() == 2ul);
+    BOOST_TEST(succ.value.args[0ul].name == "t");
+    BOOST_TEST(succ.value.args[1ul].name == "x");
+    BOOST_TEST(std::holds_alternative<dep0::ast::typename_t>(succ.value.args[0ul].sort));
+    auto const s1 = std::get_if<dep0::parser::type_t>(&succ.value.args[1ul].sort);
+    BOOST_TEST_REQUIRE(s1);
+    auto const t1 = std::get_if<dep0::parser::type_t::var_t>(&s1->value);
+    BOOST_TEST_REQUIRE(t1);
+    BOOST_TEST_REQUIRE(t1->name == "t");
+    BOOST_TEST_REQUIRE(succ.value.body.stmts.size() == 1ul);
+    auto const ret = std::get_if<dep0::parser::stmt_t::return_t>(&succ.value.body.stmts[0ul].value);
+    BOOST_TEST_REQUIRE(ret);
+    BOOST_TEST_REQUIRE(ret->expr.has_value());
+    auto const expr = std::get_if<dep0::parser::expr_t::arith_expr_t>(&ret->expr->value);
+    BOOST_TEST_REQUIRE(expr);
+    auto const plus = std::get_if<dep0::parser::expr_t::arith_expr_t::plus_t>(&expr->value);
+    auto const x = std::get_if<dep0::parser::expr_t::var_t>(&plus->lhs.get().value);
+    BOOST_TEST_REQUIRE(x);
+    BOOST_TEST(x->name == "x");
+    BOOST_TEST(std::holds_alternative<dep0::parser::expr_t::numeric_constant_t>(plus->rhs.get().value));
+}
+
 BOOST_AUTO_TEST_SUITE_END()

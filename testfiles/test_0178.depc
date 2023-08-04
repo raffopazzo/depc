@@ -1,6 +1,6 @@
 auto id(typename t, t x) -> t
 {
-    return x; // TODO try `x+1`
+    return x;
 }
 
 i32_t f(i32_t x)

@@ -193,7 +193,11 @@ expected<type_def_t> check(context_t& ctx, parser::type_def_t const& type_def)
 }
 
 template <typename BeforeBodyHook>
-expected<expr_t::abs_t> check(context_t const& ctx, parser::expr_t::abs_t const& f, BeforeBodyHook&& hook)
+expected<expr_t::abs_t> check(
+    context_t const& ctx,
+    parser::expr_t::abs_t const& f,
+    std::optional<source_text> const& name,
+    BeforeBodyHook&& hook)
 {
     auto f_ctx = ctx.extend();
     auto args = fmap_or_error(
@@ -241,7 +245,13 @@ expected<expr_t::abs_t> check(context_t const& ctx, parser::expr_t::abs_t const&
     // so far so good, but we now need to make sure that all branches contain a return statement,
     // with the only exception of functions returning `unit_t` because the return statement is optional;
     if (not std::holds_alternative<type_t::unit_t>(ret_type->value) and not returns_from_all_branches(*body))
-        return error_t::from_error(dep0::error_t{"missing return statement"}, f_ctx);
+    {
+        std::ostringstream err;
+        if (name)
+            err << "in function `" << *name << "` ";
+        err << "missing return statement";
+        return error_t::from_error(dep0::error_t{err.str()}, f_ctx);
+    }
     return expr_t::abs_t{std::move(*args), std::move(*ret_type), std::move(*body)};
 }
 
@@ -274,7 +284,7 @@ expected<func_def_t> check(context_t& ctx, parser::func_def_t const& f)
             }
             return std::true_type{};
         };
-    if (auto abs = check(ctx, f.value, try_add_proto))
+    if (auto abs = check(ctx, f.value, f.name, try_add_proto))
         return make_legal_func_def(f.name, std::move(*abs));
     else
     {
@@ -470,8 +480,7 @@ static expected<expr_t> check_numeric_expr(
             if (not t)
             {
                 std::ostringstream err;
-                err << "could not find typedef for name `" << name.name << "` even though the typeref typechecked. ";
-                err << "This is a compiler bug, please report it!";
+                err << "type mismatch between numeric constant and `" << name.name << '`';
                 return error(err.str());
             }
             return match(
@@ -610,7 +619,7 @@ expected<expr_t> check(context_t const& ctx, parser::expr_t const& x, type_t con
         {
             // abstraction expressions are anonymous, so recursion is not possible because we do not have
             // a name to register the prototype in the current context; so we pass a no-op lambda;
-            auto abs = check(ctx, f, [] (auto&&...) -> expected<std::true_type> { return std::true_type{}; });
+            auto abs = check(ctx, f, std::nullopt, [] (auto&&...) { return expected<std::true_type>{}; });
             if (not abs)
             {
                 if (not abs.error().location)

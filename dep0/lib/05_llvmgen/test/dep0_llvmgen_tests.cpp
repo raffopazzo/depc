@@ -475,23 +475,6 @@ BOOST_AUTO_TEST_CASE(test_0176)
 
 // BOOST_AUTO_TEST_CASE(test_0177) doesn't type check
 
-//BOOST_AUTO_TEST_CASE(test_0178)
-//{
-//    BOOST_TEST_REQUIRE(pass("test_0178.depc"));
-//    auto const f = pass_result.value()->getFunction("f");
-//    BOOST_TEST_REQUIRE(f);
-//    BOOST_TEST_REQUIRE(f->arg_size() == 1ul);
-//    auto const arg_ty = cast<llvm::IntegerType>(f->arg_begin()->getType());
-//    BOOST_TEST_REQUIRE(arg_ty);
-//    BOOST_TEST(arg_ty->getBitWidth() == 32ul);
-//    BOOST_TEST_REQUIRE(f->getEntryBlock().size() == 1ul);
-//    auto const r = cast<llvm::ReturnInst>(f->getEntryBlock().getTerminator());
-//    BOOST_TEST_REQUIRE(r);
-//    auto const v = r->getReturnValue();
-//    BOOST_TEST_REQUIRE(v);
-//    BOOST_TEST(v->getName().str() == "x");
-//}
-//
 BOOST_AUTO_TEST_CASE(test_0178)
 {
     BOOST_TEST_REQUIRE(pass("test_0178.depc"));
@@ -545,5 +528,7 @@ BOOST_AUTO_TEST_CASE(test_0178)
     BOOST_TEST_REQUIRE(r_g);
     BOOST_TEST(r_g->getReturnValue() == call_g);
 }
+
+// BOOST_AUTO_TEST_CASE(test_0179) doesn't type check
 
 BOOST_AUTO_TEST_SUITE_END()

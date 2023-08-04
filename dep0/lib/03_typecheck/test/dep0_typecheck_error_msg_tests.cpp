@@ -111,4 +111,17 @@ BOOST_AUTO_TEST_CASE(test_0177)
     BOOST_TEST(tgt.str() == "u32_t");
 }
 
+BOOST_AUTO_TEST_CASE(test_0179)
+{
+    auto const module = open("test_0179.depc");
+    auto const result = check(module);
+    BOOST_TEST_REQUIRE(result.has_error());
+    BOOST_TEST(result.error().error == "type mismatch between numeric constant and `t`");
+    BOOST_TEST(result.error().location.has_value());
+    BOOST_TEST_REQUIRE(result.error().tgt.has_value());
+    std::ostringstream tgt;
+    pretty_print(tgt, result.error().tgt.value());
+    BOOST_TEST(tgt.str() == "t");
+}
+
 BOOST_AUTO_TEST_SUITE_END()

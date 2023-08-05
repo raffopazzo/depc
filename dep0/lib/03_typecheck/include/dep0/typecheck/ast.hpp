@@ -99,6 +99,7 @@ struct legal_expr_t
     bool operator==(legal_expr_t const&) const = default;
 };
 
+std::ostream& pretty_print(std::ostream&, type_def_t const&);
 std::ostream& pretty_print(std::ostream&, type_t const&);
 std::ostream& pretty_print(std::ostream&, type_t::arr_t const&);
 std::ostream& pretty_print(std::ostream&, expr_t const&);

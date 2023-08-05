@@ -59,6 +59,31 @@ std::ostream& pretty_print(std::ostream& os, ast::typename_t)
     return os << "typename";
 }
 
+std::ostream& pretty_print(std::ostream& os, type_def_t const& t)
+{
+    match(
+        t.value,
+        [&] (type_def_t::integer_t const& x)
+        {
+            os << (x.sign == ast::sign_t::signed_v ? "signed" : "unsigned") << ' ';
+            os << (
+                x.width == ast::width_t::_8 ? "8" :
+                x.width == ast::width_t::_16 ? "16" :
+                x.width == ast::width_t::_32 ? "32" :
+                "64") << " bit integer from ";
+            if (x.sign == ast::sign_t::signed_v)
+            {
+                if (x.max_abs_value)
+                    os << '-' << *x.max_abs_value << " to " << *x.max_abs_value;
+                else
+                    os << "... to ...";
+            }
+            else
+                os << "0 to " << (x.max_abs_value ? x.max_abs_value->view() : "...");
+        });
+    return os;
+}
+
 std::ostream& pretty_print(std::ostream& os, type_t const& t)
 {
     match(
@@ -83,9 +108,13 @@ std::ostream& pretty_print(std::ostream& os, type_t::arr_t const& x)
     os << '(';
     bool first = true;
     for (auto const& t: x.arg_types)
+    {
+        if (not std::exchange(first, false))
+            os << ", ";
         match(t,
             [&] (type_t::var_t const& x) { os << "typename " << x.name; },
             [&] (type_t const& x) { pretty_print(os, x); });
+    }
     return pretty_print(os << ") -> ", x.ret_type.get());
 }
 

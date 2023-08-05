@@ -10,31 +10,20 @@ namespace dep0::typecheck {
 class context_t
 {
 public:
-    template <typename T>
-    struct entry_t
-    {
-        source_loc_t loc;
-        T value;
-    };
-private:
-    // TODO alternatively consider having only one `scope_map<>` of `variant<>` for a more robust shadowing check
-    scope_map<source_text, entry_t<type_def_t>> m_typedefs;
-    scope_map<source_text, entry_t<type_t::arr_t>> m_protos; // TODO should this be types in general?
-    scope_map<source_text, entry_t<expr_t::abs_t::arg_t>> m_args; // TODO also local variables at some point
+    using value_type = std::variant<
+        type_def_t,
+        // TODO should add type_t?
+        expr_t
+        >;
 
-    context_t(
-        scope_map<source_text, entry_t<type_def_t>>,
-        scope_map<source_text, entry_t<type_t::arr_t>>,
-        scope_map<source_text, entry_t<expr_t::abs_t::arg_t>>);
+private:
+    scope_map<source_text, value_type> m_values;
+
+    context_t(scope_map<source_text, value_type>);
 
 public:
-    using typedefs_iterator = typename scope_map<source_text, entry_t<type_def_t>>::iterator;
-    using protos_iterator = typename scope_map<source_text, entry_t<type_t::arr_t>>::iterator;
-    using args_iterator = typename scope_map<source_text, entry_t<expr_t::abs_t::arg_t>>::iterator;
-
-    using typedefs_const_iterator = typename scope_map<source_text, entry_t<type_def_t>>::const_iterator;
-    using protos_const_iterator = typename scope_map<source_text, entry_t<type_t::arr_t>>::const_iterator;
-    using args_const_iterator = typename scope_map<source_text, entry_t<expr_t::abs_t::arg_t>>::const_iterator;
+    using iterator = typename scope_map<source_text, value_type>::iterator;
+    using const_iterator = typename scope_map<source_text, value_type>::const_iterator;
 
     context_t() = default;
     context_t(context_t const&) = default;
@@ -46,33 +35,15 @@ public:
 
     // Allow iteration over the members of the current scope level.
     // Use `parent()` if you want to walk up the stack.
-    typedefs_const_iterator typedefs_begin() const;
-    typedefs_const_iterator typedefs_end() const;
-    protos_const_iterator protos_begin() const;
-    protos_const_iterator protos_end() const;
-    args_const_iterator args_begin() const;
-    args_const_iterator args_end() const;
+    const_iterator begin() const;
+    const_iterator end() const;
 
-    entry_t<type_def_t> const* find_typedef(source_text const&) const;
-    entry_t<type_t::arr_t> const* find_proto(source_text const&) const;
-    entry_t<expr_t::abs_t::arg_t> const* find_arg(source_text const&) const;
+    value_type const* operator[](source_text const&) const;
 
     template <typename... Args>
-    auto try_emplace_typedef(source_text name, source_loc_t loc, Args&&... args)
+    auto try_emplace(source_text name, Args&&... args)
     {
-        return m_typedefs.try_emplace(std::move(name), loc, type_def_t{std::forward<Args>(args)...});
-    }
-
-    template <typename... Args>
-    auto try_emplace_proto(source_text name, source_loc_t loc, Args&&... args)
-    {
-        return m_protos.try_emplace(std::move(name), loc, type_t::arr_t{std::forward<Args>(args)...});
-    }
-
-    template <typename... Args>
-    auto try_emplace_arg(source_text name, source_loc_t loc, Args&&... args)
-    {
-        return m_args.try_emplace(std::move(name), loc, expr_t::abs_t::arg_t{std::forward<Args>(args)...});
+        return m_values.try_emplace(std::move(name), std::forward<Args>(args)...);
     }
 };
 

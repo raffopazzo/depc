@@ -144,7 +144,6 @@ struct expr_t
         {
             sort_t<P> sort;
             source_text name;
-            source_loc_t loc;
         };
 
         std::vector<arg_t> args;

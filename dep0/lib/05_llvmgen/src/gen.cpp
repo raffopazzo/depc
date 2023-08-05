@@ -30,7 +30,7 @@ struct llvm_func_t
 
 struct context_t
 {
-    scope_map<source_text, llvm::Value*> values; // but not function objects
+    scope_map<source_text, llvm::Value*> values; // but not function objects, they are in `functions[name]->func`
     scope_map<source_text, llvm_func_t> functions;
     scope_map<source_text, llvm::Type*> types;
     scope_map<source_text, typecheck::type_def_t::integer_t> integer_types;

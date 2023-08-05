@@ -153,8 +153,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
             ctx->type()
                 ? sort_t(std::any_cast<type_t>(visitType(ctx->type())))
                 : sort_t(ast::typename_t{}),
-            get_text(src, *ctx->name).value(),
-            get_loc(src, *ctx->name).value()};
+            get_text(src, *ctx->name).value()};
     }
 
     virtual std::any visitBody(DepCParser::BodyContext* ctx) override

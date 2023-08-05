@@ -45,7 +45,7 @@ BOOST_AUTO_TEST_CASE(test_0008)
     auto const module = open("test_0008.depc");
     auto const result = check(module);
     BOOST_TEST_REQUIRE(result.has_error());
-    BOOST_TEST(result.error().error == "expression of type `bool` does not typecheck with expected type `i32_t`");
+    BOOST_TEST(result.error().error == "type mismatch between expression of type `bool` and expected type `i32_t`");
     BOOST_TEST(result.error().location.has_value());
 }
 
@@ -72,7 +72,7 @@ BOOST_AUTO_TEST_CASE(test_0012)
     auto const module = open("test_0012.depc");
     auto const result = check(module);
     BOOST_TEST_REQUIRE(result.has_error());
-    BOOST_TEST(result.error().error == "expression of type `bool` does not typecheck with expected type `i32_t`");
+    BOOST_TEST(result.error().error == "type mismatch between expression of type `bool` and expected type `i32_t`");
     BOOST_TEST(result.error().location.has_value());
 }
 

@@ -505,8 +505,8 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, type_
     auto const type_error = [&] (sort_t const& actual_ty)
     {
         std::ostringstream err;
-        pretty_print(err << "expression of type `", actual_ty) << '`';
-        pretty_print(err << " does not typecheck with expected type `", expected_type) << '`';
+        pretty_print(err << "type mismatch between expression of type `", actual_ty) << '`';
+        pretty_print(err << " and expected type `", expected_type) << '`';
         return error_t::from_error(dep0::error_t{err.str(), loc}, ctx, expected_type);
     };
     return match(
@@ -549,7 +549,7 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, type_
             if (not val)
             {
                 std::ostringstream err;
-                err << "unknown variable `" << x.name << "` in current context";
+                err << "unknown variable `" << x.name << '`';
                 return error_t::from_error(dep0::error_t{err.str(), loc}, ctx, expected_type);
             }
             return match(
@@ -606,9 +606,7 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, type_
         [&] (parser::type_t const& x) -> expected<expr_t>
         {
             std::ostringstream err;
-            pretty_print(
-                err << "the expression `" << x.properties.txt << "` yields a type not a value of type `",
-                expected_type) << '`';
+            pretty_print(err << "expression yields a type not a value of type `", expected_type) << '`';
             return error_t::from_error(dep0::error_t{err.str(), loc}, ctx, expected_type);
         });
 }
@@ -618,21 +616,21 @@ expected<type_t> check_typename(context_t const& ctx, parser::expr_t const& x, a
     auto const loc = x.properties;
     auto const error = [&] (std::string err)
     {
-        return error_t::from_error(dep0::error_t{std::move(err), x.properties}, ctx, expected_type);
+        return error_t::from_error(dep0::error_t{std::move(err), loc}, ctx, expected_type);
     };
     return match(
         x.value,
         [&] (parser::expr_t::arith_expr_t const& x) -> expected<type_t>
         {
-            return error("type mismatch between arithmetic expression and `typename`");
+            return error("arithmetic expression does not yield a type");
         },
         [&] (parser::expr_t::boolean_constant_t const& x) -> expected<type_t>
         {
-            return error("type mismatch between boolean constant and `typename`");
+            return error("between boolean constant does not yield a type");
         },
         [&] (parser::expr_t::numeric_constant_t const& x) -> expected<type_t>
         {
-            return error("type mismatch between numeric constant and `typename`");
+            return error("numeric constant does not yield a type");
         },
         [&] (parser::expr_t::var_t const& x) -> expected<type_t>
         {
@@ -656,8 +654,7 @@ expected<type_t> check_typename(context_t const& ctx, parser::expr_t const& x, a
                         [&] (type_t const& t) -> expected<type_t>
                         {
                             std::ostringstream err;
-                            pretty_print(err << "type mismatch between expression of type `", t) << '`';
-                            err << " and `typename`";
+                            pretty_print(err << "expression does not yield a type but a value of type `", t) << '`';
                             return error(err.str());
                         },
                         [&] (ast::typename_t const&) -> expected<type_t>
@@ -675,9 +672,9 @@ expected<type_t> check_typename(context_t const& ctx, parser::expr_t const& x, a
             {
                 std::ostringstream err;
                 pretty_print(
-                    err << "type mismatch between invocation of function `" << x.name << "` with return type `",
+                    err << "invocation of function `" << x.name << "` does not yield a type but a value of type `",
                     f->first
-                ) << "` and `typename`";
+                ) << '`';
                 return error(err.str());
             }
             else
@@ -691,7 +688,7 @@ expected<type_t> check_typename(context_t const& ctx, parser::expr_t const& x, a
         },
         [&] (parser::expr_t::abs_t const& x) -> expected<type_t>
         {
-            return error("type mismatch between abstraction expression and `typename`");
+            return error("abstraction expression does not yield a type");
         },
         [&] (parser::type_t const& x) -> expected<type_t>
         {
@@ -743,8 +740,6 @@ expected<std::pair<type_t, expr_t::abs_t>> check_abs(
     auto ret_type = check_type(f_ctx, f.ret_type);
     if (not ret_type)
         return std::move(ret_type.error());
-    // if a function has a name it can call itself recursively;
-    // to typecheck recursive functions we need to add them to the current function context before checking the body
     auto const func_type =
         make_legal_type(
             type_t::arr_t{
@@ -759,6 +754,8 @@ expected<std::pair<type_t, expr_t::abs_t>> check_abs(
                             [&] (ast::typename_t const&) -> res_t { return type_t::var_t{arg.name}; });
                     }),
             *ret_type});
+    // if a function has a name it can call itself recursively;
+    // to typecheck recursive functions we need to add them to the current function context before checking the body
     if (name)
     {
         auto const [it, inserted] = f_ctx.try_emplace(*name, make_legal_expr(func_type, expr_t::var_t{*name}));

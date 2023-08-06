@@ -34,3 +34,27 @@ int baz()
 {
     return h(-1);
 }
+
+auto apply(
+    typename t,
+    (t) -> t f,
+    t x
+) -> t
+{
+    return f(x);
+}
+
+i32_t apply_f()
+{
+    return apply(i32_t, f, -1);
+}
+
+u32_t apply_g()
+{
+    return apply(u32_t, g, 1);
+}
+
+int apply_h()
+{
+    return apply(int, h, 1);
+}

@@ -48,7 +48,13 @@ typeDef:
 arg: (type | 'typename') name=ID;
 
 // Types
-type: 'bool' | 'unit_t' | 'i8_t' | 'i16_t' | 'i32_t' | 'i64_t' | 'u8_t' | 'u16_t' | 'u32_t' | 'u64_t' | name=ID;
+type:
+    'bool' | 'unit_t' |
+    'i8_t' | 'i16_t' | 'i32_t' | 'i64_t' |
+    'u8_t' | 'u16_t' | 'u32_t' | 'u64_t' |
+    '(' (argType (',' argType)*)? ')' '->' type |
+    name=ID;
+argType: 'typename' name=ID | type;
 
 // Statements
 body: '{' stmt* '}';

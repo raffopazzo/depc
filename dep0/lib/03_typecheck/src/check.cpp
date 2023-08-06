@@ -567,7 +567,7 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, type_
                     {
                         return type_error(expr.properties.sort);
                     }
-                    return expr;
+                    return make_legal_expr(expected_type, expr_t::var_t{x.name});
                 });
         },
         [&] (parser::expr_t::app_t const& x) -> expected<expr_t>

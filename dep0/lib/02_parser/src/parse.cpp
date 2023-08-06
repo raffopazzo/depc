@@ -130,18 +130,35 @@ struct parse_visitor_t : dep0::DepCParserVisitor
 
     virtual std::any visitType(DepCParser::TypeContext* ctx) override
     {
-        if (ctx->KW_BOOL()) return type_t{get_loc(src, *ctx).value(), type_t::bool_t{}};
-        if (ctx->KW_UNIT_T()) return type_t{get_loc(src, *ctx).value(), type_t::unit_t{}};
-        if (ctx->KW_I8_T()) return type_t{get_loc(src, *ctx).value(), type_t::i8_t{}};
-        if (ctx->KW_I16_T()) return type_t{get_loc(src, *ctx).value(), type_t::i16_t{}};
-        if (ctx->KW_I32_T()) return type_t{get_loc(src, *ctx).value(), type_t::i32_t{}};
-        if (ctx->KW_I64_T()) return type_t{get_loc(src, *ctx).value(), type_t::i64_t{}};
-        if (ctx->KW_U8_T()) return type_t{get_loc(src, *ctx).value(), type_t::u8_t{}};
-        if (ctx->KW_U16_T()) return type_t{get_loc(src, *ctx).value(), type_t::u16_t{}};
-        if (ctx->KW_U32_T()) return type_t{get_loc(src, *ctx).value(), type_t::u32_t{}};
-        if (ctx->KW_U64_T()) return type_t{get_loc(src, *ctx).value(), type_t::u64_t{}};
-        if (ctx->name) return type_t{get_loc(src, *ctx).value(), type_t::var_t{get_text(src, *ctx->name).value()}};
-        assert(nullptr);
+        assert(ctx);
+        auto const loc = get_loc(src, *ctx).value();
+        if (ctx->KW_BOOL()) return type_t{loc, type_t::bool_t{}};
+        if (ctx->KW_UNIT_T()) return type_t{loc, type_t::unit_t{}};
+        if (ctx->KW_I8_T()) return type_t{loc, type_t::i8_t{}};
+        if (ctx->KW_I16_T()) return type_t{loc, type_t::i16_t{}};
+        if (ctx->KW_I32_T()) return type_t{loc, type_t::i32_t{}};
+        if (ctx->KW_I64_T()) return type_t{loc, type_t::i64_t{}};
+        if (ctx->KW_U8_T()) return type_t{loc, type_t::u8_t{}};
+        if (ctx->KW_U16_T()) return type_t{loc, type_t::u16_t{}};
+        if (ctx->KW_U32_T()) return type_t{loc, type_t::u32_t{}};
+        if (ctx->KW_U64_T()) return type_t{loc, type_t::u64_t{}};
+        if (auto const types = ctx->argType(); not types.empty())
+            return type_t{
+                loc,
+                type_t::arr_t{
+                    fmap(types, [this] (auto* x) { return std::any_cast<type_t::arr_t::arg_type_t>(visitArgType(x)); }),
+                    std::any_cast<type_t>(visitType(ctx->type()))}};
+        assert(ctx->name);
+        return type_t{loc, type_t::var_t{get_text(src, *ctx->name).value()}};
+    }
+
+    virtual std::any visitArgType(DepCParser::ArgTypeContext* ctx) override
+    {
+        assert(ctx);
+        if (ctx->name)
+            return type_t::arr_t::arg_type_t{type_t::var_t{get_text(src, *ctx->name).value()}};
+        assert(ctx->type());
+        return type_t::arr_t::arg_type_t{std::any_cast<type_t>(visitType(ctx->type()))};
     }
 
     virtual std::any visitArg(DepCParser::ArgContext* ctx) override
@@ -170,8 +187,8 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         assert(ctx);
         if (ctx->funcCallStmt()) return std::any_cast<stmt_t>(visitFuncCallStmt(ctx->funcCallStmt()));
         if (ctx->ifElse()) return std::any_cast<stmt_t>(visitIfElse(ctx->ifElse()));
-        if (ctx->returnStmt()) return std::any_cast<stmt_t>(visitReturnStmt(ctx->returnStmt()));
-        assert(nullptr);
+        assert(ctx->returnStmt());
+        return std::any_cast<stmt_t>(visitReturnStmt(ctx->returnStmt()));
     }
 
     virtual std::any visitFuncCallStmt(DepCParser::FuncCallStmtContext* ctx) override
@@ -213,8 +230,8 @@ struct parse_visitor_t : dep0::DepCParserVisitor
     {
         assert(ctx);
         if (ctx->body()) return visitBody(ctx->body());
-        if (ctx->stmt()) return body_t{get_loc(src, *ctx).value(), {std::any_cast<stmt_t>(visitStmt(ctx->stmt()))}};
-        assert(nullptr);
+        assert(ctx->stmt());
+        return body_t{get_loc(src, *ctx).value(), {std::any_cast<stmt_t>(visitStmt(ctx->stmt()))}};
     }
 
     virtual std::any visitPlusExpr(DepCParser::PlusExprContext* ctx) override
@@ -283,19 +300,19 @@ struct parse_visitor_t : dep0::DepCParserVisitor
     expr_t visitExpr(DepCParser::ExprContext* ctx)
     {
         assert(ctx);
-        if (auto p = dynamic_cast<DepCParser::PlusExprContext*>(ctx))
+        if (auto const p = dynamic_cast<DepCParser::PlusExprContext*>(ctx))
             return std::any_cast<expr_t>(visitPlusExpr(p));
-        if (auto p = dynamic_cast<DepCParser::NumericExprContext*>(ctx))
+        if (auto const p = dynamic_cast<DepCParser::NumericExprContext*>(ctx))
             return std::any_cast<expr_t>(visitNumericExpr(p));
-        if (auto p = dynamic_cast<DepCParser::BooleanExprContext*>(ctx))
+        if (auto const p = dynamic_cast<DepCParser::BooleanExprContext*>(ctx))
             return std::any_cast<expr_t>(visitBooleanExpr(p));
-        if (auto p = dynamic_cast<DepCParser::FuncCallExprContext*>(ctx))
+        if (auto const p = dynamic_cast<DepCParser::FuncCallExprContext*>(ctx))
             return std::any_cast<expr_t>(visitFuncCallExpr(p));
-        if (auto p = dynamic_cast<DepCParser::VarExprContext*>(ctx))
+        if (auto const p = dynamic_cast<DepCParser::VarExprContext*>(ctx))
             return std::any_cast<expr_t>(visitVarExpr(p));
-        if (auto p = dynamic_cast<DepCParser::TypeExprContext*>(ctx))
-            return std::any_cast<expr_t>(visitTypeExpr(p));
-        assert(nullptr);
+        auto const p = dynamic_cast<DepCParser::TypeExprContext*>(ctx);
+        assert(p);
+        return std::any_cast<expr_t>(visitTypeExpr(p));
     }
 };
 

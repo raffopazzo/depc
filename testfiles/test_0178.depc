@@ -58,3 +58,10 @@ int apply_h()
 {
     return apply(int, h, 1);
 }
+
+i32_t apply_0((i32_t) -> i32_t apply)
+{
+    // this `apply` shadows the top-level one,
+    // so this is just an indirect call via the local argument
+    return apply(0);
+}

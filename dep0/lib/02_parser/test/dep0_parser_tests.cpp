@@ -502,7 +502,7 @@ BOOST_AUTO_TEST_CASE(test_0177)
 BOOST_AUTO_TEST_CASE(test_0178)
 {
     BOOST_TEST_REQUIRE(pass("test_0178.depc"));
-    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 11ul);
+    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 12ul);
     {
         auto const& f = pass_result->func_defs[0ul];
         BOOST_TEST(f.name == "id");
@@ -647,6 +647,23 @@ BOOST_AUTO_TEST_CASE(test_0178)
         BOOST_TEST(arg1->name == "h");
         BOOST_TEST(arg2->sign.has_value() == false);
         BOOST_TEST(arg2->number == "1");
+    }
+    {
+        auto const& f = pass_result->func_defs[11ul];
+        BOOST_TEST(f.name == "apply_0");
+        BOOST_TEST(std::holds_alternative<dep0::parser::type_t::i32_t>(f.value.ret_type.value));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        auto const ret = std::get_if<dep0::parser::stmt_t::return_t>(&f.value.body.stmts[0ul].value);
+        BOOST_TEST_REQUIRE(ret);
+        BOOST_TEST_REQUIRE(ret->expr.has_value());
+        auto const expr = std::get_if<dep0::parser::expr_t::app_t>(&ret->expr->value);
+        BOOST_TEST_REQUIRE(expr);
+        BOOST_TEST(expr->name == "apply");
+        BOOST_TEST_REQUIRE(expr->args.size() == 1ul);
+        auto const arg0 = std::get_if<dep0::parser::expr_t::numeric_constant_t>(&expr->args[0ul].value);
+        BOOST_TEST_REQUIRE(arg0);
+        BOOST_TEST(arg0->sign.has_value() == false);
+        BOOST_TEST(arg0->number == "0");
     }
 }
 

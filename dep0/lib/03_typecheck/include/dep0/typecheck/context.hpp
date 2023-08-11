@@ -10,11 +10,7 @@ namespace dep0::typecheck {
 class context_t
 {
 public:
-    using value_type = std::variant<
-        type_def_t,
-        // TODO should add type_t?
-        expr_t
-        >;
+    using value_type = std::variant<type_def_t, type_t, expr_t>;
 
 private:
     scope_map<source_text, value_type> m_values;

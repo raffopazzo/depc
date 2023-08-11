@@ -3,6 +3,8 @@
 
 #include "dep0/parser/parse.hpp"
 
+#include <boost/type_index.hpp>
+
 #include <filesystem>
 #include <cstdlib>
 
@@ -29,6 +31,38 @@ std::ostream& operator<<(std::ostream& os, width_t const& x)
         "n/a");
 }
 } // namespace dep0::ast
+
+template <typename... Ts>
+auto pretty_name(std::variant<Ts...> const& x)
+{
+    return std::visit([] <typename T> (T const&) { return boost::typeindex::type_id<T>().pretty_name(); }, x);
+}
+
+boost::test_tools::predicate_result is_type_var(dep0::parser::type_t const& type, std::string_view const name)
+{
+    auto failed = boost::test_tools::predicate_result(false);
+    auto const var = std::get_if<dep0::parser::type_t::var_t>(&type.value);
+    if (not var)
+        failed.message() << "type is not var_t but " << pretty_name(type.value);
+    else if (var->name != name)
+        failed.message() << var->name << " != " << name;
+    else
+        return true;
+    return failed;
+}
+
+boost::test_tools::predicate_result is_var(dep0::parser::expr_t const& expr, std::string_view const name)
+{
+    auto failed = boost::test_tools::predicate_result(false);
+    auto const var = std::get_if<dep0::parser::expr_t::var_t>(&expr.value);
+    if (not var)
+        failed.message().stream() << "expression is not var_t but " << pretty_name(expr.value);
+    else if (var->name != name)
+        failed.message().stream() << var->name << " != " << name;
+    else
+        return true;
+    return failed;
+}
 
 struct Fixture
 {
@@ -502,7 +536,7 @@ BOOST_AUTO_TEST_CASE(test_0177)
 BOOST_AUTO_TEST_CASE(test_0178)
 {
     BOOST_TEST_REQUIRE(pass("test_0178.depc"));
-    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 12ul);
+    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 19ul);
     {
         auto const& f = pass_result->func_defs[0ul];
         BOOST_TEST(f.name == "id");
@@ -664,6 +698,198 @@ BOOST_AUTO_TEST_CASE(test_0178)
         BOOST_TEST_REQUIRE(arg0);
         BOOST_TEST(arg0->sign.has_value() == false);
         BOOST_TEST(arg0->number == "0");
+    }
+    {
+        auto const& f = pass_result->func_defs[12ul];
+        BOOST_TEST(f.name == "discard_v1");
+        BOOST_TEST_CHECKPOINT("checking prototype of " << f.name);
+        BOOST_TEST_REQUIRE(f.value.args.size() == 3ul);
+        BOOST_TEST(f.value.args[0ul].name == "t");
+        BOOST_TEST(f.value.args[1ul].name == "f");
+        BOOST_TEST(f.value.args[2ul].name == "x");
+        auto const arg_t_type = std::get_if<dep0::ast::typename_t>(&f.value.args[0ul].sort);
+        auto const arg_f_type = std::get_if<dep0::parser::type_t>(&f.value.args[1ul].sort);
+        auto const arg_x_type = std::get_if<dep0::parser::type_t>(&f.value.args[2ul].sort);
+        BOOST_TEST_REQUIRE(arg_t_type);
+        BOOST_TEST_REQUIRE(arg_f_type);
+        BOOST_TEST_REQUIRE(arg_x_type);
+        auto const arg_f = std::get_if<dep0::parser::type_t::arr_t>(&arg_f_type->value);
+        BOOST_TEST_REQUIRE(arg_f);
+        {
+            BOOST_TEST_REQUIRE(arg_f->arg_types.size() == 2ul);
+            auto const arg_0 = std::get_if<dep0::parser::type_t::var_t>(&arg_f->arg_types[0ul]);
+            auto const arg_1 = std::get_if<dep0::parser::type_t>(&arg_f->arg_types[1ul]);
+            BOOST_TEST_REQUIRE(arg_0);
+            BOOST_TEST_REQUIRE(arg_1);
+            BOOST_TEST(arg_0->name == "u");
+            BOOST_TEST(is_type_var(*arg_1, "u"));
+        }
+        BOOST_TEST(is_type_var(*arg_x_type, "t"));
+        BOOST_TEST(is_type_var(f.value.ret_type, "t"));
+        BOOST_TEST_CHECKPOINT("checking body of " << f.name);
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        auto const ret = std::get_if<dep0::parser::stmt_t::return_t>(&f.value.body.stmts[0ul].value);
+        BOOST_TEST_REQUIRE(ret);
+        BOOST_TEST_REQUIRE(ret->expr.has_value());
+        BOOST_TEST(is_var(ret->expr.value(), "x"));
+    }
+    {
+        auto const& f = pass_result->func_defs[13ul];
+        BOOST_TEST(f.name == "discard_v2");
+        BOOST_TEST_CHECKPOINT("checking prototype of " << f.name);
+        BOOST_TEST_REQUIRE(f.value.args.size() == 3ul);
+        BOOST_TEST(f.value.args[0ul].name == "t");
+        BOOST_TEST(f.value.args[1ul].name == "f");
+        BOOST_TEST(f.value.args[2ul].name == "x");
+        auto const arg_t_type = std::get_if<dep0::ast::typename_t>(&f.value.args[0ul].sort);
+        auto const arg_f_type = std::get_if<dep0::parser::type_t>(&f.value.args[1ul].sort);
+        auto const arg_x_type = std::get_if<dep0::parser::type_t>(&f.value.args[2ul].sort);
+        BOOST_TEST_REQUIRE(arg_t_type);
+        BOOST_TEST_REQUIRE(arg_f_type);
+        BOOST_TEST_REQUIRE(arg_x_type);
+        auto const arg_f = std::get_if<dep0::parser::type_t::arr_t>(&arg_f_type->value);
+        BOOST_TEST_REQUIRE(arg_f);
+        {
+            BOOST_TEST_REQUIRE(arg_f->arg_types.size() == 2ul);
+            auto const arg_0 = std::get_if<dep0::parser::type_t::var_t>(&arg_f->arg_types[0ul]);
+            auto const arg_1 = std::get_if<dep0::parser::type_t>(&arg_f->arg_types[1ul]);
+            BOOST_TEST_REQUIRE(arg_0);
+            BOOST_TEST_REQUIRE(arg_1);
+            BOOST_TEST(arg_0->name == "t");
+            BOOST_TEST(is_type_var(*arg_1, "t"));
+        }
+        BOOST_TEST(is_type_var(*arg_x_type, "t"));
+        BOOST_TEST(is_type_var(f.value.ret_type, "t"));
+        BOOST_TEST_CHECKPOINT("checking body of " << f.name);
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        auto const ret = std::get_if<dep0::parser::stmt_t::return_t>(&f.value.body.stmts[0ul].value);
+        BOOST_TEST_REQUIRE(ret);
+        BOOST_TEST_REQUIRE(ret->expr.has_value());
+        BOOST_TEST(is_var(ret->expr.value(), "x"));
+    }
+    {
+        auto const& f = pass_result->func_defs[14ul];
+        BOOST_TEST(f.name == "discard_id_v1");
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(std::holds_alternative<dep0::parser::type_t::u32_t>(f.value.ret_type.value));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        auto const ret = std::get_if<dep0::parser::stmt_t::return_t>(&f.value.body.stmts[0ul].value);
+        BOOST_TEST_REQUIRE(ret);
+        BOOST_TEST_REQUIRE(ret->expr.has_value());
+        auto const app = std::get_if<dep0::parser::expr_t::app_t>(&ret->expr->value);
+        BOOST_TEST_REQUIRE(app);
+        BOOST_TEST(app->name == "discard_v1");
+        BOOST_TEST_REQUIRE(app->args.size() == 3ul);
+        auto const arg0 = std::get_if<dep0::parser::type_t>(&app->args[0].value);
+        BOOST_TEST_REQUIRE(arg0);
+        BOOST_TEST(std::holds_alternative<dep0::parser::type_t::u32_t>(arg0->value));
+        BOOST_TEST(is_var(app->args[1], "id"));
+        auto const arg2 = std::get_if<dep0::parser::expr_t::numeric_constant_t>(&app->args[2].value);
+        BOOST_TEST_REQUIRE(arg2);
+        BOOST_TEST(arg2->sign.has_value() == false);
+        BOOST_TEST(arg2->number == "0");
+    }
+    {
+        auto const& f = pass_result->func_defs[15ul];
+        BOOST_TEST(f.name == "discard_id_v2");
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(std::holds_alternative<dep0::parser::type_t::u32_t>(f.value.ret_type.value));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        auto const ret = std::get_if<dep0::parser::stmt_t::return_t>(&f.value.body.stmts[0ul].value);
+        BOOST_TEST_REQUIRE(ret);
+        BOOST_TEST_REQUIRE(ret->expr.has_value());
+        auto const app = std::get_if<dep0::parser::expr_t::app_t>(&ret->expr->value);
+        BOOST_TEST_REQUIRE(app);
+        BOOST_TEST(app->name == "discard_v2");
+        BOOST_TEST_REQUIRE(app->args.size() == 3ul);
+        auto const arg0 = std::get_if<dep0::parser::type_t>(&app->args[0].value);
+        BOOST_TEST_REQUIRE(arg0);
+        BOOST_TEST(std::holds_alternative<dep0::parser::type_t::u32_t>(arg0->value));
+        BOOST_TEST(is_var(app->args[1], "id"));
+        auto const arg2 = std::get_if<dep0::parser::expr_t::numeric_constant_t>(&app->args[2].value);
+        BOOST_TEST_REQUIRE(arg2);
+        BOOST_TEST(arg2->sign.has_value() == false);
+        BOOST_TEST(arg2->number == "0");
+    }
+    {
+        auto const& f = pass_result->func_defs[17ul];
+        BOOST_TEST(f.name == "multi_f");
+        BOOST_TEST_CHECKPOINT("checking prototype of " << f.name);
+        BOOST_TEST_REQUIRE(f.value.args.size() == 3ul);
+        BOOST_TEST(f.value.args[0ul].name == "t");
+        BOOST_TEST(f.value.args[1ul].name == "f");
+        BOOST_TEST(f.value.args[2ul].name == "x");
+        auto const arg_t_type = std::get_if<dep0::ast::typename_t>(&f.value.args[0ul].sort);
+        auto const arg_f_type = std::get_if<dep0::parser::type_t>(&f.value.args[1ul].sort);
+        auto const arg_x_type = std::get_if<dep0::parser::type_t>(&f.value.args[2ul].sort);
+        BOOST_TEST_REQUIRE(arg_t_type);
+        BOOST_TEST_REQUIRE(arg_f_type);
+        BOOST_TEST_REQUIRE(arg_x_type);
+        auto const arg_f = std::get_if<dep0::parser::type_t::arr_t>(&arg_f_type->value);
+        BOOST_TEST_REQUIRE(arg_f);
+        {
+            BOOST_TEST_REQUIRE(arg_f->arg_types.size() == 2ul);
+            auto const arg_0 = std::get_if<dep0::parser::type_t::var_t>(&arg_f->arg_types[0ul]);
+            auto const arg_1 = std::get_if<dep0::parser::type_t>(&arg_f->arg_types[1ul]);
+            BOOST_TEST_REQUIRE(arg_0);
+            BOOST_TEST_REQUIRE(arg_1);
+            BOOST_TEST(arg_0->name == "u");
+            BOOST_TEST(is_type_var(*arg_1, "u"));
+        }
+        BOOST_TEST(is_type_var(*arg_x_type, "t"));
+        BOOST_TEST(is_type_var(f.value.ret_type, "t"));
+        BOOST_TEST_CHECKPOINT("checking body of " << f.name);
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        auto const if_1 = std::get_if<dep0::parser::stmt_t::if_else_t>(&f.value.body.stmts[0ul].value);
+        BOOST_TEST_REQUIRE(if_1);
+        auto const f_bool = std::get_if<dep0::parser::expr_t::app_t>(&if_1->cond.value);
+        BOOST_TEST_REQUIRE(f_bool);
+        BOOST_TEST(f_bool->name == "f");
+        {
+            BOOST_TEST_REQUIRE(f_bool->args.size() == 2ul);
+            auto const arg0 = std::get_if<dep0::parser::type_t>(&f_bool->args[0ul].value);
+            auto const arg1 = std::get_if<dep0::parser::expr_t::boolean_constant_t>(&f_bool->args[1ul].value);
+            BOOST_TEST_REQUIRE(arg0);
+            BOOST_TEST_REQUIRE(arg1);
+            BOOST_TEST(std::holds_alternative<dep0::parser::type_t::bool_t>(arg0->value));
+            BOOST_TEST(arg1->value == "true");
+        }
+        BOOST_TEST_REQUIRE(if_1->false_branch.has_value());
+        BOOST_TEST_REQUIRE(if_1->false_branch->stmts.size() == 1ul);
+        auto const if_2 = std::get_if<dep0::parser::stmt_t::if_else_t>(&if_1->false_branch->stmts[0ul].value);
+        BOOST_TEST_REQUIRE(if_2);
+        auto const int_to_bool = std::get_if<dep0::parser::expr_t::app_t>(&if_2->cond.value);
+        BOOST_TEST_REQUIRE(int_to_bool);
+        BOOST_TEST(int_to_bool->name == "int_to_bool");
+        BOOST_TEST_REQUIRE(int_to_bool->args.size() == 1ul);
+        auto const f_int = std::get_if<dep0::parser::expr_t::app_t>(&int_to_bool->args[0].value);
+        BOOST_TEST_REQUIRE(f_int);
+        BOOST_TEST(f_int->name == "f");
+        {
+            BOOST_TEST_REQUIRE(f_int->args.size() == 2ul);
+            auto const arg0 = std::get_if<dep0::parser::expr_t::var_t>(&f_int->args[0ul].value);
+            auto const arg1 = std::get_if<dep0::parser::expr_t::numeric_constant_t>(&f_int->args[1ul].value);
+            BOOST_TEST_REQUIRE(arg0);
+            BOOST_TEST_REQUIRE(arg1);
+            BOOST_TEST(arg0->name == "int");
+            BOOST_TEST(arg1->number == "0");
+        }
+        BOOST_TEST_REQUIRE(if_2->false_branch.has_value());
+        BOOST_TEST_REQUIRE(if_2->false_branch->stmts.size() == 1ul);
+        auto const ret = std::get_if<dep0::parser::stmt_t::return_t>(&if_2->false_branch->stmts[0].value);
+        BOOST_TEST_REQUIRE(ret);
+        BOOST_TEST_REQUIRE(ret->expr.has_value());
+        auto const f_t = std::get_if<dep0::parser::expr_t::app_t>(&ret->expr->value);
+        BOOST_TEST_REQUIRE(f_t);
+        BOOST_TEST_REQUIRE(f_t->args.size() == 2ul);
+        {
+            auto const arg0 = std::get_if<dep0::parser::expr_t::var_t>(&f_t->args[0ul].value);
+            auto const arg1 = std::get_if<dep0::parser::expr_t::var_t>(&f_t->args[1ul].value);
+            BOOST_TEST_REQUIRE(arg0);
+            BOOST_TEST_REQUIRE(arg1);
+            BOOST_TEST(arg0->name == "t");
+            BOOST_TEST(arg1->name == "x");
+        }
     }
 }
 

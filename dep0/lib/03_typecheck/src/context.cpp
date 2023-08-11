@@ -57,6 +57,10 @@ std::ostream& pretty_print(std::ostream& os, context_t const& ctx)
                 {
                     pretty_print(os << x.first << ": ", t);
                 },
+                [&] (type_t const& t)
+                {
+                    pretty_print(os << x.first << ": ", t);
+                },
                 [&] (expr_t const& t)
                 {
                     pretty_print(os << x.first << ": ", t.properties.sort);

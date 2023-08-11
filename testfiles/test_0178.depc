@@ -65,3 +65,42 @@ i32_t apply_0((i32_t) -> i32_t apply)
     // so this is just an indirect call via the local argument
     return apply(0);
 }
+
+auto discard_v1(typename t, (typename u, u) -> u f, t x) -> t
+{
+    return x;
+}
+
+auto discard_v2(typename t, (typename t, t) -> t f, t x) -> t
+{
+    return x;
+}
+
+u32_t discard_id_v1()
+{
+    return discard_v1(u32_t, id, 0);
+}
+
+u32_t discard_id_v2()
+{
+    return discard_v2(u32_t, id, 0);
+}
+
+bool int_to_bool(int x) { return true; }
+
+auto multi_f(typename t, (typename u, u) -> u f, t x) -> t
+{
+    if (f(bool, true))
+        return x;
+    else if (int_to_bool(f(int, 0)))
+        return x;
+    else
+        return f(t, x);
+}
+
+i32_t multi_f_i32()
+{
+    return multi_f(i32_t, id, 0);
+}
+
+// auto get_id() -> (typename t, t) -> t { return id; }

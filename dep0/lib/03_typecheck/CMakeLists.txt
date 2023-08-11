@@ -2,6 +2,7 @@ add_subdirectory(test)
 
 add_library(dep0_typecheck_lib
   # public headers
+  include/dep0/typecheck/alpha_equivalence.hpp
   include/dep0/typecheck/ast.hpp
   include/dep0/typecheck/check.hpp
   include/dep0/typecheck/context.hpp
@@ -10,6 +11,7 @@ add_library(dep0_typecheck_lib
   # private headers
   src/private/returns_from_all_branches.hpp
   # source files
+  src/alpha_equivalence.cpp
   src/ast.cpp
   src/check.cpp
   src/context.cpp

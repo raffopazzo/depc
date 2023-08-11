@@ -86,23 +86,21 @@ std::ostream& pretty_print(std::ostream& os, type_def_t const& t)
 
 std::ostream& pretty_print(std::ostream& os, type_t const& t)
 {
-    match(
-        t.value,
-        [&] (type_t::bool_t const&) { os << "bool"; },
-        [&] (type_t::unit_t const&) { os << "unit_t"; },
-        [&] (type_t::i8_t const&) { os << "i8_t"; },
-        [&] (type_t::i16_t const&) { os << "i16_t"; },
-        [&] (type_t::i32_t const&) { os << "i32_t"; },
-        [&] (type_t::i64_t const&) { os << "i64_t"; },
-        [&] (type_t::u8_t const&) { os << "u8_t"; },
-        [&] (type_t::u16_t const&) { os << "u16_t"; },
-        [&] (type_t::u32_t const&) { os << "u32_t"; },
-        [&] (type_t::u64_t const&) { os << "u64_t"; },
-        [&] (type_t::var_t const& x) { os << x.name; },
-        [&] (type_t::arr_t const& x) { pretty_print(os, x); });
+    match(t.value, [&] (auto const& x) { pretty_print(os, x); });
     return os;
 }
 
+std::ostream& pretty_print(std::ostream& os, type_t::bool_t const&) { return os << "bool"; }
+std::ostream& pretty_print(std::ostream& os, type_t::unit_t const&) { return os << "unit_t"; }
+std::ostream& pretty_print(std::ostream& os, type_t::i8_t const&) { return os << "i8_t"; }
+std::ostream& pretty_print(std::ostream& os, type_t::i16_t const&) { return os << "i16_t"; }
+std::ostream& pretty_print(std::ostream& os, type_t::i32_t const&) { return os << "i32_t"; }
+std::ostream& pretty_print(std::ostream& os, type_t::i64_t const&) { return os << "i64_t"; }
+std::ostream& pretty_print(std::ostream& os, type_t::u8_t const&) { return os << "u8_t"; }
+std::ostream& pretty_print(std::ostream& os, type_t::u16_t const&) { return os << "u16_t"; }
+std::ostream& pretty_print(std::ostream& os, type_t::u32_t const&) { return os << "u32_t"; }
+std::ostream& pretty_print(std::ostream& os, type_t::u64_t const&) { return os << "u64_t"; }
+std::ostream& pretty_print(std::ostream& os, type_t::var_t const& x) { return os << x.name; }
 std::ostream& pretty_print(std::ostream& os, type_t::arr_t const& x)
 {
     os << '(';

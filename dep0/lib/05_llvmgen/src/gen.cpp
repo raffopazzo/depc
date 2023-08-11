@@ -446,7 +446,7 @@ llvm_func_t gen_specialized_func(
     std::vector<typecheck::expr_t> const& args)
 {
     assert(f.args.size() == args.size());
-    llvm_func_proto_t proto{{}, f.ret_type} ;
+    llvm_func_proto_t proto{{}, f.ret_type};
     proto.args.reserve(args.size());
     auto f_ctx = local.extend();
     for (auto const& [i, arg]: boost::adaptors::index(args))

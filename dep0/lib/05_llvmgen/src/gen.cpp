@@ -162,17 +162,25 @@ static void gen_func_body(
     typecheck::body_t const&,
     llvm::Function*);
 
-static bool is_first_order_abstraction(typecheck::expr_t::abs_t const& f)
+static bool is_first_order_abstraction(typecheck::expr_t::abs_t const&);
+static bool is_first_order_application(typecheck::expr_t::app_t const&);
+static bool is_first_order_function_type(typecheck::type_t::arr_t const&);
+
+bool is_first_order_abstraction(typecheck::expr_t::abs_t const& f)
 {
-    return std::ranges::all_of(f.args, [] (auto const& x) { return ast::is_type(x.sort); });
+    return std::ranges::all_of(f.args, [] (auto const& x) { return ast::is_type(x.sort); }) and
+        match(
+            f.ret_type.value,
+            [] (typecheck::type_t::arr_t const& t) { return is_first_order_function_type(t); },
+            [] (auto const&) { return true; });
 }
 
-static bool is_first_order_application(typecheck::expr_t::app_t const& f)
+bool is_first_order_application(typecheck::expr_t::app_t const& f)
 {
     return std::ranges::all_of(f.args, [] (auto const& x) { return ast::is_type(x.properties.sort); });
 }
 
-static bool is_first_order_function_type(typecheck::type_t::arr_t const& x)
+bool is_first_order_function_type(typecheck::type_t::arr_t const& x)
 {
     return std::ranges::all_of(x.arg_types, [](auto const& t) { return std::holds_alternative<typecheck::type_t>(t); });
 }

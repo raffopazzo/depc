@@ -103,4 +103,10 @@ i32_t multi_f_i32()
     return multi_f(i32_t, id, 0, 1, 2);
 }
 
-// auto get_id() -> (typename t, t) -> t { return id; }
+auto get_id() -> (typename t, t) -> t { return id; }
+
+auto apply_transform_v1(typename t, t x, (typename t, t) -> t f) -> t { return f(t, x); }
+auto apply_transform_v2(typename t, t x, (typename u, u) -> u f) -> t { return f(t, x); }
+
+i32_t apply_id_v1(i32_t x) { return apply_transform_v1(i32_t, x, get_id()); }
+i32_t apply_id_v2(i32_t x) { return apply_transform_v2(i32_t, x, get_id()); }

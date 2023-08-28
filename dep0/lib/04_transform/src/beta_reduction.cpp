@@ -181,24 +181,21 @@ bool beta_normalize(typecheck::expr_t::var_t&) { return false; }
 
 bool beta_normalize(typecheck::expr_t::app_t& app)
 {
-    bool changed = false;
+    bool changed = beta_normalize(app.func.get());
     for (auto& arg: app.args)
         changed |= beta_normalize(arg);
-    match(
-        app.func.get().value,
-        [&] (typecheck::expr_t::abs_t& abs)
-        {
-            assert(abs.args.size() == app.args.size());
-            for (auto const i: std::views::iota(0ul, abs.args.size()))
-                substitute(abs.body, typecheck::expr_t::var_t{abs.args[i].name}, app.args[i]);
-            // at this point all arguments of the abstraction have been substituted,
-            // so we can remove them and normalize the new body
-            app.args.clear();
-            abs.args.clear();
-            changed = true;
-            beta_normalize(abs.body);
-        },
-        [&] (auto& x) { changed |= beta_normalize(x); });
+    if (auto* const abs = std::get_if<typecheck::expr_t::abs_t>(&app.func.get().value))
+    {
+        changed |= abs->args.size() > 0ul; // because we are about to remove the arguments
+        assert(abs->args.size() == app.args.size());
+        for (auto const i: std::views::iota(0ul, abs->args.size()))
+            substitute(abs->body, typecheck::expr_t::var_t{abs->args[i].name}, app.args[i]);
+        // at this point all arguments of the abstraction have been substituted,
+        // so we can remove them and normalize the new body
+        app.args.clear();
+        abs->args.clear();
+        changed |= beta_normalize(abs->body);
+    }
     return changed;
 }
 

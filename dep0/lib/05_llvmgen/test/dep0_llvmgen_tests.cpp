@@ -675,6 +675,34 @@ BOOST_AUTO_TEST_CASE(test_0178)
         BOOST_TEST_REQUIRE(val);
         BOOST_TEST(val->isZero());
     }
+    {
+        auto const f = pass_result.value()->getFunction("apply_id_v1");
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->getReturnType()->isIntegerTy(32ul));
+        BOOST_TEST(f->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::SExt));
+        BOOST_TEST_REQUIRE(f->getEntryBlock().size() == 1ul);
+        BOOST_TEST_REQUIRE(f->arg_size() == 1ul);
+        auto const arg_x = f->arg_begin();
+        BOOST_TEST(arg_x->getType()->isIntegerTy(32ul));
+        BOOST_TEST(arg_x->hasAttribute(llvm::Attribute::SExt));
+        auto const ret = cast<llvm::ReturnInst>(f->getEntryBlock().getTerminator());
+        BOOST_TEST_REQUIRE(ret);
+        BOOST_TEST(ret->getReturnValue()->getName().str() == "x");
+    }
+    {
+        auto const f = pass_result.value()->getFunction("apply_id_v2");
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->getReturnType()->isIntegerTy(32ul));
+        BOOST_TEST(f->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::SExt));
+        BOOST_TEST_REQUIRE(f->getEntryBlock().size() == 1ul);
+        BOOST_TEST_REQUIRE(f->arg_size() == 1ul);
+        auto const arg_x = f->arg_begin();
+        BOOST_TEST(arg_x->getType()->isIntegerTy(32ul));
+        BOOST_TEST(arg_x->hasAttribute(llvm::Attribute::SExt));
+        auto const ret = cast<llvm::ReturnInst>(f->getEntryBlock().getTerminator());
+        BOOST_TEST_REQUIRE(ret);
+        BOOST_TEST(ret->getReturnValue()->getName().str() == "x");
+    }
 }
 
 // BOOST_AUTO_TEST_CASE(test_0179) doesn't type check

@@ -536,7 +536,7 @@ BOOST_AUTO_TEST_CASE(test_0177)
 BOOST_AUTO_TEST_CASE(test_0178)
 {
     BOOST_TEST_REQUIRE(pass("test_0178.depc"));
-    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 19ul);
+    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 24ul);
     {
         auto const& f = pass_result->func_defs[0ul];
         BOOST_TEST(f.name == "id");
@@ -899,6 +899,38 @@ BOOST_AUTO_TEST_CASE(test_0178)
             BOOST_TEST(arg0->name == "t");
             BOOST_TEST(arg1->name == "z");
         }
+    }
+    {
+        auto const& f = pass_result->func_defs[19ul];
+        BOOST_TEST(f.name == "get_id");
+        BOOST_TEST(f.value.args.size() == 0ul);
+        auto const ret_type = std::get_if<dep0::parser::type_t::arr_t>(&f.value.ret_type.value);
+        BOOST_TEST_REQUIRE(ret_type);
+        BOOST_TEST_REQUIRE(ret_type->arg_types.size() == 2ul);
+        auto const ret_arg_0 = std::get_if<dep0::parser::type_t::var_t>(&ret_type->arg_types[0]);
+        auto const ret_arg_1 = std::get_if<dep0::parser::type_t>(&ret_type->arg_types[1]);
+        BOOST_TEST_REQUIRE(ret_arg_0);
+        BOOST_TEST_REQUIRE(ret_arg_1);
+        BOOST_TEST(is_type_var(*ret_arg_1, "t"));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        auto const ret = std::get_if<dep0::parser::stmt_t::return_t>(&f.value.body.stmts[0ul].value);
+        BOOST_TEST_REQUIRE(ret);
+        BOOST_TEST_REQUIRE(ret->expr.has_value());
+        BOOST_TEST(is_var(*ret->expr, "id"));
+    }
+    {
+        auto const& f = pass_result->func_defs[22ul];
+        BOOST_TEST(f.name == "apply_id_v1");
+        BOOST_TEST_REQUIRE(f.value.args.size() == 1ul);
+        BOOST_TEST(f.value.args[0ul].name == "x");
+        BOOST_TEST(std::holds_alternative<dep0::parser::type_t::i32_t>(f.value.ret_type.value));
+    }
+    {
+        auto const& f = pass_result->func_defs[23ul];
+        BOOST_TEST(f.name == "apply_id_v2");
+        BOOST_TEST_REQUIRE(f.value.args.size() == 1ul);
+        BOOST_TEST(f.value.args[0ul].name == "x");
+        BOOST_TEST(std::holds_alternative<dep0::parser::type_t::i32_t>(f.value.ret_type.value));
     }
 }
 

@@ -613,7 +613,7 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, type_
         {
             if (auto f = type_assign_func_call(ctx, x))
             {
-                if (f->first == expected_type) // TODO this should be `is_alpha_equivalent`
+                if (is_alpha_equivalent(f->first, expected_type))
                     return make_legal_expr(f->first, std::move(f->second));
                 else
                     return type_error(f->first);

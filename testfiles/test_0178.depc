@@ -88,19 +88,19 @@ u32_t discard_id_v2()
 
 bool int_to_bool(int x) { return true; }
 
-auto multi_f(typename t, (typename u, u) -> u f, t x) -> t
+auto multi_f(typename t, (typename u, u) -> u f, t x, t y, t z) -> t
 {
     if (f(bool, true))
         return x;
     else if (int_to_bool(f(int, 0)))
-        return x;
+        return y;
     else
-        return f(t, x);
+        return f(t, z);
 }
 
 i32_t multi_f_i32()
 {
-    return multi_f(i32_t, id, 0);
+    return multi_f(i32_t, id, 0, 1, 2);
 }
 
 // auto get_id() -> (typename t, t) -> t { return id; }

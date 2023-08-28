@@ -4,8 +4,6 @@
 
 #include "dep0/typecheck/substitute.hpp"
 
-#include "dep0/ast/traverse.hpp"
-
 #include "dep0/digit_separator.hpp"
 #include "dep0/fmap.hpp"
 #include "dep0/match.hpp"
@@ -44,6 +42,7 @@ struct global_context_t
     llvm::LLVMContext& llvm_ctx;
     llvm::Module& llvm_module;
     scope_map<std::string, llvm_func_t> specialized_functions; // key is mangled name
+    std::size_t next_id = 0ul;
 
     explicit global_context_t(llvm::Module& m) :
         llvm_ctx(m.getContext()),
@@ -62,7 +61,6 @@ struct local_context_t
         std::variant<
             llvm::Value*,
             llvm_func_t,
-            typecheck::expr_t::abs_t, // second order abstractions
             typecheck::type_def_t,
             typecheck::type_t
         >;
@@ -115,6 +113,7 @@ struct llvm_func_proto_t
 
 // all gen functions must be forward-declared here
 
+static llvm_func_t gen_func(global_context_t&, local_context_t const&, typecheck::expr_t::abs_t const&);
 static void gen_func(
     global_context_t&,
     local_context_t&,
@@ -195,20 +194,10 @@ expected<unique_ref<llvm::Module>> gen(
     }
     for (auto const& def: m.func_defs)
     {
-        // This function can be either a 1st-order or a 2nd-order abstraction;
-        // for 1st order abstractions we can immediatley generate an LLVM function;
-        // for 2nd order abstractions we store the abstraction in the local context and wait until
-        // it is actually invoked with some concrete types; only at that point we can generate
-        // a specialized function for the concrete types it is applied to, aka monomorphization;
-        // storing the 2nd order abstractions in the local context also allows local arguments/variables
-        // to shadow the top-level 2nd order abstractions if they have the same name.
+        // LLVM can only generate functions for 1st order abstractions;
+        // for 2nd order abstractions we rely on beta-delta normalization to produce a value or a 1st order application
         if (is_first_order_abstraction(def.value))
             gen_func(global, local, def.name, def.value);
-        else
-        {
-            bool const inserted = local.try_emplace(def.name, def.value).second;
-            assert(inserted);
-        }
     }
 
     std::string err;
@@ -249,11 +238,6 @@ llvm::Type* gen_type(global_context_t& global, local_context_t const& local, typ
                 [] (llvm_func_t const&) -> llvm::Type*
                 {
                     assert(false and "found a function but was expecting a type");
-                    __builtin_unreachable();
-                },
-                [] (typecheck::expr_t::abs_t const&) -> llvm::Type*
-                {
-                    assert(false and "found a 2nd order abstraction but was expecting a type");
                     __builtin_unreachable();
                 },
                 [&] (typecheck::type_def_t const& t)
@@ -323,11 +307,6 @@ llvm::Attribute::AttrKind get_sign_ext_attribute(local_context_t const& local, t
                 [] (llvm_func_t const&) -> llvm::Attribute::AttrKind
                 {
                     assert(false and "found a function but was expecting a type");
-                    __builtin_unreachable();
-                },
-                [] (typecheck::expr_t::abs_t const&) -> llvm::Attribute::AttrKind
-                {
-                    assert(false and "found a 2nd order abstraction but was expecting a type");
                     __builtin_unreachable();
                 },
                 [&] (typecheck::type_def_t const& t)
@@ -405,6 +384,35 @@ void gen_func_body(
             builder.CreateRetVoid();
         }
     }
+}
+
+llvm_func_t gen_func(
+    global_context_t& global,
+    local_context_t const& local,
+    typecheck::expr_t::abs_t const& f)
+{
+    assert(is_first_order_abstraction(f) and "can only generate an llvm function for 1st order abstractions");
+    auto const proto =
+        llvm_func_proto_t{
+            fmap(
+                f.args,
+                [] (auto const& arg)
+                {
+                    return llvm_func_proto_t::arg_t{arg.name, std::get<typecheck::type_t>(arg.sort)};
+                }),
+            f.ret_type};
+    auto const name = std::string{"$_func_"} + std::to_string(global.next_id++);
+    auto const llvm_f =
+        llvm::Function::Create(
+            gen_func_type(global, local, proto),
+            llvm::Function::PrivateLinkage,
+            name,
+            global.llvm_module);
+    auto f_ctx = local.extend();
+    gen_func_args(f_ctx, proto, llvm_f);
+    gen_func_attributes(f_ctx, proto, llvm_f);
+    gen_func_body(global, f_ctx, proto, f.body, llvm_f);
+    return llvm_func_t(llvm_f);
 }
 
 void gen_func(
@@ -609,11 +617,6 @@ llvm::Value* gen_val(
                 *val,
                 [&] (llvm::Value* p) { return p; },
                 [&] (llvm_func_t const& c) { return c.func; },
-                [] (typecheck::expr_t::abs_t const&) -> llvm::Value*
-                {
-                    assert(false and "found a 2nd order abstraction but was expecting a value");
-                    __builtin_unreachable();
-                },
                 [] (typecheck::type_def_t const&) -> llvm::Value*
                 {
                     assert(false and "found a typedef but was expecting a value");
@@ -627,6 +630,7 @@ llvm::Value* gen_val(
         },
         [&] (typecheck::expr_t::app_t const& x) -> llvm::Value*
         {
+            // TODO could perhaps generate a snippet for immediately invoked lambdas
             return gen_func_call(global, local, builder, x);
         },
         [&] (typecheck::expr_t::abs_t const& x) -> llvm::Value*
@@ -647,53 +651,46 @@ llvm::CallInst* gen_func_call(
     llvm::IRBuilder<>& builder,
     typecheck::expr_t::app_t const& app)
 {
-    auto const val = local[app.name];
-    assert(val and "unknown function call");
-    return match(
-        *val,
-        [] (llvm::Value*) -> llvm::CallInst*
-        {
-            assert(false and "found a value but was expecting a function");
-            __builtin_unreachable();
-        },
-        [&] (llvm_func_t const& func)
-        {
-            // this could be a direct call to a global function, or an indirect call via a function pointer
-            return gen_func_call(global, local, builder, func, app.args);
-        },
-        [&] (typecheck::expr_t::abs_t const& snd_order_abs)
-        {
-            // here we are applying a 2nd order abstraction, which requires monomorphization, so:
-            //   1. partition the applied arguments into types and values;
-            //   2. use the types to look a specialization from the global context, or to generate one if not found
-            //   3. call the specialization with the remaining values.
-            std::vector<typecheck::type_t> types;
-            std::vector<typecheck::expr_t> values;
-            types.reserve(app.args.size());
-            values.reserve(app.args.size());
-            for (auto const& arg: app.args)
-                if (auto const p = std::get_if<typecheck::type_t>(&arg.value))
-                    types.push_back(*p);
-                else
-                    values.push_back(arg);
-            auto mangled_name = make_mangled_name(app.name, types);
-            auto const specialization = global.specialized_functions[mangled_name];
-            auto const& callee =
-                specialization
-                    ? *specialization
-                    : gen_specialized_func(global, local, std::move(mangled_name), snd_order_abs, app.args);
-            return gen_func_call(global, local, builder, callee, values);
-        },
-        [] (typecheck::type_def_t const&) -> llvm::CallInst*
-        {
-            assert(false and "found a typedef but was expecting a function");
-            __builtin_unreachable();
-        },
-        [] (typecheck::type_t const&) -> llvm::CallInst*
-        {
-            assert(false and "found a type but was expecting a function");
-            __builtin_unreachable();
-        });
+    auto const func =
+        match(
+            app.func.get().value,
+            [&] (typecheck::expr_t::var_t const& var)
+            {
+                auto const val = local[var.name];
+                assert(val and "unknown function call");
+                return match(
+                    *val,
+                    [] (llvm::Value*) -> llvm_func_t
+                    {
+                        assert(false and "found a value but was expecting a function");
+                        __builtin_unreachable();
+                    },
+                    [&] (llvm_func_t const& func) -> llvm_func_t
+                    {
+                        return func;
+                    },
+                    [] (typecheck::type_def_t const&) -> llvm_func_t
+                    {
+                        assert(false and "found a typedef but was expecting a function");
+                        __builtin_unreachable();
+                    },
+                    [] (typecheck::type_t const&) -> llvm_func_t
+                    {
+                        assert(false and "found a type but was expecting a function");
+                        __builtin_unreachable();
+                    });
+            },
+            [&] (typecheck::expr_t::abs_t const& abs) -> llvm_func_t
+            {
+                return gen_func(global, local, abs);
+            },
+            [&] (auto const& x) -> llvm_func_t
+            {
+                assert(false and "unexpected invocable expression");
+                __builtin_unreachable();
+            });
+    // this could be a direct call to a global function, or an indirect call via a function pointer
+    return gen_func_call(global, local, builder, func, app.args);
 }
 
 llvm::CallInst* gen_func_call(

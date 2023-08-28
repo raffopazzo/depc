@@ -110,45 +110,52 @@ type_assign_func_call(context_t const& ctx, parser::expr_t::app_t const& f)
     {
         return error_t::from_error(dep0::error_t(std::move(msg)), ctx);
     };
-    auto const proto = [&] () -> expected<type_t::arr_t>
+    auto const func = [&] () -> expected<expr_t>
     {
-        auto const v = ctx[f.name];
+        auto const var = std::get_if<parser::expr_t::var_t>(&f.func.get().value);
+        assert(var and "only invocation by function name is currently supported"); // TODO support any `func` expr
+        auto const v = ctx[var->name];
         if (not v)
             return error("function prototype not found");
         return match(
             *v,
-            [&] (type_def_t const&) -> expected<type_t::arr_t>
+            [&] (type_def_t const&) -> expected<expr_t>
             {
                 return error("cannot invoke a typedef");
             },
-            [&] (type_t const&) -> expected<type_t::arr_t>
+            [&] (type_t const&) -> expected<expr_t>
             {
                 return error("cannot invoke a type");
             },
-            [&] (expr_t const& expr) -> expected<type_t::arr_t>
+            [&] (expr_t const& expr) -> expected<expr_t>
             {
-                if (auto const type = std::get_if<type_t>(&expr.properties.sort))
-                    if (auto const arr = std::get_if<type_t::arr_t>(&type->value))
-                        return *arr;
-                std::ostringstream err;
-                pretty_print(err << "cannot invoke expression of type `", expr.properties.sort) << '`';
-                return error(err.str());
+                return make_legal_expr(expr.properties.sort, expr_t::var_t{var->name});
             });
     }();
-    if (not proto)
-        return proto.error();
-    if (proto->arg_types.size() != f.args.size())
+    if (not func)
+        return func.error();
+    auto func_type = [&] () -> expected<type_t::arr_t>
+    {
+        if (auto const type = std::get_if<type_t>(&func->properties.sort))
+            if (auto const arr = std::get_if<type_t::arr_t>(&type->value))
+                return *arr;
+        std::ostringstream err;
+        pretty_print(err << "cannot invoke expression of type `", func->properties.sort) << '`';
+        return error(err.str());
+    }();
+    if (not func_type)
+        return func_type.error();
+    if (func_type->arg_types.size() != f.args.size())
     {
         std::ostringstream err;
-        err << "passed " << f.args.size() << " arguments but was expecting " << proto->arg_types.size();
+        err << "passed " << f.args.size() << " arguments but was expecting " << func_type->arg_types.size();
         return error(err.str());
     }
-    auto func_type = *proto;
     std::vector<expr_t> args;
-    for (auto const i: std::views::iota(0ul, func_type.arg_types.size()))
+    for (auto const i: std::views::iota(0ul, func_type->arg_types.size()))
     {
         auto arg = match(
-            func_type.arg_types[i],
+            func_type->arg_types[i],
             [&] (type_t::var_t const& var) -> expected<expr_t>
             {
                 if (auto type = check_typename(ctx, f.args[i], ast::typename_t{}))
@@ -166,8 +173,8 @@ type_assign_func_call(context_t const& ctx, parser::expr_t::app_t const& f)
                     //  - this is different from `auto g(typename t, (typename t) -> t) -> t` because the return
                     //    type is bound to the `t` in the first argument, not the second one; we allow this.
                     std::for_each(
-                        func_type.arg_types.begin() + i + 1,
-                        func_type.arg_types.end(),
+                        func_type->arg_types.begin() + i + 1,
+                        func_type->arg_types.end(),
                         [&] (type_t::arr_t::arg_type_t& x)
                         {
                             match(
@@ -182,7 +189,7 @@ type_assign_func_call(context_t const& ctx, parser::expr_t::app_t const& f)
                                     substitute(x, var, *type);
                                 });
                         });
-                    substitute(func_type.ret_type.get(), var, *type);
+                    substitute(func_type->ret_type.get(), var, *type);
                     return make_legal_expr(ast::typename_t{}, *type);
                 }
                 else
@@ -197,7 +204,7 @@ type_assign_func_call(context_t const& ctx, parser::expr_t::app_t const& f)
         else
             return std::move(arg.error());
     }
-    return std::make_pair(func_type.ret_type.get(), expr_t::app_t{f.name, std::move(args)});
+    return std::make_pair(std::move(func_type->ret_type.get()), expr_t::app_t{std::move(*func), std::move(args)});
 }
 
 expected<type_def_t> check_type_def(context_t& ctx, parser::type_def_t const& type_def)
@@ -707,10 +714,7 @@ expected<type_t> check_typename(context_t const& ctx, parser::expr_t const& x, a
             if (auto f = type_assign_func_call(ctx, x))
             {
                 std::ostringstream err;
-                pretty_print(
-                    err << "invocation of function `" << x.name << "` does not yield a type but a value of type `",
-                    f->first
-                ) << '`';
+                pretty_print(err << "function invocation does not yield a type but a value of type `", f->first) << '`';
                 return error(err.str());
             }
             else

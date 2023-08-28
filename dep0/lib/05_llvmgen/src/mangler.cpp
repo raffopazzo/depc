@@ -24,17 +24,17 @@ static std::ostream& mangled_print(std::ostream& os, typecheck::type_t const& t)
         [&] (typecheck::type_t::var_t const& x) { os << x.name; },
         [&] (typecheck::type_t::arr_t const& x)
         {
-            os << "$-";
+            os << '(';
             bool first = true;
             for (auto const& t: x.arg_types)
             {
                 if (not std::exchange(first, false))
-                    os << '.';
+                    os << ',';
                 match(t,
                     [&] (typecheck::type_t::var_t const& x) { os << x.name; },
                     [&] (typecheck::type_t const& x) { mangled_print(os, x); });
             }
-            mangled_print(os << "-$", x.ret_type.get());
+            mangled_print(os << ')', x.ret_type.get());
         });
     return os;
 }

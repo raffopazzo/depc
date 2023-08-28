@@ -46,7 +46,7 @@ std::ostream& pretty_print(std::ostream& os, stmt_t const& x)
 
 std::ostream& pretty_print(std::ostream& os, expr_t::app_t const& x)
 {
-    os << x.name << '(';
+    pretty_print(os, x.func.get()) << '(';
     bool first = true;
     for (auto const& arg: x.args)
         pretty_print(std::exchange(first, false) ? os : os << ", ", arg);
@@ -132,7 +132,7 @@ std::ostream& pretty_print(std::ostream& os, expr_t const& x)
                 });
         },
         [&] (expr_t::boolean_constant_t const& x) { os << x.value; },
-        [&] (expr_t::numeric_constant_t const& x) { os << x.number; },
+        [&] (expr_t::numeric_constant_t const& x) { (x.sign ? os << *x.sign : os) << x.number; },
         [&] (expr_t::var_t const& x) { os << x.name; },
         [&] (expr_t::app_t const& x)
         {

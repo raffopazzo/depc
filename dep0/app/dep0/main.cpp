@@ -2,6 +2,7 @@
 #include "dep0/parser/parse.hpp"
 #include "dep0/typecheck/check.hpp"
 #include "dep0/transform/run.hpp"
+#include "dep0/transform/beta_delta_reduction.hpp"
 #include "dep0/llvmgen/gen.hpp"
 
 #include <llvm/CodeGen/CommandFlags.h>
@@ -104,8 +105,17 @@ int main(int argc, char** argv)
             llvm::WithColor::note(llvm::outs(), f) << "typechecks correctly" << '\n';
             continue;
         }
-//      ...add transformations here...
-//      auto transform_result = dep0::transform::run(*typechecked_module, ...);
+        auto transform_result =
+            dep0::transform::run(
+                *typechecked_module,
+                dep0::transform::beta_delta_normalization_t{}
+            );
+        if (not transform_result)
+        {
+            std::ostringstream str;
+            dep0::pretty_print(str, transform_result.error());
+            llvm::WithColor::error(llvm::errs(), f) << "transformation error: " << str.str() << '\n';
+        }
         auto llvm_module = dep0::llvmgen::gen(llvm_context, f, *typechecked_module);
         if (not llvm_module)
         {

@@ -293,7 +293,9 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         assert(ctx);
         assert(ctx->name);
         return expr_t::app_t{
-            get_text(src, *ctx->name).value(),
+            expr_t{
+                get_loc(src, *ctx).value(),
+                expr_t::var_t{get_text(src, *ctx->name).value()}},
             fmap(ctx->expr(), [this] (auto* ctx) { return visitExpr(ctx); })};
     }
 

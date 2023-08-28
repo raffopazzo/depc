@@ -118,7 +118,7 @@ struct expr_t
     };
     struct boolean_constant_t
     {
-        source_text value;
+        source_text value; // TODO should be `bool` instead
         bool operator==(boolean_constant_t const&) const = default;
     };
     struct numeric_constant_t
@@ -134,7 +134,7 @@ struct expr_t
     };
     struct app_t
     {
-        source_text name; // TODO should really be `expr_t` since you can invoke the result of another expression
+        rec_t func;
         std::vector<expr_t> args;
         bool operator==(app_t const&) const = default;
     };

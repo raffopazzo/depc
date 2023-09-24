@@ -1,6 +1,6 @@
 #pragma once
 
-#include "dep0/transform/transform.hpp"
+#include "dep0/typecheck/ast.hpp"
 
 #include "dep0/scope_map.hpp"
 
@@ -16,7 +16,5 @@ bool delta_reduce(delta_reduction::context_t const&, typecheck::body_t&);
 bool delta_reduce(delta_reduction::context_t const&, typecheck::stmt_t&);
 bool delta_reduce(delta_reduction::context_t const&, typecheck::expr_t&);
 bool delta_reduce(delta_reduction::context_t const&, typecheck::type_t&);
-
-// TODO could also define delta-normalization but currently it's not needed because we used beta-delta normalization
 
 } // namespace dep0::transform

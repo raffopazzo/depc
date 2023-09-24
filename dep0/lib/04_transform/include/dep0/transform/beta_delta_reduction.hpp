@@ -3,6 +3,8 @@
 #include "dep0/transform/delta_reduction.hpp"
 #include "dep0/transform/transform.hpp"
 
+#include "dep0/typecheck/ast.hpp"
+
 namespace dep0::transform {
 
 bool beta_delta_normalize(delta_reduction::context_t const&, typecheck::module_t&);

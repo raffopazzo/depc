@@ -30,13 +30,6 @@ static void substitute(typecheck::stmt_t::if_else_t&, typecheck::expr_t::var_t c
 static void substitute(typecheck::stmt_t::return_t&, typecheck::expr_t::var_t const&, typecheck::expr_t const&);
 static void substitute(typecheck::expr_t&, typecheck::expr_t::var_t const&, typecheck::expr_t const&);
 static void substitute(typecheck::expr_t::app_t&, typecheck::expr_t::var_t const&, typecheck::expr_t const&);
-//static void substitute(typecheck::type_t&, typecheck::expr_t::var_t const&, typecheck::expr_t const&);
-
-expected<std::true_type> beta_normalization(typecheck::module_t& m)
-{
-    beta_normalize(m);
-    return std::true_type{};
-}
 
 bool beta_normalize(typecheck::module_t& m)
 {

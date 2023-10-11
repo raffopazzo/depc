@@ -999,4 +999,60 @@ BOOST_AUTO_TEST_CASE(test_0180)
     BOOST_TEST(std::holds_alternative<dep0::parser::expr_t::numeric_constant_t>(plus->rhs.get().value));
 }
 
+BOOST_AUTO_TEST_CASE(test_0181)
+{
+    BOOST_TEST_REQUIRE(pass("test_0181.depc"));
+    BOOST_TEST_REQUIRE(pass_result->type_defs.size() == 1ul);
+    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 2ul);
+
+    auto const t = std::get_if<dep0::parser::type_def_t::integer_t>(&pass_result->type_defs[0].value);
+    BOOST_TEST_REQUIRE(t);
+    BOOST_TEST(t->name == "int");
+
+    auto const& f = pass_result->func_defs[0ul];
+    BOOST_TEST(f.name == "f");
+    BOOST_TEST_REQUIRE(f.value.args.size() == 3ul);
+    BOOST_TEST(f.value.args[0ul].name == "t");
+    BOOST_TEST(f.value.args[1ul].name == "int");
+    BOOST_TEST(f.value.args[2ul].name == "x");
+    auto const f_ret_type = std::get_if<dep0::parser::type_t::var_t>(&f.value.ret_type.value);
+    BOOST_TEST_REQUIRE(f_ret_type);
+    BOOST_TEST(f_ret_type->name == "t");
+    BOOST_TEST(std::holds_alternative<dep0::ast::typename_t>(f.value.args[0ul].sort));
+    BOOST_TEST(std::holds_alternative<dep0::ast::typename_t>(f.value.args[1ul].sort));
+    auto const s2 = std::get_if<dep0::parser::type_t>(&f.value.args[2ul].sort);
+    BOOST_TEST_REQUIRE(s2);
+    auto const t2 = std::get_if<dep0::parser::type_t::var_t>(&s2->value);
+    BOOST_TEST_REQUIRE(t2);
+    BOOST_TEST(t2->name == "t");
+    BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+
+    auto const ret_f = std::get_if<dep0::parser::stmt_t::return_t>(&f.value.body.stmts[0ul].value);
+    BOOST_TEST_REQUIRE(ret_f);
+    BOOST_TEST_REQUIRE(ret_f->expr.has_value());
+    BOOST_TEST(is_var(*ret_f->expr, "x"));
+
+    auto const& g = pass_result->func_defs[1ul];
+    BOOST_TEST(g.value.args.empty());
+    BOOST_TEST(is_type_var(g.value.ret_type, "int"));
+    BOOST_TEST_REQUIRE(g.value.body.stmts.size() == 1ul);
+    auto const ret_g = std::get_if<dep0::parser::stmt_t::return_t>(&g.value.body.stmts[0ul].value);
+    BOOST_TEST_REQUIRE(ret_g);
+    BOOST_TEST_REQUIRE(ret_g->expr.has_value());
+    auto const call = std::get_if<dep0::parser::expr_t::app_t>(&ret_g->expr->value);
+    BOOST_TEST_REQUIRE(call);
+    BOOST_TEST(is_var(call->func.get(), "f"));
+    BOOST_TEST_REQUIRE(call->args.size() == 3ul);
+    auto const arg0 = std::get_if<dep0::parser::expr_t::var_t>(&call->args[0].value);
+    auto const arg1 = std::get_if<dep0::parser::type_t>(&call->args[1].value);
+    auto const arg2 = std::get_if<dep0::parser::expr_t::numeric_constant_t>(&call->args[2].value);
+    BOOST_TEST_REQUIRE(arg0);
+    BOOST_TEST_REQUIRE(arg1);
+    BOOST_TEST_REQUIRE(arg2);
+    BOOST_TEST(arg0->name == "int");
+    BOOST_TEST(std::holds_alternative<dep0::parser::type_t::i32_t>(arg1->value));
+    BOOST_TEST(not arg2->sign.has_value());
+    BOOST_TEST(arg2->number == "0");
+}
+
 BOOST_AUTO_TEST_SUITE_END()

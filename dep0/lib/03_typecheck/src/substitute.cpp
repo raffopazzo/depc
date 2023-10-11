@@ -2,7 +2,16 @@
 
 #include "dep0/match.hpp"
 
+#include <cassert>
+
 namespace dep0::typecheck {
+
+void substitute(typecheck::type_t& x, substitution_context_t const& ctx)
+{
+    assert(not ctx.parent().has_value() && "stratified substitution context not yet supported");
+    for (auto const& [var, type]: ctx)
+        substitute(x, var, type);
+}
 
 void substitute(typecheck::type_t& x, typecheck::type_t::var_t const& var, typecheck::type_t const& y)
 {

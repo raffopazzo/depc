@@ -152,51 +152,23 @@ type_assign_func_call(context_t const& ctx, parser::expr_t::app_t const& f)
         return error(err.str());
     }
     std::vector<expr_t> args;
+    substitution_context_t substitution_context;
     for (auto const i: std::views::iota(0ul, func_type->arg_types.size()))
     {
         auto arg = match(
             func_type->arg_types[i],
             [&] (type_t::var_t const& var) -> expected<expr_t>
             {
-                if (auto type = check_typename(ctx, f.args[i], ast::typename_t{}))
-                {
-                    // This might be worth an explanation. In "classical" Type Theory we cannot blindly perform
-                    // substitution in the return type. Instead we should check whether a new type-variable with
-                    // the same name as `var` was introduced by some later argument.
-                    // If it was, we cannot perform substitution in the return type because now the `var` in the
-                    // return type would be bound to the other `var`, not this one.
-                    // However, when typechecking a function prototype, we disallow shadowing between arguments
-                    // at "the same level", so we know that the return type can only bind to this `var`.
-                    // More concretely:
-                    //  - `auto f(typename t, typename t) -> t` would, in theory, be ok and the return type
-                    //    would be the `t` from the second argument, but we disallow this kind of shadowing;
-                    //  - this is different from `auto g(typename t, (typename t) -> t) -> t` because the return
-                    //    type is bound to the `t` in the first argument, not the second one; we allow this.
-                    std::for_each(
-                        func_type->arg_types.begin() + i + 1,
-                        func_type->arg_types.end(),
-                        [&] (type_t::arr_t::arg_type_t& x)
-                        {
-                            match(
-                                x,
-                                [&] (type_t::var_t const& v)
-                                {
-                                    assert(v != var); // because of the comment above
-                                    // TODO rename `v` if it appears as free variable in `y`
-                                },
-                                [&] (type_t& x)
-                                {
-                                    substitute(x, var, *type);
-                                });
-                        });
-                    substitute(func_type->ret_type.get(), var, *type);
-                    return make_legal_expr(ast::typename_t{}, *type);
-                }
-                else
+                auto type = check_typename(ctx, f.args[i], ast::typename_t{});
+                if (not type)
                     return std::move(type.error());
+                bool const inserted = substitution_context.try_emplace(var.name, *type).second;
+                assert(inserted); // because we forbid shadowing "at the same level"
+                return make_legal_expr(ast::typename_t{}, std::move(*type));
             },
-            [&] (type_t const& type) -> expected<expr_t>
+            [&] (type_t& type) -> expected<expr_t>
             {
+                substitute(type, substitution_context);
                 return check_expr(ctx, f.args[i], type);
             });
         if (arg)
@@ -204,6 +176,7 @@ type_assign_func_call(context_t const& ctx, parser::expr_t::app_t const& f)
         else
             return std::move(arg.error());
     }
+    substitute(func_type->ret_type.get(), substitution_context);
     return std::make_pair(std::move(func_type->ret_type.get()), expr_t::app_t{std::move(*func), std::move(args)});
 }
 

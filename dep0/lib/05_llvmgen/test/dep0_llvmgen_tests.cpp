@@ -708,4 +708,21 @@ BOOST_AUTO_TEST_CASE(test_0178)
 // BOOST_AUTO_TEST_CASE(test_0179) doesn't type check
 // BOOST_AUTO_TEST_CASE(test_0180) doesn't type check
 
+BOOST_AUTO_TEST_CASE(test_0181)
+{
+    apply_beta_delta_normalization = true;
+    BOOST_TEST_REQUIRE(pass("test_0181.depc"));
+    auto const f = pass_result.value()->getFunction("g");
+    BOOST_TEST_REQUIRE(f);
+    BOOST_TEST(f->getReturnType()->isIntegerTy(32ul));
+    BOOST_TEST(f->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::SExt));
+    BOOST_TEST_REQUIRE(f->getEntryBlock().size() == 1ul);
+    BOOST_TEST_REQUIRE(f->arg_size() == 0ul);
+    auto const ret = cast<llvm::ReturnInst>(f->getEntryBlock().getTerminator());
+    BOOST_TEST_REQUIRE(ret);
+    auto const val = cast<llvm::ConstantInt>(ret->getReturnValue());
+    BOOST_TEST_REQUIRE(val);
+    BOOST_TEST(val->isZero());
+}
+
 BOOST_AUTO_TEST_SUITE_END()

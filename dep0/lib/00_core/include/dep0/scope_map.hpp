@@ -22,6 +22,7 @@ class scope_map
     explicit scope_map(std::shared_ptr<state_t>);
 
 public:
+    using iterator = typename data_map::iterator;
     using const_iterator = typename data_map::const_iterator;
 
     // A default constructed scope is empty and you can move it, obviously.
@@ -34,8 +35,6 @@ public:
     scope_map& operator=(scope_map const&);
     scope_map(scope_map&&) = default;
     scope_map& operator=(scope_map&&) = default;
-
-    using iterator = typename data_map::iterator;
 
     const_iterator begin() const;
     const_iterator end() const;

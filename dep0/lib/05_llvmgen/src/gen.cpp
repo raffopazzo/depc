@@ -71,19 +71,19 @@ struct local_context_t
         return local_context_t(values.extend());
     }
 
-    value_t* operator[](source_text const& k) { return values[k]; }
-    value_t const* operator[](source_text const& k) const { return values[k]; }
+    value_t* operator[](ast::indexed_var_t const& k) { return values[k]; }
+    value_t const* operator[](ast::indexed_var_t const& k) const { return values[k]; }
 
     template <typename... Args>
-    auto try_emplace(source_text name, Args&&... args)
+    auto try_emplace(ast::indexed_var_t name, Args&&... args)
     {
         return values.try_emplace(std::move(name), std::forward<Args>(args)...);
     }
 
 private:
-    scope_map<source_text, value_t> values;
+    scope_map<ast::indexed_var_t, value_t> values;
 
-    explicit local_context_t(scope_map<source_text, value_t> values) :
+    explicit local_context_t(scope_map<ast::indexed_var_t, value_t> values) :
         values(std::move(values))
     { }
 };
@@ -104,7 +104,7 @@ struct llvm_func_proto_t
 {
     struct arg_t
     {
-        source_text name;
+        ast::indexed_var_t name;
         typecheck::type_t type;
     };
     std::vector<arg_t> args;
@@ -197,7 +197,7 @@ expected<unique_ref<llvm::Module>> gen(
     for (auto const& def: m.type_defs)
     {
         auto const& name = match(def.value, [] (auto const& x) -> auto const& { return x.name; });
-        bool const inserted = local.try_emplace(name, def).second;
+        bool const inserted = local.try_emplace(ast::indexed_var_t{name}, def).second;
         assert(inserted);
     }
     for (auto const& def: m.func_defs)
@@ -351,7 +351,8 @@ void gen_func_args(local_context_t& local, llvm_func_proto_t const& proto, llvm:
     for (auto const i: std::views::iota(0ul, proto.args.size()))
     {
         auto* const llvm_arg = llvm_f->getArg(i);
-        llvm_arg->setName(proto.args[i].name.view());
+        if (proto.args[i].name.idx == 0ul)
+            llvm_arg->setName(proto.args[i].name.txt.view());
         if (auto const attr = get_sign_ext_attribute(local, proto.args[i].type); attr != llvm::Attribute::None)
             llvm_arg->addAttr(attr);
         bool inserted = false;
@@ -446,7 +447,7 @@ void gen_func(
             name.view(),
             global.llvm_module);
     // add function to the parent context; but generation must happen in the function context
-    bool const inserted = local.try_emplace(name, llvm_func_t(llvm_f)).second;
+    bool const inserted = local.try_emplace(ast::indexed_var_t{name}, llvm_func_t(llvm_f)).second;
     assert(inserted);
     auto f_ctx = local.extend();
     gen_func_args(f_ctx, proto, llvm_f);
@@ -465,6 +466,7 @@ llvm_func_t gen_specialized_func(
     llvm_func_proto_t proto{{}, f.ret_type};
     proto.args.reserve(args.size());
     auto f_ctx = local.extend();
+    typecheck::substitution_context_t substitution_context;
     for (auto const& [i, arg]: boost::adaptors::index(args))
         match(
             arg.properties.sort,
@@ -477,11 +479,14 @@ llvm_func_t gen_specialized_func(
                 auto const& arg_type = std::get<typecheck::type_t>(arg.value);
                 bool const inserted = f_ctx.try_emplace(f.args[i].name, arg_type).second;
                 assert(inserted);
-                // NB this is the same reasoning as in `check.cpp`: i.e. normally in Type Theory we cannot just
-                // blindly substitute inside the return type (because a later argument might rebind with the same name)
-                // but we forbid this kind of shadowing, so substitution directly in the return type is fine.
-                substitute(proto.ret_type, f.args[i].name, arg_type);
+                bool const inserted2 =
+                    substitution_context.try_emplace(
+                        typecheck::type_t::var_t{f.args[i].name},
+                        arg_type
+                    ).second;
+                assert(inserted2);
             });
+    substitute(proto.ret_type, substitution_context);
     auto const llvm_f =
         llvm::Function::Create(
             gen_func_type(global, local, proto),

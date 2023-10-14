@@ -7,7 +7,7 @@
 namespace dep0::transform {
 
 namespace delta_reduction {
-    using context_t = scope_map<source_text, std::variant<typecheck::expr_t::abs_t, struct something_else_t>>;
+    using context_t = scope_map<ast::indexed_var_t, std::variant<typecheck::expr_t::abs_t, struct something_else_t>>;
     struct something_else_t{};
 }
 

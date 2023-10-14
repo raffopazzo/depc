@@ -32,7 +32,7 @@ bool beta_delta_normalize(delta_reduction::context_t const& ctx, typecheck::modu
     {
         changed |= beta_delta_normalize(ctx2, def);
         // store the result in ctx2, so future look-ups of this definition will find the normalized version
-        bool const inserted = ctx2.try_emplace(def.name, def.value).second;
+        bool const inserted = ctx2.try_emplace(ast::indexed_var_t{def.name}, def.value).second;
         assert(inserted);
     }
     return changed;

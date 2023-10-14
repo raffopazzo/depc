@@ -1,0 +1,4 @@
+typedef int = signed 32 bit integer from ... to ...;
+auto id(typename t, t x) -> t { return x; }
+auto g(typename u, (typename int, int) -> u f) -> int { return 0; }
+int zero() { return g(int, id); } // typecheck error: type mismatch between id and `(typename t, t) -> int`

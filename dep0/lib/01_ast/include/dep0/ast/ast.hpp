@@ -7,6 +7,7 @@
 #include <boost/variant/recursive_wrapper.hpp>
 
 #include <optional>
+#include <ostream>
 #include <tuple>
 #include <vector>
 #include <variant>
@@ -24,6 +25,16 @@ template <Properties P> struct stmt_t;
 template <Properties P> struct expr_t;
 
 // definitions
+
+struct indexed_var_t
+{
+    source_text txt;
+    std::size_t idx = 0ul; // >0 if renaming occurred during substitution
+    bool operator<(indexed_var_t const& that) const { return std::tie(txt, idx) < std::tie(that.txt, that.idx); }
+    bool operator==(indexed_var_t const&) const = default;
+};
+
+std::ostream& pretty_print(std::ostream&, indexed_var_t const&);
 
 template <Properties P>
 struct body_t
@@ -54,14 +65,15 @@ struct type_t
     struct u64_t { bool operator==(u64_t const&) const { return true; } };
     struct var_t
     {
-        source_text name;
+        indexed_var_t name;
+        bool operator<(var_t const& that) const { return name < that.name; }
         bool operator==(var_t const&) const = default;
     };
     struct arr_t
     {
         // in lambda-2, an arrow can either introduce new type variables (pi-types) or refer to existing types
         using arg_type_t = std::variant<var_t, type_t>;
-        std::vector<arg_type_t> arg_types;
+        std::vector<arg_type_t> arg_types; // TODO this should really be arg_kinds
         rec_t ret_type;
         bool operator==(arr_t const& that) const
         {
@@ -129,7 +141,8 @@ struct expr_t
     };
     struct var_t
     {
-        source_text name;
+        indexed_var_t name;
+        bool operator<(var_t const& that) const { return name < that.name; }
         bool operator==(var_t const&) const = default;
     };
     struct app_t
@@ -143,7 +156,7 @@ struct expr_t
         struct arg_t
         {
             sort_t<P> sort;
-            source_text name;
+            indexed_var_t name;
         };
 
         std::vector<arg_t> args;

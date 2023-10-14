@@ -100,7 +100,7 @@ std::ostream& pretty_print(std::ostream& os, type_t::u8_t const&) { return os <<
 std::ostream& pretty_print(std::ostream& os, type_t::u16_t const&) { return os << "u16_t"; }
 std::ostream& pretty_print(std::ostream& os, type_t::u32_t const&) { return os << "u32_t"; }
 std::ostream& pretty_print(std::ostream& os, type_t::u64_t const&) { return os << "u64_t"; }
-std::ostream& pretty_print(std::ostream& os, type_t::var_t const& x) { return os << x.name; }
+std::ostream& pretty_print(std::ostream& os, type_t::var_t const& x) { return pretty_print(os, x.name); }
 std::ostream& pretty_print(std::ostream& os, type_t::arr_t const& x)
 {
     os << '(';
@@ -110,7 +110,7 @@ std::ostream& pretty_print(std::ostream& os, type_t::arr_t const& x)
         if (not std::exchange(first, false))
             os << ", ";
         match(t,
-            [&] (type_t::var_t const& x) { os << "typename " << x.name; },
+            [&] (type_t::var_t const& x) { pretty_print(os << "typename ", x); },
             [&] (type_t const& x) { pretty_print(os, x); });
     }
     return pretty_print(os << ") -> ", x.ret_type.get());
@@ -133,7 +133,7 @@ std::ostream& pretty_print(std::ostream& os, expr_t const& x)
         },
         [&] (expr_t::boolean_constant_t const& x) { os << x.value; },
         [&] (expr_t::numeric_constant_t const& x) { (x.sign ? os << *x.sign : os) << x.number; },
-        [&] (expr_t::var_t const& x) { os << x.name; },
+        [&] (expr_t::var_t const& x) { pretty_print(os, x.name); },
         [&] (expr_t::app_t const& x)
         {
             pretty_print(os, x);
@@ -143,7 +143,10 @@ std::ostream& pretty_print(std::ostream& os, expr_t const& x)
             os << '(';
             bool first = true;
             for (auto const& arg: x.args)
-                pretty_print(std::exchange(first, false) ? os : os << ", ", arg.sort) << ' ' << arg.name;
+            {
+                pretty_print(std::exchange(first, false) ? os : os << ", ", arg.sort);
+                pretty_print(os << ' ', arg.name);
+            }
             pretty_print(os << ") -> ", x.ret_type);
             pretty_print(os << std::endl, x.body);
         },
@@ -157,4 +160,4 @@ std::ostream& pretty_print(std::ostream& os, sort_t const& x)
     return os;
 }
 
-} // names pace dep0::typecheck
+} // namespace dep0::typecheck

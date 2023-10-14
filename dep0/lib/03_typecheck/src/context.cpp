@@ -6,7 +6,7 @@
 
 namespace dep0::typecheck {
 
-context_t::context_t(scope_map<source_text, value_type> values) :
+context_t::context_t(scope_map<ast::indexed_var_t, value_type> values) :
     m_values(std::move(values))
 { }
 
@@ -26,7 +26,7 @@ auto context_t::end() const -> const_iterator
     return m_values.end();
 }
 
-auto context_t::operator[](source_text const& name) const -> value_type const*
+auto context_t::operator[](ast::indexed_var_t const& name) const -> value_type const*
 {
     return m_values[name];
 }
@@ -51,20 +51,12 @@ std::ostream& pretty_print(std::ostream& os, context_t const& ctx)
         std::ranges::subrange(ctx.begin(), ctx.end()),
         [&] (auto const& x)
         {
+            pretty_print(os, x.first) << ": ";
             match(
                 x.second,
-                [&] (type_def_t const& t)
-                {
-                    pretty_print(os << x.first << ": ", t);
-                },
-                [&] (type_t const& t)
-                {
-                    pretty_print(os << x.first << ": ", t);
-                },
-                [&] (expr_t const& t)
-                {
-                    pretty_print(os << x.first << ": ", t.properties.sort);
-                });
+                [&] (type_def_t const& t) { pretty_print(os, t); },
+                [&] (type_t const& t) { pretty_print(os, t); },
+                [&] (expr_t const& x) { pretty_print(os, x.properties.sort); });
         });
     return os;
 }

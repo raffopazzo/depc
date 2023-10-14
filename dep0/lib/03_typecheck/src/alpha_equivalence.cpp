@@ -7,7 +7,7 @@
 
 namespace dep0::typecheck {
 
-using ctx_t = scope_map<source_text, type_t::var_t>;
+using ctx_t = scope_map<type_t::var_t, type_t::var_t>;
 
 static dep0::expected<std::true_type> is_alpha_equivalent(ctx_t const&, ctx_t const&, type_t const&, type_t const&);
 static std::string_view ordinal(std::size_t i);
@@ -41,34 +41,37 @@ struct alpha_equivalence_visitor
 
     dep0::expected<std::true_type> operator()(type_t::var_t const& x, type_t::var_t const& y) const
     {
-        auto const var_x = ctx1[x.name];
-        auto const var_y = ctx2[y.name];
+        auto const var_x = ctx1[x];
+        auto const var_y = ctx2[y];
         if (var_x and var_y)
         {
-            if (var_x->name == y.name and var_y->name == x.name)
+            if (*var_x == y and *var_y == x)
                 return std::true_type{};
             else
             {
                 std::ostringstream err;
-                err << "in the current context `" << x.name << "` means `" << var_x->name << '`'
-                    << " but `" << y.name << "` means `" << var_y->name << '`';
+                pretty_print(err << "in the current context `", x) << '`';
+                pretty_print(err << " means `", *var_x) << '`';
+                pretty_print(err << " but `", y) << '`';
+                pretty_print(err << " means `", *var_y) << '`';
                 return dep0::error_t(err.str());
             }
         }
         if (not var_x and not var_y)
         {
-            if (x.name == y.name)
+            if (x == y)
                 return std::true_type{};
             else
             {
                 std::ostringstream err;
-                err << '`' << x.name << " is not alpha-equivalent to `" << y.name << '`';
+                pretty_print(err << '`', x) << '`';
+                pretty_print(err << " is not alpha-equivalent to `", y) << '`';
                 return dep0::error_t(err.str());
             }
         }
         std::ostringstream err;
-        err << "in the current context `" << x.name << '`'
-            << " has a different meaning from `" << y.name << '`';    
+        pretty_print(err << "in the current context `", x) << '`';
+        pretty_print(err << " has a different meaning from `", y) << '`';
         return dep0::error_t(err.str());
     }
 
@@ -88,7 +91,7 @@ struct alpha_equivalence_visitor
                 {
                     match(
                         arg_type,
-                        [&] (type_t::var_t const& var) { os << "typename " << var.name; },
+                        [&] (type_t::var_t const& var) { pretty_print(os << "typename ", var); },
                         [&] (type_t const& type) { pretty_print(os, type); });
                     return os;
                 };
@@ -113,8 +116,8 @@ struct alpha_equivalence_visitor
                         auto const y_var = std::get_if<type_t::var_t>(&y.arg_types[i]);
                         if (not y_var)
                             return not_alpha_equivalent(i);
-                        bool const inserted1 = ctx1.try_emplace(x_var.name, *y_var).second;
-                        bool const inserted2 = ctx2.try_emplace(y_var->name, x_var).second;
+                        bool const inserted1 = ctx1.try_emplace(x_var, *y_var).second;
+                        bool const inserted2 = ctx2.try_emplace(*y_var, x_var).second;
                         if (inserted1 and inserted2)
                             return std::true_type{};
                         else

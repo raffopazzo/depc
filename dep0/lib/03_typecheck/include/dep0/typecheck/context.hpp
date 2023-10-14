@@ -13,13 +13,13 @@ public:
     using value_type = std::variant<type_def_t, type_t, expr_t>;
 
 private:
-    scope_map<source_text, value_type> m_values;
+    scope_map<ast::indexed_var_t, value_type> m_values;
 
-    context_t(scope_map<source_text, value_type>);
+    context_t(scope_map<ast::indexed_var_t, value_type>);
 
 public:
-    using iterator = typename scope_map<source_text, value_type>::iterator;
-    using const_iterator = typename scope_map<source_text, value_type>::const_iterator;
+    using iterator = typename scope_map<ast::indexed_var_t, value_type>::iterator;
+    using const_iterator = typename scope_map<ast::indexed_var_t, value_type>::const_iterator;
 
     context_t() = default;
     context_t(context_t const&) = default;
@@ -34,10 +34,10 @@ public:
     const_iterator begin() const;
     const_iterator end() const;
 
-    value_type const* operator[](source_text const&) const;
+    value_type const* operator[](ast::indexed_var_t const&) const;
 
     template <typename... Args>
-    auto try_emplace(source_text name, Args&&... args)
+    auto try_emplace(ast::indexed_var_t name, Args&&... args)
     {
         return m_values.try_emplace(std::move(name), std::forward<Args>(args)...);
     }

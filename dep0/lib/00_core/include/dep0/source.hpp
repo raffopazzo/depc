@@ -76,9 +76,9 @@ public:
     bool starts_with(char) const;
     source_text substr(std::size_t pos, std::size_t n = std::string_view::npos) const;
 
-    bool operator<(source_text const& that) const;
-    bool operator==(source_text const& that) const;
-    bool operator!=(source_text const& that) const;
+    bool operator<(source_text const&) const;
+    bool operator==(source_text const&) const;
+    bool operator!=(source_text const&) const;
 
     friend bool operator==(source_text const&, std::string_view);
     friend bool operator!=(source_text const&, std::string_view);

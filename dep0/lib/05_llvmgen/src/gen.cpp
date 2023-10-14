@@ -466,7 +466,6 @@ llvm_func_t gen_specialized_func(
     llvm_func_proto_t proto{{}, f.ret_type};
     proto.args.reserve(args.size());
     auto f_ctx = local.extend();
-    typecheck::substitution_context_t substitution_context;
     for (auto const& [i, arg]: boost::adaptors::index(args))
         match(
             arg.properties.sort,
@@ -479,14 +478,11 @@ llvm_func_t gen_specialized_func(
                 auto const& arg_type = std::get<typecheck::type_t>(arg.value);
                 bool const inserted = f_ctx.try_emplace(f.args[i].name, arg_type).second;
                 assert(inserted);
-                bool const inserted2 =
-                    substitution_context.try_emplace(
-                        typecheck::type_t::var_t{f.args[i].name},
-                        arg_type
-                    ).second;
-                assert(inserted2);
+                // NB: in general it is not correct to perform substitution directly in the return type,
+                // because some later argument could in theory rebind the current type variable;
+                // but we forbid this kind of shadowing, so in this case it is fine to substitute directly.
+                substitute(proto.ret_type, typecheck::type_t::var_t{f.args[i].name}, arg_type);
             });
-    substitute(proto.ret_type, substitution_context);
     auto const llvm_f =
         llvm::Function::Create(
             gen_func_type(global, local, proto),

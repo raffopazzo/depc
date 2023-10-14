@@ -152,7 +152,6 @@ type_assign_func_call(context_t const& ctx, parser::expr_t::app_t const& f)
         return error(err.str());
     }
     std::vector<expr_t> args;
-    substitution_context_t substitution_context;
     for (auto const i: std::views::iota(0ul, func_type->arg_types.size()))
     {
         auto arg = match(
@@ -162,13 +161,16 @@ type_assign_func_call(context_t const& ctx, parser::expr_t::app_t const& f)
                 auto type = check_typename(ctx, f.args[i], ast::typename_t{});
                 if (not type)
                     return std::move(type.error());
-                bool const inserted = substitution_context.try_emplace(var, *type).second;
-                assert(inserted); // because we forbid shadowing "at the same level"
+                substitute(
+                    func_type->arg_types.begin() + i + 1,
+                    func_type->arg_types.end(),
+                    func_type->ret_type.get(),
+                    var,
+                    *type);
                 return make_legal_expr(ast::typename_t{}, std::move(*type));
             },
             [&] (type_t& type) -> expected<expr_t>
             {
-                substitute(type, substitution_context);
                 return check_expr(ctx, f.args[i], type);
             });
         if (arg)
@@ -176,7 +178,6 @@ type_assign_func_call(context_t const& ctx, parser::expr_t::app_t const& f)
         else
             return std::move(arg.error());
     }
-    substitute(func_type->ret_type.get(), substitution_context);
     return std::make_pair(std::move(func_type->ret_type.get()), expr_t::app_t{std::move(*func), std::move(args)});
 }
 

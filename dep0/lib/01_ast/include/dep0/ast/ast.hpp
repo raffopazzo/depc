@@ -73,6 +73,8 @@ struct type_t
     {
         // in lambda-2, an arrow can either introduce new type variables (pi-types) or refer to existing types
         using arg_type_t = std::variant<var_t, type_t>;
+        using arg_types_iterator = std::vector<arg_type_t>::iterator;
+        using arg_types_const_iterator = std::vector<arg_type_t>::const_iterator;
         std::vector<arg_type_t> arg_types; // TODO this should really be arg_kinds
         rec_t ret_type;
         bool operator==(arr_t const& that) const

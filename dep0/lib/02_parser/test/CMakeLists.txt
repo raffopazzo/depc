@@ -6,6 +6,7 @@ set_property(TEST dep0_parser_tests PROPERTY ENVIRONMENT
 target_link_libraries(dep0_parser_tests
   PRIVATE
     DepC::Dep0::Parser
+    DepC::Dep0::Testing
     Boost::Boost
     )
 

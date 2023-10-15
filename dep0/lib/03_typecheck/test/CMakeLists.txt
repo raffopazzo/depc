@@ -7,6 +7,7 @@ target_link_libraries(dep0_typecheck_tests
   PRIVATE
     DepC::Dep0::TypeCheck
     DepC::Dep0::Parser
+    DepC::Dep0::Testing
     Boost::Boost
     )
 

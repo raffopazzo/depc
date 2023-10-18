@@ -8,9 +8,13 @@ add_library(dep0_transform_lib
   include/dep0/transform/beta_delta_reduction.hpp
   include/dep0/transform/beta_reduction.hpp
   include/dep0/transform/delta_reduction.hpp
+  # private headers
+  src/private/substitute.hpp
+  # src files
   src/beta_delta_reduction.cpp
   src/beta_reduction.cpp
   src/delta_reduction.cpp
+  src/substitute.cpp
   )
 add_library(DepC::Dep0::Transform ALIAS dep0_transform_lib)
 target_compile_features(dep0_transform_lib PUBLIC cxx_std_20)

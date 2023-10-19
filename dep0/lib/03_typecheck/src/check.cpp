@@ -147,25 +147,25 @@ type_assign_func_call(context_t const& ctx, parser::expr_t::app_t const& f)
     }();
     if (not func_type)
         return func_type.error();
-    if (func_type->arg_types.size() != f.args.size())
+    if (func_type->arg_kinds.size() != f.args.size())
     {
         std::ostringstream err;
-        err << "passed " << f.args.size() << " arguments but was expecting " << func_type->arg_types.size();
+        err << "passed " << f.args.size() << " arguments but was expecting " << func_type->arg_kinds.size();
         return error(err.str());
     }
     std::vector<expr_t> args;
-    for (auto const i: std::views::iota(0ul, func_type->arg_types.size()))
+    for (auto const i: std::views::iota(0ul, func_type->arg_kinds.size()))
     {
         auto arg = match(
-            func_type->arg_types[i],
+            func_type->arg_kinds[i],
             [&] (type_t::var_t const& var) -> expected<expr_t>
             {
                 auto type = check_typename(ctx, f.args[i], ast::typename_t{});
                 if (not type)
                     return std::move(type.error());
                 substitute(
-                    func_type->arg_types.begin() + i + 1,
-                    func_type->arg_types.end(),
+                    func_type->arg_kinds.begin() + i + 1,
+                    func_type->arg_kinds.end(),
                     func_type->ret_type.get(),
                     var,
                     *type);
@@ -273,13 +273,13 @@ expected<type_t> check_type(context_t const& ctx, parser::type_t const& t)
         [&] (parser::type_t::arr_t const& x) -> expected<type_t>
         {
             auto arr_ctx = ctx.extend();
-            auto arg_types =
+            auto arg_kinds =
                 fmap_or_error(
-                    x.arg_types,
+                    x.arg_kinds,
                     [&] (auto const& x)
                     {
                         return match(x,
-                            [&] (parser::type_t::var_t const& x) -> expected<type_t::arr_t::arg_type_t>
+                            [&] (parser::type_t::var_t const& x) -> expected<type_t::arr_t::arg_kind_t>
                             {
                                 auto const type_var = type_t::var_t{x.name};
                                 auto const [it, inserted] = arr_ctx.try_emplace(x.name, make_legal_type(type_var));
@@ -290,20 +290,20 @@ expected<type_t> check_type(context_t const& ctx, parser::type_t const& t)
                                     pretty_print(err << ", previously `", it->second) << '`';
                                     return error_t::from_error(dep0::error_t(err.str()), arr_ctx);
                                 }
-                                return expected<type_t::arr_t::arg_type_t>{std::in_place, type_var};
+                                return expected<type_t::arr_t::arg_kind_t>{std::in_place, type_var};
                             },
-                            [&] (parser::type_t const& x) -> expected<type_t::arr_t::arg_type_t>
+                            [&] (parser::type_t const& x) -> expected<type_t::arr_t::arg_kind_t>
                             {
                                 if (auto t = check_type(arr_ctx, x))
-                                    return expected<type_t::arr_t::arg_type_t>{std::in_place, std::move(*t)};
+                                    return expected<type_t::arr_t::arg_kind_t>{std::in_place, std::move(*t)};
                                 else
                                     return std::move(t.error());
                             });
                     });
-            if (not arg_types)
-                return std::move(arg_types.error());
+            if (not arg_kinds)
+                return std::move(arg_kinds.error());
             if (auto ret_type = check_type(arr_ctx, x.ret_type.get()))
-                return make_legal_type(type_t::arr_t{std::move(*arg_types), std::move(*ret_type)});
+                return make_legal_type(type_t::arr_t{std::move(*arg_kinds), std::move(*ret_type)});
             else
                 return std::move(ret_type.error());
         });
@@ -759,7 +759,7 @@ expected<std::pair<type_t, expr_t::abs_t>> check_abs(
                     *args,
                     [] (expr_t::abs_t::arg_t const& arg)
                     {
-                        using res_t = type_t::arr_t::arg_type_t;
+                        using res_t = type_t::arr_t::arg_kind_t;
                         return match(
                             arg.sort,
                             [&] (type_t const& t) -> res_t { return t; },

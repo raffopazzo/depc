@@ -80,20 +80,20 @@ struct alpha_equivalence_visitor
 
     dep0::expected<std::true_type> operator()(type_t::arr_t const& x, type_t::arr_t const& y) const
     {
-        if (x.arg_types.size() != y.arg_types.size())
+        if (x.arg_kinds.size() != y.arg_kinds.size())
         {
             std::ostringstream err;
-            err << "a function with " << x.arg_types.size() << " arguments is not alpha-equivalent to ";
-            err << "a function with " << y.arg_types.size();
+            err << "a function with " << x.arg_kinds.size() << " arguments is not alpha-equivalent to ";
+            err << "a function with " << y.arg_kinds.size();
             return dep0::error_t(err.str());
         }
         auto const not_alpha_equivalent = [&] (std::size_t const i)
         {
             auto const print =
-                [](std::ostream& os, type_t::arr_t::arg_type_t const& arg_type) -> std::ostream&
+                [](std::ostream& os, type_t::arr_t::arg_kind_t const& kind) -> std::ostream&
                 {
                     match(
-                        arg_type,
+                        kind,
                         [&] (type_t::var_t const& var) { pretty_print<typecheck::properties_t>(os << "typename ", var); },
                         [&] (type_t const& type) { pretty_print(os, type); });
                     return os;
@@ -103,20 +103,20 @@ struct alpha_equivalence_visitor
                 return os << i << ordinal(i);
             };
             std::ostringstream err;
-            print(print_ordinal(err, i+1) << " argument of type `", x.arg_types[i]) << '`';
-            print(err << " is not alpha-equivalent to argument of type `", y.arg_types[i]) << '`';
+            print(print_ordinal(err, i+1) << " argument of type `", x.arg_kinds[i]) << '`';
+            print(err << " is not alpha-equivalent to argument of type `", y.arg_kinds[i]) << '`';
             return dep0::error_t(err.str());
         };
         auto ctx1 = this->ctx1;
         auto ctx2 = this->ctx2;
-        for (auto const i: std::views::iota(0ul, x.arg_types.size()))
+        for (auto const i: std::views::iota(0ul, x.arg_kinds.size()))
         {
             auto const ok =
                 match(
-                    x.arg_types[i],
+                    x.arg_kinds[i],
                     [&] (type_t::var_t const& x_var) -> dep0::expected<std::true_type>
                     {
-                        auto const y_var = std::get_if<type_t::var_t>(&y.arg_types[i]);
+                        auto const y_var = std::get_if<type_t::var_t>(&y.arg_kinds[i]);
                         if (not y_var)
                             return not_alpha_equivalent(i);
                         bool const inserted1 = ctx1.try_emplace(x_var, *y_var).second;
@@ -128,7 +128,7 @@ struct alpha_equivalence_visitor
                     },
                     [&] (type_t const& x_type) -> dep0::expected<std::true_type>
                     {
-                        auto const y_type = std::get_if<type_t>(&y.arg_types[i]);
+                        auto const y_type = std::get_if<type_t>(&y.arg_kinds[i]);
                         if (not y_type)
                             return not_alpha_equivalent(i);
                         auto ok = is_alpha_equivalent(ctx1, ctx2, x_type, *y_type);

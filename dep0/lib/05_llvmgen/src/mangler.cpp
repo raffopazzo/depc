@@ -27,11 +27,12 @@ static std::ostream& mangled_print(std::ostream& os, typecheck::type_t const& t)
         {
             os << '(';
             bool first = true;
-            for (auto const& t: x.arg_types)
+            for (auto const& kind: x.arg_kinds)
             {
                 if (not std::exchange(first, false))
                     os << ',';
-                match(t,
+                match(
+                    kind,
                     [&] (typecheck::type_t::var_t const& x) { pretty_print(os, x.name); },
                     [&] (typecheck::type_t const& x) { mangled_print(os, x); });
             }

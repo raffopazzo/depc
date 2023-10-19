@@ -10,20 +10,20 @@ namespace dep0::typecheck {
 static bool contains_var(type_t const&, type_t::var_t const&);
 static std::size_t max_index(type_t const&);
 static std::size_t max_index(
-    type_t::arr_t::arg_types_const_iterator begin,
-    type_t::arr_t::arg_types_const_iterator end,
+    type_t::arr_t::arg_kinds_const_iterator begin,
+    type_t::arr_t::arg_kinds_const_iterator end,
     type_t const& ret_type);
 static type_t::var_t rename(
     type_t::var_t const&,
-    type_t::arr_t::arg_types_iterator begin,
-    type_t::arr_t::arg_types_iterator end,
+    type_t::arr_t::arg_kinds_iterator begin,
+    type_t::arr_t::arg_kinds_iterator end,
     type_t& ret_type);
 static void replace(type_t::var_t const&, type_t::var_t const&, type_t&);
 static void replace(
     type_t::var_t const&,
     type_t::var_t const&,
-    type_t::arr_t::arg_types_iterator begin,
-    type_t::arr_t::arg_types_iterator end,
+    type_t::arr_t::arg_kinds_iterator begin,
+    type_t::arr_t::arg_kinds_iterator end,
     type_t& ret_type);
 
 void substitute(type_t& x, type_t::var_t const& var, type_t const& y)
@@ -47,13 +47,13 @@ void substitute(type_t& x, type_t::var_t const& var, type_t const& y)
         },
         [&] (type_t::arr_t& arr)
         {
-            substitute(arr.arg_types.begin(), arr.arg_types.end(), arr.ret_type.get(), var, y);
+            substitute(arr.arg_kinds.begin(), arr.arg_kinds.end(), arr.ret_type.get(), var, y);
         });
 }
 
 void substitute(
-    type_t::arr_t::arg_types_iterator begin,
-    type_t::arr_t::arg_types_iterator const end,
+    type_t::arr_t::arg_kinds_iterator begin,
+    type_t::arr_t::arg_kinds_iterator const end,
     type_t& ret_type,
     type_t::var_t const& var,
     type_t const& y)
@@ -83,9 +83,9 @@ void substitute(
                     v = rename(v, std::next(begin), end, ret_type);
                 return false;
             },
-            [&] (type_t& arg_type)
+            [&] (type_t& t)
             {
-                substitute(arg_type, var, y);
+                substitute(t, var, y);
                 return false;
             });
         if (stop)
@@ -116,11 +116,11 @@ bool contains_var(type_t const& type, type_t::var_t const& var)
         {
             return contains_var(arr.ret_type.get(), var) or
                 std::ranges::any_of(
-                    arr.arg_types,
-                    [&] (auto const& arg_type)
+                    arr.arg_kinds,
+                    [&] (auto const& kind)
                     {
                         return match(
-                            arg_type,
+                            kind,
                             [&] (type_t::var_t const& v) { return v == var; },
                             [&] (type_t const& t) { return contains_var(t, var); });
                     });
@@ -128,19 +128,19 @@ bool contains_var(type_t const& type, type_t::var_t const& var)
 }
 
 std::size_t max_index(
-    type_t::arr_t::arg_types_const_iterator const begin,
-    type_t::arr_t::arg_types_const_iterator const end,
+    type_t::arr_t::arg_kinds_const_iterator const begin,
+    type_t::arr_t::arg_kinds_const_iterator const end,
     type_t const& ret_type)
 {
     return std::accumulate(
         begin, end,
         max_index(ret_type),
-        [] (std::size_t const acc, auto const& arg_type)
+        [] (std::size_t const acc, auto const& kind)
         {
             return std::max(
                 acc,
                 match(
-                    arg_type,
+                    kind,
                     [] (type_t::var_t const& v) { return v.name.idx; },
                     [] (type_t const& t) { return max_index(t); }));
         });
@@ -161,13 +161,13 @@ std::size_t max_index(type_t const& type)
         [] (type_t::u32_t const&) { return 0ul; },
         [] (type_t::u64_t const&) { return 0ul; },
         [] (type_t::var_t const& x) { return x.name.idx; },
-        [] (type_t::arr_t const& x) { return max_index(x.arg_types.begin(), x.arg_types.end(), x.ret_type.get()); });
+        [] (type_t::arr_t const& x) { return max_index(x.arg_kinds.begin(), x.arg_kinds.end(), x.ret_type.get()); });
 }
 
 type_t::var_t rename(
     type_t::var_t const& var,
-    type_t::arr_t::arg_types_iterator const begin,
-    type_t::arr_t::arg_types_iterator const end,
+    type_t::arr_t::arg_kinds_iterator const begin,
+    type_t::arr_t::arg_kinds_iterator const end,
     type_t& ret_type)
 {
     auto const max_idx = std::max(var.name.idx, max_index(begin, end, ret_type));
@@ -197,20 +197,20 @@ void replace(type_t::var_t const& from, type_t::var_t const& to, type_t& type)
         },
         [&] (type_t::arr_t& arr)
         {
-            replace(from, to, arr.arg_types.begin(), arr.arg_types.end(), arr.ret_type.get());
+            replace(from, to, arr.arg_kinds.begin(), arr.arg_kinds.end(), arr.ret_type.get());
         });
 }
 
 void replace(
     type_t::var_t const& from,
     type_t::var_t const& to,
-    type_t::arr_t::arg_types_iterator const begin,
-    type_t::arr_t::arg_types_iterator const end,
+    type_t::arr_t::arg_kinds_iterator const begin,
+    type_t::arr_t::arg_kinds_iterator const end,
     type_t& ret_type)
 {
-    for (auto& arg_type: std::ranges::subrange(begin, end))
+    for (auto& kind: std::ranges::subrange(begin, end))
         match(
-            arg_type,
+            kind,
             [&] (type_t::var_t& v)
             {
                 // Note: in theory it would suffice to replace only the free occurrences of `from`

@@ -146,7 +146,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
             return type_t{
                 loc,
                 type_t::arr_t{
-                    fmap(types, [this] (auto* x) { return std::any_cast<type_t::arr_t::arg_type_t>(visitArgType(x)); }),
+                    fmap(types, [this] (auto* x) { return std::any_cast<type_t::arr_t::arg_kind_t>(visitArgType(x)); }),
                     std::any_cast<type_t>(visitType(ctx->type()))}};
         assert(ctx->name);
         return type_t{loc, type_t::var_t{get_text(src, *ctx->name).value()}};
@@ -156,9 +156,9 @@ struct parse_visitor_t : dep0::DepCParserVisitor
     {
         assert(ctx);
         if (ctx->name)
-            return type_t::arr_t::arg_type_t{type_t::var_t{get_text(src, *ctx->name).value()}};
+            return type_t::arr_t::arg_kind_t{type_t::var_t{get_text(src, *ctx->name).value()}};
         assert(ctx->type());
-        return type_t::arr_t::arg_type_t{std::any_cast<type_t>(visitType(ctx->type()))};
+        return type_t::arr_t::arg_kind_t{std::any_cast<type_t>(visitType(ctx->type()))};
     }
 
     virtual std::any visitArg(DepCParser::ArgContext* ctx) override

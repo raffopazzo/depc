@@ -249,11 +249,12 @@ std::ostream& pretty_print(std::ostream& os, typename type_t<P>::arr_t const& x,
 {
     os << '(';
     bool first = true;
-    for (auto const& t: x.arg_types)
+    for (auto const& kind: x.arg_kinds)
     {
         if (not std::exchange(first, false))
             os << ", ";
-        match(t,
+        match(
+            kind,
             [&] (typename type_t<P>::var_t const& x) { pretty_print(os << "typename ", x.name); },
             [&] (type_t<P> const& x) { pretty_print(os, x, indent); });
     }

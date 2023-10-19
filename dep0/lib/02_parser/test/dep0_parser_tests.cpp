@@ -754,16 +754,7 @@ BOOST_AUTO_TEST_CASE(test_0182)
         BOOST_TEST(is_typename(f.value.args[0ul].sort));
         BOOST_TEST(is_type_of(f.value.args[1ul].sort, [] (dep0::parser::type_t const& type)
         {
-            auto const arr = std::get_if<dep0::parser::type_t::arr_t>(&type.value);
-            BOOST_TEST_REQUIRE(arr);
-            auto const arg_type0 = std::get_if<dep0::parser::type_t::var_t>(&arr->arg_types[0]);
-            auto const arg_type1 = std::get_if<dep0::parser::type_t>(&arr->arg_types[1]);
-            BOOST_TEST_REQUIRE(arg_type0);
-            BOOST_TEST_REQUIRE(arg_type1);
-            BOOST_TEST(arg_type0->name.txt == "int");
-            BOOST_TEST(is_type_var(*arg_type1, "int"));
-            BOOST_TEST(is_type_var(arr->ret_type.get(), "u"));
-            return boost::test_tools::predicate_result(true);
+            return is_arr_of(type, std::tuple{type_binder("int"), arg_of_type(type_var("int"))}, type_var("u"));
         }));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
         BOOST_TEST(is_return_of(f.value.body.stmts[0ul], is_zero));

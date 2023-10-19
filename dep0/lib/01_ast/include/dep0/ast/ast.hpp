@@ -155,7 +155,7 @@ struct expr_t
         struct arg_t
         {
             sort_t<P> sort;
-            indexed_var_t name; // TODO should be expr_t::var_t
+            var_t var;
         };
 
         using arg_iterator = std::vector<arg_t>::iterator;

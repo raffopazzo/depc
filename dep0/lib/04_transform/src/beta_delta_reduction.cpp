@@ -32,7 +32,7 @@ bool beta_delta_normalize(delta_reduction::context_t const& ctx, typecheck::modu
     {
         changed |= beta_delta_normalize(ctx2, def);
         // store the result in ctx2, so future look-ups of this definition will find the normalized version
-        bool const inserted = ctx2.try_emplace(ast::indexed_var_t{def.name}, def.value).second;
+        bool const inserted = ctx2.try_emplace(typecheck::expr_t::var_t{ast::indexed_var_t{def.name}}, def.value).second;
         assert(inserted);
     }
     return changed;
@@ -43,7 +43,7 @@ bool beta_delta_normalize(delta_reduction::context_t const& ctx, typecheck::func
     auto ctx2 = ctx.extend();
     for (auto const& arg: def.value.args)
     {
-        bool const inserted = ctx2.try_emplace(arg.name, delta_reduction::something_else_t{}).second;
+        bool const inserted = ctx2.try_emplace(arg.var, delta_reduction::something_else_t{}).second;
         assert(inserted);
     }
     return beta_delta_normalize(ctx2, def.value.body);

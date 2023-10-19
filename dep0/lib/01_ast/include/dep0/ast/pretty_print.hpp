@@ -365,7 +365,7 @@ std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::abs_t const& x,
         {
             new_line(std::exchange(first, false) ? os : os << ',', indent + 1ul);
             pretty_print(os, arg.sort, indent + 1ul);
-            pretty_print(os << ' ', arg.name);
+            pretty_print(os << ' ', arg.var.name);
         }
         new_line(os, indent) << ')';
     }

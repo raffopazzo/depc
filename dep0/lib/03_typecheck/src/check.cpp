@@ -729,13 +729,11 @@ expected<std::pair<type_t, expr_t::abs_t>> check_abs(
                         auto ty = check_type(f_ctx, parsed_ty);
                         if (not ty)
                             return std::move(ty.error());
-                        auto const var = ast::indexed_var_t{x.name};
-                        return f_ctx.try_emplace(var, make_legal_expr(std::move(*ty), expr_t::var_t{var}));
+                        return f_ctx.try_emplace(x.var.name, make_legal_expr(std::move(*ty), expr_t::var_t{x.var.name}));
                     },
                     [&] (ast::typename_t) -> expected<std::pair<context_t::iterator, bool>>
                     {
-                        auto const var = ast::indexed_var_t{x.name};
-                        return f_ctx.try_emplace(var, make_legal_expr(ast::typename_t{}, expr_t::var_t{var}));
+                        return f_ctx.try_emplace(x.var.name, make_legal_expr(ast::typename_t{}, expr_t::var_t{x.var.name}));
                     });
             if (not ok)
                 return std::move(ok.error());
@@ -743,11 +741,11 @@ expected<std::pair<type_t, expr_t::abs_t>> check_abs(
             if (not inserted)
             {
                 std::ostringstream err;
-                pretty_print(err << "cannot redefine `", x.name) << '`';
+                pretty_print(err << "cannot redefine `", x.var.name) << '`';
                 pretty_print(err << " as function argument, previously `", it->second) << '`';
                 return error_t::from_error(dep0::error_t{err.str()}, f_ctx);
             }
-            return expr_t::abs_t::arg_t{std::get<expr_t>(it->second).properties.sort, x.name};
+            return expr_t::abs_t::arg_t{std::get<expr_t>(it->second).properties.sort, expr_t::var_t{x.var.name}};
         });
     if (not args)
         return std::move(args.error());
@@ -765,7 +763,7 @@ expected<std::pair<type_t, expr_t::abs_t>> check_abs(
                         return match(
                             arg.sort,
                             [&] (type_t const& t) -> res_t { return t; },
-                            [&] (ast::typename_t const&) -> res_t { return type_t::var_t{arg.name}; });
+                            [&] (ast::typename_t const&) -> res_t { return type_t::var_t{arg.var.name}; });
                     }),
             *ret_type});
     // if a function has a name it can call itself recursively;

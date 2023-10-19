@@ -57,7 +57,7 @@ bool delta_reduce(context_t const& ctx, typecheck::expr_t& expr)
         {
             // during expansion of top-level function definitions,
             // the current function is not in context to avoid infinite recursion
-            if (auto const val = ctx[var.name])
+            if (auto const val = ctx[var])
                 if (auto const abs = std::get_if<typecheck::expr_t::abs_t>(val))
                 {
                     expr.value = *abs;
@@ -95,7 +95,7 @@ bool delta_reduce(context_t const& ctx, typecheck::expr_t::abs_t& abs)
 {
     auto ctx2 = ctx.extend();
     for (auto const& arg: abs.args)
-        ctx2.try_emplace(arg.name, delta_reduction::something_else_t{});
+        ctx2.try_emplace(arg.var, delta_reduction::something_else_t{});
     return delta_reduce(ctx2, abs.body);
 }
 

@@ -104,8 +104,8 @@ struct llvm_func_proto_t
 {
     struct arg_t
     {
-        ast::indexed_var_t name;
         typecheck::type_t type;
+        typecheck::expr_t::var_t var;
     };
     std::vector<arg_t> args;
     typecheck::type_t ret_type;
@@ -351,8 +351,8 @@ void gen_func_args(local_context_t& local, llvm_func_proto_t const& proto, llvm:
     for (auto const i: std::views::iota(0ul, proto.args.size()))
     {
         auto* const llvm_arg = llvm_f->getArg(i);
-        if (proto.args[i].name.idx == 0ul)
-            llvm_arg->setName(proto.args[i].name.txt.view());
+        if (proto.args[i].var.name.idx == 0ul)
+            llvm_arg->setName(proto.args[i].var.name.txt.view());
         if (auto const attr = get_sign_ext_attribute(local, proto.args[i].type); attr != llvm::Attribute::None)
             llvm_arg->addAttr(attr);
         bool inserted = false;
@@ -361,10 +361,10 @@ void gen_func_args(local_context_t& local, llvm_func_proto_t const& proto, llvm:
             assert(llvm_arg->getType()->isPointerTy());
             auto const function_type = cast<llvm::FunctionType>(llvm_arg->getType()->getPointerElementType());
             assert(function_type);
-            inserted = local.try_emplace(proto.args[i].name, llvm_func_t(function_type, llvm_arg)).second;
+            inserted = local.try_emplace(proto.args[i].var.name, llvm_func_t(function_type, llvm_arg)).second;
         }
         else
-            inserted = local.try_emplace(proto.args[i].name, llvm_arg).second;
+            inserted = local.try_emplace(proto.args[i].var.name, llvm_arg).second;
         assert(inserted);
     }
 }
@@ -407,7 +407,7 @@ llvm_func_t gen_func(
                 f.args,
                 [] (auto const& arg)
                 {
-                    return llvm_func_proto_t::arg_t{arg.name, std::get<typecheck::type_t>(arg.sort)};
+                    return llvm_func_proto_t::arg_t{std::get<typecheck::type_t>(arg.sort), arg.var};
                 }),
             f.ret_type};
     auto const name = std::string{"$_func_"} + std::to_string(global.next_id++);
@@ -437,7 +437,7 @@ void gen_func(
                 f.args,
                 [] (auto const& arg)
                 {
-                    return llvm_func_proto_t::arg_t{arg.name, std::get<typecheck::type_t>(arg.sort)};
+                    return llvm_func_proto_t::arg_t{std::get<typecheck::type_t>(arg.sort), arg.var};
                 }),
             f.ret_type};
     auto const llvm_f =
@@ -471,17 +471,17 @@ llvm_func_t gen_specialized_func(
             arg.properties.sort,
             [&] (typecheck::type_t const& type)
             {
-                proto.args.emplace_back(f.args[i].name, type);
+                proto.args.emplace_back(type, f.args[i].var);
             },
             [&] (ast::typename_t const&)
             {
                 auto const& arg_type = std::get<typecheck::type_t>(arg.value);
-                bool const inserted = f_ctx.try_emplace(f.args[i].name, arg_type).second;
+                bool const inserted = f_ctx.try_emplace(f.args[i].var.name, arg_type).second;
                 assert(inserted);
                 // NB: in general it is not correct to perform substitution directly in the return type,
                 // because some later argument could in theory rebind the current type variable;
                 // but we forbid this kind of shadowing, so in this case it is fine to substitute directly.
-                substitute(proto.ret_type, typecheck::type_t::var_t{f.args[i].name}, arg_type);
+                substitute(proto.ret_type, typecheck::type_t::var_t{f.args[i].var.name}, arg_type);
             });
     auto const llvm_f =
         llvm::Function::Create(

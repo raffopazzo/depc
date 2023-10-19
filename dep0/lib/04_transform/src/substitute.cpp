@@ -33,13 +33,13 @@ void substitute(
     // only free occurrences of `var` can be substituted;
     // so if any binding variable is `var` then we cannot perform substitution
     for (auto const& arg: std::ranges::subrange(begin, end))
-        if (arg.name == var.name)
+        if (arg.var == var)
             return;
     // if any `arg` appears free in `expr`, we need to rename `arg`
     for (auto& arg: std::ranges::subrange(begin, end))
-        if (contains_var(expr, typecheck::expr_t::var_t{arg.name}))
+        if (contains_var(expr, arg.var))
             // TODO should consider all args before renaming (i.e. for max index)
-            arg.name = rename(typecheck::expr_t::var_t{arg.name}, body).name;
+            arg.var = rename(arg.var, body);
     // TODO with dependent types we will need to perform substitution (and renaming) in `ret_type` too
     // TODO bound variables inside lambda captures must not be substituted; imagine this
     // `i32_t g(i32_t x) { auto f = [x=1] { return x; }; return f() + x; }` and imagine the application
@@ -169,7 +169,7 @@ bool contains_var(typecheck::expr_t const& x, typecheck::expr_t::var_t const& va
         },
         [&] (typecheck::expr_t::abs_t const& x)
         {
-            return std::ranges::any_of(x.args, [&] (auto const& arg) { return arg.name == var.name; })
+            return std::ranges::any_of(x.args, [&] (auto const& arg) { return arg.var == var; })
                 or contains_var(x.body, var);
         },
         [&] (typecheck::type_t const& x)
@@ -253,7 +253,7 @@ std::size_t max_index(typecheck::expr_t const& x)
                 max_index(x.body),
                 [] (std::size_t const acc, typecheck::expr_t::abs_t::arg_t const& arg)
                 {
-                    return std::max(acc, arg.name.idx);
+                    return std::max(acc, arg.var.name.idx);
                 });
         },
         [&] (typecheck::type_t const& x)
@@ -328,8 +328,8 @@ void replace(typecheck::expr_t::var_t const& from, typecheck::expr_t::var_t cons
             // and we could stop if `from` introduces a new binding variable;
             // but replacing everything is easier and it shouldn't harm.
             for (auto& arg: x.args)
-                if (arg.name == from.name)
-                    arg.name = to.name;
+                if (arg.var == from)
+                    arg.var = to;
             replace(from, to, x.body);
         },
         [&] (typecheck::type_t const& x)

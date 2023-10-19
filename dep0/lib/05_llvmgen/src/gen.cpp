@@ -598,7 +598,7 @@ llvm::Value* gen_val(
         },
         [&] (typecheck::expr_t::boolean_constant_t const& x) -> llvm::Value*
         {
-            return llvm::ConstantInt::getBool(builder.getContext(), x.value == "true");
+            return llvm::ConstantInt::getBool(builder.getContext(), x.value);
         },
         [&] (typecheck::expr_t::numeric_constant_t const& x) -> llvm::Value*
         {

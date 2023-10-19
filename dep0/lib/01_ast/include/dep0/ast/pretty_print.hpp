@@ -324,7 +324,7 @@ std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::arith_expr_t co
 template <Properties P>
 std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::boolean_constant_t const& x, std::size_t const indent)
 {
-    return os << x.value;
+    return os << (x.value ? "true" : "false");
 }
 
 template <Properties P>

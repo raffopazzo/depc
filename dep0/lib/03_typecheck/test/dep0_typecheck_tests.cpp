@@ -531,7 +531,7 @@ BOOST_AUTO_TEST_CASE(test_0178)
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
         auto const if_1 = std::get_if<dep0::typecheck::stmt_t::if_else_t>(&f.value.body.stmts[0ul].value);
         BOOST_TEST_REQUIRE(if_1);
-        BOOST_TEST(is_app_of(if_1->cond, var("f"), bool_, boolean_constant("true")));
+        BOOST_TEST(is_app_of(if_1->cond, var("f"), bool_, boolean_constant(true)));
         BOOST_TEST_REQUIRE(if_1->false_branch.has_value());
         BOOST_TEST_REQUIRE(if_1->false_branch->stmts.size() == 1ul);
         auto const if_2 = std::get_if<dep0::typecheck::stmt_t::if_else_t>(&if_1->false_branch->stmts[0ul].value);

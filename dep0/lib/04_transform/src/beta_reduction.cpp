@@ -94,7 +94,7 @@ bool beta_normalize(typecheck::body_t& body)
                 if (auto const c = std::get_if<typecheck::expr_t::boolean_constant_t>(&if_.cond.value))
                 {
                     changed = true;
-                    if (c->value == "true")
+                    if (c->value)
                         return replace_with(it, std::move(if_.true_branch.stmts));
                     else if (if_.false_branch)
                         return replace_with(it, std::move(if_.false_branch->stmts));

@@ -129,7 +129,7 @@ struct expr_t
     };
     struct boolean_constant_t
     {
-        source_text value; // TODO should be `bool` instead
+        bool value;
         bool operator==(boolean_constant_t const&) const = default;
     };
     struct numeric_constant_t

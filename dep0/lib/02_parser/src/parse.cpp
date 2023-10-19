@@ -267,7 +267,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         assert(ctx->value);
         return expr_t{
             get_loc(src, *ctx).value(),
-            expr_t::boolean_constant_t{get_text(src, *ctx->value).value()}};
+            expr_t::boolean_constant_t{get_text(src, *ctx->value).value() == "true"}};
     }
 
     virtual std::any visitNumericExpr(DepCParser::NumericExprContext* ctx)

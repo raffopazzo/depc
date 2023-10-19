@@ -154,9 +154,8 @@ boost::test_tools::predicate_result is_var(ast::expr_t<P> const& expr, std::stri
 }
 
 template <ast::Properties P>
-boost::test_tools::predicate_result is_boolean_constant(ast::expr_t<P> const& expr, std::string_view const x)
+boost::test_tools::predicate_result is_boolean_constant(ast::expr_t<P> const& expr, bool const x)
 {
-    assert(x.size() > 0ul);
     auto const c = std::get_if<typename ast::expr_t<P>::boolean_constant_t>(&expr.value);
     if (not c)
         return failure("expression is not boolean_constant_t but ", pretty_name(expr.value));
@@ -312,7 +311,7 @@ inline auto var(std::string const& name)
     };
 }
 
-inline auto boolean_constant(std::string const& value)
+inline auto boolean_constant(bool const value)
 {
     return [value] <ast::Properties P> (ast::expr_t<P> const& expr)
     {

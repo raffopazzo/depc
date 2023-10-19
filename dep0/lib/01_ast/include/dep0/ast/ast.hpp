@@ -7,7 +7,6 @@
 #include <boost/variant/recursive_wrapper.hpp>
 
 #include <optional>
-#include <ostream>
 #include <tuple>
 #include <vector>
 #include <variant>
@@ -33,8 +32,6 @@ struct indexed_var_t
     bool operator<(indexed_var_t const& that) const { return std::tie(txt, idx) < std::tie(that.txt, that.idx); }
     bool operator==(indexed_var_t const&) const = default;
 };
-
-std::ostream& pretty_print(std::ostream&, indexed_var_t const&);
 
 template <Properties P>
 struct body_t
@@ -158,8 +155,11 @@ struct expr_t
         struct arg_t
         {
             sort_t<P> sort;
-            indexed_var_t name;
+            indexed_var_t name; // TODO should be expr_t::var_t
         };
+
+        using arg_iterator = std::vector<arg_t>::iterator;
+        using arg_const_iterator = std::vector<arg_t>::const_iterator;
 
         std::vector<arg_t> args;
         type_t ret_type;

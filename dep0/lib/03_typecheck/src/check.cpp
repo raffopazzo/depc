@@ -3,6 +3,8 @@
 #include "dep0/typecheck/alpha_equivalence.hpp"
 #include "dep0/typecheck/substitute.hpp"
 
+#include "dep0/ast/pretty_print.hpp"
+
 #include "private/returns_from_all_branches.hpp"
 
 #include "dep0/digit_separator.hpp"
@@ -439,7 +441,7 @@ static expected<expr_t> check_numeric_expr(
             if (not t)
             {
                 std::ostringstream err;
-                pretty_print(err << "type mismatch between numeric constant and `", var) << '`';
+                pretty_print<properties_t>(err << "type mismatch between numeric constant and `", var) << '`';
                 return error(err.str());
             }
             return match(
@@ -489,7 +491,7 @@ static expected<expr_t> check_numeric_expr(
         [&] (type_t::arr_t const& x)
         {
             std::ostringstream err;
-            pretty_print(err << "type mismatch between numeric constant and `", x) << '`';
+            pretty_print<properties_t>(err << "type mismatch between numeric constant and `", x) << '`';
             return error(err.str());
         });
 }

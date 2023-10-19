@@ -1,4 +1,5 @@
 #include "dep0/typecheck/error.hpp"
+#include "dep0/ast/pretty_print.hpp"
 
 namespace dep0::typecheck {
 

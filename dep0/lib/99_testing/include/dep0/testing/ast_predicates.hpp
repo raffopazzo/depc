@@ -1,6 +1,7 @@
 #pragma once
 
 #include "dep0/ast/ast.hpp"
+#include "dep0/ast/pretty_print.hpp"
 
 #include "dep0/testing/failure.hpp"
 #include "dep0/testing/predicate.hpp"

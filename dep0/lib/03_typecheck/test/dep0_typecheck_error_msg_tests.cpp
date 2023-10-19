@@ -3,6 +3,7 @@
 
 #include "dep0/parser/parse.hpp"
 #include "dep0/typecheck/check.hpp"
+#include "dep0/ast/pretty_print.hpp"
 
 #include <filesystem>
 #include <cstdlib>

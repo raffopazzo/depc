@@ -1,4 +1,5 @@
 #include "dep0/typecheck/context.hpp"
+#include "dep0/ast/pretty_print.hpp"
 #include "dep0/fmap.hpp"
 #include "dep0/match.hpp"
 

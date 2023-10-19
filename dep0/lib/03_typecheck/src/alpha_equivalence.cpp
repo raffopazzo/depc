@@ -1,4 +1,7 @@
 #include "dep0/typecheck/alpha_equivalence.hpp"
+
+#include "dep0/ast/pretty_print.hpp"
+
 #include "dep0/match.hpp"
 #include "dep0/scope_map.hpp"
 
@@ -28,8 +31,8 @@ struct alpha_equivalence_visitor
     dep0::expected<std::true_type> operator()(T const& x, U const& y) const
     {
         std::ostringstream err;
-        pretty_print(err << '`', x) << '`';
-        pretty_print(err << "is not alpha-equivalent to `", y) << '`';
+        pretty_print<typecheck::properties_t>(err << '`', x) << '`';
+        pretty_print<typecheck::properties_t>(err << "is not alpha-equivalent to `", y) << '`';
         return dep0::error_t(err.str());
     }
 
@@ -50,10 +53,10 @@ struct alpha_equivalence_visitor
             else
             {
                 std::ostringstream err;
-                pretty_print(err << "in the current context `", x) << '`';
-                pretty_print(err << " means `", *var_x) << '`';
-                pretty_print(err << " but `", y) << '`';
-                pretty_print(err << " means `", *var_y) << '`';
+                pretty_print<typecheck::properties_t>(err << "in the current context `", x) << '`';
+                pretty_print<typecheck::properties_t>(err << " means `", *var_x) << '`';
+                pretty_print<typecheck::properties_t>(err << " but `", y) << '`';
+                pretty_print<typecheck::properties_t>(err << " means `", *var_y) << '`';
                 return dep0::error_t(err.str());
             }
         }
@@ -64,14 +67,14 @@ struct alpha_equivalence_visitor
             else
             {
                 std::ostringstream err;
-                pretty_print(err << '`', x) << '`';
-                pretty_print(err << " is not alpha-equivalent to `", y) << '`';
+                pretty_print<typecheck::properties_t>(err << '`', x) << '`';
+                pretty_print<typecheck::properties_t>(err << " is not alpha-equivalent to `", y) << '`';
                 return dep0::error_t(err.str());
             }
         }
         std::ostringstream err;
-        pretty_print(err << "in the current context `", x) << '`';
-        pretty_print(err << " has a different meaning from `", y) << '`';
+        pretty_print<typecheck::properties_t>(err << "in the current context `", x) << '`';
+        pretty_print<typecheck::properties_t>(err << " has a different meaning from `", y) << '`';
         return dep0::error_t(err.str());
     }
 
@@ -91,7 +94,7 @@ struct alpha_equivalence_visitor
                 {
                     match(
                         arg_type,
-                        [&] (type_t::var_t const& var) { pretty_print(os << "typename ", var); },
+                        [&] (type_t::var_t const& var) { pretty_print<typecheck::properties_t>(os << "typename ", var); },
                         [&] (type_t const& type) { pretty_print(os, type); });
                     return os;
                 };

@@ -1,6 +1,7 @@
 #include "private/mangler.hpp"
 
 #include "dep0/typecheck/ast.hpp"
+#include "dep0/ast/pretty_print.hpp"
 #include "dep0/match.hpp"
 
 #include <sstream>

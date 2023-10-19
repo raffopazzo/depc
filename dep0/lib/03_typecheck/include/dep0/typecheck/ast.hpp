@@ -99,21 +99,4 @@ struct legal_expr_t
     bool operator==(legal_expr_t const&) const = default;
 };
 
-std::ostream& pretty_print(std::ostream&, type_def_t const&);
-std::ostream& pretty_print(std::ostream&, type_t const&);
-std::ostream& pretty_print(std::ostream&, type_t::bool_t const&);
-std::ostream& pretty_print(std::ostream&, type_t::unit_t const&);
-std::ostream& pretty_print(std::ostream&, type_t::i8_t const&);
-std::ostream& pretty_print(std::ostream&, type_t::i16_t const&);
-std::ostream& pretty_print(std::ostream&, type_t::i32_t const&);
-std::ostream& pretty_print(std::ostream&, type_t::i64_t const&);
-std::ostream& pretty_print(std::ostream&, type_t::u8_t const&);
-std::ostream& pretty_print(std::ostream&, type_t::u16_t const&);
-std::ostream& pretty_print(std::ostream&, type_t::u32_t const&);
-std::ostream& pretty_print(std::ostream&, type_t::u64_t const&);
-std::ostream& pretty_print(std::ostream&, type_t::var_t const&);
-std::ostream& pretty_print(std::ostream&, type_t::arr_t const&);
-std::ostream& pretty_print(std::ostream&, expr_t const&);
-std::ostream& pretty_print(std::ostream&, sort_t const&);
-
 } // namespace dep0::typecheck

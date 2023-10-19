@@ -781,4 +781,48 @@ BOOST_AUTO_TEST_CASE(test_0182)
     }
 }
 
+BOOST_AUTO_TEST_CASE(test_0183)
+{
+    BOOST_TEST_REQUIRE(pass("test_0183.depc"));
+    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 3ul);
+    {
+        auto const& f = pass_result->func_defs[0ul];
+        BOOST_TEST(f.name == "f");
+        BOOST_TEST_REQUIRE(f.value.args.size() == 2ul);
+        BOOST_TEST(f.value.args[0ul].name.txt == "x");
+        BOOST_TEST(f.value.args[1ul].name.txt == "y");
+        BOOST_TEST(is_type_of(f.value.args[0ul].sort, is_type_i32));
+        BOOST_TEST(is_type_of(f.value.args[1ul].sort, is_type_i32));
+        BOOST_TEST(is_type_i32(f.value.ret_type));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], var("x")));
+    }
+    {
+        auto const& f = pass_result->func_defs[1ul];
+        BOOST_TEST(f.name == "g");
+        BOOST_TEST_REQUIRE(f.value.args.size() == 2ul);
+        BOOST_TEST(f.value.args[0ul].name.txt == "x");
+        BOOST_TEST(f.value.args[1ul].name.txt == "y");
+        BOOST_TEST(is_type_of(f.value.args[0ul].sort, is_type_i32));
+        BOOST_TEST(is_type_of(f.value.args[1ul].sort, is_type_i32));
+        BOOST_TEST(is_type_i32(f.value.ret_type));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], [] (dep0::parser::expr_t const& expr)
+        {
+            return is_app_of(expr, var("f"), var("y"), numeric_constant("2"));
+        }));
+    }
+    {
+        auto const& f = pass_result->func_defs[2ul];
+        BOOST_TEST(f.name == "zero");
+        BOOST_TEST(f.value.args.empty());
+        BOOST_TEST(is_type_i32(f.value.ret_type));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], [] (dep0::parser::expr_t const& expr)
+        {
+            return is_app_of(expr, var("g"), numeric_constant("1"), numeric_constant("0"));
+        }));
+    }
+}
+
 BOOST_AUTO_TEST_SUITE_END()

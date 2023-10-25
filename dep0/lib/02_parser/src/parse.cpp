@@ -371,7 +371,6 @@ struct FirstErrorListener : antlr4::ANTLRErrorListener
     {
         if (error) return;
         auto text = token ? get_text(src, *token) : std::nullopt;
-        // TODO substr(src.index_of(line, col), 1);
         error = error_t{msg, source_loc_t{line, 1+col, text ? std::move(*text) : src.substr(0, 0)}};
     }
 };

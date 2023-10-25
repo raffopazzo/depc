@@ -71,12 +71,6 @@ expr_t make_legal_expr(sort_t sort, Args&&... args)
     return expr_t{derivation_rules::make_derivation<expr_t>(), std::move(sort), std::forward<Args>(args)...};
 }
 
-template <typename... Ts>
-static std::ostream& pretty_print(std::ostream& os, std::variant<Ts...> const& v)
-{
-    return match(v, [&] (auto const& x) -> std::ostream& { return pretty_print(os, x); });
-}
-
 // forward declarations
 // TODO `type_assign_func_call` should return `expected<expr_t>` but that means it can be inhabited by
 // an expression of sort `typename` which at the moment it's not yet true
@@ -87,7 +81,7 @@ static expected<type_t> check_type(context_t const&, parser::type_t const&);
 static expected<body_t> check_body(context_t const&, parser::body_t const&, type_t const& return_type);
 static expected<stmt_t> check_stmt(context_t const&, parser::stmt_t const&, type_t const& return_type);
 static expected<expr_t> check_expr(context_t const&, parser::expr_t const&, type_t const& expected_type);
-static expected<type_t> check_typename(context_t const&, parser::expr_t const&, ast::typename_t const&);
+static expected<type_t> check_type_expr(context_t const&, parser::expr_t const&);
 static expected<std::pair<type_t, expr_t::abs_t>>
     check_abs(context_t const&, parser::expr_t::abs_t const&, std::optional<source_text> const&);
 
@@ -160,7 +154,7 @@ type_assign_func_call(context_t const& ctx, parser::expr_t::app_t const& f)
             func_type->arg_kinds[i],
             [&] (type_t::var_t const& var) -> expected<expr_t>
             {
-                auto type = check_typename(ctx, f.args[i], ast::typename_t{});
+                auto type = check_type_expr(ctx, f.args[i]);
                 if (not type)
                     return std::move(type.error());
                 substitute(
@@ -625,12 +619,12 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, type_
         });
 }
 
-expected<type_t> check_typename(context_t const& ctx, parser::expr_t const& x, ast::typename_t const& expected_type)
+expected<type_t> check_type_expr(context_t const& ctx, parser::expr_t const& x)
 {
     auto const loc = x.properties;
     auto const error = [&] (std::string err)
     {
-        return error_t::from_error(dep0::error_t{std::move(err), loc}, ctx, expected_type);
+        return error_t::from_error(dep0::error_t{std::move(err), loc}, ctx, ast::typename_t{});
     };
     return match(
         x.value,
@@ -697,7 +691,7 @@ expected<type_t> check_typename(context_t const& ctx, parser::expr_t const& x, a
                 if (not f.error().location)
                     f.error().location = loc;
                 if (not f.error().tgt)
-                    f.error().tgt = expected_type;
+                    f.error().tgt = ast::typename_t{};
                 return std::move(f.error());
             }
         },

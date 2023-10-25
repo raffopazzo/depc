@@ -43,6 +43,7 @@ public:
     }
 };
 
-std::ostream& pretty_print(std::ostream& os, context_t const&);
+std::ostream& pretty_print(std::ostream&, context_t const&);
+std::ostream& pretty_print(std::ostream&, context_t::value_type const&);
 
 } // namespace dep0::typecheck

@@ -11,6 +11,7 @@ namespace delta_reduction {
     struct something_else_t{};
 }
 
+// This family of functions only perform one-step delta-reduction, not a full delta-normalization.
 bool delta_reduce(delta_reduction::context_t const&, typecheck::func_def_t&);
 bool delta_reduce(delta_reduction::context_t const&, typecheck::body_t&);
 bool delta_reduce(delta_reduction::context_t const&, typecheck::stmt_t&);

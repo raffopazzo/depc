@@ -26,8 +26,7 @@ static std::ostream& mangled_print(std::ostream& os, typecheck::type_t const& t)
         [&] (typecheck::type_t::arr_t const& x)
         {
             os << '(';
-            bool first = true;
-            for (auto const& kind: x.arg_kinds)
+            for (bool first = true; auto const& kind: x.arg_kinds)
             {
                 if (not std::exchange(first, false))
                     os << ',';

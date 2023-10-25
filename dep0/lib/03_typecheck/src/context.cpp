@@ -1,6 +1,5 @@
 #include "dep0/typecheck/context.hpp"
 #include "dep0/ast/pretty_print.hpp"
-#include "dep0/fmap.hpp"
 #include "dep0/match.hpp"
 
 #include <ranges>
@@ -35,8 +34,7 @@ auto context_t::operator[](ast::indexed_var_t const& name) const -> value_type c
 template <typename R, typename F>
 std::ostream& for_each_line(std::ostream& os, R&& r, F&& f)
 {
-    bool first = true;
-    for (auto const& x: std::forward<R>(r))
+    for (bool first = true; auto const& x: std::forward<R>(r))
     {
         if (not std::exchange(first, false))
             os << std::endl;
@@ -60,6 +58,11 @@ std::ostream& pretty_print(std::ostream& os, context_t const& ctx)
                 [&] (expr_t const& x) { pretty_print(os, x.properties.sort); });
         });
     return os;
+}
+
+std::ostream& pretty_print(std::ostream& os, context_t::value_type const& v)
+{
+    return match(v, [&] (auto const& x) -> std::ostream& { return pretty_print(os, x); });
 }
 
 } // namespace dep0::typecheck

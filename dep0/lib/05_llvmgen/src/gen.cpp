@@ -98,6 +98,19 @@ struct snippet_t
 {
     llvm::BasicBlock* entry_block;
     std::vector<llvm::BasicBlock*> open_blocks;
+
+    template <typename F>
+    void seal_open_blocks(llvm::IRBuilder<>& builder, F&& f)
+    {
+        for (auto& bb: open_blocks)
+        {
+            assert(not bb->getTerminator());
+            builder.SetInsertPoint(bb);
+            f(builder);
+            assert(bb->getTerminator());
+        }
+        open_blocks.clear();
+    }
 };
 
 struct llvm_func_proto_t
@@ -383,15 +396,10 @@ void gen_func_body(
     llvm::Function* const llvm_f)
 {
     auto snippet = gen_body(global, local, body, "entry", llvm_f);
-    // seal open blocks
     if (snippet.open_blocks.size() and std::holds_alternative<typecheck::type_t::unit_t>(proto.ret_type.value))
     {
         auto builder = llvm::IRBuilder<>(global.llvm_ctx);
-        for (auto* const bb: snippet.open_blocks)
-        {
-            builder.SetInsertPoint(bb);
-            builder.CreateRetVoid();
-        }
+        snippet.seal_open_blocks(builder, [] (auto& builder) { builder.CreateRetVoid(); });
     }
 }
 
@@ -519,12 +527,7 @@ snippet_t gen_body(
             if (snippet.open_blocks.size())
             {
                 auto next = llvm::BasicBlock::Create(global.llvm_ctx, "next", llvm_f);
-                for (auto& bb: snippet.open_blocks)
-                {
-                    builder.SetInsertPoint(bb);
-                    builder.CreateBr(next);
-                }
-                snippet.open_blocks.clear();
+                snippet.seal_open_blocks(builder, [next] (auto& builder) { builder.CreateBr(next); });
                 builder.SetInsertPoint(next);
             }
             gen_stmt(global, local, snippet, builder, *it, llvm_f);
@@ -560,7 +563,7 @@ void gen_stmt(
             }
             else
             {
-                auto else_ = llvm::BasicBlock::Create(builder.getContext(), "else", llvm_f);
+                auto else_ = llvm::BasicBlock::Create(global.llvm_ctx, "else", llvm_f);
                 builder.CreateCondBr(cond, then.entry_block, else_);
                 snipppet.open_blocks.push_back(else_);
             }
@@ -598,7 +601,7 @@ llvm::Value* gen_val(
         },
         [&] (typecheck::expr_t::boolean_constant_t const& x) -> llvm::Value*
         {
-            return llvm::ConstantInt::getBool(builder.getContext(), x.value);
+            return llvm::ConstantInt::getBool(global.llvm_ctx, x.value);
         },
         [&] (typecheck::expr_t::numeric_constant_t const& x) -> llvm::Value*
         {

@@ -2,6 +2,8 @@
 
 namespace dep0::typecheck {
 
+static bool returns_from_all_branches(stmt_t::if_else_t const&);
+
 bool returns_from_all_branches(body_t const& body)
 {
     struct visitor
@@ -10,6 +12,9 @@ bool returns_from_all_branches(body_t const& body)
         bool operator()(stmt_t::if_else_t const& x) const { return returns_from_all_branches(x); }
         bool operator()(stmt_t::return_t const&) const { return true; }
     };
+    // a top level return statement shadows any other statement that may follow it; so can immediately return true;
+    // similary, an if-else that returns from both branches shadows any statement that may follow it;
+    // so, in either case, we can immediately return true as soon as either is true
     for (auto const& s: body.stmts)
         if (std::visit(visitor{}, s.value))
             return true;

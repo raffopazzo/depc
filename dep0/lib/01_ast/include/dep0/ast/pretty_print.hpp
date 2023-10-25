@@ -149,8 +149,7 @@ std::ostream& pretty_print(std::ostream& os, func_def_t<P> const& func_def, std:
     else
     {
         os << '(';
-        bool first = true;
-        for (auto const& arg: func_def.value.args)
+        for (bool first = true; auto const& arg: func_def.value.args)
         {
             new_line(std::exchange(first, false) ? os : os << ',', indent + 1ul);
             pretty_print(os, arg.sort, indent + 1ul);
@@ -251,13 +250,8 @@ template <Properties P>
 std::ostream& pretty_print(std::ostream& os, typename type_t<P>::arr_t const& x, std::size_t const indent)
 {
     os << '(';
-    bool first = true;
-    for (auto const& kind: x.arg_kinds)
-    {
-        if (not std::exchange(first, false))
-            os << ", ";
-        pretty_print<P>(os, kind, indent);
-    }
+    for (bool first = true; auto const& kind: x.arg_kinds)
+        pretty_print<P>(std::exchange(first, false) ? os : os << ", ", kind, indent);
     pretty_print(os << ") -> ", x.ret_type.get(), indent);
     return os;
 }
@@ -354,8 +348,7 @@ template <Properties P>
 std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::app_t const& x, std::size_t const indent)
 {
     pretty_print(os, x.func.get(), indent) << '(';
-    bool first = true;
-    for (auto const& arg: x.args)
+    for (bool first = true; auto const& arg: x.args)
         pretty_print(std::exchange(first, false) ? os : os << ", ", arg, indent + 1ul);
     os << ')';
     return os;
@@ -371,8 +364,7 @@ std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::abs_t const& x,
     else
     {
         os << '(';
-        bool first = true;
-        for (auto const& arg: x.args)
+        for (bool first = true; auto const& arg: x.args)
         {
             new_line(std::exchange(first, false) ? os : os << ',', indent + 1ul);
             pretty_print(os, arg.sort, indent + 1ul);

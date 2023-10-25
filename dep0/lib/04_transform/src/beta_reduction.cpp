@@ -84,6 +84,7 @@ bool beta_normalize(typecheck::body_t& body)
                     if (auto* const abs = std::get_if<typecheck::expr_t::abs_t>(&app.func.get().value))
                     {
                         changed = true;
+                        // TODO fix this: if body contains 2 return statements, all others in between must be dropped
                         std::erase_if(abs->body.stmts, is_return);
                         return replace_with(it, std::move(abs->body.stmts));
                     }

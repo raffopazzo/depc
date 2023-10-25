@@ -10,7 +10,7 @@ namespace dep0::typecheck {
 class context_t
 {
 public:
-    using value_type = std::variant<type_def_t, type_t, expr_t>;
+    using value_type = std::variant<type_def_t, type_t::var_t, expr_t>;
 
 private:
     scope_map<ast::indexed_var_t, value_type> m_values;

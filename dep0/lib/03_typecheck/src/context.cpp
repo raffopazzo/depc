@@ -54,7 +54,7 @@ std::ostream& pretty_print(std::ostream& os, context_t const& ctx)
             match(
                 x.second,
                 [&] (type_def_t const& t) { pretty_print(os, t); },
-                [&] (type_t const& t) { pretty_print(os, t); },
+                [&] (type_t::var_t const& t) { pretty_print<properties_t>(os, t); },
                 [&] (expr_t const& x) { pretty_print(os, x.properties.sort); });
         });
     return os;

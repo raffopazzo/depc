@@ -69,9 +69,9 @@ type_assign_func_call(context_t const& ctx, parser::expr_t::app_t const& f)
             {
                 return error("cannot invoke a typedef");
             },
-            [&] (type_t const&) -> expected<expr_t>
+            [&] (type_t::var_t const&) -> expected<expr_t>
             {
-                return error("cannot invoke a type");
+                return error("cannot invoke a type variable");
             },
             [&] (expr_t const& expr) -> expected<expr_t>
             {
@@ -197,7 +197,7 @@ expected<type_t> check_type(context_t const& ctx, parser::type_t const& t)
             return match(
                 *val,
                 [&] (type_def_t const&) -> expected<type_t> { return make_legal_type(type_t::var_t{var.name}); },
-                [] (type_t const& type) -> expected<type_t> { return type; },
+                [] (type_t::var_t const& v) -> expected<type_t> { return make_legal_type(v); },
                 [&] (expr_t const& expr) -> expected<type_t>
                 {
                     return match(
@@ -226,7 +226,7 @@ expected<type_t> check_type(context_t const& ctx, parser::type_t const& t)
                             [&] (parser::type_t::var_t const& x) -> expected<type_t::arr_t::arg_kind_t>
                             {
                                 auto const type_var = type_t::var_t{x.name};
-                                auto const [it, inserted] = arr_ctx.try_emplace(x.name, make_legal_type(type_var));
+                                auto const [it, inserted] = arr_ctx.try_emplace(x.name, type_var);
                                 if (not inserted)
                                 {
                                     std::ostringstream err;
@@ -380,56 +380,69 @@ static expected<expr_t> check_numeric_expr(
         [&] (type_t::u64_t const&) { return check_integer("u64_t", "+", "18446744073709551615"); },
         [&] (type_t::var_t const& var) -> expected<expr_t>
         {
-            // TODO: I think this should not fail if the context contains a primitive `type_t`
-            auto const t = std::get_if<type_def_t>(ctx[var.name]);
-            if (not t)
-            {
-                std::ostringstream err;
-                pretty_print<properties_t>(err << "type mismatch between numeric constant and `", var) << '`';
-                return error(err.str());
-            }
+            auto const val = ctx[var.name];
+            assert(val and "unknown type variable despite typecheck succeeded for the expected type");
             return match(
-                t->value,
-                [&] (type_def_t::integer_t const& integer) -> expected<expr_t>
+                *val,
+                [&] (type_def_t const& t) -> expected<expr_t>
                 {
-                    if (integer.sign == ast::sign_t::signed_v)
-                    {
-                        std::string_view const max_abs =
-                            integer.max_abs_value ? integer.max_abs_value->view() :
-                            integer.width == ast::width_t::_8 ? "127" :
-                            integer.width == ast::width_t::_16 ? "32767" :
-                            integer.width == ast::width_t::_32 ? "2147483647" :
-                            integer.width == ast::width_t::_64 ? "9223372036854775807" :
-                            "";
-                        if (max_abs.empty())
+                    return match(
+                        t.value,
+                        [&] (type_def_t::integer_t const& integer) -> expected<expr_t>
                         {
-                            std::ostringstream err;
-                            err << "uknown width for signed integer `static_cast<int>(integer.width)="
-                                << static_cast<int>(integer.width) << "`. ";
-                            err << "This is a compiler bug, please report it!";
-                            return error(err.str());
-                        }
-                        return check_integer(integer.name, "+-", max_abs);
-                    }
-                    else
-                    {
-                        std::string_view const max_abs =
-                            integer.max_abs_value ? integer.max_abs_value->view() :
-                            integer.width == ast::width_t::_8 ? "255" :
-                            integer.width == ast::width_t::_16 ? "65535" :
-                            integer.width == ast::width_t::_32 ? "4294967295" :
-                            integer.width == ast::width_t::_64 ? "18446744073709551615" :
-                            "";
-                        if (max_abs.empty())
-                        {
-                            std::ostringstream err;
-                            err << "uknown width for unsigned integer `static_cast<int>(integer.width)="
-                                << static_cast<int>(integer.width) << "`. ";
-                            err << "This is a compiler bug, please report it!";
-                            return error(err.str());
-                        }
-                        return check_integer(integer.name, "+", max_abs);
-                    }
+                            if (integer.sign == ast::sign_t::signed_v)
+                            {
+                                std::string_view const max_abs =
+                                    integer.max_abs_value ? integer.max_abs_value->view() :
+                                    integer.width == ast::width_t::_8 ? "127" :
+                                    integer.width == ast::width_t::_16 ? "32767" :
+                                    integer.width == ast::width_t::_32 ? "2147483647" :
+                                    integer.width == ast::width_t::_64 ? "9223372036854775807" :
+                                    "";
+                                if (max_abs.empty())
+                                {
+                                    std::ostringstream err;
+                                    err << "uknown width for signed integer `static_cast<int>(integer.width)="
+                                        << static_cast<int>(integer.width) << "`. ";
+                                    err << "This is a compiler bug, please report it!";
+                                    return error(err.str());
+                                }
+                                return check_integer(integer.name, "+-", max_abs);
+                            }
+                            else
+                            {
+                                std::string_view const max_abs =
+                                    integer.max_abs_value ? integer.max_abs_value->view() :
+                                    integer.width == ast::width_t::_8 ? "255" :
+                                    integer.width == ast::width_t::_16 ? "65535" :
+                                    integer.width == ast::width_t::_32 ? "4294967295" :
+                                    integer.width == ast::width_t::_64 ? "18446744073709551615" :
+                                    "";
+                                if (max_abs.empty())
+                                {
+                                    std::ostringstream err;
+                                    err << "uknown width for unsigned integer `static_cast<int>(integer.width)="
+                                        << static_cast<int>(integer.width) << '`';
+                                    err << ". This is a compiler bug, please report it!";
+                                    return error(err.str());
+                                }
+                                return check_integer(integer.name, "+", max_abs);
+                            }
+                        });
+                },
+                [&] (type_t::var_t const& t) -> expected<expr_t>
+                {
+                    std::ostringstream err;
+                    pretty_print<properties_t>(err << "type mismatch between numeric constant and `", t) << '`';
+                    return error(err.str());
+                },
+                [&] (expr_t const&) -> expected<expr_t>
+                {
+                    assert(false and "type variable yielded an expression");
+                    std::ostringstream err;
+                    err << "type variable yielded an expression";
+                    err << ". This is a compiler bug, please report it!";
+                    return error(err.str());
                 });
         },
         [&] (type_t::arr_t const& x)
@@ -501,7 +514,7 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, type_
                     pretty_print(err << "expression yields a type not a value of type `", expected_type) << '`';
                     return error_t::from_error(dep0::error_t{err.str(), loc}, ctx, expected_type);
                 },
-                [&] (type_t const&) -> expected<expr_t>
+                [&] (type_t::var_t const&) -> expected<expr_t>
                 {
                     std::ostringstream err;
                     pretty_print(err << "expression yields a type not a value of type `", expected_type) << '`';
@@ -605,9 +618,9 @@ expected<type_t> check_type_expr(context_t const& ctx, parser::expr_t const& x)
                 {
                     return make_legal_type(type_t::var_t{x.name});
                 },
-                [] (type_t const& type) -> expected<type_t>
+                [] (type_t::var_t const& v) -> expected<type_t>
                 {
-                    return type;
+                    return make_legal_type(v);
                 },
                 [&] (expr_t const& expr) -> expected<type_t>
                 {
@@ -665,31 +678,33 @@ expected<std::pair<type_t, expr_t::abs_t>> check_abs(
         f.args,
         [&] (parser::expr_t::abs_t::arg_t const& x) -> expected<expr_t::abs_t::arg_t>
         {
-            auto ok =
-                match(
-                    x.sort,
-                    [&] (parser::type_t const& parsed_ty) -> expected<std::pair<context_t::iterator, bool>>
-                    {
-                        auto ty = check_type(f_ctx, parsed_ty);
-                        if (not ty)
-                            return std::move(ty.error());
-                        return f_ctx.try_emplace(x.var.name, make_legal_expr(std::move(*ty), expr_t::var_t{x.var.name}));
-                    },
-                    [&] (ast::typename_t) -> expected<std::pair<context_t::iterator, bool>>
-                    {
-                        return f_ctx.try_emplace(x.var.name, make_legal_expr(ast::typename_t{}, expr_t::var_t{x.var.name}));
-                    });
-            if (not ok)
-                return std::move(ok.error());
-            auto const [it, inserted] = *ok;
-            if (not inserted)
+            auto const cannot_redefine = [&] (auto const& previous) -> expected<expr_t::abs_t::arg_t>
             {
                 std::ostringstream err;
                 pretty_print(err << "cannot redefine `", x.var.name) << '`';
-                pretty_print(err << " as function argument, previously `", it->second) << '`';
+                pretty_print(err << " as function argument, previously `", previous) << '`';
                 return error_t::from_error(dep0::error_t{err.str()}, f_ctx);
-            }
-            return expr_t::abs_t::arg_t{std::get<expr_t>(it->second).properties.sort, expr_t::var_t{x.var.name}};
+            };
+            auto const var = expr_t::var_t{x.var.name};
+            return match(
+                x.sort,
+                [&] (parser::type_t const& parsed_ty) -> expected<expr_t::abs_t::arg_t>
+                {
+                    auto const ty = check_type(f_ctx, parsed_ty);
+                    if (not ty)
+                        return std::move(ty.error());
+                    auto const [it, inserted] = f_ctx.try_emplace(x.var.name, make_legal_expr(*ty, var));
+                    if (not inserted)
+                        return cannot_redefine(it->second);
+                    return expr_t::abs_t::arg_t{*ty, var};
+                },
+                [&] (ast::typename_t) -> expected<expr_t::abs_t::arg_t>
+                {
+                    auto const [it, inserted] = f_ctx.try_emplace(x.var.name, type_t::var_t{x.var.name});
+                    if (not inserted)
+                        return cannot_redefine(it->second);
+                    return expr_t::abs_t::arg_t{ast::typename_t{}, var};
+                });
         });
     if (not args)
         return std::move(args.error());

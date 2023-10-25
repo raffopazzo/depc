@@ -6,11 +6,13 @@ add_library(dep0_typecheck_lib
   include/dep0/typecheck/ast.hpp
   include/dep0/typecheck/check.hpp
   include/dep0/typecheck/context.hpp
+  include/dep0/typecheck/derivation.hpp
   include/dep0/typecheck/error.hpp
   include/dep0/typecheck/rename.hpp
   include/dep0/typecheck/replace.hpp
   include/dep0/typecheck/substitute.hpp
   # private headers
+  src/private/derivation_rules.hpp
   src/private/returns_from_all_branches.hpp
   # source files
   src/alpha_equivalence.cpp

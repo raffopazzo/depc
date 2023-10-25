@@ -5,6 +5,7 @@
 
 #include "dep0/ast/pretty_print.hpp"
 
+#include "private/derivation_rules.hpp"
 #include "private/returns_from_all_branches.hpp"
 
 #include "dep0/digit_separator.hpp"
@@ -19,57 +20,6 @@
 #include <sstream>
 
 namespace dep0::typecheck {
-
-struct derivation_rules // TODO move to derivation.cpp and derivation_impl.hpp? (in private library)
-{
-    template <typename T>
-    static derivation_t<T> make_derivation()
-    {
-        return derivation_t<T>{};
-    }
-};
-
-template <typename... Args>
-module_t make_legal_module(Args&&... args)
-{
-    return module_t{derivation_rules::make_derivation<module_t>(), std::forward<Args>(args)...};
-}
-
-template <typename... Args>
-type_def_t make_legal_type_def(Args&&... args)
-{
-    return type_def_t{derivation_rules::make_derivation<type_def_t>(), std::forward<Args>(args)...};
-}
-
-template <typename... Args>
-func_def_t make_legal_func_def(Args&&... args)
-{
-    return func_def_t{derivation_rules::make_derivation<func_def_t>(), std::forward<Args>(args)...};
-}
-
-template <typename... Args>
-type_t make_legal_type(Args&&... args)
-{
-    return type_t{derivation_rules::make_derivation<type_t>(), std::forward<Args>(args)...};
-}
-
-template <typename... Args>
-body_t make_legal_body(Args&&... args)
-{
-    return body_t{derivation_rules::make_derivation<body_t>(), std::forward<Args>(args)...};
-}
-
-template <typename... Args>
-stmt_t make_legal_stmt(Args&&... args)
-{
-    return stmt_t{derivation_rules::make_derivation<stmt_t>(), std::forward<Args>(args)...};
-}
-
-template <typename... Args>
-expr_t make_legal_expr(sort_t sort, Args&&... args)
-{
-    return expr_t{derivation_rules::make_derivation<expr_t>(), std::move(sort), std::forward<Args>(args)...};
-}
 
 // forward declarations
 // TODO `type_assign_func_call` should return `expected<expr_t>` but that means it can be inhabited by

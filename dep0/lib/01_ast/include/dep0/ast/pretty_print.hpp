@@ -64,6 +64,9 @@ template <Properties P>
 std::ostream& pretty_print(std::ostream&, typename type_t<P>::arr_t const&, std::size_t indent = 0ul);
 
 template <Properties P>
+std::ostream& pretty_print(std::ostream&, typename type_t<P>::arr_t::arg_kind_t const&, std::size_t indent = 0ul);
+
+template <Properties P>
 std::ostream& pretty_print(std::ostream&, body_t<P> const&, std::size_t indent = 0ul);
 
 template <Properties P>
@@ -253,12 +256,19 @@ std::ostream& pretty_print(std::ostream& os, typename type_t<P>::arr_t const& x,
     {
         if (not std::exchange(first, false))
             os << ", ";
-        match(
-            kind,
-            [&] (typename type_t<P>::var_t const& x) { pretty_print(os << "typename ", x.name); },
-            [&] (type_t<P> const& x) { pretty_print(os, x, indent); });
+        pretty_print<P>(os, kind, indent);
     }
     pretty_print(os << ") -> ", x.ret_type.get(), indent);
+    return os;
+}
+
+template <Properties P>
+std::ostream& pretty_print(std::ostream& os, typename type_t<P>::arr_t::arg_kind_t const& x, std::size_t const indent)
+{
+    match(
+        x,
+        [&] (typename type_t<P>::var_t const& x) { pretty_print(os << "typename ", x.name); },
+        [&] (type_t<P> const& x) { pretty_print(os, x, indent); });
     return os;
 }
 

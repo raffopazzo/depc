@@ -63,22 +63,13 @@ struct alpha_equivalence_visitor
         }
         auto const not_alpha_equivalent = [&] (std::size_t const i)
         {
-            auto const print =
-                [](std::ostream& os, type_t::arr_t::arg_kind_t const& kind) -> std::ostream&
-                {
-                    match(
-                        kind,
-                        [&] (type_t::var_t const& var) { pretty_print<properties_t>(os << "typename ", var); },
-                        [&] (type_t const& type) { pretty_print(os, type); });
-                    return os;
-                };
             auto const print_ordinal = [] (std::ostream& os, std::size_t const i) -> std::ostream&
             {
                 return os << i << ordinal(i);
             };
             std::ostringstream err;
-            print(print_ordinal(err, i+1) << " argument of type `", x.arg_kinds[i]) << '`';
-            print(err << " is not alpha-equivalent to argument of type `", y.arg_kinds[i]) << '`';
+            pretty_print<properties_t>(print_ordinal(err, i+1) << " argument of type `", x.arg_kinds[i]) << '`';
+            pretty_print<properties_t>(err << " is not alpha-equivalent to argument of type `", y.arg_kinds[i]) << '`';
             return dep0::error_t(err.str());
         };
         for (auto const i: std::views::iota(0ul, x.arg_kinds.size()))

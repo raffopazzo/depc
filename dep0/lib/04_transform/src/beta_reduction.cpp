@@ -170,6 +170,9 @@ bool beta_normalize(typecheck::expr_t::var_t&) { return false; }
 
 bool beta_normalize(typecheck::expr_t::app_t& app)
 {
+    // Technically, this classifies as applicative-order-reduction;
+    // as such, if the abstraction discards some/all arguments we might waste time reducing those arguments.
+    // Currently it doesn't matter; we can reassess in future.
     bool changed = beta_normalize(app.func.get());
     for (auto& arg: app.args)
         changed |= beta_normalize(arg);

@@ -49,7 +49,7 @@ decltype(auto) impl(std::integral_constant<std::size_t, I>, std::variant<Ts...>&
     }
     else
     {
-        assert(p && "corrupted variant uninhabited by any of its types");
+        assert(p and "corrupted variant uninhabited by any of its types");
         return invoke_one(*p, std::forward<Fs>(fs)...);
     }
 }

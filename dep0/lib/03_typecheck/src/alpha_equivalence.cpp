@@ -55,11 +55,11 @@ struct alpha_equivalence_visitor
 
     dep0::expected<std::true_type> operator()(type_t::arr_t& x, type_t::arr_t& y) const
     {
-        if (x.arg_kinds.size() != y.arg_kinds.size())
+        if (x.args.size() != y.args.size())
         {
             std::ostringstream err;
-            err << "a function with " << x.arg_kinds.size() << " arguments is not alpha-equivalent to ";
-            err << "a function with " << y.arg_kinds.size();
+            err << "a function with " << x.args.size() << " arguments is not alpha-equivalent to ";
+            err << "a function with " << y.args.size();
             return dep0::error_t(err.str());
         }
         auto const not_alpha_equivalent = [&] (std::size_t const i)
@@ -69,40 +69,52 @@ struct alpha_equivalence_visitor
                 return os << i << ordinal_suffix(i);
             };
             std::ostringstream err;
-            pretty_print<properties_t>(print_ordinal(err, i+1) << " argument of type `", x.arg_kinds[i]) << '`';
-            pretty_print<properties_t>(err << " is not alpha-equivalent to argument of type `", y.arg_kinds[i]) << '`';
+            pretty_print<properties_t>(print_ordinal(err, i+1) << " argument `", x.args[i]) << '`';
+            pretty_print<properties_t>(err << " is not alpha-equivalent to `", y.args[i]) << '`';
             return dep0::error_t(err.str());
         };
-        for (auto const i: std::views::iota(0ul, x.arg_kinds.size()))
+        for (auto const i: std::views::iota(0ul, x.args.size()))
         {
             auto const ok =
                 match(
-                    x.arg_kinds[i],
-                    [&] (type_t::var_t& x_var) -> dep0::expected<std::true_type>
+                    x.args[i].sort,
+                    [&] (ast::typename_t) -> dep0::expected<std::true_type>
                     {
-                        auto* const y_var = std::get_if<type_t::var_t>(&y.arg_kinds[i]);
-                        if (not y_var)
+                        if (not is_typename(y.args[i].sort))
                             return not_alpha_equivalent(i);
-                        if (x_var == *y_var)
+                        if (x.args[i].name.has_value() xor y.args[i].name.has_value())
+                        {
+                            // TODO: x and y could be alpha-equivalent if the named argument is never used
+                            std::ostringstream err;
+                            err << "alpha-equivalence between named and anonymous type-binders is not yet supported";
+                            auto not_ok = not_alpha_equivalent(i);
+                            not_ok.reasons.push_back(dep0::error_t(err.str()));
+                            return not_ok;
+                        }
+                        if (not x.args[i].name and not y.args[i].name)
                             return std::true_type{};
-                        x_var = rename(x_var, x.arg_kinds.begin() + i + 1, x.arg_kinds.end(), x.ret_type.get());
-                        *y_var = rename(*y_var, y.arg_kinds.begin() + i + 1, y.arg_kinds.end(), y.ret_type.get());
-                        if (x_var == *y_var)
+                        auto& x_var = *x.args[i].name;
+                        auto& y_var = *y.args[i].name;
+                        if (x_var == y_var)
+                            return std::true_type{};
+                        x_var = rename(type_t::var_t{x_var}, x.args.begin() + i + 1, x.args.end(), x.ret_type.get()).name;
+                        y_var = rename(type_t::var_t{y_var}, y.args.begin() + i + 1, y.args.end(), y.ret_type.get()).name;
+                        if (x_var == y_var)
                             // by pure luck renaming assigned the same name to both
                             return std::true_type{};
                         // renaming assigns the next unused index number counting upwards;
                         // so if index of x_var is greather than that of y_var, we know that `x_var` does not occur
                         // in the renamed y, and viceversa; we can therefore safely replace x_var in y (or viceversa);
                         // if x and y are alpha-equivalent, they will now compare equal in all other args and ret type
-                        if (x_var.name.idx > y_var->name.idx)
-                            replace(*y_var, x_var, y.arg_kinds.begin() + i + 1, y.arg_kinds.end(), y.ret_type.get());
+                        if (x_var.idx > y_var.idx)
+                            replace(type_t::var_t{y_var}, type_t::var_t{x_var}, y.args.begin() + i + 1, y.args.end(), y.ret_type.get());
                         else
-                            replace(x_var, *y_var, x.arg_kinds.begin() + i + 1, x.arg_kinds.end(), x.ret_type.get());
+                            replace(type_t::var_t{x_var}, type_t::var_t{y_var}, x.args.begin() + i + 1, x.args.end(), x.ret_type.get());
                         return std::true_type{};
                     },
                     [&] (type_t& x_type) -> dep0::expected<std::true_type>
                     {
-                        auto* const y_type = std::get_if<type_t>(&y.arg_kinds[i]);
+                        auto* const y_type = std::get_if<type_t>(&y.args[i].sort);
                         if (not y_type)
                             return not_alpha_equivalent(i);
                         auto ok = is_alpha_equivalent_impl(x_type, *y_type);

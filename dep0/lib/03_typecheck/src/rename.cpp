@@ -9,14 +9,14 @@ namespace dep0::typecheck {
 
 static std::size_t max_index(type_t const&);
 static std::size_t max_index(
-    type_t::arr_t::arg_kinds_const_iterator begin,
-    type_t::arr_t::arg_kinds_const_iterator end,
+    type_t::arr_t::arg_const_iterator begin,
+    type_t::arr_t::arg_const_iterator end,
     type_t const& ret_type);
 
 type_t::var_t rename(
     type_t::var_t const& var,
-    type_t::arr_t::arg_kinds_iterator const begin,
-    type_t::arr_t::arg_kinds_iterator const end,
+    type_t::arr_t::arg_iterator const begin,
+    type_t::arr_t::arg_iterator const end,
     type_t& ret_type)
 {
     auto const max_idx = std::max(var.name.idx, max_index(begin, end, ret_type));
@@ -26,20 +26,20 @@ type_t::var_t rename(
 }
 
 std::size_t max_index(
-    type_t::arr_t::arg_kinds_const_iterator const begin,
-    type_t::arr_t::arg_kinds_const_iterator const end,
+    type_t::arr_t::arg_const_iterator const begin,
+    type_t::arr_t::arg_const_iterator const end,
     type_t const& ret_type)
 {
     return std::accumulate(
         begin, end,
         max_index(ret_type),
-        [] (std::size_t const acc, auto const& kind)
+        [] (std::size_t const acc, type_t::arr_t::arg_t const& arg)
         {
             return std::max(
                 acc,
                 match(
-                    kind,
-                    [] (type_t::var_t const& v) { return v.name.idx; },
+                    arg.sort,
+                    [&] (ast::typename_t) { return arg.name ? arg.name->idx : 0ul; },
                     [] (type_t const& t) { return max_index(t); }));
         });
 }
@@ -59,7 +59,7 @@ std::size_t max_index(type_t const& type)
         [] (type_t::u32_t const&) { return 0ul; },
         [] (type_t::u64_t const&) { return 0ul; },
         [] (type_t::var_t const& x) { return x.name.idx; },
-        [] (type_t::arr_t const& x) { return max_index(x.arg_kinds.begin(), x.arg_kinds.end(), x.ret_type.get()); });
+        [] (type_t::arr_t const& x) { return max_index(x.args.begin(), x.args.end(), x.ret_type.get()); });
 }
 
 } // namespace dep0::typecheck

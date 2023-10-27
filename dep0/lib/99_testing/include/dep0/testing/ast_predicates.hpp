@@ -68,15 +68,16 @@ boost::test_tools::predicate_result is_type_var(ast::type_t<P> const& type, std:
 
 template <ast::Properties P>
 boost::test_tools::predicate_result
-is_type_binder(typename ast::type_t<P>::arr_t::arg_kind_t const& x, std::string_view const name)
+is_type_binder(typename ast::type_t<P>::arr_t::arg_t const& x, std::string_view const name)
 {
-    auto const var = std::get_if<typename ast::type_t<P>::var_t>(&x);
-    if (not var)
-        return failure("function argument is not type_t::var_t but ", pretty_name(x));
-    if (var->name.txt != name or var->name.idx != 0ul)
+    if (not is_typename(x.sort))
+        return failure("function argument is not type_t::var_t but ", pretty_name(x.sort));
+    if (not x.name)
+        return failure("anonymous argument != ", name);
+    if (std::pair{x.name->txt.view(), x.name->idx} != std::pair{name, 0ul})
     {
         auto failed = boost::test_tools::predicate_result(false);
-        pretty_print(failed.message().stream(), var->name) << " != " << name;
+        pretty_print(failed.message().stream(), *x.name) << " != " << name;
         return failed;
     }
     return true;
@@ -84,26 +85,26 @@ is_type_binder(typename ast::type_t<P>::arr_t::arg_kind_t const& x, std::string_
 
 template <ast::Properties P, Predicate<ast::type_t<P>> F>
 boost::test_tools::predicate_result
-is_arg_of_type(typename ast::type_t<P>::arr_t::arg_kind_t const& x, F&& f)
+is_arg_of_type(typename ast::type_t<P>::arr_t::arg_t const& x, F&& f)
 {
-    auto const type = std::get_if<ast::type_t<P>>(&x);
+    auto const type = std::get_if<ast::type_t<P>>(&x.sort);
     if (not type)
-        return failure("function argument is not type_t but ", pretty_name(x));
+        return failure("function argument is not type_t but ", pretty_name(x.sort));
     return std::forward<F>(f)(*type);
 }
 
 template <ast::Properties P, typename... ArgPredicates, Predicate<typename ast::type_t<P>> F>
 boost::test_tools::predicate_result
-is_arr_of(ast::type_t<P> const& type, std::tuple<ArgPredicates...> const& f_arg_kinds, F&& f_ret_type)
+is_arr_of(ast::type_t<P> const& type, std::tuple<ArgPredicates...> const& f_args, F&& f_ret_type)
 {
     auto const arr = std::get_if<typename ast::type_t<P>::arr_t>(&type.value);
     if (not arr)
         return failure("type is not arr_t but ", pretty_name(type.value));
     if (auto const result = std::forward<F>(f_ret_type)(arr->ret_type.get()); not result)
         return failure("return type predicate failed: ", result.message());
-    if (arr->arg_kinds.size() != sizeof...(ArgPredicates))
-        return failure("wrong number of arguments: ", sizeof...(ArgPredicates), " != ", arr->arg_kinds.size());
-    return detail::check_all_tuple<0ul>(arr->arg_kinds, f_arg_kinds);
+    if (arr->args.size() != sizeof...(ArgPredicates))
+        return failure("wrong number of arguments: ", sizeof...(ArgPredicates), " != ", arr->args.size());
+    return detail::check_all_tuple<0ul>(arr->args, f_args);
 }
 
 inline constexpr auto is_type_bool =
@@ -274,10 +275,10 @@ inline auto type_var(std::string const& name)
     };
 }
 
-template <ast::Properties P> // compiler can't deduce P just by looking at `arg_kind_t`, so need template here
+template <ast::Properties P> // compiler can't deduce P just by looking at `arg_t`, so need template here
 inline auto type_binder(std::string const& name)
 {
-    return [name] (typename ast::type_t<P>::arr_t::arg_kind_t const& x)
+    return [name] (typename ast::type_t<P>::arr_t::arg_t const& x)
     {
         return is_type_binder<P>(x, name);
     };
@@ -286,7 +287,7 @@ inline auto type_binder(std::string const& name)
 template <ast::Properties P, Predicate<ast::type_t<P>> F>
 inline auto arg_of_type(F&& f)
 {
-    return [f=std::forward<F>(f)] (typename ast::type_t<P>::arr_t::arg_kind_t const& x)
+    return [f=std::forward<F>(f)] (typename ast::type_t<P>::arr_t::arg_t const& x)
     {
         return is_arg_of_type<P>(x, f);
     };

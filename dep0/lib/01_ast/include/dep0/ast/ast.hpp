@@ -45,6 +45,26 @@ struct body_t
     bool operator==(body_t const&) const = default;
 };
 
+struct typename_t // TODO should be replaced with kind_t?
+{
+    bool operator==(typename_t const&) const { return true; }
+};
+
+template <Properties P>
+using sort_t = std::variant<type_t<P>, typename_t>;
+
+template <Properties P>
+bool is_type(sort_t<P> const& s)
+{
+    return std::holds_alternative<type_t<P>>(s);
+}
+
+template <Properties P>
+bool is_typename(sort_t<P> const& s)
+{
+    return std::holds_alternative<typename_t>(s);
+}
+
 template <Properties P>
 struct type_t
 {
@@ -68,15 +88,18 @@ struct type_t
     };
     struct arr_t
     {
-        // in lambda-2, an arrow can either introduce new type variables (pi-types) or refer to existing types
-        using arg_kind_t = std::variant<var_t, type_t>;
-        using arg_kinds_iterator = std::vector<arg_kind_t>::iterator;
-        using arg_kinds_const_iterator = std::vector<arg_kind_t>::const_iterator;
-        std::vector<arg_kind_t> arg_kinds;
+        struct arg_t
+        {
+            sort_t<P> sort;
+            std::optional<indexed_var_t> name;
+        };
+        using arg_iterator = std::vector<arg_t>::iterator;
+        using arg_const_iterator = std::vector<arg_t>::const_iterator;
+        std::vector<arg_t> args;
         rec_t ret_type;
         bool operator==(arr_t const& that) const
         {
-            return std::tie(arg_kinds, ret_type.get()) == std::tie(that.arg_kinds, that.ret_type.get());
+            return std::tie(args, ret_type.get()) == std::tie(that.args, that.ret_type.get());
         }
     };
     using value_t =
@@ -89,26 +112,6 @@ struct type_t
 
     bool operator==(type_t const&) const = default;
 };
-
-struct typename_t // TODO should be replaced with kind_t?
-{
-    bool operator==(typename_t const&) const { return true; }
-};
-
-template <Properties P>
-using sort_t = std::variant<type_t<P>, typename_t>;
-
-template <Properties P>
-bool is_type(sort_t<P> const& s)
-{
-    return std::holds_alternative<type_t<P>>(s);
-}
-
-template <Properties P>
-bool is_typename(sort_t<P> const& s)
-{
-    return std::holds_alternative<typename_t>(s);
-}
 
 template <Properties P>
 struct expr_t

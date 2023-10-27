@@ -91,28 +91,29 @@ type_assign_func_call(context_t const& ctx, parser::expr_t::app_t const& f)
     }();
     if (not func_type)
         return func_type.error();
-    if (func_type->arg_kinds.size() != f.args.size())
+    if (func_type->args.size() != f.args.size())
     {
         std::ostringstream err;
-        err << "passed " << f.args.size() << " arguments but was expecting " << func_type->arg_kinds.size();
+        err << "passed " << f.args.size() << " arguments but was expecting " << func_type->args.size();
         return error(err.str());
     }
     std::vector<expr_t> args;
-    for (auto const i: std::views::iota(0ul, func_type->arg_kinds.size()))
+    for (auto const i: std::views::iota(0ul, func_type->args.size()))
     {
         auto arg = match(
-            func_type->arg_kinds[i],
-            [&] (type_t::var_t const& var) -> expected<expr_t>
+            func_type->args[i].sort,
+            [&] (ast::typename_t) -> expected<expr_t>
             {
                 auto type = check_type_expr(ctx, f.args[i]);
                 if (not type)
                     return std::move(type.error());
-                substitute(
-                    func_type->arg_kinds.begin() + i + 1,
-                    func_type->arg_kinds.end(),
-                    func_type->ret_type.get(),
-                    var,
-                    *type);
+                if (func_type->args[i].name)
+                    substitute(
+                        func_type->args.begin() + i + 1,
+                        func_type->args.end(),
+                        func_type->ret_type.get(),
+                        type_t::var_t{*func_type->args[i].name},
+                        *type);
                 return make_legal_expr(ast::typename_t{}, std::move(*type));
             },
             [&] (type_t& type) -> expected<expr_t>
@@ -208,7 +209,7 @@ expected<type_t> check_type(context_t const& ctx, parser::type_t const& t)
                             pretty_print(err << "expression does not yield a type but a value of type `", type) << '`';
                             return error(err.str());
                         },
-                        [&] (ast::typename_t const&) -> expected<type_t>
+                        [&] (ast::typename_t) -> expected<type_t>
                         {
                             return make_legal_type(type_t::var_t{var.name});
                         });
@@ -217,37 +218,40 @@ expected<type_t> check_type(context_t const& ctx, parser::type_t const& t)
         [&] (parser::type_t::arr_t const& x) -> expected<type_t>
         {
             auto arr_ctx = ctx.extend();
-            auto arg_kinds =
+            auto args =
                 fmap_or_error(
-                    x.arg_kinds,
-                    [&] (auto const& x)
+                    x.args,
+                    [&] (parser::type_t::arr_t::arg_t const& arg)
                     {
-                        return match(x,
-                            [&] (parser::type_t::var_t const& x) -> expected<type_t::arr_t::arg_kind_t>
+                        return match(
+                            arg.sort,
+                            [&] (ast::typename_t) -> expected<type_t::arr_t::arg_t>
                             {
-                                auto const type_var = type_t::var_t{x.name};
-                                auto const [it, inserted] = arr_ctx.try_emplace(x.name, type_var);
-                                if (not inserted)
+                                if (arg.name)
                                 {
-                                    std::ostringstream err;
-                                    pretty_print(err << "cannot redefine `", x.name) << "` as typename";
-                                    pretty_print(err << ", previously `", it->second) << '`';
-                                    return error_t::from_error(dep0::error_t(err.str()), arr_ctx);
+                                    auto const [it, inserted] = arr_ctx.try_emplace(*arg.name, type_t::var_t{*arg.name});
+                                    if (not inserted)
+                                    {
+                                        std::ostringstream err;
+                                        pretty_print(err << "cannot redefine `", *arg.name) << "` as typename";
+                                        pretty_print(err << ", previously `", it->second) << '`';
+                                        return error_t::from_error(dep0::error_t(err.str()), arr_ctx);
+                                    }
                                 }
-                                return expected<type_t::arr_t::arg_kind_t>{std::in_place, type_var};
+                                return type_t::arr_t::arg_t{ast::typename_t{}, arg.name};
                             },
-                            [&] (parser::type_t const& x) -> expected<type_t::arr_t::arg_kind_t>
+                            [&] (parser::type_t const& x) -> expected<type_t::arr_t::arg_t>
                             {
                                 if (auto t = check_type(arr_ctx, x))
-                                    return expected<type_t::arr_t::arg_kind_t>{std::in_place, std::move(*t)};
+                                    return type_t::arr_t::arg_t{std::move(*t), arg.name};
                                 else
                                     return std::move(t.error());
                             });
                     });
-            if (not arg_kinds)
-                return std::move(arg_kinds.error());
+            if (not args)
+                return std::move(args.error());
             if (auto ret_type = check_type(arr_ctx, x.ret_type.get()))
-                return make_legal_type(type_t::arr_t{std::move(*arg_kinds), std::move(*ret_type)});
+                return make_legal_type(type_t::arr_t{std::move(*args), std::move(*ret_type)});
             else
                 return std::move(ret_type.error());
         });
@@ -535,7 +539,7 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, type_
                                 return err;
                             }
                         },
-                        [&] (ast::typename_t const&) -> expected<expr_t>
+                        [&] (ast::typename_t) -> expected<expr_t>
                         {
                             return type_error(expr.properties.sort);
                         });
@@ -632,7 +636,7 @@ expected<type_t> check_type_expr(context_t const& ctx, parser::expr_t const& x)
                             pretty_print(err << "expression does not yield a type but a value of type `", t) << '`';
                             return error(err.str());
                         },
-                        [&] (ast::typename_t const&) -> expected<type_t>
+                        [&] (ast::typename_t) -> expected<type_t>
                         {
                             return make_legal_type(type_t::var_t{x.name});
                         });
@@ -718,11 +722,10 @@ expected<std::pair<type_t, expr_t::abs_t>> check_abs(
                     *args,
                     [] (expr_t::abs_t::arg_t const& arg)
                     {
-                        using res_t = type_t::arr_t::arg_kind_t;
                         return match(
                             arg.sort,
-                            [&] (type_t const& t) -> res_t { return t; },
-                            [&] (ast::typename_t const&) -> res_t { return type_t::var_t{arg.var.name}; });
+                            [&] (type_t const& t) { return type_t::arr_t::arg_t{t, arg.var.name}; },
+                            [&] (ast::typename_t) { return type_t::arr_t::arg_t{ast::typename_t{}, arg.var.name}; });
                     }),
             *ret_type});
     // if a function has a name it can call itself recursively;

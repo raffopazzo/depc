@@ -26,13 +26,13 @@ static std::ostream& mangled_print(std::ostream& os, typecheck::type_t const& t)
         [&] (typecheck::type_t::arr_t const& x)
         {
             os << '(';
-            for (bool first = true; auto const& kind: x.arg_kinds)
+            for (bool first = true; auto const& arg: x.args)
             {
                 if (not std::exchange(first, false))
                     os << ',';
                 match(
-                    kind,
-                    [&] (typecheck::type_t::var_t const& x) { pretty_print(os, x.name); },
+                    arg.sort,
+                    [&] (ast::typename_t) { os << "typename"; },
                     [&] (typecheck::type_t const& x) { mangled_print(os, x); });
             }
             mangled_print(os << ')', x.ret_type.get());

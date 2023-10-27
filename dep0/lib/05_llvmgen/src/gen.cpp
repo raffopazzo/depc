@@ -195,7 +195,7 @@ bool is_first_order_application(typecheck::expr_t::app_t const& f)
 
 bool is_first_order_function_type(typecheck::type_t::arr_t const& x)
 {
-    return std::ranges::all_of(x.arg_kinds, [](auto const& k) { return std::holds_alternative<typecheck::type_t>(k); });
+    return std::ranges::all_of(x.args, [](typecheck::type_t::arr_t::arg_t const& arg) { return is_type(arg.sort); });
 }
 
 expected<unique_ref<llvm::Module>> gen(
@@ -290,10 +290,10 @@ llvm::Type* gen_type(global_context_t& global, local_context_t const& local, typ
                 llvm::FunctionType::get(
                     gen_type(global, local, x.ret_type.get()),
                     fmap(
-                        x.arg_kinds,
-                        [&] (auto const& kind)
+                        x.args,
+                        [&] (typecheck::type_t::arr_t::arg_t const& arg)
                         {
-                            return gen_type(global, local, std::get<typecheck::type_t>(kind));
+                            return gen_type(global, local, std::get<typecheck::type_t>(arg.sort));
                         }),
                     is_var_arg);
             return func_type->getPointerTo();

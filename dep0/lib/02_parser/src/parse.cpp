@@ -146,7 +146,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
             return type_t{
                 loc,
                 type_t::arr_t{
-                    fmap(types, [this] (auto* x) { return std::any_cast<type_t::arr_t::arg_kind_t>(visitArgType(x)); }),
+                    fmap(types, [this] (auto* x) { return std::any_cast<type_t::arr_t::arg_t>(visitArgType(x)); }),
                     std::any_cast<type_t>(visitType(ctx->type()))}};
         if (ctx->name) return type_t{loc, type_t::var_t{get_text(src, *ctx->name).value()}};
         throw error_t{"unexpected alternative when parsing TypeContext", loc};
@@ -156,9 +156,9 @@ struct parse_visitor_t : dep0::DepCParserVisitor
     {
         assert(ctx);
         if (ctx->name)
-            return type_t::arr_t::arg_kind_t{type_t::var_t{get_text(src, *ctx->name).value()}};
+            return type_t::arr_t::arg_t{ast::typename_t{}, ast::indexed_var_t{get_text(src, *ctx->name).value()}};
         if (ctx->type())
-            return type_t::arr_t::arg_kind_t{std::any_cast<type_t>(visitType(ctx->type()))};
+            return type_t::arr_t::arg_t{std::any_cast<type_t>(visitType(ctx->type())), std::nullopt};
         throw error_t{"unexpected alternative when parsing ArgTypeContext", get_loc(src, *ctx).value()};
     }
 

@@ -27,27 +27,27 @@ void replace(type_t::var_t const& from, type_t::var_t const& to, type_t& type)
         },
         [&] (type_t::arr_t& arr)
         {
-            replace(from, to, arr.arg_kinds.begin(), arr.arg_kinds.end(), arr.ret_type.get());
+            replace(from, to, arr.args.begin(), arr.args.end(), arr.ret_type.get());
         });
 }
 
 void replace(
     type_t::var_t const& from,
     type_t::var_t const& to,
-    type_t::arr_t::arg_kinds_iterator const begin,
-    type_t::arr_t::arg_kinds_iterator const end,
+    type_t::arr_t::arg_iterator const begin,
+    type_t::arr_t::arg_iterator const end,
     type_t& ret_type)
 {
-    for (auto& kind: std::ranges::subrange(begin, end))
+    for (auto& arg: std::ranges::subrange(begin, end))
         match(
-            kind,
-            [&] (type_t::var_t& v)
+            arg.sort,
+            [&] (ast::typename_t)
             {
                 // Note: in theory it would suffice to replace only the free occurrences of `from`
                 // and we could stop if `from` introduces a new binding variable;
                 // but replacing everything is easier and it shouldn't harm.
-                if (v == from)
-                    v = to;
+                if (arg.name == from.name)
+                    arg.name = to.name;
             },
             [&] (type_t& t)
             {

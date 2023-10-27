@@ -166,12 +166,15 @@ struct parse_visitor_t : dep0::DepCParserVisitor
     {
         assert(ctx);
         assert(ctx->name);
-        assert(ctx->type() or ctx->KW_TYPENAME());
-        return expr_t::abs_t::arg_t{
-            ctx->type()
-                ? sort_t(std::any_cast<type_t>(visitType(ctx->type())))
-                : sort_t(ast::typename_t{}),
-            get_text(src, *ctx->name).value()};
+        if (ctx->type())
+            return expr_t::abs_t::arg_t{
+                sort_t(std::any_cast<type_t>(visitType(ctx->type()))),
+                get_text(src, *ctx->name).value()};
+        if (ctx->KW_TYPENAME())
+            return expr_t::abs_t::arg_t{
+                sort_t(ast::typename_t{}),
+                get_text(src, *ctx->name).value()};
+        throw error_t{"unexpected alternative when parsing ArgContext", get_loc(src, *ctx).value()};
     }
 
     virtual std::any visitBody(DepCParser::BodyContext* ctx) override

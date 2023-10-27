@@ -115,7 +115,7 @@ struct alpha_equivalence_visitor
                         return ok;
                     });
             if (not ok)
-                return ok.error();
+                return std::move(ok.error());
         }
         auto const ok = is_alpha_equivalent_impl(x.ret_type.get(), y.ret_type.get());
         if (ok)

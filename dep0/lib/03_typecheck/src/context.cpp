@@ -62,7 +62,7 @@ std::ostream& pretty_print(std::ostream& os, context_t const& ctx)
 
 std::ostream& pretty_print(std::ostream& os, context_t::value_type const& v)
 {
-    return match(v, [&] (auto const& x) -> std::ostream& { return pretty_print(os, x); });
+    return match(v, [&] (auto const& x) -> std::ostream& { return pretty_print<properties_t>(os, x); });
 }
 
 } // namespace dep0::typecheck

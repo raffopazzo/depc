@@ -784,4 +784,8 @@ BOOST_AUTO_TEST_CASE(test_0183)
     }
 }
 
+// BOOST_AUTO_TEST_CASE(test_0184) doesn't type check
+// BOOST_AUTO_TEST_CASE(test_0185) doesn't type check
+// BOOST_AUTO_TEST_CASE(test_0186) doesn't type check
+
 BOOST_AUTO_TEST_SUITE_END()

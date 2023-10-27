@@ -816,4 +816,54 @@ BOOST_AUTO_TEST_CASE(test_0183)
     }
 }
 
+BOOST_AUTO_TEST_CASE(test_0184)
+{
+    BOOST_TEST_REQUIRE(pass("test_0184.depc"));
+    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 1ul);
+    auto const& f = pass_result->func_defs[0ul];
+    BOOST_TEST(f.name == "f");
+    BOOST_TEST_REQUIRE(f.value.args.size() == 3ul);
+    BOOST_TEST(f.value.args[0ul].var.name.txt == "t");
+    BOOST_TEST(f.value.args[1ul].var.name.txt == "t");
+    BOOST_TEST(f.value.args[2ul].var.name.txt == "x");
+    BOOST_TEST(is_typename(f.value.args[0ul].sort));
+    BOOST_TEST(is_typename(f.value.args[1ul].sort));
+    BOOST_TEST(is_type_of(f.value.args[2ul].sort, type_var("t")));
+    BOOST_TEST(is_type_var(f.value.ret_type, "t"));
+    BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+    BOOST_TEST(is_return_of(f.value.body.stmts[0ul], var("x")));
+}
+
+BOOST_AUTO_TEST_CASE(test_0185)
+{
+    BOOST_TEST_REQUIRE(pass("test_0185.depc"));
+    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 1ul);
+    auto const& f = pass_result->func_defs[0ul];
+    BOOST_TEST(f.name == "f");
+    BOOST_TEST_REQUIRE(f.value.args.size() == 2ul);
+    BOOST_TEST(f.value.args[0ul].var.name.txt == "t");
+    BOOST_TEST(f.value.args[1ul].var.name.txt == "t");
+    BOOST_TEST(is_typename(f.value.args[0ul].sort));
+    BOOST_TEST(is_type_of(f.value.args[1ul].sort, is_type_i32));
+    BOOST_TEST(is_type_i32(f.value.ret_type));
+    BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+    BOOST_TEST(is_return_of(f.value.body.stmts[0ul], var("t")));
+}
+
+BOOST_AUTO_TEST_CASE(test_0186)
+{
+    BOOST_TEST_REQUIRE(pass("test_0186.depc"));
+    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 1ul);
+    auto const& f = pass_result->func_defs[0ul];
+    BOOST_TEST(f.name == "f");
+    BOOST_TEST_REQUIRE(f.value.args.size() == 2ul);
+    BOOST_TEST(f.value.args[0ul].var.name.txt == "t");
+    BOOST_TEST(f.value.args[1ul].var.name.txt == "t");
+    BOOST_TEST(is_type_of(f.value.args[0ul].sort, is_type_i32));
+    BOOST_TEST(is_typename(f.value.args[1ul].sort));
+    BOOST_TEST(is_type_i32(f.value.ret_type));
+    BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+    BOOST_TEST(is_return_of(f.value.body.stmts[0ul], var("t")));
+}
+
 BOOST_AUTO_TEST_SUITE_END()

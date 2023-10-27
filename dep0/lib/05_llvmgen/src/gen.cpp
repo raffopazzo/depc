@@ -201,7 +201,8 @@ bool is_first_order_function_type(typecheck::type_t::arr_t const& x)
 expected<unique_ref<llvm::Module>> gen(
     llvm::LLVMContext& llvm_ctx,
     std::string_view const name,
-    typecheck::module_t const& m)
+    typecheck::module_t const& m
+) noexcept
 {
     auto llvm_module = make_ref<llvm::Module>(name, llvm_ctx);
     global_context_t global(llvm_module.get());

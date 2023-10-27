@@ -8,6 +8,6 @@
 
 namespace dep0::parser {
 
-expected<module_t> parse(std::filesystem::path const&);
+expected<module_t> parse(std::filesystem::path const&) noexcept;
 
 }

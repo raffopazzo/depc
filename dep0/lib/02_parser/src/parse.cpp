@@ -375,7 +375,7 @@ struct FirstErrorListener : antlr4::ANTLRErrorListener
     }
 };
 
-expected<module_t> parse(std::filesystem::path const& path)
+expected<module_t> parse(std::filesystem::path const& path) noexcept
 {
     auto source = mmap(path);
     if (not source)

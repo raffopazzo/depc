@@ -9,7 +9,7 @@ namespace dep0::transform {
 
 template <std::ranges::range R>
 requires (std::is_same_v<transform_t, std::ranges::range_value_t<R>>)
-expected<std::true_type> run(typecheck::module_t& m, R&& r)
+expected<std::true_type> run(typecheck::module_t& m, R&& r) noexcept
 {
     for (auto&& f: std::forward<R>(r))
         if (auto result = f(m); not result)
@@ -18,7 +18,7 @@ expected<std::true_type> run(typecheck::module_t& m, R&& r)
 }
 
 template <Transform... F>
-expected<std::true_type> run(typecheck::module_t& m, F&&... f)
+expected<std::true_type> run(typecheck::module_t& m, F&&... f) noexcept
 {
     std::optional<error_t> err;
     auto run_one = [&err, &m] <Transform F_> (F_&& f)

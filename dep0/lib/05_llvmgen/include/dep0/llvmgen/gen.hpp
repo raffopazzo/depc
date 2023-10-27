@@ -13,6 +13,7 @@
 
 namespace dep0::llvmgen {
 
-expected<unique_ref<llvm::Module>> gen(llvm::LLVMContext&, std::string_view module_name, typecheck::module_t const&);
+expected<unique_ref<llvm::Module>>
+gen(llvm::LLVMContext&, std::string_view module_name, typecheck::module_t const&) noexcept;
 
 }

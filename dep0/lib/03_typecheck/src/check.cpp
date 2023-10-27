@@ -35,7 +35,7 @@ static expected<type_t> check_type_expr(context_t const&, parser::expr_t const&)
 static expected<std::pair<type_t, expr_t::abs_t>>
     check_abs(context_t const&, parser::expr_t::abs_t const&, std::optional<source_text> const&);
 
-expected<module_t> check(parser::module_t const& x)
+expected<module_t> check(parser::module_t const& x) noexcept
 {
     context_t ctx;
     // TODO maybe one day typedefs can depend on function definitions? if so we will need 2 passes

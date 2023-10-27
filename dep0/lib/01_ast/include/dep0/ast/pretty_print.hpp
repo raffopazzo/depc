@@ -5,6 +5,7 @@
 #include "dep0/match.hpp"
 
 #include <ostream>
+#include <algorithm>
 
 namespace dep0::ast {
 
@@ -153,19 +154,27 @@ template <Properties P>
 std::ostream& pretty_print(std::ostream& os, func_def_t<P> const& func_def, std::size_t const indent)
 {
     os << "auto " << func_def.name;
-    if (func_def.value.args.empty())
-        os << "()";
-    else
+    bool const args_on_separate_lines =
+        std::ranges::any_of(
+            func_def.value.args,
+            [] (typename expr_t<P>::abs_t::arg_t const& arg)
+            {
+                if (auto const type = std::get_if<type_t<P>>(&arg.sort))
+                    return std::holds_alternative<typename type_t<P>::arr_t>(type->value);
+                else
+                    return false;
+            });
+    os << '(';
+    for (bool first = true; auto const& arg: func_def.value.args)
     {
-        os << '(';
-        for (bool first = true; auto const& arg: func_def.value.args)
-        {
+        if (args_on_separate_lines)
             new_line(std::exchange(first, false) ? os : os << ',', indent + 1ul);
-            pretty_print(os, arg.sort, indent + 1ul);
-            pretty_print(os << ' ', arg.name);
-        }
-        new_line(os, indent) << ')';
+        else if (not std::exchange(first, false))
+            os << ", ";
+        pretty_print(os, arg.sort, indent + 1ul);
+        pretty_print(os << ' ', arg.name);
     }
+    (args_on_separate_lines ? new_line(os, indent) : os) << ')';
     pretty_print(os << " -> ", func_def.value.ret_type, indent);
     new_line(os, indent);
     pretty_print(os, func_def.value.body, indent);

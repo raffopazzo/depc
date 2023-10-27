@@ -553,18 +553,18 @@ void gen_stmt(
         },
         [&] (typecheck::stmt_t::if_else_t const& x)
         {
-            auto* cond = gen_val(global, local, builder, x.cond);
-            auto then = gen_body(global, local, x.true_branch, "then", llvm_f);
+            auto const cond = gen_val(global, local, builder, x.cond);
+            auto const then = gen_body(global, local, x.true_branch, "then", llvm_f);
             std::ranges::copy(then.open_blocks, std::back_inserter(snipppet.open_blocks));
             if (x.false_branch)
             {
-                auto else_ = gen_body(global, local, *x.false_branch, "else", llvm_f);
+                auto const else_ = gen_body(global, local, *x.false_branch, "else", llvm_f);
                 std::ranges::copy(else_.open_blocks, std::back_inserter(snipppet.open_blocks));
                 builder.CreateCondBr(cond, then.entry_block, else_.entry_block);
             }
             else
             {
-                auto else_ = llvm::BasicBlock::Create(global.llvm_ctx, "else", llvm_f);
+                auto const else_ = llvm::BasicBlock::Create(global.llvm_ctx, "else", llvm_f);
                 builder.CreateCondBr(cond, then.entry_block, else_);
                 snipppet.open_blocks.push_back(else_);
             }
@@ -619,7 +619,8 @@ llvm::Value* gen_val(
             }
             else
                 number = x.number;
-            auto const llvm_type = cast<llvm::IntegerType>(gen_type(global, local, *type));
+            auto const& type = std::get<typecheck::type_t>(expr.properties.sort);
+            auto const llvm_type = cast<llvm::IntegerType>(gen_type(global, local, type));
             return llvm::ConstantInt::get(llvm_type, number, 10);
         },
         [&] (typecheck::expr_t::var_t const& var) -> llvm::Value*
@@ -628,8 +629,8 @@ llvm::Value* gen_val(
             assert(val and "unknown variable");
             return match(
                 *val,
-                [&] (llvm::Value* p) { return p; },
-                [&] (llvm_func_t const& c) { return c.func; },
+                [] (llvm::Value* const p) { return p; },
+                [] (llvm_func_t const& c) { return c.func; },
                 [] (typecheck::type_def_t const&) -> llvm::Value*
                 {
                     assert(false and "found a typedef but was expecting a value");
@@ -646,12 +647,12 @@ llvm::Value* gen_val(
             // TODO could perhaps generate a snippet for immediately invoked lambdas
             return gen_func_call(global, local, builder, x);
         },
-        [&] (typecheck::expr_t::abs_t const& x) -> llvm::Value*
+        [&] (typecheck::expr_t::abs_t const&) -> llvm::Value*
         {
             assert(false and "Generation of abstraction expression not yet implemented");
             __builtin_unreachable();
         },
-        [&] (typecheck::type_t const& x) -> llvm::Value*
+        [&] (typecheck::type_t const&) -> llvm::Value*
         {
             assert(false and "Generation of an llvm value from a type expression is not possible");
             __builtin_unreachable();
@@ -678,7 +679,7 @@ llvm::CallInst* gen_func_call(
                         assert(false and "found a value but was expecting a function");
                         __builtin_unreachable();
                     },
-                    [&] (llvm_func_t const& func) -> llvm_func_t
+                    [] (llvm_func_t const& func) -> llvm_func_t
                     {
                         return func;
                     },
@@ -697,7 +698,7 @@ llvm::CallInst* gen_func_call(
             {
                 return gen_func(global, local, abs);
             },
-            [&] (auto const& x) -> llvm_func_t
+            [] (auto const&) -> llvm_func_t
             {
                 assert(false and "unexpected invocable expression");
                 __builtin_unreachable();

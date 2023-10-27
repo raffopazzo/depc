@@ -9,7 +9,7 @@
 namespace dep0::ast {
 
 // The general rule across all `pretty_print` functions is that they start writing from the current stream position;
-// if they need to go to a new line, they have to write the new line character and the correct number of indentation spaces,
+// if they need to go to a new line, they write the new line character and the correct number of indentation spaces,
 // thereby moving the stream to the "correct" position for the next call to `pretty_print()`.
 
 // forward declarations

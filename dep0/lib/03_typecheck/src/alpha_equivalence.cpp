@@ -14,6 +14,7 @@ namespace dep0::typecheck {
 
 static std::string_view ordinal(std::size_t i);
 
+// Internally we use an implementation that modifies a copy of the original arguments when renaming is necessary.
 static dep0::expected<std::true_type> is_alpha_equivalent_impl(type_t&, type_t&);
 
 struct alpha_equivalence_visitor

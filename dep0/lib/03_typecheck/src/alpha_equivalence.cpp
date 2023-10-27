@@ -12,7 +12,7 @@
 
 namespace dep0::typecheck {
 
-static std::string_view ordinal(std::size_t i);
+static std::string_view ordinal_suffix(std::size_t i);
 
 // Internally we use an implementation that modifies a copy of the original arguments when renaming is necessary.
 static dep0::expected<std::true_type> is_alpha_equivalent_impl(type_t&, type_t&);
@@ -66,7 +66,7 @@ struct alpha_equivalence_visitor
         {
             auto const print_ordinal = [] (std::ostream& os, std::size_t const i) -> std::ostream&
             {
-                return os << i << ordinal(i);
+                return os << i << ordinal_suffix(i);
             };
             std::ostringstream err;
             pretty_print<properties_t>(print_ordinal(err, i+1) << " argument of type `", x.arg_kinds[i]) << '`';
@@ -124,7 +124,7 @@ struct alpha_equivalence_visitor
         {
             std::ostringstream err;
             pretty_print(err << "return type `", x.ret_type.get()) << '`';
-            pretty_print(err << " is not alpha-equivalent to return type `", y.ret_type.get()) << '`';
+            pretty_print(err << " is not alpha-equivalent to `", y.ret_type.get()) << '`';
             return dep0::error_t(err.str(), {std::move(ok.error())});
         }
     }
@@ -137,12 +137,13 @@ dep0::expected<std::true_type> is_alpha_equivalent_impl(type_t& x, type_t& y)
 
 dep0::expected<std::true_type> is_alpha_equivalent(type_t const& x, type_t const& y)
 {
+    // TODO we should make a lazy copy somehow, because renaming might not be often unnecessary
     auto x2 = x;
     auto y2 = y;
     return is_alpha_equivalent_impl(x2, y2);
 }
 
-std::string_view ordinal(std::size_t i)
+std::string_view ordinal_suffix(std::size_t i)
 {
     switch (i) { case 11: case 12: case 13: return "th"; }
     switch (i % 10)

@@ -125,21 +125,20 @@ std::ostream& pretty_print(std::ostream& os, type_def_t<P> const& type_def, std:
         type_def.value,
         [&] (typename type_def_t<P>::integer_t const& x)
         {
+            os << "typedef " << x.name << " = ";
             os << (x.sign == sign_t::signed_v ? "signed" : "unsigned") << ' ';
             os << (
                 x.width == width_t::_8 ? "8" :
                 x.width == width_t::_16 ? "16" :
                 x.width == width_t::_32 ? "32" :
                 "64") << " bit integer from ";
-            if (x.sign == sign_t::signed_v)
-            {
-                if (x.max_abs_value)
-                    os << '-' << *x.max_abs_value << " to " << *x.max_abs_value;
-                else
-                    os << "... to ...";
-            }
-            else
+            if (x.sign == sign_t::unsigned_v)
                 os << "0 to " << (x.max_abs_value ? x.max_abs_value->view() : "...");
+            else if (x.max_abs_value)
+                os << '-' << *x.max_abs_value << " to " << *x.max_abs_value;
+            else
+                os << "... to ...";
+            os << ';';
         });
     return os;
 }

@@ -597,7 +597,7 @@ expected<type_t> check_type_expr(context_t const& ctx, parser::expr_t const& x)
         },
         [&] (parser::expr_t::boolean_constant_t const& x) -> expected<type_t>
         {
-            return error("between boolean constant does not yield a type");
+            return error("boolean constant does not yield a type");
         },
         [&] (parser::expr_t::numeric_constant_t const& x) -> expected<type_t>
         {

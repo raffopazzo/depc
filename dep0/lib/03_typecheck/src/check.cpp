@@ -682,14 +682,15 @@ expected<std::pair<type_t, expr_t::abs_t>> check_abs(
         f.args,
         [&] (parser::expr_t::abs_t::arg_t const& x) -> expected<expr_t::abs_t::arg_t>
         {
-            auto const cannot_redefine = [&] (auto const& previous) -> expected<expr_t::abs_t::arg_t>
-            {
-                std::ostringstream err;
-                pretty_print(err << "cannot redefine `", x.var.name) << '`';
-                pretty_print(err << " as function argument, previously `", previous) << '`';
-                return error_t::from_error(dep0::error_t{err.str()}, f_ctx);
-            };
-            auto const var = expr_t::var_t{x.var.name};
+            auto const cannot_redefine =
+                [&f_ctx] (ast::indexed_var_t const& name, auto const& prev) -> expected<expr_t::abs_t::arg_t>
+                {
+                    std::ostringstream err;
+                    pretty_print(err << "cannot redefine `", name) << '`';
+                    pretty_print(err << " as function argument, previously `", prev) << '`';
+                    return error_t::from_error(dep0::error_t{err.str()}, f_ctx);
+                };
+            auto const var = x.var ? std::optional{expr_t::var_t{x.var->name}} : std::nullopt;
             return match(
                 x.sort,
                 [&] (parser::type_t const& parsed_ty) -> expected<expr_t::abs_t::arg_t>
@@ -697,16 +698,22 @@ expected<std::pair<type_t, expr_t::abs_t>> check_abs(
                     auto const ty = check_type(f_ctx, parsed_ty);
                     if (not ty)
                         return std::move(ty.error());
-                    auto const [it, inserted] = f_ctx.try_emplace(x.var.name, make_legal_expr(*ty, var));
-                    if (not inserted)
-                        return cannot_redefine(it->second);
+                    if (var)
+                    {
+                        auto const [it, inserted] = f_ctx.try_emplace(var->name, make_legal_expr(*ty, *var));
+                        if (not inserted)
+                            return cannot_redefine(var->name, it->second);
+                    }
                     return expr_t::abs_t::arg_t{*ty, var};
                 },
                 [&] (ast::typename_t) -> expected<expr_t::abs_t::arg_t>
                 {
-                    auto const [it, inserted] = f_ctx.try_emplace(x.var.name, type_t::var_t{x.var.name});
-                    if (not inserted)
-                        return cannot_redefine(it->second);
+                    if (var)
+                    {
+                        auto const [it, inserted] = f_ctx.try_emplace(var->name, type_t::var_t{var->name});
+                        if (not inserted)
+                            return cannot_redefine(var->name, it->second);
+                    }
                     return expr_t::abs_t::arg_t{ast::typename_t{}, var};
                 });
         });
@@ -724,8 +731,20 @@ expected<std::pair<type_t, expr_t::abs_t>> check_abs(
                     {
                         return match(
                             arg.sort,
-                            [&] (type_t const& t) { return type_t::arr_t::arg_t{t, arg.var.name}; },
-                            [&] (ast::typename_t) { return type_t::arr_t::arg_t{ast::typename_t{}, arg.var.name}; });
+                            [&] (type_t const& type)
+                            {
+                                return type_t::arr_t::arg_t{
+                                    type,
+                                    arg.var ? std::optional{arg.var->name} : std::nullopt
+                                };
+                            },
+                            [&] (ast::typename_t)
+                            {
+                                return type_t::arr_t::arg_t{
+                                    ast::typename_t{},
+                                    arg.var ? std::optional{arg.var->name} : std::nullopt
+                                };
+                            });
                     }),
             *ret_type});
     // if a function has a name it can call itself recursively;

@@ -68,7 +68,7 @@ struct Fixture
     static constexpr auto i32 = type_expr_of<dep0::parser::properties_t>(is_type_i32);
     static constexpr auto u32 = type_expr_of<dep0::parser::properties_t>(is_type_u32);
 
-    static auto type_binder(std::string const& s)
+    static auto type_binder(std::optional<std::string> const& s)
     {
         return dep0::testing::type_binder<dep0::parser::properties_t>(s);
     }
@@ -77,6 +77,18 @@ struct Fixture
     static auto arg_of_type(F&& f)
     {
         return dep0::testing::arg_of_type<dep0::parser::properties_t>(std::forward<F>(f));
+    }
+
+    template <dep0::testing::Predicate<dep0::parser::type_t> F>
+    static auto type_of(F&& f)
+    {
+        return dep0::testing::type_of<dep0::parser::properties_t>(std::forward<F>(f));
+    }
+
+    template <dep0::testing::Predicate<dep0::parser::sort_t> F>
+    static auto is_arg(dep0::parser::expr_t::abs_t::arg_t const& arg, std::optional<std::string_view> name, F&& f)
+    {
+        return dep0::testing::is_arg<dep0::parser::properties_t>(arg, name, std::forward<F>(f));
     }
 };
 
@@ -326,9 +338,7 @@ BOOST_AUTO_TEST_CASE(test_0167)
     auto const& f = pass_result->func_defs[0];
     BOOST_TEST_REQUIRE(f.value.args.size() == 1ul);
     BOOST_TEST(is_type_i32(f.value.ret_type));
-    auto const& arg = f.value.args[0];
-    BOOST_TEST(arg.var.name.txt == "x");
-    BOOST_TEST(is_type_of(arg.sort, is_type_i32));
+    BOOST_TEST(is_arg(f.value.args[0], "x", type_of(is_type_i32)));
     BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
     BOOST_TEST(is_return_of(f.value.body.stmts[0ul], var(("x"))));
 }
@@ -451,10 +461,8 @@ BOOST_AUTO_TEST_CASE(test_0178)
         auto const& f = pass_result->func_defs[0ul];
         BOOST_TEST(f.name == "id");
         BOOST_TEST_REQUIRE(f.value.args.size() == 2ul);
-        BOOST_TEST(f.value.args[0ul].var.name.txt == "t");
-        BOOST_TEST(f.value.args[1ul].var.name.txt == "x");
-        BOOST_TEST(is_typename(f.value.args[0ul].sort));
-        BOOST_TEST(is_type_of(f.value.args[1ul].sort, type_var("t")));
+        BOOST_TEST(is_arg(f.value.args[0ul], "t", is_typename));
+        BOOST_TEST(is_arg(f.value.args[1ul], "x", type_of(type_var("t"))));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
         BOOST_TEST(is_return_of(f.value.body.stmts[0ul], var("x")));
     }
@@ -530,15 +538,12 @@ BOOST_AUTO_TEST_CASE(test_0178)
         auto const& f = pass_result->func_defs[12ul];
         BOOST_TEST(f.name == "discard_v1");
         BOOST_TEST_REQUIRE(f.value.args.size() == 3ul);
-        BOOST_TEST(f.value.args[0ul].var.name.txt == "t");
-        BOOST_TEST(f.value.args[1ul].var.name.txt == "f");
-        BOOST_TEST(f.value.args[2ul].var.name.txt == "x");
-        BOOST_TEST(is_typename(f.value.args[0ul].sort));
-        BOOST_TEST(is_type_of(f.value.args[1ul].sort, [] (dep0::parser::type_t const& t)
+        BOOST_TEST(is_arg(f.value.args[0ul], "t", is_typename));
+        BOOST_TEST(is_arg(f.value.args[1ul], "f", type_of([] (dep0::parser::type_t const& t)
         {
             return is_arr_of(t, std::tuple{type_binder("u"), arg_of_type(type_var("u"))}, type_var("u"));
-        }));
-        BOOST_TEST(is_type_of(f.value.args[2ul].sort, type_var("t")));
+        })));
+        BOOST_TEST(is_arg(f.value.args[2ul], "x", type_of(type_var("t"))));
         BOOST_TEST(is_type_var(f.value.ret_type, "t"));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
         BOOST_TEST(is_return_of(f.value.body.stmts[0ul], var("x")));
@@ -547,15 +552,12 @@ BOOST_AUTO_TEST_CASE(test_0178)
         auto const& f = pass_result->func_defs[13ul];
         BOOST_TEST(f.name == "discard_v2");
         BOOST_TEST_REQUIRE(f.value.args.size() == 3ul);
-        BOOST_TEST(f.value.args[0ul].var.name.txt == "t");
-        BOOST_TEST(f.value.args[1ul].var.name.txt == "f");
-        BOOST_TEST(f.value.args[2ul].var.name.txt == "x");
-        BOOST_TEST(is_typename(f.value.args[0ul].sort));
-        BOOST_TEST(is_type_of(f.value.args[1ul].sort, [] (dep0::parser::type_t const& t)
+        BOOST_TEST(is_arg(f.value.args[0ul], "t", is_typename));
+        BOOST_TEST(is_arg(f.value.args[1ul], "f", type_of([] (dep0::parser::type_t const& t)
         {
             return is_arr_of(t, std::tuple{type_binder("t"), arg_of_type(type_var("t"))}, type_var("t"));
-        }));
-        BOOST_TEST(is_type_of(f.value.args[2ul].sort, type_var("t")));
+        })));
+        BOOST_TEST(is_arg(f.value.args[2ul], "x", type_of(type_var("t"))));
         BOOST_TEST(is_type_var(f.value.ret_type, "t"));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
         BOOST_TEST(is_return_of(f.value.body.stmts[0ul], var("x")));
@@ -586,19 +588,14 @@ BOOST_AUTO_TEST_CASE(test_0178)
         auto const& f = pass_result->func_defs[17ul];
         BOOST_TEST(f.name == "multi_f");
         BOOST_TEST_REQUIRE(f.value.args.size() == 5ul);
-        BOOST_TEST(f.value.args[0ul].var.name.txt == "t");
-        BOOST_TEST(f.value.args[1ul].var.name.txt == "f");
-        BOOST_TEST(f.value.args[2ul].var.name.txt == "x");
-        BOOST_TEST(f.value.args[3ul].var.name.txt == "y");
-        BOOST_TEST(f.value.args[4ul].var.name.txt == "z");
-        BOOST_TEST(is_typename(f.value.args[0ul].sort));
-        BOOST_TEST(is_type_of(f.value.args[1ul].sort, [] (dep0::parser::type_t const& t)
+        BOOST_TEST(is_arg(f.value.args[0ul], "t", is_typename));
+        BOOST_TEST(is_arg(f.value.args[1ul], "f", type_of([] (dep0::parser::type_t const& t)
         {
             return is_arr_of(t, std::tuple{type_binder("u"), arg_of_type(type_var("u"))}, type_var("u"));
-        }));
-        BOOST_TEST(is_type_of(f.value.args[2ul].sort, type_var("t")));
-        BOOST_TEST(is_type_of(f.value.args[3ul].sort, type_var("t")));
-        BOOST_TEST(is_type_of(f.value.args[4ul].sort, type_var("t")));
+        })));
+        BOOST_TEST(is_arg(f.value.args[2ul], "x", type_of(type_var("t"))));
+        BOOST_TEST(is_arg(f.value.args[3ul], "y", type_of(type_var("t"))));
+        BOOST_TEST(is_arg(f.value.args[4ul], "z", type_of(type_var("t"))));
         BOOST_TEST(is_type_var(f.value.ret_type, "t"));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
         auto const if_1 = std::get_if<dep0::parser::stmt_t::if_else_t>(&f.value.body.stmts[0ul].value);
@@ -631,14 +628,14 @@ BOOST_AUTO_TEST_CASE(test_0178)
         auto const& f = pass_result->func_defs[22ul];
         BOOST_TEST(f.name == "apply_id_v1");
         BOOST_TEST_REQUIRE(f.value.args.size() == 1ul);
-        BOOST_TEST(f.value.args[0ul].var.name.txt == "x");
+        BOOST_TEST(is_arg(f.value.args[0ul], "x", type_of(is_type_i32)));
         BOOST_TEST(is_type_i32(f.value.ret_type));
     }
     {
         auto const& f = pass_result->func_defs[23ul];
         BOOST_TEST(f.name == "apply_id_v2");
         BOOST_TEST_REQUIRE(f.value.args.size() == 1ul);
-        BOOST_TEST(f.value.args[0ul].var.name.txt == "x");
+        BOOST_TEST(is_arg(f.value.args[0ul], "x", type_of(is_type_i32)));
         BOOST_TEST(is_type_i32(f.value.ret_type));
     }
 }
@@ -648,15 +645,13 @@ BOOST_AUTO_TEST_CASE(test_0179)
     BOOST_TEST_REQUIRE(pass("test_0179.depc"));
     BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 1ul);
 
-    auto const& succ = pass_result->func_defs[0ul];
-    BOOST_TEST(succ.name == "succ");
-    BOOST_TEST_REQUIRE(succ.value.args.size() == 2ul);
-    BOOST_TEST(succ.value.args[0ul].var.name.txt == "t");
-    BOOST_TEST(succ.value.args[1ul].var.name.txt == "x");
-    BOOST_TEST(std::holds_alternative<dep0::ast::typename_t>(succ.value.args[0ul].sort));
-    BOOST_TEST(is_type_of(succ.value.args[1ul].sort, type_var("t")));
-    BOOST_TEST_REQUIRE(succ.value.body.stmts.size() == 1ul);
-    BOOST_TEST(is_return_of(succ.value.body.stmts[0ul], [] (dep0::parser::expr_t const& expr)
+    auto const& f = pass_result->func_defs[0ul];
+    BOOST_TEST(f.name == "succ");
+    BOOST_TEST_REQUIRE(f.value.args.size() == 2ul);
+    BOOST_TEST(is_arg(f.value.args[0ul], "t", is_typename));
+    BOOST_TEST(is_arg(f.value.args[1ul], "x", type_of(type_var("t"))));
+    BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+    BOOST_TEST(is_return_of(f.value.body.stmts[0ul], [] (dep0::parser::expr_t const& expr)
     {
         return is_plus(expr, var("x"), numeric_constant("1"));
     }));
@@ -672,15 +667,13 @@ BOOST_AUTO_TEST_CASE(test_0180)
     BOOST_TEST_REQUIRE(t);
     BOOST_TEST(t->name == "t");
 
-    auto const& succ = pass_result->func_defs[0ul];
-    BOOST_TEST(succ.name == "succ");
-    BOOST_TEST_REQUIRE(succ.value.args.size() == 2ul);
-    BOOST_TEST(succ.value.args[0ul].var.name.txt == "t");
-    BOOST_TEST(succ.value.args[1ul].var.name.txt == "x");
-    BOOST_TEST(is_typename(succ.value.args[0ul].sort));
-    BOOST_TEST(is_type_of(succ.value.args[1ul].sort, type_var("t")));
-    BOOST_TEST_REQUIRE(succ.value.body.stmts.size() == 1ul);
-    BOOST_TEST(is_return_of(succ.value.body.stmts[0ul], [] (dep0::parser::expr_t const& expr)
+    auto const& f = pass_result->func_defs[0ul];
+    BOOST_TEST(f.name == "succ");
+    BOOST_TEST_REQUIRE(f.value.args.size() == 2ul);
+    BOOST_TEST(is_arg(f.value.args[0ul], "t", is_typename));
+    BOOST_TEST(is_arg(f.value.args[1ul], "x", type_of(type_var("t"))));
+    BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+    BOOST_TEST(is_return_of(f.value.body.stmts[0ul], [] (dep0::parser::expr_t const& expr)
     {
         return is_plus(expr, var("x"), numeric_constant("1"));
     }));
@@ -701,18 +694,16 @@ BOOST_AUTO_TEST_CASE(test_0181)
         auto const& f = pass_result->func_defs[0ul];
         BOOST_TEST(f.name == "f");
         BOOST_TEST_REQUIRE(f.value.args.size() == 3ul);
-        BOOST_TEST(f.value.args[0ul].var.name.txt == "t");
-        BOOST_TEST(f.value.args[1ul].var.name.txt == "int");
-        BOOST_TEST(f.value.args[2ul].var.name.txt == "x");
+        BOOST_TEST(is_arg(f.value.args[0ul], "t", is_typename));
+        BOOST_TEST(is_arg(f.value.args[1ul], "int", is_typename));
+        BOOST_TEST(is_arg(f.value.args[2ul], "x", type_of(type_var("t"))));
         BOOST_TEST(is_type_var(f.value.ret_type, "t"));
-        BOOST_TEST(is_typename(f.value.args[0ul].sort));
-        BOOST_TEST(is_typename(f.value.args[1ul].sort));
-        BOOST_TEST(is_type_of(f.value.args[2ul].sort, type_var("t")));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
         BOOST_TEST(is_return_of(f.value.body.stmts[0ul], var("x")));
     }
     {
         auto const& g = pass_result->func_defs[1ul];
+        BOOST_TEST(g.name == "g");
         BOOST_TEST(g.value.args.empty());
         BOOST_TEST(is_type_var(g.value.ret_type, "int"));
         BOOST_TEST_REQUIRE(g.value.body.stmts.size() == 1ul);
@@ -738,8 +729,8 @@ BOOST_AUTO_TEST_CASE(test_0182)
         auto const& f = pass_result->func_defs[0ul];
         BOOST_TEST(f.name == "id");
         BOOST_TEST_REQUIRE(f.value.args.size() == 2ul);
-        BOOST_TEST(f.value.args[0ul].var.name.txt == "t");
-        BOOST_TEST(f.value.args[1ul].var.name.txt == "x");
+        BOOST_TEST(is_arg(f.value.args[0ul], "t", is_typename));
+        BOOST_TEST(is_arg(f.value.args[1ul], "x", type_of(type_var("t"))));
         BOOST_TEST(is_type_var(f.value.ret_type, "t"));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
         BOOST_TEST(is_return_of(f.value.body.stmts[0ul], var("x")));
@@ -748,14 +739,12 @@ BOOST_AUTO_TEST_CASE(test_0182)
         auto const& f = pass_result->func_defs[1ul];
         BOOST_TEST(f.name == "g");
         BOOST_TEST_REQUIRE(f.value.args.size() == 2ul);
-        BOOST_TEST(f.value.args[0ul].var.name.txt == "u");
-        BOOST_TEST(f.value.args[1ul].var.name.txt == "f");
-        BOOST_TEST(is_type_var(f.value.ret_type, "int"));
-        BOOST_TEST(is_typename(f.value.args[0ul].sort));
-        BOOST_TEST(is_type_of(f.value.args[1ul].sort, [] (dep0::parser::type_t const& type)
+        BOOST_TEST(is_arg(f.value.args[0ul], "u", is_typename));
+        BOOST_TEST(is_arg(f.value.args[1ul], "f", type_of([] (dep0::parser::type_t const& t)
         {
-            return is_arr_of(type, std::tuple{type_binder("int"), arg_of_type(type_var("int"))}, type_var("u"));
-        }));
+            return is_arr_of(t, std::tuple{type_binder("int"), arg_of_type(type_var("int"))}, type_var("u"));
+        })));
+        BOOST_TEST(is_type_var(f.value.ret_type, "int"));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
         BOOST_TEST(is_return_of(f.value.body.stmts[0ul], is_zero));
     }
@@ -780,10 +769,8 @@ BOOST_AUTO_TEST_CASE(test_0183)
         auto const& f = pass_result->func_defs[0ul];
         BOOST_TEST(f.name == "f");
         BOOST_TEST_REQUIRE(f.value.args.size() == 2ul);
-        BOOST_TEST(f.value.args[0ul].var.name.txt == "x");
-        BOOST_TEST(f.value.args[1ul].var.name.txt == "y");
-        BOOST_TEST(is_type_of(f.value.args[0ul].sort, is_type_i32));
-        BOOST_TEST(is_type_of(f.value.args[1ul].sort, is_type_i32));
+        BOOST_TEST(is_arg(f.value.args[0ul], "x", type_of(is_type_i32)));
+        BOOST_TEST(is_arg(f.value.args[1ul], "y", type_of(is_type_i32)));
         BOOST_TEST(is_type_i32(f.value.ret_type));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
         BOOST_TEST(is_return_of(f.value.body.stmts[0ul], var("x")));
@@ -792,10 +779,8 @@ BOOST_AUTO_TEST_CASE(test_0183)
         auto const& f = pass_result->func_defs[1ul];
         BOOST_TEST(f.name == "g");
         BOOST_TEST_REQUIRE(f.value.args.size() == 2ul);
-        BOOST_TEST(f.value.args[0ul].var.name.txt == "x");
-        BOOST_TEST(f.value.args[1ul].var.name.txt == "y");
-        BOOST_TEST(is_type_of(f.value.args[0ul].sort, is_type_i32));
-        BOOST_TEST(is_type_of(f.value.args[1ul].sort, is_type_i32));
+        BOOST_TEST(is_arg(f.value.args[0ul], "x", type_of(is_type_i32)));
+        BOOST_TEST(is_arg(f.value.args[1ul], "y", type_of(is_type_i32)));
         BOOST_TEST(is_type_i32(f.value.ret_type));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
         BOOST_TEST(is_return_of(f.value.body.stmts[0ul], [] (dep0::parser::expr_t const& expr)
@@ -823,12 +808,9 @@ BOOST_AUTO_TEST_CASE(test_0184)
     auto const& f = pass_result->func_defs[0ul];
     BOOST_TEST(f.name == "f");
     BOOST_TEST_REQUIRE(f.value.args.size() == 3ul);
-    BOOST_TEST(f.value.args[0ul].var.name.txt == "t");
-    BOOST_TEST(f.value.args[1ul].var.name.txt == "t");
-    BOOST_TEST(f.value.args[2ul].var.name.txt == "x");
-    BOOST_TEST(is_typename(f.value.args[0ul].sort));
-    BOOST_TEST(is_typename(f.value.args[1ul].sort));
-    BOOST_TEST(is_type_of(f.value.args[2ul].sort, type_var("t")));
+    BOOST_TEST(is_arg(f.value.args[0ul], "t", is_typename));
+    BOOST_TEST(is_arg(f.value.args[1ul], "t", is_typename));
+    BOOST_TEST(is_arg(f.value.args[2ul], "x", type_of(type_var("t"))));
     BOOST_TEST(is_type_var(f.value.ret_type, "t"));
     BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
     BOOST_TEST(is_return_of(f.value.body.stmts[0ul], var("x")));
@@ -841,8 +823,8 @@ BOOST_AUTO_TEST_CASE(test_0185)
     auto const& f = pass_result->func_defs[0ul];
     BOOST_TEST(f.name == "f");
     BOOST_TEST_REQUIRE(f.value.args.size() == 2ul);
-    BOOST_TEST(f.value.args[0ul].var.name.txt == "t");
-    BOOST_TEST(f.value.args[1ul].var.name.txt == "t");
+    BOOST_TEST(is_arg(f.value.args[0ul], "t", is_typename));
+    BOOST_TEST(is_arg(f.value.args[1ul], "t", type_of(is_type_i32)));
     BOOST_TEST(is_typename(f.value.args[0ul].sort));
     BOOST_TEST(is_type_of(f.value.args[1ul].sort, is_type_i32));
     BOOST_TEST(is_type_i32(f.value.ret_type));
@@ -857,13 +839,119 @@ BOOST_AUTO_TEST_CASE(test_0186)
     auto const& f = pass_result->func_defs[0ul];
     BOOST_TEST(f.name == "f");
     BOOST_TEST_REQUIRE(f.value.args.size() == 2ul);
-    BOOST_TEST(f.value.args[0ul].var.name.txt == "t");
-    BOOST_TEST(f.value.args[1ul].var.name.txt == "t");
-    BOOST_TEST(is_type_of(f.value.args[0ul].sort, is_type_i32));
-    BOOST_TEST(is_typename(f.value.args[1ul].sort));
+    BOOST_TEST(is_arg(f.value.args[0ul], "t", type_of(is_type_i32)));
+    BOOST_TEST(is_arg(f.value.args[1ul], "t", is_typename));
     BOOST_TEST(is_type_i32(f.value.ret_type));
     BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
     BOOST_TEST(is_return_of(f.value.body.stmts[0ul], var("t")));
+}
+
+BOOST_AUTO_TEST_CASE(test_0187)
+{
+    BOOST_TEST_REQUIRE(pass("test_0187.depc"));
+    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 2ul);
+    {
+        auto const& f = pass_result->func_defs[0ul];
+        BOOST_TEST(f.name == "f");
+        BOOST_TEST_REQUIRE(f.value.args.size() == 1ul);
+        BOOST_TEST(is_arg(f.value.args[0ul], std::nullopt, is_typename));
+        BOOST_TEST(is_type_i32(f.value.ret_type));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], numeric_constant("0")));
+    }
+    {
+        auto const& f = pass_result->func_defs[1ul];
+        BOOST_TEST(f.name == "main");
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_type_i32(f.value.ret_type));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], [] (dep0::parser::expr_t const& expr)
+        {
+            return is_app_of(expr, var("f"), type_expr_of<dep0::parser::properties_t>(is_type_u32));
+        }));
+    }
+}
+
+BOOST_AUTO_TEST_CASE(test_0188)
+{
+    BOOST_TEST_REQUIRE(pass("test_0188.depc"));
+    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 3ul);
+    {
+        auto const& f = pass_result->func_defs[0ul];
+        BOOST_TEST(f.name == "f");
+        BOOST_TEST_REQUIRE(f.value.args.size() == 1ul);
+        BOOST_TEST(is_arg(f.value.args[0ul], std::nullopt, is_typename));
+        BOOST_TEST(is_type_i32(f.value.ret_type));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], numeric_constant("0")));
+    }
+    {
+        auto const& f = pass_result->func_defs[1ul];
+        BOOST_TEST(f.name == "g");
+        BOOST_TEST_REQUIRE(f.value.args.size() == 1ul);
+        BOOST_TEST(is_arg(f.value.args[0ul], "h", type_of([] (dep0::parser::type_t const& t)
+        {
+            return is_arr_of(t, std::tuple{type_binder(std::nullopt)}, is_type_i32);
+        })));
+        BOOST_TEST(is_type_i32(f.value.ret_type));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], [] (dep0::parser::expr_t const& expr)
+        {
+            return is_app_of(expr, var("h"), type_expr_of<dep0::parser::properties_t>(is_type_u32));
+        }));
+    }
+    {
+        auto const& f = pass_result->func_defs[2ul];
+        BOOST_TEST(f.name == "main");
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_type_i32(f.value.ret_type));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], [] (dep0::parser::expr_t const& expr)
+        {
+            return is_app_of(expr, var("g"), var("f"));
+        }));
+    }
+}
+
+BOOST_AUTO_TEST_CASE(test_0189)
+{
+    BOOST_TEST_REQUIRE(pass("test_0189.depc"));
+    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 3ul);
+    {
+        auto const& f = pass_result->func_defs[0ul];
+        BOOST_TEST(f.name == "f");
+        BOOST_TEST_REQUIRE(f.value.args.size() == 1ul);
+        BOOST_TEST(is_arg(f.value.args[0ul], std::nullopt, type_of(is_type_i32)));
+        BOOST_TEST(is_type_i32(f.value.ret_type));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], numeric_constant("0")));
+    }
+    {
+        auto const& f = pass_result->func_defs[1ul];
+        BOOST_TEST(f.name == "g");
+        BOOST_TEST_REQUIRE(f.value.args.size() == 1ul);
+        BOOST_TEST(is_arg(f.value.args[0ul], "h", type_of([] (dep0::parser::type_t const& t)
+        {
+            return is_arr_of(t, std::tuple{arg_of_type(is_type_i32)}, is_type_i32);
+        })));
+        BOOST_TEST(is_type_i32(f.value.ret_type));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], [] (dep0::parser::expr_t const& expr)
+        {
+            return is_app_of(expr, var("h"), numeric_constant("1"));
+        }));
+    }
+    {
+        auto const& f = pass_result->func_defs[2ul];
+        BOOST_TEST(f.name == "main");
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_type_i32(f.value.ret_type));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], [] (dep0::parser::expr_t const& expr)
+        {
+            return is_app_of(expr, var("g"), var("f"));
+        }));
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

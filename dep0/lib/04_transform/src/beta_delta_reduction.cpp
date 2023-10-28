@@ -43,8 +43,11 @@ bool beta_delta_normalize(delta_reduction::context_t const& ctx, typecheck::func
     auto ctx2 = ctx.extend();
     for (auto const& arg: def.value.args)
     {
-        bool const inserted = ctx2.try_emplace(arg.var, delta_reduction::something_else_t{}).second;
-        assert(inserted);
+        if (arg.var)
+        {
+            bool const inserted = ctx2.try_emplace(*arg.var, delta_reduction::something_else_t{}).second;
+            assert(inserted);
+        }
     }
     return beta_delta_normalize(ctx2, def.value.body);
 }

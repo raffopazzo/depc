@@ -13,6 +13,17 @@ namespace dep0::testing {
 
 namespace detail {
 
+inline boost::test_tools::predicate_result check_name(ast::indexed_var_t const& x, std::string_view const y)
+{
+    if (std::pair{x.txt.view(), x.idx} != std::pair{y, 0ul})
+    {
+        auto failed = boost::test_tools::predicate_result(false);
+        pretty_print(failed.message().stream(), x) << " != " << y;
+        return failed;
+    }
+    return true;
+}
+
 template <std::size_t I, typename T, typename F, typename... Predicates>
 boost::test_tools::predicate_result check_all(std::vector<T> const& v, F&& f, Predicates&&...fs)
 {
@@ -49,6 +60,16 @@ boost::test_tools::predicate_result is_type_of(ast::sort_t<P> const& sort, F&& f
         return failure("sort is not type but ", pretty_name(sort));
 }
 
+inline constexpr auto is_typename =
+[] <ast::Properties P> (ast::sort_t<P> const& sort)
+-> boost::test_tools::predicate_result
+{
+    if (std::holds_alternative<ast::typename_t>(sort))
+        return true;
+    else
+        return failure("sort is not typename_t but ", pretty_name(sort));
+};
+
 // type_t predicates
 
 template <ast::Properties P>
@@ -57,30 +78,21 @@ boost::test_tools::predicate_result is_type_var(ast::type_t<P> const& type, std:
     auto const var = std::get_if<typename ast::type_t<P>::var_t>(&type.value);
     if (not var)
         return failure("type is not var_t but ", pretty_name(type.value));
-    if (var->name.txt != name or var->name.idx != 0ul)
-    {
-        auto failed = boost::test_tools::predicate_result(false);
-        pretty_print(failed.message().stream(), var->name) << " != " << name;
-        return failed;
-    }
-    return true;
+    return detail::check_name(var->name, name);
 }
 
 template <ast::Properties P>
 boost::test_tools::predicate_result
-is_type_binder(typename ast::type_t<P>::arr_t::arg_t const& x, std::string_view const name)
+is_type_binder(typename ast::type_t<P>::arr_t::arg_t const& x, std::optional<std::string_view> const name)
 {
     if (not is_typename(x.sort))
-        return failure("function argument is not type_t::var_t but ", pretty_name(x.sort));
-    if (not x.name)
-        return failure("anonymous argument != ", name);
-    if (std::pair{x.name->txt.view(), x.name->idx} != std::pair{name, 0ul})
-    {
-        auto failed = boost::test_tools::predicate_result(false);
-        pretty_print(failed.message().stream(), *x.name) << " != " << name;
-        return failed;
-    }
-    return true;
+        return failure("function argument is not typename_t but ", pretty_name(x.sort));
+    if (name)
+        return x.name ? detail::check_name(*x.name, *name) : failure("type binder has no name");
+    else if (x.name)
+        return failure("type binder has a name but should be anonymous");
+    else
+        return true;
 }
 
 template <ast::Properties P, Predicate<ast::type_t<P>> F>
@@ -145,13 +157,7 @@ boost::test_tools::predicate_result is_var(ast::expr_t<P> const& expr, std::stri
     auto const var = std::get_if<typename ast::expr_t<P>::var_t>(&expr.value);
     if (not var)
         return failure("expression is not var_t but ", pretty_name(expr.value));
-    if (var->name.txt != name or var->name.idx != 0ul)
-    {
-        auto failed = boost::test_tools::predicate_result(false);
-        pretty_print(failed.message().stream(), var->name) << " != " << name;
-        return failed;
-    }
-    return true;
+    return detail::check_name(var->name, name);
 }
 
 template <ast::Properties P>
@@ -202,6 +208,22 @@ boost::test_tools::predicate_result is_app_of(ast::expr_t<P> const& expr, F&& f_
         return failure("wrong number of arguments ", app->args.size(), " != ", sizeof...(ArgPredicates));
     if constexpr (sizeof...(ArgPredicates) > 0ul)
         return detail::check_all<0ul>(app->args, std::forward<ArgPredicates>(f_args)...);
+    else
+        return true;
+}
+
+template <ast::Properties P, Predicate<ast::sort_t<P>> F>
+boost::test_tools::predicate_result is_arg(
+    typename ast::expr_t<P>::abs_t::arg_t const& arg,
+    std::optional<std::string_view> expected_name,
+    F&& f_sort)
+{
+    if (auto const result = std::forward<F>(f_sort)(arg.sort); not result)
+        return failure("predicate has failed for argument sort: ", result.message());
+    if (expected_name)
+        return arg.var ? detail::check_name(arg.var->name, *expected_name) : failure("argument has no name");
+    else if (arg.var)
+        return failure("argument has a name but should be anonymous");
     else
         return true;
 }
@@ -265,6 +287,16 @@ boost::test_tools::predicate_result is_return_of(ast::stmt_t<P> const& stmt, F&&
     return std::forward<F>(f)(*ret->expr);
 }
 
+// factories of sort_t predicates
+template <ast::Properties P, Predicate<ast::type_t<P>> F>
+constexpr auto type_of(F&& f)
+{
+    return [f=std::forward<F>(f)] (ast::sort_t<P> const& sort)
+    {
+        return is_type_of(sort, f);
+    };
+}
+
 // factories of type_t predicates
 
 inline auto type_var(std::string const& name)
@@ -276,7 +308,7 @@ inline auto type_var(std::string const& name)
 }
 
 template <ast::Properties P> // compiler can't deduce P just by looking at `arg_t`, so need template here
-inline auto type_binder(std::string const& name)
+inline auto type_binder(std::optional<std::string> const& name)
 {
     return [name] (typename ast::type_t<P>::arr_t::arg_t const& x)
     {

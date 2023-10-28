@@ -118,7 +118,7 @@ struct llvm_func_proto_t
     struct arg_t
     {
         typecheck::type_t type;
-        typecheck::expr_t::var_t var;
+        std::optional<typecheck::expr_t::var_t> var;
     };
     std::vector<arg_t> args;
     typecheck::type_t ret_type;
@@ -177,15 +177,19 @@ static void gen_func_body(
 
 static bool is_first_order_abstraction(typecheck::expr_t::abs_t const&);
 static bool is_first_order_application(typecheck::expr_t::app_t const&);
+static bool is_first_order_type(typecheck::type_t const&);
 static bool is_first_order_function_type(typecheck::type_t::arr_t const&);
 
 bool is_first_order_abstraction(typecheck::expr_t::abs_t const& f)
 {
-    return std::ranges::all_of(f.args, [] (auto const& x) { return ast::is_type(x.sort); }) and
-        match(
-            f.ret_type.value,
-            [] (typecheck::type_t::arr_t const& t) { return is_first_order_function_type(t); },
-            [] (auto const&) { return true; });
+    return is_first_order_type(f.ret_type) and
+        std::ranges::all_of(
+            f.args,
+            [] (typecheck::expr_t::abs_t::arg_t const& arg)
+            {
+                auto const type = std::get_if<typecheck::type_t>(&arg.sort);
+                return type and is_first_order_type(*type);
+            });
 }
 
 bool is_first_order_application(typecheck::expr_t::app_t const& f)
@@ -193,9 +197,24 @@ bool is_first_order_application(typecheck::expr_t::app_t const& f)
     return std::ranges::all_of(f.args, [] (auto const& x) { return ast::is_type(x.properties.sort); });
 }
 
+bool is_first_order_type(typecheck::type_t const& type)
+{
+    return match(
+        type.value,
+        [] (typecheck::type_t::arr_t const& t) { return is_first_order_function_type(t); },
+        [] (auto const&) { return true; });
+}
+
 bool is_first_order_function_type(typecheck::type_t::arr_t const& x)
 {
-    return std::ranges::all_of(x.args, [](typecheck::type_t::arr_t::arg_t const& arg) { return is_type(arg.sort); });
+    return is_first_order_type(x.ret_type.get()) and
+        std::ranges::all_of(
+            x.args,
+            [](typecheck::type_t::arr_t::arg_t const& arg)
+            {
+                auto const type = std::get_if<typecheck::type_t>(&arg.sort);
+                return type and is_first_order_type(*type);
+            });
 }
 
 expected<unique_ref<llvm::Module>> gen(
@@ -365,21 +384,24 @@ void gen_func_args(local_context_t& local, llvm_func_proto_t const& proto, llvm:
     for (auto const i: std::views::iota(0ul, proto.args.size()))
     {
         auto* const llvm_arg = llvm_f->getArg(i);
-        if (proto.args[i].var.name.idx == 0ul)
-            llvm_arg->setName(proto.args[i].var.name.txt.view());
         if (auto const attr = get_sign_ext_attribute(local, proto.args[i].type); attr != llvm::Attribute::None)
             llvm_arg->addAttr(attr);
-        bool inserted = false;
-        if (std::holds_alternative<typecheck::type_t::arr_t>(proto.args[i].type.value))
+        if (proto.args[i].var)
         {
-            assert(llvm_arg->getType()->isPointerTy());
-            auto const function_type = cast<llvm::FunctionType>(llvm_arg->getType()->getPointerElementType());
-            assert(function_type);
-            inserted = local.try_emplace(proto.args[i].var.name, llvm_func_t(function_type, llvm_arg)).second;
+            if (proto.args[i].var->name.idx == 0ul)
+                llvm_arg->setName(proto.args[i].var->name.txt.view());
+            bool inserted = false;
+            if (std::holds_alternative<typecheck::type_t::arr_t>(proto.args[i].type.value))
+            {
+                assert(llvm_arg->getType()->isPointerTy());
+                auto const function_type = cast<llvm::FunctionType>(llvm_arg->getType()->getPointerElementType());
+                assert(function_type);
+                inserted = local.try_emplace(proto.args[i].var->name, llvm_func_t(function_type, llvm_arg)).second;
+            }
+            else
+                inserted = local.try_emplace(proto.args[i].var->name, llvm_arg).second;
+            assert(inserted);
         }
-        else
-            inserted = local.try_emplace(proto.args[i].var.name, llvm_arg).second;
-        assert(inserted);
     }
 }
 
@@ -482,15 +504,18 @@ llvm_func_t gen_specialized_func(
             {
                 proto.args.emplace_back(type, f.args[i].var);
             },
-            [&] (ast::typename_t const&)
+            [&] (ast::typename_t)
             {
                 auto const& arg_type = std::get<typecheck::type_t>(arg.value);
-                bool const inserted = f_ctx.try_emplace(f.args[i].var.name, arg_type).second;
-                assert(inserted);
-                // NB: in general it is not correct to perform substitution directly in the return type,
-                // because some later argument could in theory rebind the current type variable;
-                // but we forbid this kind of shadowing, so in this case it is fine to substitute directly.
-                substitute(proto.ret_type, typecheck::type_t::var_t{f.args[i].var.name}, arg_type);
+                if (f.args[i].var)
+                {
+                    bool const inserted = f_ctx.try_emplace(f.args[i].var->name, arg_type).second;
+                    assert(inserted);
+                    // NB: in general it is not correct to perform substitution directly in the return type,
+                    // because some later argument could in theory rebind the current type variable;
+                    // but we forbid this kind of shadowing, so in this case it is fine to substitute directly.
+                    substitute(proto.ret_type, typecheck::type_t::var_t{f.args[i].var->name}, arg_type);
+                }
             });
     auto const llvm_f =
         llvm::Function::Create(

@@ -95,7 +95,11 @@ bool delta_reduce(context_t const& ctx, typecheck::expr_t::abs_t& abs)
 {
     auto ctx2 = ctx.extend();
     for (auto const& arg: abs.args)
-        ctx2.try_emplace(arg.var, delta_reduction::something_else_t{});
+        if (arg.var)
+        {
+            bool const inserted = ctx2.try_emplace(*arg.var, delta_reduction::something_else_t{}).second;
+            assert(inserted);
+        }
     return delta_reduce(ctx2, abs.body);
 }
 

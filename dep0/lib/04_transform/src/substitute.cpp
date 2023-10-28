@@ -37,9 +37,9 @@ void substitute(
             return;
     // if any `arg` appears free in `expr`, we need to rename `arg`
     for (auto& arg: std::ranges::subrange(begin, end))
-        if (contains_var(expr, arg.var))
+        if (arg.var and contains_var(expr, *arg.var))
             // TODO should consider all args before renaming (i.e. for max index)
-            arg.var = rename(arg.var, body);
+            arg.var = rename(*arg.var, body);
     // TODO with dependent types we will need to perform substitution (and renaming) in `ret_type` too
     // TODO bound variables inside lambda captures must not be substituted; imagine this
     // `i32_t g(i32_t x) { auto f = [x=1] { return x; }; return f() + x; }` and imagine the application
@@ -253,7 +253,7 @@ std::size_t max_index(typecheck::expr_t const& x)
                 max_index(x.body),
                 [] (std::size_t const acc, typecheck::expr_t::abs_t::arg_t const& arg)
                 {
-                    return std::max(acc, arg.var.name.idx);
+                    return std::max(acc, arg.var ? arg.var->name.idx : 0ul);
                 });
         },
         [&] (typecheck::type_t const& x)

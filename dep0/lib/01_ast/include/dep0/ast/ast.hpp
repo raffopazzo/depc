@@ -158,7 +158,7 @@ struct expr_t
         struct arg_t
         {
             sort_t<P> sort;
-            var_t var;
+            std::optional<var_t> var;
         };
 
         using arg_iterator = std::vector<arg_t>::iterator;

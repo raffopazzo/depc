@@ -122,7 +122,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
             get_loc(src, *ctx).value(),
             get_text(src, *ctx->name).value(),
             expr_t::abs_t{
-                fmap(ctx->arg(), [this] (auto* x) { return std::any_cast<expr_t::abs_t::arg_t>(visitArg(x)); }),
+                fmap(ctx->funcArg(), [this](auto *x) { return std::any_cast<expr_t::abs_t::arg_t>(visitFuncArg(x)); }),
                 std::any_cast<type_t>(visitType(ctx->type())),
                 std::any_cast<body_t>(visitBody(ctx->body()))
             }};
@@ -142,39 +142,44 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         if (ctx->KW_U16_T()) return type_t{loc, type_t::u16_t{}};
         if (ctx->KW_U32_T()) return type_t{loc, type_t::u32_t{}};
         if (ctx->KW_U64_T()) return type_t{loc, type_t::u64_t{}};
-        if (auto const types = ctx->argType(); not types.empty())
+        if (auto const types = ctx->funcTypeArg(); not types.empty())
             return type_t{
                 loc,
                 type_t::arr_t{
-                    fmap(types, [this] (auto* x) { return std::any_cast<type_t::arr_t::arg_t>(visitArgType(x)); }),
+                    fmap(types, [this] (auto* x) { return std::any_cast<type_t::arr_t::arg_t>(visitFuncTypeArg(x)); }),
                     std::any_cast<type_t>(visitType(ctx->type()))}};
         if (ctx->name) return type_t{loc, type_t::var_t{get_text(src, *ctx->name).value()}};
         throw error_t{"unexpected alternative when parsing TypeContext", loc};
     }
 
-    virtual std::any visitArgType(DepCParser::ArgTypeContext* ctx) override
+    virtual std::any visitFuncTypeArg(DepCParser::FuncTypeArgContext* ctx) override
     {
         assert(ctx);
-        if (ctx->name)
-            return type_t::arr_t::arg_t{ast::typename_t{}, ast::indexed_var_t{get_text(src, *ctx->name).value()}};
+        if (ctx->KW_TYPENAME())
+            return type_t::arr_t::arg_t{
+                ast::typename_t{},
+                ctx->name ? std::optional{ast::indexed_var_t{get_text(src, *ctx->name).value()}} : std::nullopt
+            };
         if (ctx->type())
-            return type_t::arr_t::arg_t{std::any_cast<type_t>(visitType(ctx->type())), std::nullopt};
-        throw error_t{"unexpected alternative when parsing ArgTypeContext", get_loc(src, *ctx).value()};
+            return type_t::arr_t::arg_t{
+                std::any_cast<type_t>(visitType(ctx->type())),
+                ctx->name ? std::optional{ast::indexed_var_t{get_text(src, *ctx->name).value()}} : std::nullopt
+            };
+        throw error_t{"unexpected alternative when parsing FuncTypeArgContext", get_loc(src, *ctx).value()};
     }
 
-    virtual std::any visitArg(DepCParser::ArgContext* ctx) override
+    virtual std::any visitFuncArg(DepCParser::FuncArgContext* ctx) override
     {
         assert(ctx);
-        assert(ctx->name);
-        if (ctx->type())
-            return expr_t::abs_t::arg_t{
-                sort_t(std::any_cast<type_t>(visitType(ctx->type()))),
-                get_text(src, *ctx->name).value()};
         if (ctx->KW_TYPENAME())
             return expr_t::abs_t::arg_t{
                 sort_t(ast::typename_t{}),
-                get_text(src, *ctx->name).value()};
-        throw error_t{"unexpected alternative when parsing ArgContext", get_loc(src, *ctx).value()};
+                ctx->name ? std::optional{expr_t::var_t{get_text(src, *ctx->name).value()}} : std::nullopt};
+        if (ctx->type())
+            return expr_t::abs_t::arg_t{
+                sort_t(std::any_cast<type_t>(visitType(ctx->type()))),
+                ctx->name ? std::optional{expr_t::var_t{get_text(src, *ctx->name).value()}} : std::nullopt};
+        throw error_t{"unexpected alternative when parsing FuncArgContext", get_loc(src, *ctx).value()};
     }
 
     virtual std::any visitBody(DepCParser::BodyContext* ctx) override

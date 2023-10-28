@@ -788,4 +788,129 @@ BOOST_AUTO_TEST_CASE(test_0183)
 // BOOST_AUTO_TEST_CASE(test_0185) doesn't type check
 // BOOST_AUTO_TEST_CASE(test_0186) doesn't type check
 
+BOOST_AUTO_TEST_CASE(test_0187)
+{
+#if 1
+    apply_beta_delta_normalization = true;
+    BOOST_TEST_REQUIRE(pass("test_0187.depc"));
+    auto const f = pass_result.value()->getFunction("main");
+    BOOST_TEST_REQUIRE(f);
+    BOOST_TEST(f->getReturnType()->isIntegerTy(32ul));
+    BOOST_TEST(f->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::SExt));
+    BOOST_TEST_REQUIRE(f->getEntryBlock().size() == 1ul);
+    BOOST_TEST_REQUIRE(f->arg_size() == 0ul);
+    auto const ret = cast<llvm::ReturnInst>(f->getEntryBlock().getTerminator());
+    BOOST_TEST_REQUIRE(ret);
+    auto const val = cast<llvm::ConstantInt>(ret->getReturnValue());
+    BOOST_TEST_REQUIRE(val);
+    BOOST_TEST(val->isZero());
+#else
+    BOOST_TEST_REQUIRE(pass("test_0187.depc"));
+    {
+        auto const f = pass_result.value()->getFunction("f.u32_t");
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->getReturnType()->isIntegerTy(32ul));
+        BOOST_TEST(f->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::SExt));
+        BOOST_TEST_REQUIRE(f->getEntryBlock().size() == 1ul);
+        BOOST_TEST_REQUIRE(f->arg_size() == 0ul);
+        auto const ret = cast<llvm::ReturnInst>(f->getEntryBlock().getTerminator());
+        BOOST_TEST_REQUIRE(ret);
+        auto const val = cast<llvm::ConstantInt>(ret->getReturnValue());
+        BOOST_TEST_REQUIRE(val);
+        BOOST_TEST(val->isZero());
+    }
+    {
+        auto const f = pass_result.value()->getFunction("main");
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->getReturnType()->isIntegerTy(32ul));
+        BOOST_TEST(f->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::SExt));
+        BOOST_TEST_REQUIRE(f->arg_size() == 0ul);
+        auto const ret = cast<llvm::ReturnInst>(f->getEntryBlock().getTerminator());
+        BOOST_TEST_REQUIRE(ret);
+        auto const call = cast<llvm::CallInst>(ret->getReturnValue());
+        BOOST_TEST_REQUIRE(call);
+        BOOST_TEST(call->getCalledFunction() == pass_result.value()->getFunction("f.u32_t"));
+    }
+#endif
+}
+
+BOOST_AUTO_TEST_CASE(test_0188)
+{
+    apply_beta_delta_normalization = true;
+    BOOST_TEST_REQUIRE(pass("test_0188.depc"));
+    auto const f = pass_result.value()->getFunction("main");
+    BOOST_TEST_REQUIRE(f);
+    BOOST_TEST(f->getReturnType()->isIntegerTy(32ul));
+    BOOST_TEST(f->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::SExt));
+    BOOST_TEST_REQUIRE(f->getEntryBlock().size() == 1ul);
+    BOOST_TEST_REQUIRE(f->arg_size() == 0ul);
+    auto const ret = cast<llvm::ReturnInst>(f->getEntryBlock().getTerminator());
+    BOOST_TEST_REQUIRE(ret);
+    auto const val = cast<llvm::ConstantInt>(ret->getReturnValue());
+    BOOST_TEST_REQUIRE(val);
+    BOOST_TEST(val->isZero());
+}
+
+BOOST_AUTO_TEST_CASE(test_0189)
+{
+    BOOST_TEST_REQUIRE(pass("test_0189.depc"));
+    {
+        auto const f = pass_result.value()->getFunction("f");
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->getReturnType()->isIntegerTy(32ul));
+        BOOST_TEST(f->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::SExt));
+        BOOST_TEST_REQUIRE(f->getEntryBlock().size() == 1ul);
+        BOOST_TEST_REQUIRE(f->arg_size() == 1ul);
+        auto const arg = f->getArg(0);
+        BOOST_TEST(arg->getName().empty());
+        BOOST_TEST(arg->getType()->isIntegerTy(32ul));
+        BOOST_TEST(arg->hasAttribute(llvm::Attribute::SExt));
+        auto const ret = cast<llvm::ReturnInst>(f->getEntryBlock().getTerminator());
+        BOOST_TEST_REQUIRE(ret);
+        auto const val = cast<llvm::ConstantInt>(ret->getReturnValue());
+        BOOST_TEST_REQUIRE(val);
+        BOOST_TEST(val->isZero());
+    }
+    {
+        auto const f = pass_result.value()->getFunction("g");
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->getReturnType()->isIntegerTy(32ul));
+        BOOST_TEST(f->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::SExt));
+        BOOST_TEST_REQUIRE(f->arg_size() == 1ul);
+        auto const arg = f->getArg(0);
+        BOOST_TEST(arg->getName().str() == "h");
+        BOOST_TEST_REQUIRE(arg->getType()->isPointerTy());
+        auto const arg_type = cast<llvm::FunctionType>(arg->getType()->getPointerElementType());
+        BOOST_TEST_REQUIRE(arg_type);
+        BOOST_TEST(arg_type->getReturnType()->isIntegerTy(32ul));
+        BOOST_TEST_REQUIRE(arg_type->getNumParams() == 1ul);
+        BOOST_TEST(arg_type->getParamType(0ul)->isIntegerTy(32ul));
+        auto const ret = cast<llvm::ReturnInst>(f->getEntryBlock().getTerminator());
+        BOOST_TEST_REQUIRE(ret);
+        auto const call = cast<llvm::CallInst>(ret->getReturnValue());
+        BOOST_TEST_REQUIRE(call);
+        BOOST_TEST(call->isIndirectCall());
+        BOOST_TEST(call->getCalledOperand() == arg);
+        BOOST_TEST_REQUIRE(call->arg_size() == 1ul);
+        BOOST_TEST(call->paramHasAttr(0, llvm::Attribute::SExt));
+        auto const call_arg = cast<llvm::ConstantInt>(*call->arg_begin());
+        BOOST_TEST_REQUIRE(call_arg);
+        BOOST_TEST(call_arg->getSExtValue() == 1);
+    }
+    {
+        auto const f = pass_result.value()->getFunction("main");
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->getReturnType()->isIntegerTy(32ul));
+        BOOST_TEST(f->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::SExt));
+        BOOST_TEST_REQUIRE(f->arg_size() == 0ul);
+        auto const ret = cast<llvm::ReturnInst>(f->getEntryBlock().getTerminator());
+        BOOST_TEST_REQUIRE(ret);
+        auto const call = cast<llvm::CallInst>(ret->getReturnValue());
+        BOOST_TEST_REQUIRE(call);
+        BOOST_TEST(call->getCalledFunction() == pass_result.value()->getFunction("g"));
+        BOOST_TEST_REQUIRE(call->arg_size() == 1ul);
+        BOOST_TEST(*call->arg_begin() == pass_result.value()->getFunction("f"));
+    }
+}
+
 BOOST_AUTO_TEST_SUITE_END()

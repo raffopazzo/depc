@@ -172,7 +172,8 @@ std::ostream& pretty_print(std::ostream& os, func_def_t<P> const& func_def, std:
         else if (not std::exchange(first, false))
             os << ", ";
         pretty_print(os, arg.sort, indent + 1ul);
-        pretty_print(os << ' ', arg.name);
+        if (arg.var)
+            pretty_print<P>(os << ' ', *arg.var);
     }
     (args_on_separate_lines ? new_line(os, indent) : os) << ')';
     pretty_print(os << " -> ", func_def.value.ret_type, indent);
@@ -397,7 +398,8 @@ std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::abs_t const& x,
         {
             new_line(std::exchange(first, false) ? os : os << ',', indent + 1ul);
             pretty_print(os, arg.sort, indent + 1ul);
-            pretty_print(os << ' ', arg.var.name);
+            if (arg.var)
+                pretty_print<P>(os << ' ', *arg.var);
         }
         new_line(os, indent) << ')';
     }

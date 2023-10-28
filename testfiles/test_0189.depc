@@ -1,0 +1,3 @@
+i32_t f(i32_t) { return 0; }
+i32_t g((i32_t) -> i32_t h) { return h(1); }
+i32_t main() { return g(f); }

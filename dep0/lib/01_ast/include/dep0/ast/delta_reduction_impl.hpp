@@ -24,7 +24,7 @@ template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P
 template <Properties P>
 bool delta_reduce(context_t<P> const& ctx, func_def_t<P>& def)
 {
-    return delta_reduce(ctx, def.value);
+    return delta_reduce<P>(ctx, def.value);
 }
 
 template <Properties P>
@@ -65,7 +65,7 @@ bool delta_reduce(context_t<P> const& ctx, expr_t<P>& expr)
         {
             // during expansion of top-level function definitions,
             // the current function is not in context to avoid infinite recursion
-            if (auto const val = ctx[var])
+            if (auto const val = ctx[var.name])
                 if (auto const abs = std::get_if<typename expr_t<P>::abs_t>(val))
                 {
                     expr.value = *abs;
@@ -111,12 +111,11 @@ bool delta_reduce(context_t<P> const& ctx, typename expr_t<P>::abs_t& abs)
     for (auto const& arg: abs.args)
         match(
             arg.value,
-            [](typename func_arg_t<P>::type_arg_t const&) { }, // TODO should add a test because this is wrong
-            [&](typename func_arg_t<P>::term_arg_t const& term_arg)
+            [&] (auto const& arg)
             {
-                if (term_arg.var)
+                if (arg.var)
                 {
-                    bool const inserted = ctx2.try_emplace(*term_arg.var, delta_reduction::something_else_t{}).second;
+                    bool const inserted = ctx2.try_emplace(arg.var->name, delta_reduction::something_else_t{}).second;
                     assert(inserted);
                 }
             });

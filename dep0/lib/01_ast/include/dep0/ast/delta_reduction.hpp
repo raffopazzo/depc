@@ -10,7 +10,7 @@ namespace delta_reduction {
     template <Properties P>
     using context_t =
         scope_map<
-            typename expr_t<P>::var_t,
+            indexed_var_t,
             std::variant<
                 typename expr_t<P>::abs_t,
                 struct something_else_t>>;

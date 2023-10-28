@@ -1,4 +1,4 @@
-# add_subdirectory(test)
+add_subdirectory(test)
 add_library(dep0_ast_lib
     include/dep0/ast/alpha_equivalence.hpp
     include/dep0/ast/alpha_equivalence_impl.hpp

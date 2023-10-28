@@ -171,9 +171,7 @@ std::ostream& pretty_print(std::ostream& os, func_def_t<P> const& func_def, std:
             new_line(std::exchange(first, false) ? os : os << ',', indent + 1ul);
         else if (not std::exchange(first, false))
             os << ", ";
-        pretty_print(os, arg.sort, indent + 1ul);
-        if (arg.var)
-            pretty_print<P>(os << ' ', *arg.var);
+        pretty_print(os, arg, indent + 1ul);
     }
     (args_on_separate_lines ? new_line(os, indent) : os) << ')';
     pretty_print(os << " -> ", func_def.value.ret_type, indent);

@@ -18,7 +18,7 @@ bool beta_delta_normalize(delta_reduction::context_t<P> const& ctx, module_t<P>&
     {
         changed |= beta_delta_normalize(ctx2, def);
         // store the result in ctx2, so future look-ups of this definition will find the normalized version
-        bool const inserted = ctx2.try_emplace(typename expr_t<P>::var_t{indexed_var_t{def.name}}, def.value).second;
+        bool const inserted = ctx2.try_emplace(indexed_var_t{def.name}, def.value).second;
         assert(inserted);
     }
     return changed;
@@ -31,12 +31,11 @@ bool beta_delta_normalize(delta_reduction::context_t<P> const& ctx, func_def_t<P
     for (auto const& arg: def.value.args)
         match(
             arg.value,
-            [] (typename func_arg_t<P>::type_arg_t const&) { }, // TODO add test because this is wrong
-            [&] (typename func_arg_t<P>::term_arg_t const& term_arg)
+            [&] (auto const& arg)
             {
-                if (term_arg.var)
+                if (arg.var)
                 {
-                    bool const inserted = ctx2.try_emplace(*term_arg.var, delta_reduction::something_else_t{}).second;
+                    bool const inserted = ctx2.try_emplace(arg.var->name, delta_reduction::something_else_t{}).second;
                     assert(inserted);
                 }
             });

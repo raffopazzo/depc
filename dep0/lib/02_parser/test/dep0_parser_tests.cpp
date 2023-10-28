@@ -954,4 +954,44 @@ BOOST_AUTO_TEST_CASE(test_0189)
     }
 }
 
+BOOST_AUTO_TEST_CASE(test_0190)
+{
+    BOOST_TEST_REQUIRE(pass("test_0190.depc"));
+    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 3ul);
+    {
+        auto const& f = pass_result->func_defs[0ul];
+        BOOST_TEST(f.name == "zero");
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_type_i32(f.value.ret_type));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], numeric_constant("0")));
+    }
+    {
+        auto const& f = pass_result->func_defs[1ul];
+        BOOST_TEST(f.name == "g");
+        BOOST_TEST_REQUIRE(f.value.args.size() == 1ul);
+        BOOST_TEST(is_arg(f.value.args[0ul], "f", type_of([] (dep0::parser::type_t const& t)
+        {
+            return is_arr_of(t, std::tuple<>{}, is_type_i32);
+        })));
+        BOOST_TEST(is_type_i32(f.value.ret_type));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], [] (dep0::parser::expr_t const& expr)
+        {
+            return is_app_of(expr, var("f"));
+        }));
+    }
+    {
+        auto const& f = pass_result->func_defs[2ul];
+        BOOST_TEST(f.name == "main");
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_type_i32(f.value.ret_type));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], [] (dep0::parser::expr_t const& expr)
+        {
+            return is_app_of(expr, var("g"), var("zero"));
+        }));
+    }
+}
+
 BOOST_AUTO_TEST_SUITE_END()

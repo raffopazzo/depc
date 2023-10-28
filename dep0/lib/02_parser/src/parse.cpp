@@ -142,12 +142,17 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         if (ctx->KW_U16_T()) return type_t{loc, type_t::u16_t{}};
         if (ctx->KW_U32_T()) return type_t{loc, type_t::u32_t{}};
         if (ctx->KW_U64_T()) return type_t{loc, type_t::u64_t{}};
-        if (auto const types = ctx->funcTypeArg(); not types.empty())
+        if (ctx->retType)
             return type_t{
                 loc,
                 type_t::arr_t{
-                    fmap(types, [this] (auto* x) { return std::any_cast<type_t::arr_t::arg_t>(visitFuncTypeArg(x)); }),
-                    std::any_cast<type_t>(visitType(ctx->type()))}};
+                    fmap(
+                        ctx->funcTypeArg(),
+                        [this] (DepCParser::FuncTypeArgContext* const x)
+                        {
+                            return std::any_cast<type_t::arr_t::arg_t>(visitFuncTypeArg(x));
+                        }),
+                    std::any_cast<type_t>(visitType(ctx->retType))}};
         if (ctx->name) return type_t{loc, type_t::var_t{get_text(src, *ctx->name).value()}};
         throw error_t{"unexpected alternative when parsing TypeContext", loc};
     }

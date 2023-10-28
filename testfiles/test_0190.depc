@@ -1,0 +1,3 @@
+i32_t zero() { return 0; }
+i32_t g(() -> i32_t f) { return f(); }
+i32_t main() { return g(zero); }

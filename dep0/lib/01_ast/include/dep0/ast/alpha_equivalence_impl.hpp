@@ -7,7 +7,6 @@
 
 #include "dep0/match.hpp"
 
-#include <ranges>
 #include <sstream>
 
 namespace dep0::ast {

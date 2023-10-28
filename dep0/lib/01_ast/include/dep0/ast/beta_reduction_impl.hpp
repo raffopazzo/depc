@@ -9,14 +9,14 @@
 #include <cassert>
 #include <ranges>
 
+namespace dep0::ast {
+
 template <typename T>
 void destructive_self_assign(T& x, T&& y)
 {
     auto tmp = std::move(y);
     x = std::move(tmp);
 }
-
-namespace dep0::ast {
 
 template <Properties P> bool beta_normalize(typename stmt_t<P>::if_else_t&);
 template <Properties P> bool beta_normalize(typename stmt_t<P>::return_t&);

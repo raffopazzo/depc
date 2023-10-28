@@ -29,8 +29,8 @@ bool contains_var(type_t<P> const& type, typename type_t<P>::var_t const& var)
         },
         [&] (typename type_t<P>::arr_t const& arr)
         {
-            return contains_var(arr.ret_type.get(), var) or
-                std::ranges::any_of(arr.args, [&] (func_arg_t<P> const& arg) { return contains_var(arg, var); });
+            return std::ranges::any_of(arr.args, [&] (func_arg_t<P> const& arg) { return contains_var(arg, var); }) or
+                contains_var(arr.ret_type.get(), var);
         });
 }
 
@@ -142,8 +142,8 @@ bool contains_var(expr_t<P> const& x, typename expr_t<P>::var_t const& var)
 template <Properties P>
 bool contains_var(typename expr_t<P>::app_t const& x, typename expr_t<P>::var_t const& var)
 {
-    return contains_var(x.func.get(), var)
-        or std::ranges::any_of(x.args, [&] (expr_t<P> const& arg) { return contains_var(arg, var); });
+    return std::ranges::any_of(x.args, [&] (expr_t<P> const& arg) { return contains_var(arg, var); }) or
+        contains_var(x.func.get(), var);
 }
 
 } // namespace dep0::ast

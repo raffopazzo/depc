@@ -155,6 +155,7 @@ void replace(typename expr_t<P>::var_t const& from, typename expr_t<P>::var_t co
                     {
                         if (arg.var == from)
                             arg.var = to;
+                        replace(from, to, arg.type);
                     });
             replace(from, to, x.body);
         },

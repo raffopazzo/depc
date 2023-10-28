@@ -141,5 +141,3 @@ std::size_t max_index(typename expr_t<P>::app_t const& x)
 }
 
 } // namespace dep0::ast
-
-#include "dep0/ast/max_index_impl.hpp"

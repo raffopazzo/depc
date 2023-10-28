@@ -7,7 +7,7 @@
 
 #include "dep0/match.hpp"
 
-#include <algorithm>
+#include <ranges>
 
 namespace dep0::ast {
 
@@ -114,13 +114,11 @@ void substitute(
     for (auto& arg: std::ranges::subrange(begin, end))
         match(
             arg.value,
-            [] (typename func_arg_t<P>::type_arg_t const&)
-            {
-                // TODO should consider all args before renaming (i.e. for max index)
-            },
+            [] (typename func_arg_t<P>::type_arg_t const&) { },
             [&] (typename func_arg_t<P>::term_arg_t& term_arg)
             {
                 if (term_arg.var and contains_var(expr, *term_arg.var))
+                    // TODO renaming should take into account all args, not just the body; probably better with a test
                     term_arg.var = rename(*term_arg.var, body);
             });
     // TODO with dependent types we will need to perform substitution (and renaming) in `ret_type` too

@@ -63,8 +63,6 @@ bool delta_reduce(context_t<P> const& ctx, expr_t<P>& expr)
         expr.value,
         [&] (typename expr_t<P>::var_t& var)
         {
-            // during expansion of top-level function definitions,
-            // the current function is not in context to avoid infinite recursion
             if (auto const val = ctx[var.name])
                 if (auto const abs = std::get_if<typename expr_t<P>::abs_t>(val))
                 {

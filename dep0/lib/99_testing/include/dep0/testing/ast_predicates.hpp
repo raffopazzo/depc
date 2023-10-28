@@ -49,6 +49,51 @@ boost::test_tools::predicate_result check_all_tuple(std::vector<T> const& v, std
 }
 } // namespace detail
 
+// type_def_t predicates
+template <ast::Properties P>
+boost::test_tools::predicate_result is_integer_def(
+    ast::type_def_t<P> const& t,
+    std::string_view const name,
+    dep0::ast::sign_t const sign,
+    dep0::ast::width_t const width,
+    std::optional<std::string_view> max_abs_value)
+{
+    auto const integer = std::get_if<typename ast::type_def_t<P>::integer_t>(&t.value);
+    if (not integer)
+        return failure("typedef is not integer_t byt ", pretty_name(t.value));
+    auto result = boost::test_tools::predicate_result(true);
+    pretty_print(result.message().stream(), t);
+    if (integer->name != name)
+    {
+        result = false;
+        result.message().stream() << " has wrong name";
+    }
+    if (integer->sign != sign)
+    {
+        result = false;
+        result.message().stream() << " has wrong sign";
+    }
+    if (integer->width != width)
+    {
+        result = false;
+        result.message().stream() << " has wrong width";
+    }
+    if (max_abs_value)
+    {
+        if (integer->max_abs_value != *max_abs_value)
+        {
+            result = false;
+            result.message().stream() << " has wrong max abs value";
+        }
+    }
+    else if (integer->max_abs_value)
+    {
+        result = false;
+        result.message().stream() << " has a max abs value but it should not";
+    }
+    return result;
+}
+
 // sort_t predicates
 
 template <ast::Properties P, Predicate<ast::type_t<P>> F>

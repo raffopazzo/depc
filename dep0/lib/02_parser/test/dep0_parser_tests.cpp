@@ -256,67 +256,66 @@ BOOST_AUTO_TEST_CASE(test_0152)
     BOOST_TEST_REQUIRE(pass("test_0152.depc"));
     BOOST_TEST(pass_result->type_defs.size() == 10ul);
     BOOST_TEST(pass_result->func_defs.size() == 16ul);
-    auto const integer_defs_0 = std::get_if<dep0::parser::type_def_t::integer_t>(&pass_result->type_defs[0].value);
-    auto const integer_defs_1 = std::get_if<dep0::parser::type_def_t::integer_t>(&pass_result->type_defs[1].value);
-    auto const integer_defs_2 = std::get_if<dep0::parser::type_def_t::integer_t>(&pass_result->type_defs[2].value);
-    auto const integer_defs_3 = std::get_if<dep0::parser::type_def_t::integer_t>(&pass_result->type_defs[3].value);
-    auto const integer_defs_4 = std::get_if<dep0::parser::type_def_t::integer_t>(&pass_result->type_defs[4].value);
-    auto const integer_defs_5 = std::get_if<dep0::parser::type_def_t::integer_t>(&pass_result->type_defs[5].value);
-    auto const integer_defs_6 = std::get_if<dep0::parser::type_def_t::integer_t>(&pass_result->type_defs[6].value);
-    auto const integer_defs_7 = std::get_if<dep0::parser::type_def_t::integer_t>(&pass_result->type_defs[7].value);
-    auto const integer_defs_8 = std::get_if<dep0::parser::type_def_t::integer_t>(&pass_result->type_defs[8].value);
-    auto const integer_defs_9 = std::get_if<dep0::parser::type_def_t::integer_t>(&pass_result->type_defs[9].value);
-    BOOST_TEST_REQUIRE(integer_defs_0);
-    BOOST_TEST_REQUIRE(integer_defs_1);
-    BOOST_TEST_REQUIRE(integer_defs_2);
-    BOOST_TEST_REQUIRE(integer_defs_3);
-    BOOST_TEST_REQUIRE(integer_defs_4);
-    BOOST_TEST_REQUIRE(integer_defs_5);
-    BOOST_TEST_REQUIRE(integer_defs_6);
-    BOOST_TEST_REQUIRE(integer_defs_7);
-    BOOST_TEST_REQUIRE(integer_defs_8);
-    BOOST_TEST_REQUIRE(integer_defs_9);
-    BOOST_TEST(integer_defs_0->name == "hours_t");
-    BOOST_TEST(integer_defs_0->sign == dep0::ast::sign_t::unsigned_v);
-    BOOST_TEST(integer_defs_0->width == dep0::ast::width_t::_8);
-    BOOST_TEST(integer_defs_0->max_abs_value.has_value());
-    BOOST_TEST(integer_defs_0->max_abs_value == "23");
-    BOOST_TEST(integer_defs_1->name == "minutes_t");
-    BOOST_TEST(integer_defs_1->sign == dep0::ast::sign_t::unsigned_v);
-    BOOST_TEST(integer_defs_1->width == dep0::ast::width_t::_8);
-    BOOST_TEST(integer_defs_1->max_abs_value == "59");
-    BOOST_TEST(integer_defs_2->name == "seconds_t");
-    BOOST_TEST(integer_defs_2->sign == dep0::ast::sign_t::unsigned_v);
-    BOOST_TEST(integer_defs_2->width == dep0::ast::width_t::_8);
-    BOOST_TEST(integer_defs_2->max_abs_value == "59");
-    BOOST_TEST(integer_defs_3->name == "millis_t");
-    BOOST_TEST(integer_defs_3->sign == dep0::ast::sign_t::unsigned_v);
-    BOOST_TEST(integer_defs_3->width == dep0::ast::width_t::_16);
-    BOOST_TEST(integer_defs_3->max_abs_value == "999");
-    BOOST_TEST(integer_defs_4->name == "nanos_t");
-    BOOST_TEST(integer_defs_4->sign == dep0::ast::sign_t::unsigned_v);
-    BOOST_TEST(integer_defs_4->width == dep0::ast::width_t::_32);
-    BOOST_TEST(integer_defs_4->max_abs_value == "999'999'999");
-    BOOST_TEST(integer_defs_5->name == "duration_t");
-    BOOST_TEST(integer_defs_5->sign == dep0::ast::sign_t::signed_v);
-    BOOST_TEST(integer_defs_5->width == dep0::ast::width_t::_64);
-    BOOST_TEST(integer_defs_5->max_abs_value.has_value() == false);
-    BOOST_TEST(integer_defs_6->name == "ascii_t");
-    BOOST_TEST(integer_defs_6->sign == dep0::ast::sign_t::unsigned_v);
-    BOOST_TEST(integer_defs_6->width == dep0::ast::width_t::_8);
-    BOOST_TEST(integer_defs_6->max_abs_value == "127");
-    BOOST_TEST(integer_defs_7->name == "sign_t");
-    BOOST_TEST(integer_defs_7->sign == dep0::ast::sign_t::signed_v);
-    BOOST_TEST(integer_defs_7->width == dep0::ast::width_t::_8);
-    BOOST_TEST(integer_defs_7->max_abs_value == "1");
-    BOOST_TEST(integer_defs_8->name == "signal_t");
-    BOOST_TEST(integer_defs_8->sign == dep0::ast::sign_t::signed_v);
-    BOOST_TEST(integer_defs_8->width == dep0::ast::width_t::_8);
-    BOOST_TEST(integer_defs_8->max_abs_value == "15");
-    BOOST_TEST(integer_defs_9->name == "key_t");
-    BOOST_TEST(integer_defs_9->sign == dep0::ast::sign_t::unsigned_v);
-    BOOST_TEST(integer_defs_9->width == dep0::ast::width_t::_64);
-    BOOST_TEST(integer_defs_9->max_abs_value.has_value() == false);
+    BOOST_TEST(is_integer_def(
+        pass_result->type_defs[0],
+        "hours_t",
+        dep0::ast::sign_t::unsigned_v,
+        dep0::ast::width_t::_8,
+        "23"));
+    BOOST_TEST(is_integer_def(
+        pass_result->type_defs[1],
+        "minutes_t",
+        dep0::ast::sign_t::unsigned_v,
+        dep0::ast::width_t::_8,
+        "59"));
+    BOOST_TEST(is_integer_def(
+        pass_result->type_defs[2],
+        "seconds_t",
+        dep0::ast::sign_t::unsigned_v,
+        dep0::ast::width_t::_8,
+        "59"));
+    BOOST_TEST(is_integer_def(
+        pass_result->type_defs[3],
+        "millis_t",
+        dep0::ast::sign_t::unsigned_v,
+        dep0::ast::width_t::_16,
+        "999"));
+    BOOST_TEST(is_integer_def(
+        pass_result->type_defs[4],
+        "nanos_t",
+        dep0::ast::sign_t::unsigned_v,
+        dep0::ast::width_t::_32,
+        "999'999'999"));
+    BOOST_TEST(is_integer_def(
+        pass_result->type_defs[5],
+        "duration_t",
+        dep0::ast::sign_t::signed_v,
+        dep0::ast::width_t::_64,
+        std::nullopt));
+    BOOST_TEST(is_integer_def(
+        pass_result->type_defs[6],
+        "ascii_t",
+        dep0::ast::sign_t::unsigned_v,
+        dep0::ast::width_t::_8,
+        "127"));
+    BOOST_TEST(is_integer_def(
+        pass_result->type_defs[7],
+        "sign_t",
+        dep0::ast::sign_t::signed_v,
+        dep0::ast::width_t::_8,
+        "1"));
+    BOOST_TEST(is_integer_def(
+        pass_result->type_defs[8],
+        "signal_t",
+        dep0::ast::sign_t::signed_v,
+        dep0::ast::width_t::_8,
+        "15"));
+    BOOST_TEST(is_integer_def(
+        pass_result->type_defs[9],
+        "key_t",
+        dep0::ast::sign_t::unsigned_v,
+        dep0::ast::width_t::_64,
+        std::nullopt));
 }
 BOOST_AUTO_TEST_CASE(test_0153) { BOOST_TEST(pass("test_0153.depc")); }
 BOOST_AUTO_TEST_CASE(test_0154) { BOOST_TEST(fail("test_0154.depc")); }

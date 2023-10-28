@@ -18,6 +18,7 @@ namespace dep0::ast {
 template <Properties P> struct module_t;
 template <Properties P> struct type_def_t;
 template <Properties P> struct func_def_t;
+template <Properties P> struct func_arg_t;
 template <Properties P> struct type_t;
 template <Properties P> struct body_t;
 template <Properties P> struct stmt_t;
@@ -88,11 +89,7 @@ struct type_t
     };
     struct arr_t
     {
-        struct arg_t
-        {
-            sort_t<P> sort;
-            std::optional<indexed_var_t> name;
-        };
+        using arg_t = func_arg_t<P>;
         using arg_iterator = std::vector<arg_t>::iterator;
         using arg_const_iterator = std::vector<arg_t>::const_iterator;
         std::vector<arg_t> args;
@@ -155,12 +152,7 @@ struct expr_t
     };
     struct abs_t
     {
-        struct arg_t
-        {
-            sort_t<P> sort;
-            std::optional<var_t> var;
-        };
-
+        using arg_t = func_arg_t<P>;
         using arg_iterator = std::vector<arg_t>::iterator;
         using arg_const_iterator = std::vector<arg_t>::const_iterator;
 
@@ -183,6 +175,26 @@ struct expr_t
     value_t value;
 
     bool operator==(expr_t const&) const = default;
+};
+
+template <Properties P>
+struct func_arg_t
+{
+    using properties_t = typename P::func_arg_properties_type;
+
+    struct type_arg_t
+    {
+        std::optional<typename type_t<P>::var_t> var;
+    };
+    struct term_arg_t
+    {
+        type_t<P> type;
+        std::optional<typename expr_t<P>::var_t> var;
+    };
+    using value_t = std::variant<type_arg_t, term_arg_t>;
+
+    properties_t properties;
+    value_t value;
 };
 
 template <Properties P>

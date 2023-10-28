@@ -44,13 +44,10 @@ void substitute(
     for (; it != end; ++it)
     {
         bool const stop = match(
-            it->sort,
-            [&] (ast::typename_t)
+            it->value,
+            [&] (func_arg_t::type_arg_t& type_arg)
             {
-                if (not it->name)
-                    return false;
-                auto const v = type_t::var_t{*it->name};
-                if (v == var)
+                if (type_arg.var == var)
                 {
                     // `v` is now a new binding type-variable;
                     // any later arguments refer to this `v` not to the initial `var`;
@@ -65,13 +62,13 @@ void substitute(
                 // making it more obvious which `t` is binding, so for now let's go with this.
                 // Also note that we are modifying the elements of the very vector we are iterating on,
                 // but we are only modifying the values, no the vector; so iteration is safe.
-                if (contains_var(y, v))
-                    it->name = rename(v, std::next(it), end, ret_type).name;
+                if (type_arg.var and contains_var(y, *type_arg.var))
+                    type_arg.var = rename(*type_arg.var, std::next(it), end, ret_type);
                 return false;
             },
-            [&] (type_t& t)
+            [&] (func_arg_t::term_arg_t& term_arg)
             {
-                substitute(t, var, y);
+                substitute(term_arg.type, var, y);
                 return false;
             });
         if (stop)
@@ -103,12 +100,12 @@ bool contains_var(type_t const& type, type_t::var_t const& var)
             return contains_var(arr.ret_type.get(), var) or
                 std::ranges::any_of(
                     arr.args,
-                    [&] (type_t::arr_t::arg_t const& arg)
+                    [&] (func_arg_t const& arg)
                     {
                         return match(
-                            arg.sort,
-                            [&] (ast::typename_t) { return arg.name == var.name; },
-                            [&] (type_t const& t) { return contains_var(t, var); });
+                            arg.value,
+                            [&] (func_arg_t::type_arg_t const& x) { return x.var == var; },
+                            [&] (func_arg_t::term_arg_t const& x) { return contains_var(x.type, var); });
                     });
         });
 }

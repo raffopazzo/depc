@@ -34,6 +34,12 @@ func_def_t make_legal_func_def(Args&&... args)
 }
 
 template <typename... Args>
+func_arg_t make_legal_func_arg(Args&&... args)
+{
+    return func_arg_t{derivation_rules::make_derivation<func_arg_t>(), std::forward<Args>(args)...};
+}
+
+template <typename... Args>
 type_t make_legal_type(Args&&... args)
 {
     return type_t{derivation_rules::make_derivation<type_t>(), std::forward<Args>(args)...};

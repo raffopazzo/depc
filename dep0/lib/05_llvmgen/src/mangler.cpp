@@ -31,9 +31,9 @@ static std::ostream& mangled_print(std::ostream& os, typecheck::type_t const& t)
                 if (not std::exchange(first, false))
                     os << ',';
                 match(
-                    arg.sort,
-                    [&] (ast::typename_t) { os << "typename"; },
-                    [&] (typecheck::type_t const& x) { mangled_print(os, x); });
+                    arg.value,
+                    [&] (typecheck::func_arg_t::type_arg_t const&) { os << "typename"; },
+                    [&] (typecheck::func_arg_t::term_arg_t const& x) { mangled_print(os, x.type); });
             }
             mangled_print(os << ')', x.ret_type.get());
         });

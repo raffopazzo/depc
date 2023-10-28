@@ -27,6 +27,9 @@ template <Properties P>
 std::ostream& pretty_print(std::ostream&, func_def_t<P> const&, std::size_t indent = 0ul);
 
 template <Properties P>
+std::ostream& pretty_print(std::ostream&, func_arg_t<P> const&, std::size_t indent = 0ul);
+
+template <Properties P>
 std::ostream& pretty_print(std::ostream&, sort_t<P> const&, std::size_t indent = 0ul);
 
 template <Properties P>
@@ -67,9 +70,6 @@ std::ostream& pretty_print(std::ostream&, typename type_t<P>::var_t const&, std:
 
 template <Properties P>
 std::ostream& pretty_print(std::ostream&, typename type_t<P>::arr_t const&, std::size_t indent = 0ul);
-
-template <Properties P>
-std::ostream& pretty_print(std::ostream&, typename type_t<P>::arr_t::arg_t const&, std::size_t indent = 0ul);
 
 template <Properties P>
 std::ostream& pretty_print(std::ostream&, body_t<P> const&, std::size_t indent = 0ul);
@@ -157,10 +157,10 @@ std::ostream& pretty_print(std::ostream& os, func_def_t<P> const& func_def, std:
     bool const args_on_separate_lines =
         std::ranges::any_of(
             func_def.value.args,
-            [] (typename expr_t<P>::abs_t::arg_t const& arg)
+            [] (func_arg_t<P> const& arg)
             {
-                if (auto const type = std::get_if<type_t<P>>(&arg.sort))
-                    return std::holds_alternative<typename type_t<P>::arr_t>(type->value);
+                if (auto const term_arg = std::get_if<typename func_arg_t<P>::term_arg_t>(&arg.value))
+                    return std::holds_alternative<typename type_t<P>::arr_t>(term_arg->type.value);
                 else
                     return false;
             });
@@ -179,6 +179,26 @@ std::ostream& pretty_print(std::ostream& os, func_def_t<P> const& func_def, std:
     pretty_print(os << " -> ", func_def.value.ret_type, indent);
     new_line(os, indent);
     pretty_print(os, func_def.value.body, indent);
+    return os;
+}
+
+template <Properties P>
+std::ostream& pretty_print(std::ostream& os, func_arg_t<P> const& x, std::size_t const indent)
+{
+    match(
+        x.value,
+        [&] (typename func_arg_t<P>::type_arg_t const& type_arg)
+        {
+            os << "typename";
+            if (type_arg.var)
+                pretty_print<P>(os << ' ', *type_arg.var, indent);
+        },
+        [&] (typename func_arg_t<P>::term_arg_t const& term_arg)
+        {
+            pretty_print(os, term_arg.type, indent);
+            if (term_arg.var)
+                pretty_print<P>(os << ' ', *term_arg.var, indent);
+        });
     return os;
 }
 
@@ -272,15 +292,6 @@ std::ostream& pretty_print(std::ostream& os, typename type_t<P>::arr_t const& x,
     for (bool first = true; auto const& arg: x.args)
         pretty_print<P>(std::exchange(first, false) ? os : os << ", ", arg, indent);
     pretty_print(os << ") -> ", x.ret_type.get(), indent);
-    return os;
-}
-
-template <Properties P>
-std::ostream& pretty_print(std::ostream& os, typename type_t<P>::arr_t::arg_t const& x, std::size_t const indent)
-{
-    pretty_print(os, x.sort);
-    if (x.name)
-        pretty_print(os << ' ', *x.name);
     return os;
 }
 
@@ -397,9 +408,7 @@ std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::abs_t const& x,
         for (bool first = true; auto const& arg: x.args)
         {
             new_line(std::exchange(first, false) ? os : os << ',', indent + 1ul);
-            pretty_print(os, arg.sort, indent + 1ul);
-            if (arg.var)
-                pretty_print<P>(os << ' ', *arg.var);
+            pretty_print(os, arg, indent + 1ul);
         }
         new_line(os, indent) << ')';
     }

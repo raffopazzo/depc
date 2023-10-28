@@ -48,13 +48,10 @@ typeDef:
 funcArg: ('typename' | type) name=ID?;
 
 // Types
-type:
-    'bool' | 'unit_t' |
-    'i8_t' | 'i16_t' | 'i32_t' | 'i64_t' |
-    'u8_t' | 'u16_t' | 'u32_t' | 'u64_t' |
-    '(' (funcTypeArg (',' funcTypeArg)*)? ')' '->' retType=type |
-    name=ID;
-funcTypeArg: ('typename' | type) name=ID?;
+type: primitiveType | funcType | typeVar;
+primitiveType: 'bool' | 'unit_t' | 'i8_t' | 'i16_t' | 'i32_t' | 'i64_t' | 'u8_t' | 'u16_t' | 'u32_t' | 'u64_t';
+funcType: '(' (funcArg (',' funcArg)*)? ')' '->' retType=type;
+typeVar: name=ID;
 
 // Statements
 body: '{' stmt* '}';

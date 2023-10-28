@@ -95,11 +95,17 @@ bool delta_reduce(context_t const& ctx, typecheck::expr_t::abs_t& abs)
 {
     auto ctx2 = ctx.extend();
     for (auto const& arg: abs.args)
-        if (arg.var)
-        {
-            bool const inserted = ctx2.try_emplace(*arg.var, delta_reduction::something_else_t{}).second;
-            assert(inserted);
-        }
+        match(
+            arg.value,
+            [](typecheck::func_arg_t::type_arg_t const&) { }, // TODO should add a test because this is wrong
+            [&](typecheck::func_arg_t::term_arg_t const& term_arg)
+            {
+                if (term_arg.var)
+                {
+                    bool const inserted = ctx2.try_emplace(*term_arg.var, delta_reduction::something_else_t{}).second;
+                    assert(inserted);
+                }
+            });
     return delta_reduce(ctx2, abs.body);
 }
 

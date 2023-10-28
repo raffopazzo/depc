@@ -33,14 +33,14 @@ std::size_t max_index(
     return std::accumulate(
         begin, end,
         max_index(ret_type),
-        [] (std::size_t const acc, type_t::arr_t::arg_t const& arg)
+        [] (std::size_t const acc, func_arg_t const& arg)
         {
             return std::max(
                 acc,
                 match(
-                    arg.sort,
-                    [&] (ast::typename_t) { return arg.name ? arg.name->idx : 0ul; },
-                    [] (type_t const& t) { return max_index(t); }));
+                    arg.value,
+                    [] (func_arg_t::type_arg_t const& x) { return x.var ? x.var->name.idx : 0ul; },
+                    [] (func_arg_t::term_arg_t const& x) { return max_index(x.type); }));
         });
 }
 

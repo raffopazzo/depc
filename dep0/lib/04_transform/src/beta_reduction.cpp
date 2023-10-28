@@ -184,8 +184,14 @@ bool beta_normalize(typecheck::expr_t::app_t& app)
             auto arg_it = abs->args.begin();
             for (auto const i: std::views::iota(0ul, abs->args.size()))
             {
-                if (arg_it->var)
-                    substitute(arg_it+1, abs->args.end(), abs->body, *arg_it->var, app.args[i]);
+                match(
+                    arg_it->value,
+                    [] (typecheck::func_arg_t::type_arg_t const&) {},
+                    [&](typecheck::func_arg_t::term_arg_t const& arg)
+                    {
+                        if (arg.var)
+                            substitute(arg_it+1, abs->args.end(), abs->body, *arg.var, app.args[i]);
+                    });
                 ++arg_it;
             }
             // at this point all arguments of the abstraction have been substituted,

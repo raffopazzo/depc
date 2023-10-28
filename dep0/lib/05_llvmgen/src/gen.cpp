@@ -185,10 +185,10 @@ bool is_first_order_abstraction(typecheck::expr_t::abs_t const& f)
     return is_first_order_type(f.ret_type) and
         std::ranges::all_of(
             f.args,
-            [] (typecheck::expr_t::abs_t::arg_t const& arg)
+            [] (typecheck::func_arg_t const& arg)
             {
-                auto const type = std::get_if<typecheck::type_t>(&arg.sort);
-                return type and is_first_order_type(*type);
+                auto const term = std::get_if<typecheck::func_arg_t::term_arg_t>(&arg.value);
+                return term and is_first_order_type(term->type);
             });
 }
 
@@ -210,10 +210,10 @@ bool is_first_order_function_type(typecheck::type_t::arr_t const& x)
     return is_first_order_type(x.ret_type.get()) and
         std::ranges::all_of(
             x.args,
-            [](typecheck::type_t::arr_t::arg_t const& arg)
+            [](typecheck::func_arg_t const& arg)
             {
-                auto const type = std::get_if<typecheck::type_t>(&arg.sort);
-                return type and is_first_order_type(*type);
+                auto const term = std::get_if<typecheck::func_arg_t::term_arg_t>(&arg.value);
+                return term and is_first_order_type(term->type);
             });
 }
 
@@ -311,9 +311,9 @@ llvm::Type* gen_type(global_context_t& global, local_context_t const& local, typ
                     gen_type(global, local, x.ret_type.get()),
                     fmap(
                         x.args,
-                        [&] (typecheck::type_t::arr_t::arg_t const& arg)
+                        [&] (typecheck::func_arg_t const& arg)
                         {
-                            return gen_type(global, local, std::get<typecheck::type_t>(arg.sort));
+                            return gen_type(global, local, std::get<typecheck::func_arg_t::term_arg_t>(arg.value).type);
                         }),
                     is_var_arg);
             return func_type->getPointerTo();
@@ -438,7 +438,8 @@ llvm_func_t gen_func(
                 f.args,
                 [] (auto const& arg)
                 {
-                    return llvm_func_proto_t::arg_t{std::get<typecheck::type_t>(arg.sort), arg.var};
+                    auto const& term = std::get<typecheck::func_arg_t::term_arg_t>(arg.value);
+                    return llvm_func_proto_t::arg_t{term.type, term.var};
                 }),
             f.ret_type};
     auto const name = std::string{"$_func_"} + std::to_string(global.next_id++);
@@ -468,7 +469,8 @@ void gen_func(
                 f.args,
                 [] (auto const& arg)
                 {
-                    return llvm_func_proto_t::arg_t{std::get<typecheck::type_t>(arg.sort), arg.var};
+                    auto const& term = std::get<typecheck::func_arg_t::term_arg_t>(arg.value);
+                    return llvm_func_proto_t::arg_t{term.type, term.var};
                 }),
             f.ret_type};
     auto const llvm_f =
@@ -499,23 +501,23 @@ llvm_func_t gen_specialized_func(
     auto f_ctx = local.extend();
     for (auto const& [i, arg]: boost::adaptors::index(args))
         match(
-            arg.properties.sort,
-            [&] (typecheck::type_t const& type)
-            {
-                proto.args.emplace_back(type, f.args[i].var);
-            },
-            [&] (ast::typename_t)
+            f.args[i].value,
+            [&] (typecheck::func_arg_t::type_arg_t const& type_arg)
             {
                 auto const& arg_type = std::get<typecheck::type_t>(arg.value);
-                if (f.args[i].var)
+                if (type_arg.var)
                 {
-                    bool const inserted = f_ctx.try_emplace(f.args[i].var->name, arg_type).second;
+                    bool const inserted = f_ctx.try_emplace(type_arg.var->name, arg_type).second;
                     assert(inserted);
                     // NB: in general it is not correct to perform substitution directly in the return type,
                     // because some later argument could in theory rebind the current type variable;
                     // but we forbid this kind of shadowing, so in this case it is fine to substitute directly.
-                    substitute(proto.ret_type, typecheck::type_t::var_t{f.args[i].var->name}, arg_type);
+                    substitute(proto.ret_type, *type_arg.var, arg_type);
                 }
+            },
+            [&] (typecheck::func_arg_t::term_arg_t const& term_arg)
+            {
+                proto.args.emplace_back(std::get<typecheck::type_t>(arg.properties.sort), term_arg.var);
             });
     auto const llvm_f =
         llvm::Function::Create(

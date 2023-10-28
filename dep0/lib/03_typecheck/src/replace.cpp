@@ -40,18 +40,18 @@ void replace(
 {
     for (auto& arg: std::ranges::subrange(begin, end))
         match(
-            arg.sort,
-            [&] (ast::typename_t)
+            arg.value,
+            [&] (func_arg_t::type_arg_t& type_arg)
             {
                 // Note: in theory it would suffice to replace only the free occurrences of `from`
                 // and we could stop if `from` introduces a new binding variable;
                 // but replacing everything is easier and it shouldn't harm.
-                if (arg.name == from.name)
-                    arg.name = to.name;
+                if (type_arg.var == from)
+                    type_arg.var = to;
             },
-            [&] (type_t& t)
+            [&] (func_arg_t::term_arg_t& term_arg)
             {
-                replace(from, to, t);
+                replace(from, to, term_arg.type);
             });
     replace(from, to, ret_type);
 }

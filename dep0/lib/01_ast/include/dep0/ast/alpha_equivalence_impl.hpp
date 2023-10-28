@@ -1,59 +1,61 @@
-#include "dep0/typecheck/alpha_equivalence.hpp"
-#include "dep0/typecheck/rename.hpp"
-#include "dep0/typecheck/replace.hpp"
+#pragma once
 
+#include "dep0/ast/alpha_equivalence.hpp"
 #include "dep0/ast/pretty_print.hpp"
+#include "dep0/ast/replace.hpp"
+#include "dep0/ast/rename.hpp"
 
 #include "dep0/match.hpp"
-#include "dep0/scope_map.hpp"
 
 #include <ranges>
 #include <sstream>
 
-namespace dep0::typecheck {
-
-static std::string_view ordinal_suffix(std::size_t i);
+namespace dep0::ast {
 
 // Internally we use an implementation that modifies a copy of the original arguments when renaming is necessary.
-static dep0::expected<std::true_type> is_alpha_equivalent_impl(type_t&, type_t&);
+template <Properties P>
+dep0::expected<std::true_type> is_alpha_equivalent_impl(type_t<P>&, type_t<P>&);
 
+template <Properties P>
 struct alpha_equivalence_visitor
 {
+    using result_t = dep0::expected<std::true_type>;
+
     template <typename T, typename U>
     requires (not std::is_same_v<T, U>)
-    dep0::expected<std::true_type> operator()(T const& x, U const& y) const
+    result_t operator()(T const& x, U const& y) const
     {
         std::ostringstream err;
-        pretty_print<properties_t>(err << '`', x) << '`';
-        pretty_print<properties_t>(err << "is not alpha-equivalent to `", y) << '`';
+        pretty_print<P>(err << '`', x) << '`';
+        pretty_print<P>(err << "is not alpha-equivalent to `", y) << '`';
         return dep0::error_t(err.str());
     }
 
-    dep0::expected<std::true_type> operator()(type_t::bool_t const&, type_t::bool_t const&) const { return {}; }
-    dep0::expected<std::true_type> operator()(type_t::unit_t const&, type_t::unit_t const&) const { return {}; }
-    dep0::expected<std::true_type> operator()(type_t::i8_t const&, type_t::i8_t const&) const { return {}; }
-    dep0::expected<std::true_type> operator()(type_t::i16_t const&, type_t::i16_t const&) const { return {}; }
-    dep0::expected<std::true_type> operator()(type_t::i32_t const&, type_t::i32_t const&) const { return {}; }
-    dep0::expected<std::true_type> operator()(type_t::i64_t const&, type_t::i64_t const&) const { return {}; }
-    dep0::expected<std::true_type> operator()(type_t::u8_t const&, type_t::u8_t const&) const { return {}; }
-    dep0::expected<std::true_type> operator()(type_t::u16_t const&, type_t::u16_t const&) const { return {}; }
-    dep0::expected<std::true_type> operator()(type_t::u32_t const&, type_t::u32_t const&) const { return {}; }
-    dep0::expected<std::true_type> operator()(type_t::u64_t const&, type_t::u64_t const&) const { return {}; }
+    result_t operator()(typename type_t<P>::bool_t const&, typename type_t<P>::bool_t const&) const { return {}; }
+    result_t operator()(typename type_t<P>::unit_t const&, typename type_t<P>::unit_t const&) const { return {}; }
+    result_t operator()(typename type_t<P>::i8_t const&, typename type_t<P>::i8_t const&) const { return {}; }
+    result_t operator()(typename type_t<P>::i16_t const&, typename type_t<P>::i16_t const&) const { return {}; }
+    result_t operator()(typename type_t<P>::i32_t const&, typename type_t<P>::i32_t const&) const { return {}; }
+    result_t operator()(typename type_t<P>::i64_t const&, typename type_t<P>::i64_t const&) const { return {}; }
+    result_t operator()(typename type_t<P>::u8_t const&, typename type_t<P>::u8_t const&) const { return {}; }
+    result_t operator()(typename type_t<P>::u16_t const&, typename type_t<P>::u16_t const&) const { return {}; }
+    result_t operator()(typename type_t<P>::u32_t const&, typename type_t<P>::u32_t const&) const { return {}; }
+    result_t operator()(typename type_t<P>::u64_t const&, typename type_t<P>::u64_t const&) const { return {}; }
 
-    dep0::expected<std::true_type> operator()(type_t::var_t const& x, type_t::var_t const& y) const
+    result_t operator()(typename type_t<P>::var_t const& x, typename type_t<P>::var_t const& y) const
     {
         if (x == y)
             return std::true_type{};
         else
         {
             std::ostringstream err;
-            pretty_print<properties_t>(err << '`', x) << '`';
-            pretty_print<properties_t>(err << " is not alpha-equivalent to `", y) << '`';
+            pretty_print<P>(err << '`', x) << '`';
+            pretty_print<P>(err << " is not alpha-equivalent to `", y) << '`';
             return dep0::error_t(err.str());
         }
     }
 
-    dep0::expected<std::true_type> operator()(type_t::arr_t& x, type_t::arr_t& y) const
+    result_t operator()(typename type_t<P>::arr_t& x, typename type_t<P>::arr_t& y) const
     {
         if (x.args.size() != y.args.size())
         {
@@ -66,7 +68,17 @@ struct alpha_equivalence_visitor
         {
             auto const print_ordinal = [] (std::ostream& os, std::size_t const i) -> std::ostream&
             {
-                return os << i << ordinal_suffix(i);
+                return os << i << [&]
+                {
+                    switch (i) { case 11: case 12: case 13: return "th"; }
+                    switch (i % 10)
+                    {
+                    case 1: return "st";
+                    case 2: return "nd";
+                    case 3: return "rd";
+                    }
+                    return "th";
+                }();
             };
             std::ostringstream err;
             pretty_print(print_ordinal(err, i+1) << " argument `", x.args[i]) << '`';
@@ -78,9 +90,9 @@ struct alpha_equivalence_visitor
             auto const ok =
                 match(
                     x.args[i].value,
-                    [&] (func_arg_t::type_arg_t& x_arg) -> dep0::expected<std::true_type>
+                    [&] (typename func_arg_t<P>::type_arg_t& x_arg) -> dep0::expected<std::true_type>
                     {
-                        auto* const y_arg = std::get_if<func_arg_t::type_arg_t>(&y.args[i].value);
+                        auto* const y_arg = std::get_if<typename func_arg_t<P>::type_arg_t>(&y.args[i].value);
                         if (not y_arg)
                             return not_alpha_equivalent(i);
                         if (x_arg.var.has_value() xor y_arg->var.has_value())
@@ -113,9 +125,9 @@ struct alpha_equivalence_visitor
                             replace(x_var, y_var, x.args.begin() + i + 1, x.args.end(), x.ret_type.get());
                         return std::true_type{};
                     },
-                    [&] (func_arg_t::term_arg_t& x_arg) -> dep0::expected<std::true_type>
+                    [&] (typename func_arg_t<P>::term_arg_t& x_arg) -> dep0::expected<std::true_type>
                     {
-                        auto* const y_arg = std::get_if<func_arg_t::term_arg_t>(&y.args[i].value);
+                        auto* const y_arg = std::get_if<typename func_arg_t<P>::term_arg_t>(&y.args[i].value);
                         if (not y_arg)
                             return not_alpha_equivalent(i);
                         auto ok = is_alpha_equivalent_impl(x_arg.type, y_arg->type);
@@ -143,29 +155,19 @@ struct alpha_equivalence_visitor
     }
 };
 
-dep0::expected<std::true_type> is_alpha_equivalent_impl(type_t& x, type_t& y)
+template <Properties P>
+dep0::expected<std::true_type> is_alpha_equivalent_impl(type_t<P>& x, type_t<P>& y)
 {
-    return std::visit(alpha_equivalence_visitor{}, x.value, y.value);
+    return std::visit(alpha_equivalence_visitor<P>{}, x.value, y.value);
 }
 
-dep0::expected<std::true_type> is_alpha_equivalent(type_t const& x, type_t const& y)
+template <Properties P>
+dep0::expected<std::true_type> is_alpha_equivalent(type_t<P> const& x, type_t<P> const& y)
 {
-    // TODO we should make a lazy copy somehow, because renaming might not be often unnecessary
+    // TODO we should make a lazy copy somehow, because renaming might be often unnecessary
     auto x2 = x;
     auto y2 = y;
     return is_alpha_equivalent_impl(x2, y2);
 }
 
-std::string_view ordinal_suffix(std::size_t i)
-{
-    switch (i) { case 11: case 12: case 13: return "th"; }
-    switch (i % 10)
-    {
-    case 1: return "st";
-    case 2: return "nd";
-    case 3: return "th";
-    }
-    return "th";
-}
-
-} // namespace dep0::typecheck
+} // namespace dep0::ast

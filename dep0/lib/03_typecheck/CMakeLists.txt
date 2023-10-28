@@ -2,28 +2,20 @@ add_subdirectory(test)
 
 add_library(dep0_typecheck_lib
   # public headers
-  include/dep0/typecheck/alpha_equivalence.hpp
   include/dep0/typecheck/ast.hpp
   include/dep0/typecheck/check.hpp
   include/dep0/typecheck/context.hpp
   include/dep0/typecheck/derivation.hpp
   include/dep0/typecheck/error.hpp
-  include/dep0/typecheck/rename.hpp
-  include/dep0/typecheck/replace.hpp
-  include/dep0/typecheck/substitute.hpp
   # private headers
   src/private/derivation_rules.hpp
   src/private/returns_from_all_branches.hpp
   # source files
-  src/alpha_equivalence.cpp
   src/ast.cpp
   src/check.cpp
   src/context.cpp
   src/error.cpp
   src/returns_from_all_branches.cpp
-  src/rename.cpp
-  src/replace.cpp
-  src/substitute.cpp
   )
 add_library(DepC::Dep0::TypeCheck ALIAS dep0_typecheck_lib)
 target_compile_features(dep0_typecheck_lib PUBLIC cxx_std_20)

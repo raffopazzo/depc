@@ -3,7 +3,7 @@
 
 #include "dep0/parser/parse.hpp"
 #include "dep0/typecheck/check.hpp"
-#include "dep0/transform/beta_delta_reduction.hpp"
+#include "dep0/transform/beta_delta_normalization.hpp"
 
 #include "dep0/llvmgen/gen.hpp"
 

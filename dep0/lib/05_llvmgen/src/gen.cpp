@@ -2,7 +2,7 @@
 
 #include "private/mangler.hpp"
 
-#include "dep0/typecheck/substitute.hpp"
+#include "dep0/ast/substitute.hpp"
 
 #include "dep0/digit_separator.hpp"
 #include "dep0/fmap.hpp"

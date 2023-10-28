@@ -1,8 +1,9 @@
-#include "dep0/transform/beta_reduction.hpp"
+#pragma once
+
+#include "dep0/ast/beta_reduction.hpp"
+#include "dep0/ast/substitute.hpp"
 
 #include "dep0/match.hpp"
-
-#include "private/substitute.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -15,18 +16,19 @@ void destructive_self_assign(T& x, T&& y)
     x = std::move(tmp);
 }
 
-namespace dep0::transform {
+namespace dep0::ast {
 
-static bool beta_normalize(typecheck::stmt_t::if_else_t&);
-static bool beta_normalize(typecheck::stmt_t::return_t&);
-static bool beta_normalize(typecheck::expr_t::arith_expr_t&);
-static bool beta_normalize(typecheck::expr_t::boolean_constant_t&);
-static bool beta_normalize(typecheck::expr_t::numeric_constant_t&);
-static bool beta_normalize(typecheck::expr_t::var_t&);
-static bool beta_normalize(typecheck::expr_t::app_t&);
-static bool beta_normalize(typecheck::expr_t::abs_t&);
+template <Properties P> bool beta_normalize(typename stmt_t<P>::if_else_t&);
+template <Properties P> bool beta_normalize(typename stmt_t<P>::return_t&);
+template <Properties P> bool beta_normalize(typename expr_t<P>::arith_expr_t&);
+template <Properties P> bool beta_normalize(typename expr_t<P>::boolean_constant_t&);
+template <Properties P> bool beta_normalize(typename expr_t<P>::numeric_constant_t&);
+template <Properties P> bool beta_normalize(typename expr_t<P>::var_t&);
+template <Properties P> bool beta_normalize(typename expr_t<P>::app_t&);
+template <Properties P> bool beta_normalize(typename expr_t<P>::abs_t&);
 
-bool beta_normalize(typecheck::module_t& m)
+template <Properties P>
+bool beta_normalize(module_t<P>& m)
 {
     bool changed = false;
     for (auto& def: m.func_defs)
@@ -34,19 +36,21 @@ bool beta_normalize(typecheck::module_t& m)
     return changed;
 }
 
-bool beta_normalize(typecheck::func_def_t& def)
+template <Properties P>
+bool beta_normalize(func_def_t<P>& def)
 {
     return beta_normalize(def.value.body);
 }
 
-bool beta_normalize(typecheck::body_t& body)
+template <Properties P>
+bool beta_normalize(body_t<P>& body)
 {
-    auto const is_return = [] (typecheck::stmt_t const& x)
+    auto const is_return = [] (stmt_t<P> const& x)
     {
-        return std::holds_alternative<typecheck::stmt_t::return_t>(x.value);
+        return std::holds_alternative<typename stmt_t<P>::return_t>(x.value);
     };
     // NB taking `stmts` by value because we are about to perform a destructive self-assignment
-    auto replace_with = [&] (std::vector<typecheck::stmt_t>::iterator it, std::vector<typecheck::stmt_t> stmts)
+    auto replace_with = [&] (std::vector<stmt_t<P>>::iterator it, std::vector<stmt_t<P>> stmts)
     {
         // If there is nothing to replace `it` with, then just remove it;
         // otherwise we need to splice all the replacing statements in place of `it`,
@@ -74,14 +78,14 @@ bool beta_normalize(typecheck::body_t& body)
         changed |= beta_normalize(*it);
         it = match(
             it->value,
-            [&] (typecheck::expr_t::app_t& app)
+            [&] (typename expr_t<P>::app_t& app)
             {
                 // if immediately-invoked lambda we can extract the body,
                 // but have to suppress return statements from the invoked lambda,
                 // otherwise they would become early returns from the parent function
                 // TODO blindly suppressing return of the invoked lambda will be wrong once we have side-effects
                 if (app.args.empty())
-                    if (auto* const abs = std::get_if<typecheck::expr_t::abs_t>(&app.func.get().value))
+                    if (auto* const abs = std::get_if<typename expr_t<P>::abs_t>(&app.func.get().value))
                     {
                         changed = true;
                         // TODO fix this: if body contains 2 return statements, all others in between must be dropped
@@ -90,9 +94,9 @@ bool beta_normalize(typecheck::body_t& body)
                     }
                 return std::next(it);
             },
-            [&] (typecheck::stmt_t::if_else_t& if_)
+            [&] (typename stmt_t<P>::if_else_t& if_)
             {
-                if (auto const c = std::get_if<typecheck::expr_t::boolean_constant_t>(&if_.cond.value))
+                if (auto const c = std::get_if<typename expr_t<P>::boolean_constant_t>(&if_.cond.value))
                 {
                     changed = true;
                     if (c->value)
@@ -105,17 +109,19 @@ bool beta_normalize(typecheck::body_t& body)
                 else
                     return std::next(it);
             },
-            [&] (typecheck::stmt_t::return_t const&) { return std::next(it); });
+            [&] (typename stmt_t<P>::return_t const&) { return std::next(it); });
     }
     return changed;
 }
 
-bool beta_normalize(typecheck::stmt_t& stmt)
+template <Properties P>
+bool beta_normalize(stmt_t<P>& stmt)
 {
-    return match(stmt.value, [&] (auto& x) { return beta_normalize(x); });
+    return match(stmt.value, [&] (auto& x) { return beta_normalize<P>(x); });
 }
 
-bool beta_normalize(typecheck::stmt_t::if_else_t& if_)
+template <Properties P>
+bool beta_normalize(typename stmt_t<P>::if_else_t& if_)
 {
     bool changed = beta_normalize(if_.cond);
     changed |= beta_normalize(if_.true_branch);
@@ -124,23 +130,25 @@ bool beta_normalize(typecheck::stmt_t::if_else_t& if_)
     return changed;
 }
 
-bool beta_normalize(typecheck::stmt_t::return_t& ret)
+template <Properties P>
+bool beta_normalize(typename stmt_t<P>::return_t& ret)
 {
     return ret.expr and beta_normalize(*ret.expr);
 }
 
-bool beta_normalize(typecheck::expr_t& expr)
+template <Properties P>
+bool beta_normalize(expr_t<P>& expr)
 {
     return match(
         expr.value,
-        [&] (typecheck::expr_t::app_t& app)
+        [&] (typename expr_t<P>::app_t& app)
         {
-            bool changed = beta_normalize(app);
+            bool changed = beta_normalize<P>(app);
             // if this reduced to a parameterless single return statement, we can extract the returned expression
             if (app.args.empty())
-                if (auto* const abs = std::get_if<typecheck::expr_t::abs_t>(&app.func.get().value))
+                if (auto* const abs = std::get_if<typename expr_t<P>::abs_t>(&app.func.get().value))
                     if (abs->body.stmts.size() == 1ul)
-                        if (auto* const ret = std::get_if<typecheck::stmt_t::return_t>(&abs->body.stmts[0].value))
+                        if (auto* const ret = std::get_if<typename stmt_t<P>::return_t>(&abs->body.stmts[0].value))
                             if (ret->expr)
                             {
                                 changed = true;
@@ -148,15 +156,16 @@ bool beta_normalize(typecheck::expr_t& expr)
                             }
             return changed;
         },
-        [&] (auto& x) { return beta_normalize(x); });
+        [&] (auto& x) { return beta_normalize<P>(x); });
 }
 
-bool beta_normalize(typecheck::expr_t::arith_expr_t& x)
+template <Properties P>
+bool beta_normalize(typename expr_t<P>::arith_expr_t& x)
 {
     // TODO constant folding?
     return match(
         x.value,
-        [&] (typecheck::expr_t::arith_expr_t::plus_t& x)
+        [&] (typename expr_t<P>::arith_expr_t::plus_t& x)
         {
             bool changed = beta_normalize(x.lhs.get());
             changed |= beta_normalize(x.rhs.get());
@@ -164,11 +173,12 @@ bool beta_normalize(typecheck::expr_t::arith_expr_t& x)
         });
 }
 
-bool beta_normalize(typecheck::expr_t::boolean_constant_t&) { return false; }
-bool beta_normalize(typecheck::expr_t::numeric_constant_t&) { return false; }
-bool beta_normalize(typecheck::expr_t::var_t&) { return false; }
+template <Properties P> bool beta_normalize(typename expr_t<P>::boolean_constant_t&) { return false; }
+template <Properties P> bool beta_normalize(typename expr_t<P>::numeric_constant_t&) { return false; }
+template <Properties P> bool beta_normalize(typename expr_t<P>::var_t&) { return false; }
 
-bool beta_normalize(typecheck::expr_t::app_t& app)
+template <Properties P>
+bool beta_normalize(typename expr_t<P>::app_t& app)
 {
     // Technically, this classifies as applicative-order-reduction;
     // as such, if the abstraction discards some/all arguments we might waste time reducing those arguments.
@@ -176,7 +186,7 @@ bool beta_normalize(typecheck::expr_t::app_t& app)
     bool changed = beta_normalize(app.func.get());
     for (auto& arg: app.args)
         changed |= beta_normalize(arg);
-    if (auto* const abs = std::get_if<typecheck::expr_t::abs_t>(&app.func.get().value))
+    if (auto* const abs = std::get_if<typename expr_t<P>::abs_t>(&app.func.get().value))
     {
         if (abs->args.size() > 0ul)
         {
@@ -186,8 +196,8 @@ bool beta_normalize(typecheck::expr_t::app_t& app)
             {
                 match(
                     arg_it->value,
-                    [] (typecheck::func_arg_t::type_arg_t const&) {},
-                    [&](typecheck::func_arg_t::term_arg_t const& arg)
+                    [] (typename func_arg_t<P>::type_arg_t const&) {},
+                    [&](typename func_arg_t<P>::term_arg_t const& arg)
                     {
                         if (arg.var)
                             substitute(arg_it+1, abs->args.end(), abs->body, *arg.var, app.args[i]);
@@ -205,12 +215,14 @@ bool beta_normalize(typecheck::expr_t::app_t& app)
     return changed;
 }
 
-bool beta_normalize(typecheck::expr_t::abs_t& abs)
+template <Properties P>
+bool beta_normalize(typename expr_t<P>::abs_t& abs)
 {
     return beta_normalize(abs.body);
 }
 
-bool beta_normalize(typecheck::type_t&) { return false; }
+template <Properties P>
+bool beta_normalize(type_t<P>&) { return false; }
 
-} // namespace dep0::transform
+} // namespace dep0::ast
 

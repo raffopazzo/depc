@@ -1,11 +1,35 @@
 # add_subdirectory(test)
 add_library(dep0_ast_lib
+    include/dep0/ast/alpha_equivalence.hpp
+    include/dep0/ast/alpha_equivalence_impl.hpp
     include/dep0/ast/ast.hpp
+    include/dep0/ast/beta_delta_reduction.hpp
+    include/dep0/ast/beta_delta_reduction_impl.hpp
+    include/dep0/ast/beta_reduction.hpp
+    include/dep0/ast/beta_reduction_impl.hpp
     include/dep0/ast/concepts.hpp
+    include/dep0/ast/contains_var.hpp
+    include/dep0/ast/contains_var_impl.hpp
+    include/dep0/ast/max_index.hpp
+    include/dep0/ast/max_index_impl.hpp
     include/dep0/ast/pretty_print.hpp
+    include/dep0/ast/rename.hpp
+    include/dep0/ast/rename_impl.hpp
+    include/dep0/ast/replace.hpp
+    include/dep0/ast/replace_impl.hpp
+    include/dep0/ast/substitute.hpp
+    include/dep0/ast/substitute_impl.hpp
+    src/alpha_equivalence.cpp
     src/ast.cpp
+    src/beta_delta_reduction.cpp
+    src/beta_reduction.cpp
     src/concepts.cpp
+    src/contains_var.cpp
+    src/max_index.cpp
     src/pretty_print.cpp
+    src/rename.cpp
+    src/replace.cpp
+    src/substitute.cpp
     )
 add_library(DepC::Dep0::Ast ALIAS dep0_ast_lib)
 target_compile_features(dep0_ast_lib PUBLIC cxx_std_20)

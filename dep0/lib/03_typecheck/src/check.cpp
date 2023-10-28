@@ -1,9 +1,8 @@
 #include "dep0/typecheck/check.hpp"
 
-#include "dep0/typecheck/alpha_equivalence.hpp"
-#include "dep0/typecheck/substitute.hpp"
-
+#include "dep0/ast/alpha_equivalence.hpp"
 #include "dep0/ast/pretty_print.hpp"
+#include "dep0/ast/substitute.hpp"
 
 #include "private/derivation_rules.hpp"
 #include "private/returns_from_all_branches.hpp"

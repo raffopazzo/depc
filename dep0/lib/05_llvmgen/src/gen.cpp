@@ -132,6 +132,8 @@ static void gen_func(
     local_context_t&,
     source_text const&,
     typecheck::expr_t::abs_t const&);
+
+// TODO at the moment this is not used but we should find a way to use it again
 static llvm_func_t gen_specialized_func(
     global_context_t&,
     local_context_t&,

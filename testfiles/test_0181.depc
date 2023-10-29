@@ -1,0 +1,3 @@
+typedef int = signed 32 bit integer from ... to ...;
+auto f(typename t, typename int, t x) -> t { return x; }
+int g() { return f(int, i32_t, 0); }

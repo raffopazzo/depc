@@ -50,15 +50,12 @@ source_handle_t make_handle(Args&&... args)
 source_handle_t make_null_handle();
 
 // Like `std::string_view` but guarantees that the source is still open.
-// Objects constructed using `from_literal` don't manage any memory
-// since they are supposed to be passed a global literal string "...".
 class source_text
 {
     source_handle_t hdl;
     std::string_view txt;
 
 public:
-    static source_text from_literal(char const*); // WARN if argument is not a global literal we'll eventually crash!
     source_text(source_handle_t, std::string_view);
     source_text(source_text const&) = default;
     source_text(source_text&&) = default;
@@ -76,9 +73,9 @@ public:
     bool starts_with(char) const;
     source_text substr(std::size_t pos, std::size_t n = std::string_view::npos) const;
 
-    bool operator<(source_text const& that) const;
-    bool operator==(source_text const& that) const;
-    bool operator!=(source_text const& that) const;
+    bool operator<(source_text const&) const;
+    bool operator==(source_text const&) const;
+    bool operator!=(source_text const&) const;
 
     friend bool operator==(source_text const&, std::string_view);
     friend bool operator!=(source_text const&, std::string_view);

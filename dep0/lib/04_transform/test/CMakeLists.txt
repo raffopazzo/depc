@@ -6,5 +6,6 @@ set_property(TEST dep0_transform_tests PROPERTY ENVIRONMENT
 target_link_libraries(dep0_transform_tests
   PRIVATE
     DepC::Dep0::Transform
+    DepC::Dep0::Testing
     Boost::Boost
     )

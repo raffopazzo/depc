@@ -5,6 +5,7 @@ fragment ALPHA: [A-Za-z_]+; // we treat '-' as alpha
 fragment ALPHANUM: [A-Za-z0-9_]+;
 
 // Keywords
+KW_AUTO: 'auto';
 KW_BOOL: 'bool';
 KW_ELSE: 'else';
 KW_FALSE: 'false';
@@ -16,6 +17,7 @@ KW_IF: 'if';
 KW_RETURN: 'return';
 KW_TRUE: 'true';
 KW_TYPEDEF: 'typedef';
+KW_TYPENAME: 'typename';
 KW_U16_T: 'u16_t';
 KW_U32_T: 'u32_t';
 KW_U64_T: 'u64_t';
@@ -23,6 +25,7 @@ KW_U8_T: 'u8_t';
 KW_UNIT_T: 'unit_t';
 
 // Punctuation
+ARROW: '->';
 COMMA: ',';
 ELLIPSIS: '...';
 EQ: '=';

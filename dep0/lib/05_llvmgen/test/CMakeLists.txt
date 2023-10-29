@@ -7,5 +7,6 @@ target_link_libraries(dep0_llvmgen_tests
   PRIVATE
     DepC::Dep0::Transform
     DepC::Dep0::LLVMGen
+    DepC::Dep0::Testing
     Boost::Boost
     )

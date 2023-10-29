@@ -3,6 +3,7 @@
 
 #include "dep0/parser/parse.hpp"
 #include "dep0/typecheck/check.hpp"
+#include "dep0/ast/pretty_print.hpp"
 
 #include <filesystem>
 #include <cstdlib>
@@ -45,7 +46,7 @@ BOOST_AUTO_TEST_CASE(test_0008)
     auto const module = open("test_0008.depc");
     auto const result = check(module);
     BOOST_TEST_REQUIRE(result.has_error());
-    BOOST_TEST(result.error().error == "expression of type `bool` does not typecheck with expected type `i32_t`");
+    BOOST_TEST(result.error().error == "type mismatch between expression of type `bool` and expected type `i32_t`");
     BOOST_TEST(result.error().location.has_value());
 }
 
@@ -72,7 +73,7 @@ BOOST_AUTO_TEST_CASE(test_0012)
     auto const module = open("test_0012.depc");
     auto const result = check(module);
     BOOST_TEST_REQUIRE(result.has_error());
-    BOOST_TEST(result.error().error == "expression of type `bool` does not typecheck with expected type `i32_t`");
+    BOOST_TEST(result.error().error == "type mismatch between expression of type `bool` and expected type `i32_t`");
     BOOST_TEST(result.error().location.has_value());
 }
 
@@ -109,6 +110,19 @@ BOOST_AUTO_TEST_CASE(test_0177)
     std::ostringstream tgt;
     pretty_print(tgt, result.error().tgt.value());
     BOOST_TEST(tgt.str() == "u32_t");
+}
+
+BOOST_AUTO_TEST_CASE(test_0179)
+{
+    auto const module = open("test_0179.depc");
+    auto const result = check(module);
+    BOOST_TEST_REQUIRE(result.has_error());
+    BOOST_TEST(result.error().error == "type mismatch between numeric constant and `t`");
+    BOOST_TEST(result.error().location.has_value());
+    BOOST_TEST_REQUIRE(result.error().tgt.has_value());
+    std::ostringstream tgt;
+    pretty_print(tgt, result.error().tgt.value());
+    BOOST_TEST(tgt.str() == "t");
 }
 
 BOOST_AUTO_TEST_SUITE_END()

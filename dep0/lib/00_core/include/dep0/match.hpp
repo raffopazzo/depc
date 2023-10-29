@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 #include <concepts>
 #include <variant>
 
@@ -29,7 +30,10 @@ decltype(auto) impl(std::integral_constant<std::size_t, I>, std::variant<Ts...> 
             return impl(std::integral_constant<std::size_t, I+1>{}, x, std::forward<Fs>(fs)...);
     }
     else
+    {
+        assert(p and "corrupted variant uninhabited by any of its types");
         return invoke_one(*p, std::forward<Fs>(fs)...);
+    }
 }
 
 template <std::size_t I, typename... Ts, typename... Fs>
@@ -44,7 +48,10 @@ decltype(auto) impl(std::integral_constant<std::size_t, I>, std::variant<Ts...>&
             return impl(std::integral_constant<std::size_t, I+1>{}, x, std::forward<Fs>(fs)...);
     }
     else
+    {
+        assert(p and "corrupted variant uninhabited by any of its types");
         return invoke_one(*p, std::forward<Fs>(fs)...);
+    }
 }
 
 } // namespace detail::match

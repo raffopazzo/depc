@@ -7,6 +7,6 @@
 
 namespace dep0::typecheck {
 
-expected<module_t> check(parser::module_t const&);
+expected<module_t> check(parser::module_t const&) noexcept;
 
 } // namespace dep0::typecheck

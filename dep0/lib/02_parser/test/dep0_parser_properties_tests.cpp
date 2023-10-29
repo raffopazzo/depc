@@ -37,10 +37,10 @@ BOOST_AUTO_TEST_CASE(test_0001)
     BOOST_TEST(f.properties.line == 1);
     BOOST_TEST(f.properties.col == 1);
     BOOST_TEST(f.properties.txt == source);
-    BOOST_TEST(f.type.properties.line == 1);
-    BOOST_TEST(f.type.properties.col == 1);
-    BOOST_TEST(f.type.properties.txt == "i32_t");
-    BOOST_TEST(std::holds_alternative<dep0::parser::type_t::i32_t>(f.type.value));
+    BOOST_TEST(f.value.ret_type.properties.line == 1);
+    BOOST_TEST(f.value.ret_type.properties.col == 1);
+    BOOST_TEST(f.value.ret_type.properties.txt == "i32_t");
+    BOOST_TEST(std::holds_alternative<dep0::parser::type_t::i32_t>(f.value.ret_type.value));
     BOOST_TEST(f.name == "main");
 }
 

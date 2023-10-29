@@ -67,6 +67,38 @@ struct Fixture
         return std::forward<F>(f)(*function);
     }
 
+    static boost::test_tools::predicate_result is_i32(
+        llvm::Argument const* const arg,
+        std::optional<std::string_view> const name)
+    {
+        if (not arg)
+            return dep0::testing::failure("arg is null");
+        if (name)
+        {
+            if (arg->getName().str() != *name)
+                return dep0::testing::failure("argument name: ", arg->getName().str(), " != ", *name);
+        }
+        else
+        {
+            if (not arg->getName().empty())
+                return dep0::testing::failure("argument has a name but should be anonymous: ", arg->getName().str());
+        }
+        if (not arg->hasSExtAttr())
+            return dep0::testing::failure("argument has no SExt atribute");
+        return true;
+    }
+
+    static boost::test_tools::predicate_result is_u32(llvm::Argument const* const arg, std::string_view const name)
+    {
+        if (not arg)
+            return dep0::testing::failure("arg is null");
+        if (arg->getName().str() != name)
+            return dep0::testing::failure("argument name: ", arg->getName().str(), " != ", name);
+        if (not arg->hasZExtAttr())
+            return dep0::testing::failure("argument has no ZExt atribute");
+        return true;
+    }
+
     template <dep0::testing::Predicate<llvm::FunctionType> F>
     static boost::test_tools::predicate_result is_pointer_to_function(llvm::Type const* const type, F&& f)
     {
@@ -491,9 +523,7 @@ BOOST_AUTO_TEST_CASE(test_0167)
     BOOST_TEST(has_function("id", [] (llvm::Function const& f)
     {
         BOOST_TEST_REQUIRE(f.arg_size() == 1ul);
-        auto const x = f.getArg(0ul);
-        BOOST_TEST(x->getName().str() == "x");
-        BOOST_TEST(x->hasSExtAttr());
+        BOOST_TEST(is_i32(f.getArg(0ul), "x"));
         BOOST_TEST(is_return_of(f.getEntryBlock().getTerminator(), "x"));
         return boost::test_tools::predicate_result(true);
     }));
@@ -591,9 +621,7 @@ BOOST_AUTO_TEST_CASE(test_0178)
         BOOST_TEST(f.hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::SExt));
         BOOST_TEST_REQUIRE(f.getEntryBlock().size() == 1ul);
         BOOST_TEST_REQUIRE(f.arg_size() == 1ul);
-        auto const arg_x = f.getArg(0ul);
-        BOOST_TEST(arg_x->getType()->isIntegerTy(32ul));
-        BOOST_TEST(arg_x->hasAttribute(llvm::Attribute::SExt));
+        BOOST_TEST(is_i32(f.getArg(0ul), "x"));
         BOOST_TEST(is_return_of(f.getEntryBlock().getTerminator(), "x"));
         return boost::test_tools::predicate_result(true);
     }));
@@ -603,9 +631,7 @@ BOOST_AUTO_TEST_CASE(test_0178)
         BOOST_TEST(f.hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::ZExt));
         BOOST_TEST_REQUIRE(f.getEntryBlock().size() == 1ul);
         BOOST_TEST_REQUIRE(f.arg_size() == 1ul);
-        auto const arg_x = f.getArg(0ul);
-        BOOST_TEST(arg_x->getType()->isIntegerTy(32ul));
-        BOOST_TEST(arg_x->hasAttribute(llvm::Attribute::ZExt));
+        BOOST_TEST(is_u32(f.getArg(0ul), "x"));
         BOOST_TEST(is_return_of(f.getEntryBlock().getTerminator(), "x"));
         return boost::test_tools::predicate_result(true);
     }));
@@ -615,9 +641,7 @@ BOOST_AUTO_TEST_CASE(test_0178)
         BOOST_TEST(f.hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::SExt));
         BOOST_TEST_REQUIRE(f.getEntryBlock().size() == 1ul);
         BOOST_TEST_REQUIRE(f.arg_size() == 1ul);
-        auto const arg_x = f.getArg(0ul);
-        BOOST_TEST(arg_x->getType()->isIntegerTy(32ul));
-        BOOST_TEST(arg_x->hasAttribute(llvm::Attribute::SExt));
+        BOOST_TEST(is_i32(f.getArg(0ul), "x"));
         BOOST_TEST(is_return_of(f.getEntryBlock().getTerminator(), "x"));
         return boost::test_tools::predicate_result(true);
     }));
@@ -731,9 +755,7 @@ BOOST_AUTO_TEST_CASE(test_0178)
         BOOST_TEST(f.hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::SExt));
         BOOST_TEST_REQUIRE(f.getEntryBlock().size() == 1ul);
         BOOST_TEST_REQUIRE(f.arg_size() == 1ul);
-        auto const arg_x = f.getArg(0ul);
-        BOOST_TEST(arg_x->getType()->isIntegerTy(32ul));
-        BOOST_TEST(arg_x->hasAttribute(llvm::Attribute::SExt));
+        BOOST_TEST(is_i32(f.getArg(0ul), "x"));
         BOOST_TEST(is_return_of(f.getEntryBlock().getTerminator(), "x"));
         return boost::test_tools::predicate_result(true);
     }));
@@ -743,9 +765,7 @@ BOOST_AUTO_TEST_CASE(test_0178)
         BOOST_TEST(f.hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::SExt));
         BOOST_TEST_REQUIRE(f.getEntryBlock().size() == 1ul);
         BOOST_TEST_REQUIRE(f.arg_size() == 1ul);
-        auto const arg_x = f.getArg(0ul);
-        BOOST_TEST(arg_x->getType()->isIntegerTy(32ul));
-        BOOST_TEST(arg_x->hasAttribute(llvm::Attribute::SExt));
+        BOOST_TEST(is_i32(f.getArg(0ul), "x"));
         BOOST_TEST(is_return_of(f.getEntryBlock().getTerminator(), "x"));
         return boost::test_tools::predicate_result(true);
     }));
@@ -781,14 +801,8 @@ BOOST_AUTO_TEST_CASE(test_0183)
         BOOST_TEST(f.hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::SExt));
         BOOST_TEST_REQUIRE(f.getEntryBlock().size() == 1ul);
         BOOST_TEST_REQUIRE(f.arg_size() == 2ul);
-        auto const arg_x = f.getArg(0);
-        BOOST_TEST(arg_x->getName().str() == "x");
-        BOOST_TEST(arg_x->getType()->isIntegerTy(32ul));
-        BOOST_TEST(arg_x->hasAttribute(llvm::Attribute::SExt));
-        auto const arg_y = f.getArg(1);
-        BOOST_TEST(arg_y->getName().str() == "y");
-        BOOST_TEST(arg_y->getType()->isIntegerTy(32ul));
-        BOOST_TEST(arg_y->hasAttribute(llvm::Attribute::SExt));
+        BOOST_TEST(is_i32(f.getArg(0ul), "x"));
+        BOOST_TEST(is_i32(f.getArg(1ul), "y"));
         BOOST_TEST(is_return_of(f.getEntryBlock().getTerminator(), "x"));
         return boost::test_tools::predicate_result(true);
     }));
@@ -798,14 +812,8 @@ BOOST_AUTO_TEST_CASE(test_0183)
         BOOST_TEST(f.hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::SExt));
         BOOST_TEST_REQUIRE(f.getEntryBlock().size() == 1ul);
         BOOST_TEST_REQUIRE(f.arg_size() == 2ul);
-        auto const arg_x = f.getArg(0);
-        BOOST_TEST(arg_x->getName().str() == "x");
-        BOOST_TEST(arg_x->getType()->isIntegerTy(32ul));
-        BOOST_TEST(arg_x->hasAttribute(llvm::Attribute::SExt));
-        auto const arg_y = f.getArg(1);
-        BOOST_TEST(arg_y->getName().str() == "y");
-        BOOST_TEST(arg_y->getType()->isIntegerTy(32ul));
-        BOOST_TEST(arg_y->hasAttribute(llvm::Attribute::SExt));
+        BOOST_TEST(is_i32(f.getArg(0ul), "x"));
+        BOOST_TEST(is_i32(f.getArg(1ul), "y"));
         BOOST_TEST(is_return_of(f.getEntryBlock().getTerminator(), "y"));
         return boost::test_tools::predicate_result(true);
     }));
@@ -888,10 +896,7 @@ BOOST_AUTO_TEST_CASE(test_0189)
         BOOST_TEST(f.hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::SExt));
         BOOST_TEST_REQUIRE(f.getEntryBlock().size() == 1ul);
         BOOST_TEST_REQUIRE(f.arg_size() == 1ul);
-        auto const arg = f.getArg(0);
-        BOOST_TEST(arg->getName().empty());
-        BOOST_TEST(arg->getType()->isIntegerTy(32ul));
-        BOOST_TEST(arg->hasAttribute(llvm::Attribute::SExt));
+        BOOST_TEST(is_i32(f.getArg(0ul), std::nullopt));
         BOOST_TEST(is_return_of(f.getEntryBlock().getTerminator(), signed_constant(0)));
         return boost::test_tools::predicate_result(true);
     }));

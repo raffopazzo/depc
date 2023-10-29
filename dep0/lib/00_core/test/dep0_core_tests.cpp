@@ -12,19 +12,25 @@ static std::string to_string(dep0::error_t const& x)
     return out.str();
 }
 
+// WARN if argument is not a global literal we'll eventually crash!
+static dep0::source_text from_literal(char const* s)
+{
+    return {dep0::make_handle<char const*>(s), s};
+}
+
 BOOST_AUTO_TEST_SUITE(dep0_core_tests)
 
 BOOST_AUTO_TEST_CASE(pretty_print_error)
 {
     using namespace dep0;
-    auto const stmt = source_text::from_literal("return -1;");
-    auto const body = source_text::from_literal(R"(int foo()
+    auto const stmt = from_literal("return -1;");
+    auto const body = from_literal(R"(int foo()
 {
     return -1;
 })");
     auto const empty = dep0::error_t{};
     auto const simple = dep0::error_t{"unknown error"};
-    auto const with_location_only = dep0::error_t{"syntax error", source_loc_t{1, 2, source_text::from_literal("")}};
+    auto const with_location_only = dep0::error_t{"syntax error", source_loc_t{1, 2, from_literal("")}};
     auto const with_location_stmt = dep0::error_t{"syntax error", source_loc_t{1, 2, stmt}};
     auto const with_location_body = dep0::error_t{"syntax error", source_loc_t{1, 2, body}};
     auto const with_simple_reason = dep0::error_t{"parse failed", std::vector{simple}};

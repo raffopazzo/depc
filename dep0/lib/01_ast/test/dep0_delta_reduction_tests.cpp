@@ -3,6 +3,10 @@
 
 #include "dep0/ast/delta_reduction.hpp"
 
+#include "dep0/testing/literal_string.hpp"
+
+using namespace dep0::testing;
+
 namespace dep0::ast {
 
 struct dummy_properties_t
@@ -37,13 +41,13 @@ struct Fixture
     {
         return func_def_t{
             dummy_properties_t{},
-            source_text::from_literal(name),
+            literal_string(name),
             expr_t::abs_t{std::move(args), std::move(ret), std::move(body)}
         };
     }
 
     type_t type(type_t::value_t value) { return type_t{dummy_properties_t{}, std::move(value)}; }
-    type_t::var_t type_var(char const* const name) { return type_t::var_t{source_text::from_literal(name)}; }
+    type_t::var_t type_var(char const* const name) { return type_t::var_t{literal_string(name)}; }
     body_t body(stmt_t s) { return body_t{dummy_properties_t{}, std::vector{std::move(s)}}; }
     stmt_t return_(expr_t e) { return stmt_t{dummy_properties_t{}, stmt_t::return_t{std::move(e)}}; }
     expr_t app(expr_t f, std::vector<expr_t> args)
@@ -54,11 +58,11 @@ struct Fixture
     {
         return expr_t{
             dummy_properties_t{},
-            expr_t::numeric_constant_t{std::nullopt, source_text::from_literal(number)}};
+            expr_t::numeric_constant_t{std::nullopt, literal_string(number)}};
     }
     expr_t var(char const* const name)
     {
-        return expr_t{dummy_properties_t{}, expr_t::var_t{source_text::from_literal(name)}};
+        return expr_t{dummy_properties_t{}, expr_t::var_t{literal_string(name)}};
     }
     func_arg_t arg(func_arg_t::value_t value) { return func_arg_t{dummy_properties_t{}, std::move(value)}; }
 };
@@ -75,7 +79,7 @@ BOOST_AUTO_TEST_CASE(expand_function_definition)
 {
     auto f = func_def("f", {}, type(type_t::i32_t{}), body(return_(numeric_constant("0"))));
     auto g = func_def("g", {}, type(type_t::i32_t{}), body(return_(app(var("f"), {}))));
-    bool const inserted = ctx.try_emplace(indexed_var_t{source_text::from_literal("f")}, f.value).second;
+    bool const inserted = ctx.try_emplace(indexed_var_t{literal_string("f")}, f.value).second;
     BOOST_TEST(inserted);
     BOOST_TEST(delta_reduce(ctx, g) == true);
 }
@@ -89,7 +93,7 @@ BOOST_AUTO_TEST_CASE(type_argument_should_shadow_function_definitions)
             {arg(func_arg_t::type_arg_t{type_var("f")})},
             type(type_t::i32_t{}),
             body(return_(app(var("f"), {}))));
-    bool const inserted = ctx.try_emplace(indexed_var_t{source_text::from_literal("f")}, f.value).second;
+    bool const inserted = ctx.try_emplace(indexed_var_t{literal_string("f")}, f.value).second;
     BOOST_TEST(inserted);
     BOOST_TEST(delta_reduce(ctx, g) == false);
 }
@@ -100,10 +104,10 @@ BOOST_AUTO_TEST_CASE(term_argument_should_shadow_function_definitions)
     auto g =
         func_def(
             "g",
-            {arg(func_arg_t::term_arg_t{type(type_t::i32_t{}), expr_t::var_t{source_text::from_literal("f")}})},
+            {arg(func_arg_t::term_arg_t{type(type_t::i32_t{}), expr_t::var_t{literal_string("f")}})},
             type(type_t::i32_t{}),
             body(return_(app(var("f"), {}))));
-    bool const inserted = ctx.try_emplace(indexed_var_t{source_text::from_literal("f")}, f.value).second;
+    bool const inserted = ctx.try_emplace(indexed_var_t{literal_string("f")}, f.value).second;
     BOOST_TEST(inserted);
     BOOST_TEST(delta_reduce(ctx, g) == false);
 }

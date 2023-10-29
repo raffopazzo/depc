@@ -57,8 +57,6 @@ source_text source_text::substr(std::size_t const pos, std::size_t const n) cons
     return {hdl, txt.substr(pos, n)};
 }
 
-source_text source_text::from_literal(char const* s) { return {make_handle<char const*>(s), s}; }
-
 bool source_text::operator<(source_text const& that) const { return txt < that.txt; }
 bool source_text::operator==(source_text const& that) const { return txt == that.txt; }
 bool source_text::operator!=(source_text const& that) const { return txt != that.txt; }

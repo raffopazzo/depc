@@ -3,6 +3,7 @@ add_test(NAME dep0_beta_delta_reduction_tests COMMAND dep0_beta_delta_reduction_
 target_link_libraries(dep0_beta_delta_reduction_tests
   PRIVATE
     DepC::Dep0::Ast
+    DepC::Dep0::Testing
     Boost::Boost
     )
 
@@ -11,5 +12,6 @@ add_test(NAME dep0_delta_reduction_tests COMMAND dep0_delta_reduction_tests)
 target_link_libraries(dep0_delta_reduction_tests
   PRIVATE
     DepC::Dep0::Ast
+    DepC::Dep0::Testing
     Boost::Boost
     )

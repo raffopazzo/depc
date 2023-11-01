@@ -28,10 +28,10 @@ $ ./tools/devbox/devbox.sh
 ...$ exit
 ```
 
-Alteernatively:
+Alternatively:
 
 ```
-$ ./tools/devbox/devbox.sh conan install . --install-folder build
+$ ./tools/devbox/devbox.sh conan install . --install-folder build # Note same comment as above applies here too
 $ ./tools/devbox/devbox.sh conan profile update settings.compiler.libcxx=libstdc++11 default
 $ ./tools/devbox/devbox.sh cmake . -Bbuild -DCMAKE_MODULE_PATH=$PWD/build
 $ ./tools/devbox/devbox.sh cmake --build build

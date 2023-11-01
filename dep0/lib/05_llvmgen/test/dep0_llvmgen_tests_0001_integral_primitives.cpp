@@ -5,9 +5,11 @@
 
 BOOST_FIXTURE_TEST_SUITE(dep0_llvmgen_tests_0001_integral_primitives, LLVMGenTestsFixture)
 
-BOOST_AUTO_TEST_CASE(test_0024)
+// BOOST_AUTO_TEST_CASE(parse_error_000)
+
+BOOST_AUTO_TEST_CASE(pass_000)
 {
-    BOOST_TEST_REQUIRE(pass("0001_integral_primitives/test_0024.depc"));
+    BOOST_TEST_REQUIRE(pass("0001_integral_primitives/pass_000.depc"));
     BOOST_TEST(has_function("f0", [] (llvm::Function const& f)
     {
         BOOST_TEST(f.hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::SExt));
@@ -76,133 +78,131 @@ BOOST_AUTO_TEST_CASE(test_0024)
     }));
 }
 
-// BOOST_AUTO_TEST_CASE(test_0025) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0025) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0026) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0027) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0028) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0029) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0030) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0031) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0032) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0033) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0034) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0035) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0036) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0037) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0038) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0039) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0040) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0041) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0042) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0043) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0044) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0045) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0046) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0047) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0048) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0049) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0050) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0051) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0052) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0053) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0054) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0055) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0056) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0057) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0058) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0059) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0060) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0061) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0062) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0063) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0064) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0065) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0066) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0067) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0068) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0069) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0070) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0071) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0072) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0073) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0074) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0075) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0076) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0077) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0078) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0079) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0080) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0081) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0082) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0083) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0084) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0085) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0086) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0087) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0088) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0089) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0090) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0091) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0092) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0093) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0094) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0095) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0096) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0097) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0098) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0099) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0100) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0101) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0102) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0103) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0104) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0105) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0106) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0107) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0108) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0109) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0110) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0111) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0112) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0113) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0114) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0115) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0116) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0117) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0118) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0119) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0120) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0121) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0122) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0123) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0124) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0125) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0126) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0127) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0128) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0129) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0130) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0131) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0132) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0133) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0134) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0135) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0136) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0137) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0138) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0139) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0140) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0141) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0142) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0143) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0144) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0145) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0146) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0147) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0148) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0149) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0150) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0151) doesn't parse
+// BOOST_AUTO_TEST_CASE(typecheck_error_000)
+// BOOST_AUTO_TEST_CASE(typecheck_error_001)
+// BOOST_AUTO_TEST_CASE(typecheck_error_002)
+// BOOST_AUTO_TEST_CASE(typecheck_error_003)
+// BOOST_AUTO_TEST_CASE(typecheck_error_004)
+// BOOST_AUTO_TEST_CASE(typecheck_error_005)
+// BOOST_AUTO_TEST_CASE(typecheck_error_006)
+// BOOST_AUTO_TEST_CASE(typecheck_error_007)
+// BOOST_AUTO_TEST_CASE(typecheck_error_008)
+// BOOST_AUTO_TEST_CASE(typecheck_error_009)
+// BOOST_AUTO_TEST_CASE(typecheck_error_010)
+// BOOST_AUTO_TEST_CASE(typecheck_error_011)
+// BOOST_AUTO_TEST_CASE(typecheck_error_012)
+// BOOST_AUTO_TEST_CASE(typecheck_error_013)
+// BOOST_AUTO_TEST_CASE(typecheck_error_014)
+// BOOST_AUTO_TEST_CASE(typecheck_error_015)
+// BOOST_AUTO_TEST_CASE(typecheck_error_016)
+// BOOST_AUTO_TEST_CASE(typecheck_error_017)
+// BOOST_AUTO_TEST_CASE(typecheck_error_018)
+// BOOST_AUTO_TEST_CASE(typecheck_error_019)
+// BOOST_AUTO_TEST_CASE(typecheck_error_020)
+// BOOST_AUTO_TEST_CASE(typecheck_error_021)
+// BOOST_AUTO_TEST_CASE(typecheck_error_022)
+// BOOST_AUTO_TEST_CASE(typecheck_error_023)
+// BOOST_AUTO_TEST_CASE(typecheck_error_024)
+// BOOST_AUTO_TEST_CASE(typecheck_error_025)
+// BOOST_AUTO_TEST_CASE(typecheck_error_026)
+// BOOST_AUTO_TEST_CASE(typecheck_error_027)
+// BOOST_AUTO_TEST_CASE(typecheck_error_028)
+// BOOST_AUTO_TEST_CASE(typecheck_error_029)
+// BOOST_AUTO_TEST_CASE(typecheck_error_030)
+// BOOST_AUTO_TEST_CASE(typecheck_error_031)
+// BOOST_AUTO_TEST_CASE(typecheck_error_032)
+// BOOST_AUTO_TEST_CASE(typecheck_error_033)
+// BOOST_AUTO_TEST_CASE(typecheck_error_034)
+// BOOST_AUTO_TEST_CASE(typecheck_error_035)
+// BOOST_AUTO_TEST_CASE(typecheck_error_036)
+// BOOST_AUTO_TEST_CASE(typecheck_error_037)
+// BOOST_AUTO_TEST_CASE(typecheck_error_038)
+// BOOST_AUTO_TEST_CASE(typecheck_error_039)
+// BOOST_AUTO_TEST_CASE(typecheck_error_040)
+// BOOST_AUTO_TEST_CASE(typecheck_error_041)
+// BOOST_AUTO_TEST_CASE(typecheck_error_042)
+// BOOST_AUTO_TEST_CASE(typecheck_error_043)
+// BOOST_AUTO_TEST_CASE(typecheck_error_044)
+// BOOST_AUTO_TEST_CASE(typecheck_error_045)
+// BOOST_AUTO_TEST_CASE(typecheck_error_046)
+// BOOST_AUTO_TEST_CASE(typecheck_error_047)
+// BOOST_AUTO_TEST_CASE(typecheck_error_048)
+// BOOST_AUTO_TEST_CASE(typecheck_error_049)
+// BOOST_AUTO_TEST_CASE(typecheck_error_050)
+// BOOST_AUTO_TEST_CASE(typecheck_error_051)
+// BOOST_AUTO_TEST_CASE(typecheck_error_052)
+// BOOST_AUTO_TEST_CASE(typecheck_error_053)
+// BOOST_AUTO_TEST_CASE(typecheck_error_054)
+// BOOST_AUTO_TEST_CASE(typecheck_error_055)
+// BOOST_AUTO_TEST_CASE(typecheck_error_056)
+// BOOST_AUTO_TEST_CASE(typecheck_error_057)
+// BOOST_AUTO_TEST_CASE(typecheck_error_058)
+// BOOST_AUTO_TEST_CASE(typecheck_error_059)
+// BOOST_AUTO_TEST_CASE(typecheck_error_060)
+// BOOST_AUTO_TEST_CASE(typecheck_error_061)
+// BOOST_AUTO_TEST_CASE(typecheck_error_062)
+// BOOST_AUTO_TEST_CASE(typecheck_error_063)
+// BOOST_AUTO_TEST_CASE(typecheck_error_064)
+// BOOST_AUTO_TEST_CASE(typecheck_error_065)
+// BOOST_AUTO_TEST_CASE(typecheck_error_066)
+// BOOST_AUTO_TEST_CASE(typecheck_error_067)
+// BOOST_AUTO_TEST_CASE(typecheck_error_068)
+// BOOST_AUTO_TEST_CASE(typecheck_error_069)
+// BOOST_AUTO_TEST_CASE(typecheck_error_070)
+// BOOST_AUTO_TEST_CASE(typecheck_error_071)
+// BOOST_AUTO_TEST_CASE(typecheck_error_072)
+// BOOST_AUTO_TEST_CASE(typecheck_error_073)
+// BOOST_AUTO_TEST_CASE(typecheck_error_074)
+// BOOST_AUTO_TEST_CASE(typecheck_error_075)
+// BOOST_AUTO_TEST_CASE(typecheck_error_076)
+// BOOST_AUTO_TEST_CASE(typecheck_error_077)
+// BOOST_AUTO_TEST_CASE(typecheck_error_078)
+// BOOST_AUTO_TEST_CASE(typecheck_error_079)
+// BOOST_AUTO_TEST_CASE(typecheck_error_080)
+// BOOST_AUTO_TEST_CASE(typecheck_error_081)
+// BOOST_AUTO_TEST_CASE(typecheck_error_082)
+// BOOST_AUTO_TEST_CASE(typecheck_error_083)
+// BOOST_AUTO_TEST_CASE(typecheck_error_084)
+// BOOST_AUTO_TEST_CASE(typecheck_error_085)
+// BOOST_AUTO_TEST_CASE(typecheck_error_086)
+// BOOST_AUTO_TEST_CASE(typecheck_error_087)
+// BOOST_AUTO_TEST_CASE(typecheck_error_088)
+// BOOST_AUTO_TEST_CASE(typecheck_error_089)
+// BOOST_AUTO_TEST_CASE(typecheck_error_090)
+// BOOST_AUTO_TEST_CASE(typecheck_error_091)
+// BOOST_AUTO_TEST_CASE(typecheck_error_092)
+// BOOST_AUTO_TEST_CASE(typecheck_error_093)
+// BOOST_AUTO_TEST_CASE(typecheck_error_094)
+// BOOST_AUTO_TEST_CASE(typecheck_error_095)
+// BOOST_AUTO_TEST_CASE(typecheck_error_096)
+// BOOST_AUTO_TEST_CASE(typecheck_error_097)
+// BOOST_AUTO_TEST_CASE(typecheck_error_098)
+// BOOST_AUTO_TEST_CASE(typecheck_error_099)
+// BOOST_AUTO_TEST_CASE(typecheck_error_100)
+// BOOST_AUTO_TEST_CASE(typecheck_error_101)
+// BOOST_AUTO_TEST_CASE(typecheck_error_102)
+// BOOST_AUTO_TEST_CASE(typecheck_error_103)
+// BOOST_AUTO_TEST_CASE(typecheck_error_104)
+// BOOST_AUTO_TEST_CASE(typecheck_error_105)
+// BOOST_AUTO_TEST_CASE(typecheck_error_106)
+// BOOST_AUTO_TEST_CASE(typecheck_error_107)
+// BOOST_AUTO_TEST_CASE(typecheck_error_108)
+// BOOST_AUTO_TEST_CASE(typecheck_error_109)
+// BOOST_AUTO_TEST_CASE(typecheck_error_110)
+// BOOST_AUTO_TEST_CASE(typecheck_error_111)
+// BOOST_AUTO_TEST_CASE(typecheck_error_112)
+// BOOST_AUTO_TEST_CASE(typecheck_error_113)
+// BOOST_AUTO_TEST_CASE(typecheck_error_114)
+// BOOST_AUTO_TEST_CASE(typecheck_error_115)
+// BOOST_AUTO_TEST_CASE(typecheck_error_116)
+// BOOST_AUTO_TEST_CASE(typecheck_error_117)
+// BOOST_AUTO_TEST_CASE(typecheck_error_118)
+// BOOST_AUTO_TEST_CASE(typecheck_error_119)
+// BOOST_AUTO_TEST_CASE(typecheck_error_120)
+// BOOST_AUTO_TEST_CASE(typecheck_error_121)
+// BOOST_AUTO_TEST_CASE(typecheck_error_122)
+// BOOST_AUTO_TEST_CASE(typecheck_error_123)
+// BOOST_AUTO_TEST_CASE(typecheck_error_124)
+// BOOST_AUTO_TEST_CASE(typecheck_error_125)
 
 BOOST_AUTO_TEST_SUITE_END()

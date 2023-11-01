@@ -20,7 +20,7 @@ Then you can run conan and cmake as normal within a devbox environment:
 
 ```
 $ ./tools/devbox/devbox.sh
-...$ conan install . --install-folder build
+...$ conan install . --install-folder build # Note conan may tell you to pass --build=xxx, if it cannot find a pre-built package for xxx
 ...$ conan profile update settings.compiler.libcxx=libstdc++11 default
 ...$ cmake . -Bbuild -DCMAKE_MODULE_PATH=$PWD/build
 ...$ cmake --build build

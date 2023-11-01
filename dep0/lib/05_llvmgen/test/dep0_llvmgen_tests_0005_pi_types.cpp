@@ -5,10 +5,10 @@
 
 BOOST_FIXTURE_TEST_SUITE(dep0_llvmgen_tests_0005_pi_types, LLVMGenTestsFixture)
 
-BOOST_AUTO_TEST_CASE(test_0178)
+BOOST_AUTO_TEST_CASE(pass_000)
 {
     apply_beta_delta_normalization = true;
-    BOOST_TEST_REQUIRE(pass("0005_pi_types/test_0178.depc"));
+    BOOST_TEST_REQUIRE(pass("0005_pi_types/pass_000.depc"));
     BOOST_TEST(has_function("f", [] (llvm::Function const& f)
     {
         BOOST_TEST(f.getReturnType()->isIntegerTy(32ul));
@@ -165,13 +165,10 @@ BOOST_AUTO_TEST_CASE(test_0178)
     }));
 }
 
-// BOOST_AUTO_TEST_CASE(test_0179) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0180) doesn't type check
-
-BOOST_AUTO_TEST_CASE(test_0181)
+BOOST_AUTO_TEST_CASE(pass_001)
 {
     apply_beta_delta_normalization = true;
-    BOOST_TEST_REQUIRE(pass("0005_pi_types/test_0181.depc"));
+    BOOST_TEST_REQUIRE(pass("0005_pi_types/pass_001.depc"));
     BOOST_TEST(has_function("g", [] (llvm::Function const& f)
     {
         BOOST_TEST(f.getReturnType()->isIntegerTy(32ul));
@@ -183,12 +180,10 @@ BOOST_AUTO_TEST_CASE(test_0181)
     }));
 }
 
-// BOOST_AUTO_TEST_CASE(test_0182) doesn't type check
-
-BOOST_AUTO_TEST_CASE(test_0183)
+BOOST_AUTO_TEST_CASE(pass_002)
 {
     apply_beta_delta_normalization = true;
-    BOOST_TEST_REQUIRE(pass("0005_pi_types/test_0183.depc"));
+    BOOST_TEST_REQUIRE(pass("0005_pi_types/pass_002.depc"));
     BOOST_TEST(has_function("f", [] (llvm::Function const& f)
     {
         BOOST_TEST(f.getReturnType()->isIntegerTy(32ul));
@@ -222,15 +217,11 @@ BOOST_AUTO_TEST_CASE(test_0183)
     }));
 }
 
-// BOOST_AUTO_TEST_CASE(test_0184) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0185) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0186) doesn't type check
-
-BOOST_AUTO_TEST_CASE(test_0187)
+BOOST_AUTO_TEST_CASE(pass_003)
 {
 #if 1
     apply_beta_delta_normalization = true;
-    BOOST_TEST_REQUIRE(pass("0005_pi_types/test_0187.depc"));
+    BOOST_TEST_REQUIRE(pass("0005_pi_types/pass_003.depc"));
     BOOST_TEST(has_function("main", [] (llvm::Function const& f)
     {
         BOOST_TEST(f.getReturnType()->isIntegerTy(32ul));
@@ -241,7 +232,7 @@ BOOST_AUTO_TEST_CASE(test_0187)
         return boost::test_tools::predicate_result(true);
     }));
 #else
-    BOOST_TEST_REQUIRE(pass("0005_pi_types/test_0187.depc"));
+    BOOST_TEST_REQUIRE(pass("0005_pi_types/pass_003.depc"));
     BOOST_TEST(has_function("f.u32_t", [] (llvm::Function const& f)
     {
         BOOST_TEST(f.getReturnType()->isIntegerTy(32ul));
@@ -266,10 +257,10 @@ BOOST_AUTO_TEST_CASE(test_0187)
 #endif
 }
 
-BOOST_AUTO_TEST_CASE(test_0188)
+BOOST_AUTO_TEST_CASE(pass_004)
 {
     apply_beta_delta_normalization = true;
-    BOOST_TEST_REQUIRE(pass("0005_pi_types/test_0188.depc"));
+    BOOST_TEST_REQUIRE(pass("0005_pi_types/pass_004.depc"));
     BOOST_TEST(has_function("main", [] (llvm::Function const& f)
     {
         BOOST_TEST(f.getReturnType()->isIntegerTy(32ul));
@@ -281,9 +272,9 @@ BOOST_AUTO_TEST_CASE(test_0188)
     }));
 }
 
-BOOST_AUTO_TEST_CASE(test_0189)
+BOOST_AUTO_TEST_CASE(pass_005)
 {
-    BOOST_TEST_REQUIRE(pass("0005_pi_types/test_0189.depc"));
+    BOOST_TEST_REQUIRE(pass("0005_pi_types/pass_005.depc"));
     BOOST_TEST(has_function("f", [] (llvm::Function const& f)
     {
         BOOST_TEST(f.getReturnType()->isIntegerTy(32ul));
@@ -335,9 +326,9 @@ BOOST_AUTO_TEST_CASE(test_0189)
     }));
 }
 
-BOOST_AUTO_TEST_CASE(test_0190)
+BOOST_AUTO_TEST_CASE(pass_006)
 {
-    BOOST_TEST_REQUIRE(pass("0005_pi_types/test_0190.depc"));
+    BOOST_TEST_REQUIRE(pass("0005_pi_types/pass_006.depc"));
     BOOST_TEST(has_function("zero", [] (llvm::Function const& f)
     {
         BOOST_TEST(f.getReturnType()->isIntegerTy(32ul));
@@ -384,5 +375,12 @@ BOOST_AUTO_TEST_CASE(test_0190)
         return boost::test_tools::predicate_result(true);
     }));
 }
+
+// BOOST_AUTO_TEST_CASE(typecheck_error_000)
+// BOOST_AUTO_TEST_CASE(typecheck_error_001)
+// BOOST_AUTO_TEST_CASE(typecheck_error_002)
+// BOOST_AUTO_TEST_CASE(typecheck_error_003)
+// BOOST_AUTO_TEST_CASE(typecheck_error_004)
+// BOOST_AUTO_TEST_CASE(typecheck_error_005)
 
 BOOST_AUTO_TEST_SUITE_END()

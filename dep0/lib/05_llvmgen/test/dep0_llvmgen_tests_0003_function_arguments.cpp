@@ -5,9 +5,9 @@
 
 BOOST_FIXTURE_TEST_SUITE(dep0_llvmgen_tests_0003_function_arguments, LLVMGenTestsFixture)
 
-BOOST_AUTO_TEST_CASE(test_0167)
+BOOST_AUTO_TEST_CASE(pass_000)
 {
-    BOOST_TEST_REQUIRE(pass("0003_function_arguments/test_0167.depc"));
+    BOOST_TEST_REQUIRE(pass("0003_function_arguments/pass_000.depc"));
     BOOST_TEST(has_function("id", [] (llvm::Function const& f)
     {
         BOOST_TEST_REQUIRE(f.arg_size() == 1ul);
@@ -16,9 +16,9 @@ BOOST_AUTO_TEST_CASE(test_0167)
         return boost::test_tools::predicate_result(true);
     }));
 }
-BOOST_AUTO_TEST_CASE(test_0168)
+BOOST_AUTO_TEST_CASE(pass_001)
 {
-    BOOST_TEST_REQUIRE(pass("0003_function_arguments/test_0168.depc"));
+    BOOST_TEST_REQUIRE(pass("0003_function_arguments/pass_001.depc"));
     BOOST_TEST_REQUIRE(pass_result.value()->getFunction("id"));
     BOOST_TEST(has_function("main", [id=pass_result.value()->getFunction("id")] (llvm::Function const& f)
     {
@@ -32,12 +32,10 @@ BOOST_AUTO_TEST_CASE(test_0168)
         return boost::test_tools::predicate_result(true);
     }));
 }
-BOOST_AUTO_TEST_CASE(test_0169) { BOOST_TEST(pass("0003_function_arguments/test_0169.depc")); }
-// BOOST_AUTO_TEST_CASE(test_0170) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0171) doesn't type check
-BOOST_AUTO_TEST_CASE(test_0172)
+BOOST_AUTO_TEST_CASE(pass_002) { BOOST_TEST(pass("0003_function_arguments/pass_002.depc")); }
+BOOST_AUTO_TEST_CASE(pass_003)
 {
-    BOOST_TEST_REQUIRE(pass("0003_function_arguments/test_0172.depc"));
+    BOOST_TEST_REQUIRE(pass("0003_function_arguments/pass_003.depc"));
     BOOST_TEST_REQUIRE(pass_result.value()->getFunction("first"));
     BOOST_TEST(has_function("main", [f1=pass_result.value()->getFunction("first")] (llvm::Function const& f2)
     {
@@ -56,5 +54,8 @@ BOOST_AUTO_TEST_CASE(test_0172)
         return boost::test_tools::predicate_result(true);
     }));
 }
+
+// BOOST_AUTO_TEST_CASE(typecheck_error_000)
+// BOOST_AUTO_TEST_CASE(typecheck_error_001)
 
 BOOST_AUTO_TEST_SUITE_END()

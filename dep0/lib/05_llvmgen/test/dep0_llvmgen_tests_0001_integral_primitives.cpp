@@ -5,8 +5,6 @@
 
 BOOST_FIXTURE_TEST_SUITE(dep0_llvmgen_tests_0001_integral_primitives, LLVMGenTestsFixture)
 
-// BOOST_AUTO_TEST_CASE(parse_error_000)
-
 BOOST_AUTO_TEST_CASE(pass_000)
 {
     BOOST_TEST_REQUIRE(pass("0001_integral_primitives/pass_000.depc"));
@@ -77,6 +75,8 @@ BOOST_AUTO_TEST_CASE(pass_000)
         return boost::test_tools::predicate_result(true);
     }));
 }
+
+// BOOST_AUTO_TEST_CASE(parse_error_000)
 
 // BOOST_AUTO_TEST_CASE(typecheck_error_000)
 // BOOST_AUTO_TEST_CASE(typecheck_error_001)

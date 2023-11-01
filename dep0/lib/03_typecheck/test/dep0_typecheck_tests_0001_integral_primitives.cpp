@@ -5,9 +5,9 @@
 
 BOOST_FIXTURE_TEST_SUITE(dep0_typecheck_tests_0001_integral_primitives, TypecheckTestsFixture)
 
-// BOOST_AUTO_TEST_CASE(parse_error_000)
-
 BOOST_AUTO_TEST_CASE(pass_000) { BOOST_TEST(pass("0001_integral_primitives/pass_000.depc")); }
+
+// BOOST_AUTO_TEST_CASE(parse_error_000)
 
 BOOST_AUTO_TEST_CASE(typecheck_error_000) { BOOST_TEST(fail("0001_integral_primitives/typecheck_error_000.depc")); }
 BOOST_AUTO_TEST_CASE(typecheck_error_001) { BOOST_TEST(fail("0001_integral_primitives/typecheck_error_001.depc")); }

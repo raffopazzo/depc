@@ -7,9 +7,9 @@ using namespace dep0::testing;
 
 BOOST_FIXTURE_TEST_SUITE(dep0_typecheck_tests_0005_pi_types, TypecheckTestsFixture)
 
-BOOST_AUTO_TEST_CASE(test_0178)
+BOOST_AUTO_TEST_CASE(pass_000)
 {
-    BOOST_TEST_REQUIRE(pass("0005_pi_types/test_0178.depc"));
+    BOOST_TEST_REQUIRE(pass("0005_pi_types/pass_000.depc"));
     BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 24ul);
     {
         auto const& f = pass_result->func_defs[0ul];
@@ -204,22 +204,9 @@ BOOST_AUTO_TEST_CASE(test_0178)
     }
 }
 
-BOOST_AUTO_TEST_CASE(test_0179)
+BOOST_AUTO_TEST_CASE(pass_001)
 {
-    BOOST_TEST_REQUIRE(fail("0005_pi_types/test_0179.depc"));
-    BOOST_TEST(fail_result->error == "type mismatch between numeric constant and `t`");
-    BOOST_TEST(fail_result->location.has_value());
-    BOOST_TEST_REQUIRE(fail_result->tgt.has_value());
-    std::ostringstream tgt;
-    pretty_print(tgt, fail_result->tgt.value());
-    BOOST_TEST(tgt.str() == "t");
-}
-
-BOOST_AUTO_TEST_CASE(test_0180) { BOOST_TEST(fail("0005_pi_types/test_0180.depc")); }
-
-BOOST_AUTO_TEST_CASE(test_0181)
-{
-    BOOST_TEST_REQUIRE(pass("0005_pi_types/test_0181.depc"));
+    BOOST_TEST_REQUIRE(pass("0005_pi_types/pass_001.depc"));
     BOOST_TEST_REQUIRE(pass_result->type_defs.size() == 1ul);
     BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 2ul);
 
@@ -252,11 +239,9 @@ BOOST_AUTO_TEST_CASE(test_0181)
     }
 }
 
-BOOST_AUTO_TEST_CASE(test_0182) { BOOST_TEST(fail("0005_pi_types/test_0182.depc")); }
-
-BOOST_AUTO_TEST_CASE(test_0183)
+BOOST_AUTO_TEST_CASE(pass_002)
 {
-    BOOST_TEST_REQUIRE(pass("0005_pi_types/test_0183.depc"));
+    BOOST_TEST_REQUIRE(pass("0005_pi_types/pass_002.depc"));
     BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 3ul);
     {
         auto const& f = pass_result->func_defs[0ul];
@@ -294,13 +279,9 @@ BOOST_AUTO_TEST_CASE(test_0183)
     }
 }
 
-BOOST_AUTO_TEST_CASE(test_0184) { BOOST_TEST_REQUIRE(fail("0005_pi_types/test_0184.depc")); }
-BOOST_AUTO_TEST_CASE(test_0185) { BOOST_TEST_REQUIRE(fail("0005_pi_types/test_0185.depc")); }
-BOOST_AUTO_TEST_CASE(test_0186) { BOOST_TEST_REQUIRE(fail("0005_pi_types/test_0186.depc")); }
-
-BOOST_AUTO_TEST_CASE(test_0187)
+BOOST_AUTO_TEST_CASE(pass_003)
 {
-    BOOST_TEST_REQUIRE(pass("0005_pi_types/test_0187.depc"));
+    BOOST_TEST_REQUIRE(pass("0005_pi_types/pass_003.depc"));
     BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 2ul);
     {
         auto const& f = pass_result->func_defs[0ul];
@@ -324,9 +305,9 @@ BOOST_AUTO_TEST_CASE(test_0187)
     }
 }
 
-BOOST_AUTO_TEST_CASE(test_0188)
+BOOST_AUTO_TEST_CASE(pass_004)
 {
-    BOOST_TEST_REQUIRE(pass("0005_pi_types/test_0188.depc"));
+    BOOST_TEST_REQUIRE(pass("0005_pi_types/pass_004.depc"));
     BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 3ul);
     {
         auto const& f = pass_result->func_defs[0ul];
@@ -365,9 +346,9 @@ BOOST_AUTO_TEST_CASE(test_0188)
     }
 }
 
-BOOST_AUTO_TEST_CASE(test_0189)
+BOOST_AUTO_TEST_CASE(pass_005)
 {
-    BOOST_TEST_REQUIRE(pass("0005_pi_types/test_0189.depc"));
+    BOOST_TEST_REQUIRE(pass("0005_pi_types/pass_005.depc"));
     BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 3ul);
     {
         auto const& f = pass_result->func_defs[0ul];
@@ -406,9 +387,9 @@ BOOST_AUTO_TEST_CASE(test_0189)
     }
 }
 
-BOOST_AUTO_TEST_CASE(test_0190)
+BOOST_AUTO_TEST_CASE(pass_006)
 {
-    BOOST_TEST_REQUIRE(pass("0005_pi_types/test_0190.depc"));
+    BOOST_TEST_REQUIRE(pass("0005_pi_types/pass_006.depc"));
     BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 3ul);
     {
         auto const& f = pass_result->func_defs[0ul];
@@ -445,5 +426,21 @@ BOOST_AUTO_TEST_CASE(test_0190)
         }));
     }
 }
+
+BOOST_AUTO_TEST_CASE(typecheck_error_000)
+{
+    BOOST_TEST_REQUIRE(fail("0005_pi_types/typecheck_error_000.depc"));
+    BOOST_TEST(fail_result->error == "type mismatch between numeric constant and `t`");
+    BOOST_TEST(fail_result->location.has_value());
+    BOOST_TEST_REQUIRE(fail_result->tgt.has_value());
+    std::ostringstream tgt;
+    pretty_print(tgt, fail_result->tgt.value());
+    BOOST_TEST(tgt.str() == "t");
+}
+BOOST_AUTO_TEST_CASE(typecheck_error_001) { BOOST_TEST(fail("0005_pi_types/typecheck_error_001.depc")); }
+BOOST_AUTO_TEST_CASE(typecheck_error_002) { BOOST_TEST(fail("0005_pi_types/typecheck_error_002.depc")); }
+BOOST_AUTO_TEST_CASE(typecheck_error_003) { BOOST_TEST(fail("0005_pi_types/typecheck_error_003.depc")); }
+BOOST_AUTO_TEST_CASE(typecheck_error_004) { BOOST_TEST(fail("0005_pi_types/typecheck_error_004.depc")); }
+BOOST_AUTO_TEST_CASE(typecheck_error_005) { BOOST_TEST(fail("0005_pi_types/typecheck_error_005.depc")); }
 
 BOOST_AUTO_TEST_SUITE_END()

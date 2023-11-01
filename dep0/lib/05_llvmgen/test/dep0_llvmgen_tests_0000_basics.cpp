@@ -5,29 +5,30 @@
 
 BOOST_FIXTURE_TEST_SUITE(dep0_llvmgen_tests_0000_basics, LLVMGenTestsFixture)
 
-BOOST_AUTO_TEST_CASE(test_0000) { BOOST_TEST(pass("0000_basics/test_0000.depc")); }
-BOOST_AUTO_TEST_CASE(test_0001) { BOOST_TEST(pass("0000_basics/test_0001.depc")); }
-// BOOST_AUTO_TEST_CASE(test_0002) doesn't type check
-BOOST_AUTO_TEST_CASE(test_0003) { BOOST_TEST(pass("0000_basics/test_0003.depc")); }
-// BOOST_AUTO_TEST_CASE(test_0004) doesn't type check
-BOOST_AUTO_TEST_CASE(test_0005) { BOOST_TEST(pass("0000_basics/test_0005.depc")); }
-BOOST_AUTO_TEST_CASE(test_0006) { BOOST_TEST(pass("0000_basics/test_0006.depc")); }
-BOOST_AUTO_TEST_CASE(test_0007) { BOOST_TEST(pass("0000_basics/test_0007.depc")); }
-// BOOST_AUTO_TEST_CASE(test_0008) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0009) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0010) doesn't type check
-BOOST_AUTO_TEST_CASE(test_0011) { BOOST_TEST(pass("0000_basics/test_0011.depc")); }
-// BOOST_AUTO_TEST_CASE(test_0012) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0013) doesn't type check
-BOOST_AUTO_TEST_CASE(test_0014) { BOOST_TEST(pass("0000_basics/test_0014.depc")); }
-BOOST_AUTO_TEST_CASE(test_0015) { BOOST_TEST(pass("0000_basics/test_0015.depc")); }
-// BOOST_AUTO_TEST_CASE(test_0016) doesn't type check
-// BOOST_AUTO_TEST_CASE(test_0017) doesn't type check
-BOOST_AUTO_TEST_CASE(test_0018) { BOOST_TEST(pass("0000_basics/test_0018.depc")); }
-BOOST_AUTO_TEST_CASE(test_0019) { BOOST_TEST(pass("0000_basics/test_0019.depc")); }
-BOOST_AUTO_TEST_CASE(test_0020) { BOOST_TEST(pass("0000_basics/test_0020.depc")); }
-BOOST_AUTO_TEST_CASE(test_0021) { BOOST_TEST(pass("0000_basics/test_0021.depc")); }
-BOOST_AUTO_TEST_CASE(test_0022) { BOOST_TEST(pass("0000_basics/test_0022.depc")); }
-// BOOST_AUTO_TEST_CASE(test_0023) doesn't type check
+BOOST_AUTO_TEST_CASE(pass_000) { BOOST_TEST(pass("0000_basics/pass_000.depc")); }
+BOOST_AUTO_TEST_CASE(pass_001) { BOOST_TEST(pass("0000_basics/pass_001.depc")); }
+BOOST_AUTO_TEST_CASE(pass_002) { BOOST_TEST(pass("0000_basics/pass_002.depc")); }
+BOOST_AUTO_TEST_CASE(pass_003) { BOOST_TEST(pass("0000_basics/pass_003.depc")); }
+BOOST_AUTO_TEST_CASE(pass_004) { BOOST_TEST(pass("0000_basics/pass_004.depc")); }
+BOOST_AUTO_TEST_CASE(pass_005) { BOOST_TEST(pass("0000_basics/pass_005.depc")); }
+BOOST_AUTO_TEST_CASE(pass_006) { BOOST_TEST(pass("0000_basics/pass_006.depc")); }
+BOOST_AUTO_TEST_CASE(pass_007) { BOOST_TEST(pass("0000_basics/pass_007.depc")); }
+BOOST_AUTO_TEST_CASE(pass_008) { BOOST_TEST(pass("0000_basics/pass_008.depc")); }
+BOOST_AUTO_TEST_CASE(pass_009) { BOOST_TEST(pass("0000_basics/pass_009.depc")); }
+BOOST_AUTO_TEST_CASE(pass_010) { BOOST_TEST(pass("0000_basics/pass_010.depc")); }
+BOOST_AUTO_TEST_CASE(pass_011) { BOOST_TEST(pass("0000_basics/pass_011.depc")); }
+BOOST_AUTO_TEST_CASE(pass_012) { BOOST_TEST(pass("0000_basics/pass_012.depc")); }
+BOOST_AUTO_TEST_CASE(pass_013) { BOOST_TEST(pass("0000_basics/pass_013.depc")); }
+
+// BOOST_AUTO_TEST_CASE(typecheck_error_000) doesn't type check
+// BOOST_AUTO_TEST_CASE(typecheck_error_001) doesn't type check
+// BOOST_AUTO_TEST_CASE(typecheck_error_002) doesn't type check
+// BOOST_AUTO_TEST_CASE(typecheck_error_003) doesn't type check
+// BOOST_AUTO_TEST_CASE(typecheck_error_004) doesn't type check
+// BOOST_AUTO_TEST_CASE(typecheck_error_005) doesn't type check
+// BOOST_AUTO_TEST_CASE(typecheck_error_006) doesn't type check
+// BOOST_AUTO_TEST_CASE(typecheck_error_007) doesn't type check
+// BOOST_AUTO_TEST_CASE(typecheck_error_008) doesn't type check
+// BOOST_AUTO_TEST_CASE(typecheck_error_009) doesn't type check
 
 BOOST_AUTO_TEST_SUITE_END()

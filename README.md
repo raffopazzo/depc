@@ -24,7 +24,7 @@ $ ./tools/devbox/devbox.sh
 ...$ conan profile update settings.compiler.libcxx=libstdc++11 default
 ...$ conan install . --install-folder build --build=antlr4-cppruntime --build=boost --build=llvm-core
 ...$ cmake . -Bbuild -DCMAKE_MODULE_PATH=$PWD/build
-...$ cmake --build build
+...$ cmake --build build -j
 ...$ ctest --test-dir build -VV
 ...$ exit
 ```
@@ -36,7 +36,7 @@ $ ./tools/devbox/devbox.sh conan profile new --detect default
 $ ./tools/devbox/devbox.sh conan profile update settings.compiler.libcxx=libstdc++11 default
 $ ./tools/devbox/devbox.sh conan install . --install-folder build --build=antlr4-cppruntime --build=boost --build=llvm-core
 $ ./tools/devbox/devbox.sh cmake . -Bbuild -DCMAKE_MODULE_PATH=$PWD/build
-$ ./tools/devbox/devbox.sh cmake --build build
+$ ./tools/devbox/devbox.sh cmake --build build -j
 $ ./tools/devbox/devbox.sh ctest --test-dir build -VV
 ```
 

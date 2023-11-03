@@ -46,3 +46,5 @@ You will need:
  - conan 1.55 (conan 2 is currently not compatible with llvm-core/13)
  - cmake 3.20 or greater
  - gcc11 or greater (other compilers have not be tested yet)
+
+You shoud then be able to follow the same `conan/cmake/ctest` steps documented above.

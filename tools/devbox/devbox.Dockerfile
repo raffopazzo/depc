@@ -18,7 +18,7 @@ RUN apt-get update \
  && apt-get install -y software-properties-common \
  && add-apt-repository -y ppa:ubuntu-toolchain-r/test \
  && apt-get install -y g++-11 python3-pip \
- && pip3 install conan cmake \
+ && pip3 install conan==1.55 cmake \
  && apt-get remove -y gcc-9 \
  && update-alternatives \
     --install /usr/bin/gcc gcc /usr/bin/gcc-11 110 \

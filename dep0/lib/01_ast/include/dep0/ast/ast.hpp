@@ -116,6 +116,7 @@ struct expr_t
     using rec_t = boost::recursive_wrapper<expr_t>;
     using properties_t = typename P::expr_properties_type;
     using body_t = ast::body_t<P>;
+    using sort_t = ast::sort_t<P>;
     using type_t = ast::type_t<P>;
     struct arith_expr_t
     {
@@ -157,7 +158,7 @@ struct expr_t
         using arg_const_iterator = std::vector<arg_t>::const_iterator;
 
         std::vector<arg_t> args;
-        type_t ret_type;
+        sort_t ret_type;
         body_t body;
     };
 

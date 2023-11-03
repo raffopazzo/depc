@@ -110,17 +110,33 @@ struct parse_visitor_t : dep0::DepCParserVisitor
     virtual std::any visitFuncDef(DepCParser::FuncDefContext* ctx) override
     {
         assert(ctx);
-        assert(ctx->type());
         assert(ctx->name);
         assert(ctx->body());
-        return func_def_t{
-            get_loc(src, *ctx).value(),
-            get_text(src, *ctx->name).value(),
-            expr_t::abs_t{
-                fmap(ctx->funcArg(), [this](auto *x) { return std::any_cast<func_arg_t>(visitFuncArg(x)); }),
-                std::any_cast<type_t>(visitType(ctx->type())),
-                std::any_cast<body_t>(visitBody(ctx->body()))
-            }};
+        auto const name = [&] { return get_text(src, *ctx->name).value(); };
+        auto const body = [&] { return std::any_cast<body_t>(visitBody(ctx->body())); };
+        auto const args = [&]
+        {
+            return fmap(ctx->funcArg(), [this](auto *x) { return std::any_cast<func_arg_t>(visitFuncArg(x)); });
+        };
+        if (ctx->type())
+            return func_def_t{
+                get_loc(src, *ctx).value(),
+                name(),
+                expr_t::abs_t{
+                    args(),
+                    std::any_cast<type_t>(visitType(ctx->type())),
+                    body()
+                }};
+        if (ctx->KW_TYPENAME())
+            return func_def_t{
+                get_loc(src, *ctx).value(),
+                name(),
+                expr_t::abs_t{
+                    args(),
+                    ast::typename_t{},
+                    body()
+                }};
+        throw error_t{"unexpected alternative when parsing FuncDefContext", get_loc(src, *ctx).value()};
     }
 
     virtual std::any visitType(DepCParser::TypeContext* ctx) override

@@ -388,6 +388,15 @@ constexpr auto type_expr_of(F&& f)
     };
 }
 
+template <ast::Properties P, Predicate<ast::expr_t<P>> F, typename... ArgPredicates>
+constexpr auto app_of(F&& f_func, ArgPredicates&&... f_args)
+{
+    return [f_func=std::forward<F>(f_func), ...f_args=std::forward<ArgPredicates>(f_args)] (ast::expr_t<P> const& x)
+    {
+        return is_app_of(x, f_func, f_args...);
+    };
+}
+
 inline auto var(std::string const& name)
 {
     return [name] <ast::Properties P> (ast::expr_t<P> const& expr)

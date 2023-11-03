@@ -20,8 +20,9 @@ Then you can run conan and cmake as normal within a devbox environment:
 
 ```
 $ ./tools/devbox/devbox.sh
-...$ conan install . --install-folder build # Note conan may tell you to pass --build=xxx, if it cannot find a pre-built package for xxx
+...$ conan profile new --detect default
 ...$ conan profile update settings.compiler.libcxx=libstdc++11 default
+...$ conan install . --install-folder build --build=antlr4-cppruntime --build=boost --build=llvm-core
 ...$ cmake . -Bbuild -DCMAKE_MODULE_PATH=$PWD/build
 ...$ cmake --build build
 ...$ ctest --test-dir build -VV
@@ -31,9 +32,17 @@ $ ./tools/devbox/devbox.sh
 Alternatively:
 
 ```
-$ ./tools/devbox/devbox.sh conan install . --install-folder build # Note same comment as above applies here too
+$ ./tools/devbox/devbox.sh conan profile new --detect default
 $ ./tools/devbox/devbox.sh conan profile update settings.compiler.libcxx=libstdc++11 default
+$ ./tools/devbox/devbox.sh conan install . --install-folder build --build=antlr4-cppruntime --build=boost --build=llvm-core
 $ ./tools/devbox/devbox.sh cmake . -Bbuild -DCMAKE_MODULE_PATH=$PWD/build
 $ ./tools/devbox/devbox.sh cmake --build build
 $ ./tools/devbox/devbox.sh ctest --test-dir build -VV
 ```
+
+# How to without devbox
+
+You will need:
+ - conan 1.55 (conan 2 is currently not compatible with llvm-core/13)
+ - cmake 3.20 or greater
+ - gcc11 or greater (other compilers have not be tested yet)

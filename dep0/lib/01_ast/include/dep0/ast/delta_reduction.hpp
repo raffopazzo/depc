@@ -8,12 +8,13 @@ namespace dep0::ast {
 
 namespace delta_reduction {
     template <Properties P>
-    using context_t =
-        scope_map<
-            indexed_var_t,
-            std::variant<
-                typename expr_t<P>::abs_t,
-                struct something_else_t>>;
+    using definition_t = std::variant<
+        typename expr_t<P>::abs_t,
+        struct something_else_t>;
+
+    template <Properties P>
+    using context_t = scope_map<indexed_var_t, definition_t<P>>;
+
     struct something_else_t{};
 }
 

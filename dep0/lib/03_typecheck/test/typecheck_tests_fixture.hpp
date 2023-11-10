@@ -11,8 +11,6 @@
 #include <optional>
 #include <cstdlib>
 
-using namespace dep0::testing;
-
 struct TypecheckTestsFixture
 {
     std::filesystem::path testfiles = std::getenv("DEP0_TESTFILES_DIR");
@@ -26,6 +24,12 @@ struct TypecheckTestsFixture
     static constexpr auto i32 = type_expr_of<dep0::typecheck::properties_t>(dep0::testing::is_type_i32);
     static constexpr auto u32 = type_expr_of<dep0::typecheck::properties_t>(dep0::testing::is_type_u32);
     static inline auto int_() { return type_expr_of<dep0::typecheck::properties_t>(dep0::testing::type_var("int")); }
+
+    template <typename... Args>
+    static constexpr auto app_of(Args&&... args)
+    {
+        return dep0::testing::app_of<dep0::typecheck::properties_t>(std::forward<Args>(args)...);
+    }
 
     template <dep0::testing::Predicate<dep0::typecheck::type_t> F>
     static auto term_binder(F&& f)

@@ -69,7 +69,7 @@ bool is_typename(sort_t<P> const& s)
 template <Properties P>
 struct type_t
 {
-    using rec_t = boost::recursive_wrapper<type_t>;
+    using rec_t = boost::recursive_wrapper<sort_t<P>>;
     using properties_t = typename P::type_properties_type;
     struct bool_t { bool operator==(bool_t const&) const { return true; } };
     struct unit_t { bool operator==(unit_t const&) const { return true; } };

@@ -6,14 +6,17 @@
 
 namespace dep0::typecheck {
 
-context_t::context_t(scope_map<ast::indexed_var_t, value_type> values) :
-    m_values(std::move(values))
+context_t::context_t(
+    scope_map<ast::indexed_var_t, value_type> values,
+    delta_reduction_context_t definitions) :
+    m_values(std::move(values)),
+    m_definitions(std::move(definitions))
 { }
 
 
 context_t context_t::extend() const
 {
-    return context_t(m_values.extend());
+    return context_t(m_values.extend(), m_definitions.extend());
 }
 
 auto context_t::begin() const -> const_iterator
@@ -29,6 +32,11 @@ auto context_t::end() const -> const_iterator
 auto context_t::operator[](ast::indexed_var_t const& name) const -> value_type const*
 {
     return m_values[name];
+}
+
+auto context_t::delta_reduction_context() const -> delta_reduction_context_t const&
+{
+    return m_definitions;
 }
 
 template <typename R, typename F>

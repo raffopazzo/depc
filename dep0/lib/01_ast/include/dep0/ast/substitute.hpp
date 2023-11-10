@@ -11,7 +11,7 @@ template <Properties P>
 void substitute(
     typename type_t<P>::arr_t::arg_iterator begin,
     typename type_t<P>::arr_t::arg_iterator end,
-    type_t<P>& ret_type,
+    sort_t<P>& ret_type,
     typename type_t<P>::var_t const&,
     type_t<P> const&);
 

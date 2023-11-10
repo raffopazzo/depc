@@ -13,7 +13,7 @@ void replace(
     typename type_t<P>::var_t const&,
     typename type_t<P>::arr_t::arg_iterator begin,
     typename type_t<P>::arr_t::arg_iterator end,
-    type_t<P>& ret_type);
+    sort_t<P>& ret_type);
 
 template <Properties P>
 void replace(typename expr_t<P>::var_t const&, typename expr_t<P>::var_t const&, type_t<P>&);

@@ -12,11 +12,14 @@ template <Properties P>
 std::size_t max_index(
     typename type_t<P>::arr_t::arg_const_iterator const begin,
     typename type_t<P>::arr_t::arg_const_iterator const end,
-    type_t<P> const& ret_type)
+    sort_t<P> const& ret_type)
 {
     return std::accumulate(
         begin, end,
-        max_index(ret_type),
+        match(
+            ret_type,
+            [] (ast::typename_t) { return 0ul; },
+            [] (type_t<P> const& t) { return max_index(t); }),
         [] (std::size_t const acc, func_arg_t<P> const& arg)
         {
             return std::max(acc, max_index(arg));

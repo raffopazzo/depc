@@ -30,7 +30,10 @@ bool contains_var(type_t<P> const& type, typename type_t<P>::var_t const& var)
         [&] (typename type_t<P>::arr_t const& arr)
         {
             return std::ranges::any_of(arr.args, [&] (func_arg_t<P> const& arg) { return contains_var(arg, var); }) or
-                contains_var(arr.ret_type.get(), var);
+                match(
+                    arr.ret_type.get(),
+                    [] (ast::typename_t) { return false; },
+                    [&] (type_t<P> const& t) { return contains_var(t, var); });
         });
 }
 
@@ -53,7 +56,10 @@ bool contains_var(type_t<P> const& type, typename expr_t<P>::var_t const& var)
         [&] (typename type_t<P>::arr_t const& arr)
         {
             return std::ranges::any_of(arr.args, [&] (func_arg_t<P> const& arg) { return contains_var(arg, var); }) or
-                contains_var(arr.ret_type.get(), var);
+                match(
+                    arr.ret_type.get(),
+                    [] (ast::typename_t) { return false; },
+                    [&] (type_t<P> const& t) { return contains_var(t, var); });
         });
 }
 

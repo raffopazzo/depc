@@ -50,7 +50,7 @@ template <Properties P>
 void substitute(
     typename type_t<P>::arr_t::arg_iterator it,
     typename type_t<P>::arr_t::arg_iterator const end,
-    type_t<P>& ret_type,
+    sort_t<P>& ret_type,
     typename type_t<P>::var_t const& var,
     type_t<P> const& y)
 {
@@ -87,7 +87,8 @@ void substitute(
         if (stop)
             return;
     }
-    substitute(ret_type, var, y);
+    if (auto const t = std::get_if<type_t<P>>(&ret_type))
+        substitute(*t, var, y);
 }
 
 template <Properties P>

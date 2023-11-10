@@ -13,6 +13,9 @@ namespace dep0::ast {
 
 // Internally we use an implementation that modifies a copy of the original arguments when renaming is necessary.
 template <Properties P>
+dep0::expected<std::true_type> is_alpha_equivalent_impl(sort_t<P>&, sort_t<P>&);
+
+template <Properties P>
 dep0::expected<std::true_type> is_alpha_equivalent_impl(type_t<P>&, type_t<P>&);
 
 template <Properties P>
@@ -153,6 +156,38 @@ struct alpha_equivalence_visitor
         }
     }
 };
+
+template <Properties P>
+dep0::expected<std::true_type> is_alpha_equivalent_impl(sort_t<P>& x, sort_t<P>& y)
+{
+    struct visitor
+    {
+        dep0::expected<std::true_type> operator()(ast::typename_t, ast::typename_t) const
+        {
+            return {};
+        }
+
+        dep0::expected<std::true_type> operator()(type_t<P>& x, type_t<P>& y) const
+        {
+            return is_alpha_equivalent_impl(x, y);
+        }
+
+        dep0::expected<std::true_type> operator()(ast::typename_t, type_t<P> const& y) const
+        {
+            std::ostringstream err;
+            pretty_print(err << "typename is not alpha-equivalent to `", y) << '`';
+            return dep0::error_t(err.str());
+        }
+
+        dep0::expected<std::true_type> operator()(type_t<P> const& x, ast::typename_t) const
+        {
+            std::ostringstream err;
+            pretty_print(err << '`', x) << "` is not alpha-equivalent to typename";
+            return dep0::error_t(err.str());
+        }
+    };
+    return std::visit(visitor{}, x, y);
+}
 
 template <Properties P>
 dep0::expected<std::true_type> is_alpha_equivalent_impl(type_t<P>& x, type_t<P>& y)

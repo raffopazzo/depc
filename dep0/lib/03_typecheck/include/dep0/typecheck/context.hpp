@@ -1,6 +1,9 @@
 #pragma once
 
 #include "dep0/typecheck/ast.hpp"
+
+#include "dep0/ast/delta_reduction.hpp"
+
 #include "dep0/scope_map.hpp"
 
 #include <vector>
@@ -11,11 +14,15 @@ class context_t
 {
 public:
     using value_type = std::variant<type_def_t, type_t::var_t, expr_t>;
+    using delta_reduction_context_t = ast::delta_reduction::context_t<typecheck::properties_t>;
 
 private:
     scope_map<ast::indexed_var_t, value_type> m_values;
+    delta_reduction_context_t m_definitions;
 
-    context_t(scope_map<ast::indexed_var_t, value_type>);
+    context_t(
+        scope_map<ast::indexed_var_t, value_type>,
+        delta_reduction_context_t);
 
 public:
     using iterator = typename scope_map<ast::indexed_var_t, value_type>::iterator;
@@ -40,6 +47,14 @@ public:
     auto try_emplace(ast::indexed_var_t name, Args&&... args)
     {
         return m_values.try_emplace(std::move(name), std::forward<Args>(args)...);
+    }
+
+    delta_reduction_context_t const& delta_reduction_context() const;
+
+    template <typename... Args>
+    auto add_definition(Args&&... args)
+    {
+        return m_definitions.try_emplace(std::move(args)...);
     }
 };
 

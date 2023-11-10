@@ -12,7 +12,7 @@ typename type_t<P>::var_t rename(
     typename type_t<P>::var_t const& var,
     typename type_t<P>::arr_t::arg_iterator const begin,
     typename type_t<P>::arr_t::arg_iterator const end,
-    type_t<P>& ret_type)
+    sort_t<P>& ret_type)
 {
     auto const max_idx = std::max(var.name.idx, max_index(begin, end, ret_type));
     auto const new_var = typename type_t<P>::var_t{ast::indexed_var_t{var.name.txt, max_idx + 1ul}};

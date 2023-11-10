@@ -178,7 +178,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
                     {
                         return std::any_cast<func_arg_t>(visitFuncArg(x));
                     }),
-                std::any_cast<type_t>(visitType(ctx->retType))}};
+                sort_t{std::any_cast<type_t>(visitType(ctx->retType))}}};
     }
 
     virtual std::any visitTypeVar(DepCParser::TypeVarContext* ctx) override

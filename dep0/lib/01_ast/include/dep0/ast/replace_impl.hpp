@@ -40,7 +40,7 @@ void replace(
     typename type_t<P>::var_t const& to,
     typename type_t<P>::arr_t::arg_iterator const begin,
     typename type_t<P>::arr_t::arg_iterator const end,
-    type_t<P>& ret_type)
+    sort_t<P>& ret_type)
 {
     for (auto& arg: std::ranges::subrange(begin, end))
         match(
@@ -57,7 +57,8 @@ void replace(
             {
                 replace(from, to, arg.type);
             });
-    replace(from, to, ret_type);
+    if (auto const t = std::get_if<type_t<P>>(&ret_type))
+        replace(from, to, *t);
 }
 
 template <Properties P>
@@ -88,7 +89,8 @@ void replace(typename expr_t<P>::var_t const& from, typename expr_t<P>::var_t co
                         if (arg.var == from)
                             arg.var = to;
                     });
-            replace(from, to, arr.ret_type.get());
+            if (auto const t = std::get_if<type_t<P>>(&arr.ret_type.get()))
+                replace(from, to, *t);
         });
 }
 

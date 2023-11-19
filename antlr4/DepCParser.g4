@@ -32,7 +32,7 @@ options { tokenVocab=DepCLexer; }
 // Module and top level expressions
 module: (typeDef | funcDef)* EOF;
 funcDef: type name=ID '(' (funcArg (',' funcArg)*)? ')' body
-    | 'auto' name=ID '(' (funcArg (',' funcArg)*)? ')' '->' type body
+    | 'auto' name=ID '(' (funcArg (',' funcArg)*)? ')' '->' ('typename' | type) body
     ;
 typeDef:
     'typedef' name=ID '='

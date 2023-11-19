@@ -21,19 +21,25 @@ struct ParserTestsFixture
     static constexpr auto i32 = type_expr_of<dep0::parser::properties_t>(dep0::testing::is_type_i32);
     static constexpr auto u32 = type_expr_of<dep0::parser::properties_t>(dep0::testing::is_type_u32);
 
-    template <dep0::testing::Predicate<dep0::parser::type_t> F>
+    template <typename... Args>
+    static constexpr auto app_of(Args&&... args)
+    {
+        return dep0::testing::app_of<dep0::parser::properties_t>(std::forward<Args>(args)...);
+    }
+
+    template <dep0::testing::Predicate<dep0::parser::expr_t> F>
     static auto term_binder(F&& f)
     {
         return dep0::testing::term_binder<dep0::parser::properties_t>(std::forward<F>(f));
     }
 
-    template <dep0::testing::Predicate<dep0::parser::type_t> F>
+    template <dep0::testing::Predicate<dep0::parser::expr_t> F>
     static auto term_binder(std::string const& name, F&& f)
     {
         return dep0::testing::term_binder<dep0::parser::properties_t>(name, std::forward<F>(f));
     }
 
-    template <dep0::testing::Predicate<dep0::parser::type_t> F>
+    template <dep0::testing::Predicate<dep0::parser::expr_t> F>
     static auto type_of(F&& f)
     {
         return dep0::testing::type_of<dep0::parser::properties_t>(std::forward<F>(f));

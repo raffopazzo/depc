@@ -20,12 +20,24 @@ void destructive_self_assign(T& x, T&& y)
 
 template <Properties P> bool beta_normalize(typename stmt_t<P>::if_else_t&);
 template <Properties P> bool beta_normalize(typename stmt_t<P>::return_t&);
-template <Properties P> bool beta_normalize(typename expr_t<P>::arith_expr_t&);
+template <Properties P> bool beta_normalize(typename expr_t<P>::typename_t&);
+template <Properties P> bool beta_normalize(typename expr_t<P>::bool_t&);
+template <Properties P> bool beta_normalize(typename expr_t<P>::unit_t&);
+template <Properties P> bool beta_normalize(typename expr_t<P>::i8_t&);
+template <Properties P> bool beta_normalize(typename expr_t<P>::i16_t&);
+template <Properties P> bool beta_normalize(typename expr_t<P>::i32_t&);
+template <Properties P> bool beta_normalize(typename expr_t<P>::i64_t&);
+template <Properties P> bool beta_normalize(typename expr_t<P>::u8_t&);
+template <Properties P> bool beta_normalize(typename expr_t<P>::u16_t&);
+template <Properties P> bool beta_normalize(typename expr_t<P>::u32_t&);
+template <Properties P> bool beta_normalize(typename expr_t<P>::u64_t&);
 template <Properties P> bool beta_normalize(typename expr_t<P>::boolean_constant_t&);
 template <Properties P> bool beta_normalize(typename expr_t<P>::numeric_constant_t&);
+template <Properties P> bool beta_normalize(typename expr_t<P>::arith_expr_t&);
 template <Properties P> bool beta_normalize(typename expr_t<P>::var_t&);
 template <Properties P> bool beta_normalize(typename expr_t<P>::app_t&);
 template <Properties P> bool beta_normalize(typename expr_t<P>::abs_t&);
+template <Properties P> bool beta_normalize(typename expr_t<P>::pi_t&);
 
 template <Properties P>
 bool beta_normalize(module_t<P>& m)
@@ -39,7 +51,7 @@ bool beta_normalize(module_t<P>& m)
 template <Properties P>
 bool beta_normalize(func_def_t<P>& def)
 {
-    return beta_normalize(def.value.body);
+    return beta_normalize<P>(def.value);
 }
 
 template <Properties P>
@@ -173,6 +185,17 @@ bool beta_normalize(typename expr_t<P>::arith_expr_t& x)
         });
 }
 
+template <Properties P> bool beta_normalize(typename expr_t<P>::typename_t&) { return false; }
+template <Properties P> bool beta_normalize(typename expr_t<P>::bool_t&) { return false; }
+template <Properties P> bool beta_normalize(typename expr_t<P>::unit_t&) { return false; }
+template <Properties P> bool beta_normalize(typename expr_t<P>::i8_t&) { return false; }
+template <Properties P> bool beta_normalize(typename expr_t<P>::i16_t&) { return false; }
+template <Properties P> bool beta_normalize(typename expr_t<P>::i32_t&) { return false; }
+template <Properties P> bool beta_normalize(typename expr_t<P>::i64_t&) { return false; }
+template <Properties P> bool beta_normalize(typename expr_t<P>::u8_t&) { return false; }
+template <Properties P> bool beta_normalize(typename expr_t<P>::u16_t&) { return false; }
+template <Properties P> bool beta_normalize(typename expr_t<P>::u32_t&) { return false; }
+template <Properties P> bool beta_normalize(typename expr_t<P>::u64_t&) { return false; }
 template <Properties P> bool beta_normalize(typename expr_t<P>::boolean_constant_t&) { return false; }
 template <Properties P> bool beta_normalize(typename expr_t<P>::numeric_constant_t&) { return false; }
 template <Properties P> bool beta_normalize(typename expr_t<P>::var_t&) { return false; }
@@ -186,23 +209,21 @@ bool beta_normalize(typename expr_t<P>::app_t& app)
     bool changed = beta_normalize(app.func.get());
     for (auto& arg: app.args)
         changed |= beta_normalize(arg);
+    // TODO could also be application of pi_t
     if (auto* const abs = std::get_if<typename expr_t<P>::abs_t>(&app.func.get().value))
     {
         if (abs->args.size() > 0ul)
         {
-            assert(abs->args.size() == app.args.size());
-            auto arg_it = abs->args.begin();
+            if (abs->args.size() != app.args.size()) // always false when beta-normalizing legal terms
+                return changed;
             for (auto const i: std::views::iota(0ul, abs->args.size()))
             {
-                match(
-                    arg_it->value,
-                    [] (typename func_arg_t<P>::type_arg_t const&) {},
-                    [&](typename func_arg_t<P>::term_arg_t const& arg)
-                    {
-                        if (arg.var)
-                            substitute(arg_it+1, abs->args.end(), abs->body, *arg.var, app.args[i]);
-                    });
-                ++arg_it;
+                auto const& arg = abs->args[i];
+                if (arg.var)
+                {
+                    substitute(abs->args.begin() + i + 1, abs->args.end(), abs->ret_type.get(), *arg.var, app.args[i]);
+                    substitute(abs->body, *arg.var, app.args[i]);
+                }
             }
             // at this point all arguments of the abstraction have been substituted,
             // so we can remove them and normalize the new body
@@ -218,11 +239,23 @@ bool beta_normalize(typename expr_t<P>::app_t& app)
 template <Properties P>
 bool beta_normalize(typename expr_t<P>::abs_t& abs)
 {
-    return beta_normalize(abs.body);
+    bool changed = false;
+    for (auto& arg: abs.args)
+        changed |= beta_normalize(arg.type);
+    changed |= beta_normalize(abs.ret_type.get());
+    changed |= beta_normalize(abs.body);
+    return changed;
 }
 
 template <Properties P>
-bool beta_normalize(type_t<P>&) { return false; }
+bool beta_normalize(typename expr_t<P>::pi_t& pi)
+{
+    bool changed = false;
+    for (auto& arg: pi.args)
+        changed |= beta_normalize(arg.type);
+    changed |= beta_normalize(pi.ret_type.get());
+    return changed;
+}
 
 } // namespace dep0::ast
 

@@ -4,12 +4,13 @@
 
 namespace dep0::ast {
 
+// can also be used to rename pi-types
 template <Properties P>
-typename type_t<P>::var_t rename(
-    typename type_t<P>::var_t const&,
-    typename type_t<P>::arr_t::arg_iterator begin,
-    typename type_t<P>::arr_t::arg_iterator end,
-    type_t<P>& ret_type);
+typename expr_t<P>::var_t rename(
+    typename expr_t<P>::var_t const&,
+    typename expr_t<P>::abs_t::arg_iterator begin,
+    typename expr_t<P>::abs_t::arg_iterator end,
+    expr_t<P>& ret_type);
 
 template <Properties P>
 typename expr_t<P>::var_t rename(typename expr_t<P>::var_t const&, body_t<P>&);

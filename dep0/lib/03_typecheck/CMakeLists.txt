@@ -8,12 +8,16 @@ add_library(dep0_typecheck_lib
   include/dep0/typecheck/derivation.hpp
   include/dep0/typecheck/error.hpp
   # private headers
+  src/private/beta_equivalence.hpp
   src/private/derivation_rules.hpp
   src/private/returns_from_all_branches.hpp
   # source files
   src/ast.cpp
+  src/beta_equivalence.cpp
   src/check.cpp
   src/context.cpp
+  src/derivation.cpp
+  src/derivation_rules.cpp
   src/error.cpp
   src/returns_from_all_branches.cpp
   )

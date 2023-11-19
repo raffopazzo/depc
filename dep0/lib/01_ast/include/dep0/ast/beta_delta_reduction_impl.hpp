@@ -27,19 +27,20 @@ bool beta_delta_normalize(delta_reduction::context_t<P> const& ctx, module_t<P>&
 template <Properties P>
 bool beta_delta_normalize(delta_reduction::context_t<P> const& ctx, func_def_t<P>& def)
 {
+    bool changed = false;
     auto ctx2 = ctx.extend();
-    for (auto const& arg: def.value.args)
-        match(
-            arg.value,
-            [&] (auto const& arg)
-            {
-                if (arg.var)
-                {
-                    bool const inserted = ctx2.try_emplace(arg.var->name, delta_reduction::something_else_t{}).second;
-                    assert(inserted);
-                }
-            });
-    return beta_delta_normalize(ctx2, def.value.body);
+    for (auto& arg: def.value.args)
+    {
+        changed |= beta_delta_normalize(ctx2, arg.type);
+        if (arg.var)
+        {
+            bool const inserted = ctx2.try_emplace(arg.var->name, delta_reduction::something_else_t{}).second;
+            assert(inserted);
+        }
+    }
+    changed |= beta_delta_normalize(ctx2, def.value.ret_type.get());
+    changed |= beta_delta_normalize(ctx2, def.value.body);
+    return changed;
 }
 
 template <Properties P>
@@ -65,18 +66,6 @@ bool beta_delta_normalize(delta_reduction::context_t<P> const& ctx, stmt_t<P>& x
 
 template <Properties P>
 bool beta_delta_normalize(delta_reduction::context_t<P> const& ctx, expr_t<P>& x)
-{
-    bool changed = beta_normalize(x);
-    while (delta_reduce(ctx, x))
-    {
-        changed = true;
-        beta_normalize(x);
-    }
-    return changed;
-}
-
-template <Properties P>
-bool beta_delta_normalize(delta_reduction::context_t<P> const& ctx, type_t<P>& x)
 {
     bool changed = beta_normalize(x);
     while (delta_reduce(ctx, x))

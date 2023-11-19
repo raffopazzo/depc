@@ -3,6 +3,8 @@
 
 #include "parser_tests_fixture.hpp"
 
+using namespace dep0::testing;
+
 BOOST_FIXTURE_TEST_SUITE(dep0_parser_tests_0000_basics, ParserTestsFixture)
 
 BOOST_AUTO_TEST_CASE(pass_000)
@@ -29,10 +31,13 @@ BOOST_AUTO_TEST_CASE(pass_001)
     BOOST_TEST(f.properties.line == 1);
     BOOST_TEST(f.properties.col == 1);
     BOOST_TEST(f.properties.txt == source);
-    BOOST_TEST(f.value.ret_type.properties.line == 1);
-    BOOST_TEST(f.value.ret_type.properties.col == 1);
-    BOOST_TEST(f.value.ret_type.properties.txt == "i32_t");
-    BOOST_TEST(std::holds_alternative<dep0::parser::type_t::i32_t>(f.value.ret_type.value));
+    BOOST_TEST(is_type_of(f.value.ret_type.get(), [] (dep0::parser::expr_t const& ret_type)
+    {
+        BOOST_TEST(ret_type.properties.line == 1);
+        BOOST_TEST(ret_type.properties.col == 1);
+        BOOST_TEST(ret_type.properties.txt == "i32_t");
+        return is_type_i32(ret_type);
+    }));
     BOOST_TEST(f.name == "main");
 }
 

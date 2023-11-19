@@ -6,14 +6,15 @@
 
 namespace dep0::typecheck {
 
-context_t::context_t(scope_map<ast::indexed_var_t, value_type> values) :
-    m_values(std::move(values))
+context_t::context_t(scope_map<ast::indexed_var_t, value_type> values, delta_reduction_context_t ctx) :
+    m_values(std::move(values)),
+    m_delta_reduction_context(std::move(ctx))
 { }
 
 
 context_t context_t::extend() const
 {
-    return context_t(m_values.extend());
+    return context_t(m_values.extend(), m_delta_reduction_context.extend());
 }
 
 auto context_t::begin() const -> const_iterator
@@ -29,6 +30,11 @@ auto context_t::end() const -> const_iterator
 auto context_t::operator[](ast::indexed_var_t const& name) const -> value_type const*
 {
     return m_values[name];
+}
+
+auto context_t::delta_reduction_context() const -> delta_reduction_context_t const&
+{
+    return m_delta_reduction_context;
 }
 
 template <typename R, typename F>
@@ -54,8 +60,7 @@ std::ostream& pretty_print(std::ostream& os, context_t const& ctx)
             match(
                 x.second,
                 [&] (type_def_t const& t) { pretty_print(os, t); },
-                [&] (type_t::var_t const& t) { pretty_print<properties_t>(os, t); },
-                [&] (expr_t const& x) { pretty_print(os, x.properties.sort); });
+                [&] (expr_t const& x) { pretty_print(os, x.properties.sort.get()); });
         });
     return os;
 }

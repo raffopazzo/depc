@@ -9,52 +9,9 @@
 namespace dep0::ast {
 
 template <Properties P>
-std::size_t max_index(
-    typename type_t<P>::arr_t::arg_const_iterator const begin,
-    typename type_t<P>::arr_t::arg_const_iterator const end,
-    type_t<P> const& ret_type)
-{
-    return std::accumulate(
-        begin, end,
-        max_index(ret_type),
-        [] (std::size_t const acc, func_arg_t<P> const& arg)
-        {
-            return std::max(acc, max_index(arg));
-        });
-}
-
-template <Properties P>
-std::size_t max_index(type_t<P> const& type)
-{
-    return match(
-        type.value,
-        [] (typename type_t<P>::bool_t const&) { return 0ul; },
-        [] (typename type_t<P>::unit_t const&) { return 0ul; },
-        [] (typename type_t<P>::i8_t const&) { return 0ul; },
-        [] (typename type_t<P>::i16_t const&) { return 0ul; },
-        [] (typename type_t<P>::i32_t const&) { return 0ul; },
-        [] (typename type_t<P>::i64_t const&) { return 0ul; },
-        [] (typename type_t<P>::u8_t const&) { return 0ul; },
-        [] (typename type_t<P>::u16_t const&) { return 0ul; },
-        [] (typename type_t<P>::u32_t const&) { return 0ul; },
-        [] (typename type_t<P>::u64_t const&) { return 0ul; },
-        [] (typename type_t<P>::var_t const& x) { return x.name.idx; },
-        [] (typename type_t<P>::arr_t const& x) { return max_index(x.args.begin(), x.args.end(), x.ret_type.get()); });
-}
-
-template <Properties P>
 std::size_t max_index(func_arg_t<P> const& x)
 {
-    return match(
-        x.value,
-        [] (typename func_arg_t<P>::type_arg_t const& x)
-        {
-            return x.var ? x.var->name.idx : 0ul;
-        },
-        [] (typename func_arg_t<P>::term_arg_t const& x)
-        {
-            return std::max(max_index(x.type), x.var ? x.var->name.idx : 0ul);
-        });
+    return std::max(max_index(x.type), x.var ? x.var->name.idx : 0ul);
 }
 
 template <Properties P>
@@ -93,6 +50,19 @@ std::size_t max_index(expr_t<P> const& x)
 {
     return match(
         x.value,
+        [] (expr_t<P>::typename_t const&) { return 0ul; },
+        [] (expr_t<P>::bool_t const&) { return 0ul; },
+        [] (expr_t<P>::unit_t const&) { return 0ul; },
+        [] (expr_t<P>::i8_t const&) { return 0ul; },
+        [] (expr_t<P>::i16_t const&) { return 0ul; },
+        [] (expr_t<P>::i32_t const&) { return 0ul; },
+        [] (expr_t<P>::i64_t const&) { return 0ul; },
+        [] (expr_t<P>::u8_t const&) { return 0ul; },
+        [] (expr_t<P>::u16_t const&) { return 0ul; },
+        [] (expr_t<P>::u32_t const&) { return 0ul; },
+        [] (expr_t<P>::u64_t const&) { return 0ul; },
+        [] (expr_t<P>::boolean_constant_t const&) { return 0ul; },
+        [] (expr_t<P>::numeric_constant_t const&) { return 0ul; },
         [&] (expr_t<P>::arith_expr_t const& x)
         {
             return match(
@@ -102,8 +72,6 @@ std::size_t max_index(expr_t<P> const& x)
                     return std::max(max_index(x.lhs.get()), max_index(x.rhs.get()));
                 });
         },
-        [&] (expr_t<P>::boolean_constant_t const&) { return 0ul; },
-        [&] (expr_t<P>::numeric_constant_t const&) { return 0ul; },
         [&] (expr_t<P>::var_t const& x)
         {
             return x.name.idx;
@@ -116,15 +84,21 @@ std::size_t max_index(expr_t<P> const& x)
         {
             return std::accumulate(
                 x.args.begin(), x.args.end(),
-                max_index(x.body),
+                std::max(max_index(x.ret_type.get()), max_index(x.body)),
                 [] (std::size_t const acc, func_arg_t<P> const& arg)
                 {
                     return std::max(acc, max_index(arg));
                 });
         },
-        [&] (type_t<P> const& x)
+        [&] (expr_t<P>::pi_t const& x)
         {
-            return max_index(x);
+            return std::accumulate(
+                x.args.begin(), x.args.end(),
+                max_index(x.ret_type.get()),
+                [] (std::size_t const acc, func_arg_t<P> const& arg)
+                {
+                    return std::max(acc, max_index(arg));
+                });
         });
 }
 

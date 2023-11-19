@@ -10,7 +10,7 @@ namespace delta_reduction {
     template <Properties P>
     using context_t =
         scope_map<
-            indexed_var_t,
+            indexed_var_t, // TODO this can now be `typename expr_t<P>::var_t`
             std::variant<
                 typename expr_t<P>::abs_t,
                 struct something_else_t>>;
@@ -22,7 +22,6 @@ template <Properties P> bool delta_reduce(delta_reduction::context_t<P> const&, 
 template <Properties P> bool delta_reduce(delta_reduction::context_t<P> const&, body_t<P>&);
 template <Properties P> bool delta_reduce(delta_reduction::context_t<P> const&, stmt_t<P>&);
 template <Properties P> bool delta_reduce(delta_reduction::context_t<P> const&, expr_t<P>&);
-template <Properties P> bool delta_reduce(delta_reduction::context_t<P> const&, type_t<P>&);
 
 } // namespace dep0::ast
 

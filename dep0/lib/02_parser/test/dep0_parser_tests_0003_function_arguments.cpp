@@ -13,7 +13,7 @@ BOOST_AUTO_TEST_CASE(pass_000)
     BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 1ul);
     auto const& f = pass_result->func_defs[0];
     BOOST_TEST_REQUIRE(f.value.args.size() == 1ul);
-    BOOST_TEST(is_type_i32(f.value.ret_type));
+    BOOST_TEST(is_type_of(f.value.ret_type.get(), is_type_i32));
     BOOST_TEST(is_arg(f.value.args[0], term_binder("x", is_type_i32)));
     BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
     BOOST_TEST(is_return_of(f.value.body.stmts[0ul], var(("x"))));
@@ -25,7 +25,7 @@ BOOST_AUTO_TEST_CASE(pass_001)
     BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 2ul);
     auto const& f = pass_result->func_defs[1];
     BOOST_TEST(f.name == "main");
-    BOOST_TEST(is_type_i32(f.value.ret_type));
+    BOOST_TEST(is_type_of(f.value.ret_type.get(), is_type_i32));
     BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
     BOOST_TEST(is_return_of(f.value.body.stmts[0ul], [] (dep0::parser::expr_t const& expr)
     {
@@ -39,7 +39,7 @@ BOOST_AUTO_TEST_CASE(pass_002)
     BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 2ul);
     auto const& f = pass_result->func_defs[1];
     BOOST_TEST(f.name == "main");
-    BOOST_TEST(is_type_i32(f.value.ret_type));
+    BOOST_TEST(is_type_of(f.value.ret_type.get(), is_type_i32));
     BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
     BOOST_TEST(is_return_of(f.value.body.stmts[0ul], [] (dep0::parser::expr_t const& expr)
     {
@@ -53,7 +53,7 @@ BOOST_AUTO_TEST_CASE(pass_003)
     BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 2ul);
     auto const& f = pass_result->func_defs[1];
     BOOST_TEST(f.name == "main");
-    BOOST_TEST(is_type_i32(f.value.ret_type));
+    BOOST_TEST(is_type_of(f.value.ret_type.get(), is_type_i32));
     BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 2ul);
     BOOST_TEST(is_func_call_of(f.value.body.stmts[0ul], var("first"), is_zero, numeric_constant("1")));
     BOOST_TEST(is_return_of(f.value.body.stmts[1ul], is_zero));

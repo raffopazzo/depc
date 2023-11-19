@@ -1,0 +1,14 @@
+auto type_identity(typename t) -> typename
+{
+    return t;
+}
+
+auto id(typename t, t x) -> t
+{
+    return x;
+}
+
+i32_t zero()
+{
+    return id(type_identity(i32_t), 0);
+}

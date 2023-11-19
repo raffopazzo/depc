@@ -4,19 +4,14 @@
 
 namespace dep0::ast {
 
-template <Properties P>
-void replace(typename type_t<P>::var_t const&, typename type_t<P>::var_t const&, type_t<P>&);
-
+// can also be used to replace inside pi-types
 template <Properties P>
 void replace(
-    typename type_t<P>::var_t const&,
-    typename type_t<P>::var_t const&,
-    typename type_t<P>::arr_t::arg_iterator begin,
-    typename type_t<P>::arr_t::arg_iterator end,
-    type_t<P>& ret_type);
-
-template <Properties P>
-void replace(typename expr_t<P>::var_t const&, typename expr_t<P>::var_t const&, type_t<P>&);
+    typename expr_t<P>::var_t const&,
+    typename expr_t<P>::var_t const&,
+    typename expr_t<P>::abs_t::arg_iterator begin,
+    typename expr_t<P>::abs_t::arg_iterator end,
+    expr_t<P>& ret_type);
 
 template <Properties P>
 void replace(typename expr_t<P>::var_t const&, typename expr_t<P>::var_t const&, body_t<P>&);

@@ -14,6 +14,17 @@ using context_t = delta_reduction::context_t<P>;
 
 template <Properties P> bool delta_reduce(context_t<P> const&, typename stmt_t<P>::if_else_t&);
 template <Properties P> bool delta_reduce(context_t<P> const&, typename stmt_t<P>::return_t&);
+template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::typename_t&);
+template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::bool_t&);
+template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::unit_t&);
+template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::i8_t&);
+template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::i16_t&);
+template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::i32_t&);
+template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::i64_t&);
+template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::u8_t&);
+template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::u16_t&);
+template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::u32_t&);
+template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::u64_t&);
 template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::arith_expr_t&);
 template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::boolean_constant_t&);
 template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::numeric_constant_t&);
@@ -85,11 +96,23 @@ bool delta_reduce(context_t<P> const& ctx, typename expr_t<P>::arith_expr_t& x)
         });
 }
 
-template <Properties P>
-bool delta_reduce(context_t<P> const& ctx, typename expr_t<P>::boolean_constant_t&) { return false; }
+template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::typename_t&) { return false; }
+template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::bool_t&) { return false; }
+template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::unit_t&) { return false; }
+template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::i8_t&) { return false; }
+template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::i16_t&) { return false; }
+template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::i32_t&) { return false; }
+template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::i64_t&) { return false; }
+template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::u8_t&) { return false; }
+template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::u16_t&) { return false; }
+template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::u32_t&) { return false; }
+template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::u64_t&) { return false; }
 
 template <Properties P>
-bool delta_reduce(context_t<P> const& ctx, typename expr_t<P>::numeric_constant_t&) { return false; }
+bool delta_reduce(context_t<P> const&, typename expr_t<P>::boolean_constant_t&) { return false; }
+
+template <Properties P>
+bool delta_reduce(context_t<P> const&, typename expr_t<P>::numeric_constant_t&) { return false; }
 
 template <Properties P>
 bool delta_reduce(context_t<P> const& ctx, typename expr_t<P>::app_t& app)
@@ -106,21 +129,36 @@ template <Properties P>
 bool delta_reduce(context_t<P> const& ctx, typename expr_t<P>::abs_t& abs)
 {
     auto ctx2 = ctx.extend();
-    for (auto const& arg: abs.args)
-        match(
-            arg.value,
-            [&] (auto const& arg)
-            {
-                if (arg.var)
-                {
-                    bool const inserted = ctx2.try_emplace(arg.var->name, delta_reduction::something_else_t{}).second;
-                    assert(inserted);
-                }
-            });
+    for (auto& arg: abs.args)
+    {
+        if (delta_reduce(ctx2, arg.type))
+            return true;
+        if (arg.var)
+        {
+            bool const inserted = ctx2.try_emplace(arg.var->name, delta_reduction::something_else_t{}).second;
+            assert(inserted);
+        }
+    }
+    if (delta_reduce(ctx2, abs.ret_type.get()))
+        return true;
     return delta_reduce(ctx2, abs.body);
 }
 
 template <Properties P>
-bool delta_reduce(context_t<P> const& ctx, type_t<P>&) { return false; }
+bool delta_reduce(context_t<P> const& ctx, typename expr_t<P>::pi_t& pi)
+{
+    auto ctx2 = ctx.extend();
+    for (auto& arg: pi.args)
+    {
+        if (delta_reduce(ctx2, arg.type))
+            return true;
+        if (arg.var)
+        {
+            bool const inserted = ctx2.try_emplace(arg.var->name, delta_reduction::something_else_t{}).second;
+            assert(inserted);
+        }
+    }
+    return delta_reduce(ctx2, pi.ret_type.get());
+}
 
 } // namespace dep0::ast

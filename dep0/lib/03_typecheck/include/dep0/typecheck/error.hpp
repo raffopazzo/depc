@@ -1,6 +1,8 @@
 #pragma once
 
+#include "dep0/typecheck/ast.hpp"
 #include "dep0/typecheck/context.hpp"
+
 #include "dep0/error.hpp"
 
 #include <ostream>

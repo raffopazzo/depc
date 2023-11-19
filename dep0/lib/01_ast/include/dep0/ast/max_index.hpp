@@ -5,15 +5,6 @@
 namespace dep0::ast {
 
 template <Properties P>
-std::size_t max_index(type_t<P> const&);
-
-template <Properties P>
-std::size_t max_index(
-    typename type_t<P>::arr_t::arg_const_iterator begin,
-    typename type_t<P>::arr_t::arg_const_iterator end,
-    type_t<P> const& ret_type);
-
-template <Properties P>
 std::size_t max_index(func_arg_t<P> const&);
 
 template <Properties P>

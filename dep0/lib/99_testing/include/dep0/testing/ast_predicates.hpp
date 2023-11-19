@@ -96,23 +96,20 @@ boost::test_tools::predicate_result is_integer_def(
 
 // sort_t predicates
 
-template <ast::Properties P, Predicate<ast::type_t<P>> F>
-boost::test_tools::predicate_result is_type_of(ast::sort_t<P> const& sort, F&& f)
+template <ast::Properties P, Predicate<ast::expr_t<P>> F>
+boost::test_tools::predicate_result is_type_of(ast::expr_t<P> const& x, F&& f)
 {
-    if (auto const t = std::get_if<ast::type_t<P>>(&sort))
-        return std::forward<F>(f)(*t);
-    else
-        return failure("sort is not type but ", pretty_name(sort));
+    return std::forward<F>(f)(x);
 }
 
 inline constexpr auto is_typename =
-[] <ast::Properties P> (ast::sort_t<P> const& sort)
+[] <ast::Properties P> (ast::expr_t<P> const& x)
 -> boost::test_tools::predicate_result
 {
-    if (std::holds_alternative<ast::typename_t>(sort))
+    if (std::holds_alternative<typename ast::expr_t<P>::typename_t>(x.value))
         return true;
     else
-        return failure("sort is not typename_t but ", pretty_name(sort));
+        return failure("sort is not typename_t but ", pretty_name(x.value));
 };
 
 // func_arg_t predicates
@@ -126,51 +123,48 @@ template <ast::Properties P>
 boost::test_tools::predicate_result
 is_type_binder(ast::func_arg_t<P> const& x, std::optional<std::string_view> const name)
 {
-    auto const type_arg = std::get_if<typename ast::func_arg_t<P>::type_arg_t>(&x.value);
-    if (not type_arg)
-        return failure("function argument is not type_arg_t but ", pretty_name(x.value));
+    if (auto const result = is_typename(x.type); not result)
+        return failure("function return type predicate failed: ", result.message());
     if (name)
-        return type_arg->var ? detail::check_name(type_arg->var->name, *name) : failure("type binder has no name");
-    else if (type_arg->var)
+        return x.var ? detail::check_name(x.var->name, *name) : failure("type binder has no name");
+    else if (x.var)
         return failure("type binder has a name but should be anonymous");
     else
         return true;
 }
 
-template <ast::Properties P, Predicate<ast::type_t<P>> F>
+template <ast::Properties P, Predicate<ast::expr_t<P>> F>
 boost::test_tools::predicate_result
 is_term_binder(ast::func_arg_t<P> const& x, std::optional<std::string_view> const name, F&& f)
 {
-    auto const term_arg = std::get_if<typename ast::func_arg_t<P>::term_arg_t>(&x.value);
-    if (not term_arg)
-        return failure("function argument is not term_arg_t but ", pretty_name(x.value));
+    if (auto const result = std::forward<F>(f)(x.type); not result)
+        return failure("argument type predicate failed: ", result.message());
     if (name)
-        return term_arg->var ? detail::check_name(term_arg->var->name, *name) : failure("argument has no name");
-    else if (term_arg->var)
+        return x.var ? detail::check_name(x.var->name, *name) : failure("argument has no name");
+    else if (x.var)
         return failure("argument has a name but should be anonymous");
     else
         return true;
-    return std::forward<F>(f)(term_arg->type);
 }
 
 // type_t predicates
 
 template <ast::Properties P>
-boost::test_tools::predicate_result is_type_var(ast::type_t<P> const& type, std::string_view const name)
+boost::test_tools::predicate_result is_type_var(ast::expr_t<P> const& x, std::string_view const name)
 {
-    auto const var = std::get_if<typename ast::type_t<P>::var_t>(&type.value);
+    auto const var = std::get_if<typename ast::expr_t<P>::var_t>(&x.value);
     if (not var)
-        return failure("type is not var_t but ", pretty_name(type.value));
+        return failure("expression is not var_t but ", pretty_name(x.value));
     return detail::check_name(var->name, name);
 }
 
-template <ast::Properties P, typename... ArgPredicates, Predicate<typename ast::type_t<P>> F>
+template <ast::Properties P, typename... ArgPredicates, Predicate<typename ast::expr_t<P>> F>
 boost::test_tools::predicate_result
-is_arr_of(ast::type_t<P> const& type, std::tuple<ArgPredicates...> const& f_args, F&& f_ret_type)
+is_arr_of(ast::expr_t<P> const& type, std::tuple<ArgPredicates...> const& f_args, F&& f_ret_type)
 {
-    auto const arr = std::get_if<typename ast::type_t<P>::arr_t>(&type.value);
+    auto const arr = std::get_if<typename ast::expr_t<P>::pi_t>(&type.value);
     if (not arr)
-        return failure("type is not arr_t but ", pretty_name(type.value));
+        return failure("type is not pi_t but ", pretty_name(type.value));
     if (auto const result = std::forward<F>(f_ret_type)(arr->ret_type.get()); not result)
         return failure("return type predicate failed: ", result.message());
     if (arr->args.size() != sizeof...(ArgPredicates))
@@ -179,30 +173,30 @@ is_arr_of(ast::type_t<P> const& type, std::tuple<ArgPredicates...> const& f_args
 }
 
 inline constexpr auto is_type_bool =
-[] <ast::Properties P> (ast::type_t<P> const& type)
+[] <ast::Properties P> (ast::expr_t<P> const& type)
 -> boost::test_tools::predicate_result
 {
-    if (std::holds_alternative<typename ast::type_t<P>::bool_t>(type.value))
+    if (std::holds_alternative<typename ast::expr_t<P>::bool_t>(type.value))
         return true;
     else
         return failure("type is not bool_t but ", pretty_name(type.value));
 };
 
 inline constexpr auto is_type_i32 =
-[] <ast::Properties P> (ast::type_t<P> const& type)
+[] <ast::Properties P> (ast::expr_t<P> const& type)
 -> boost::test_tools::predicate_result
 {
-    if (std::holds_alternative<typename ast::type_t<P>::i32_t>(type.value))
+    if (std::holds_alternative<typename ast::expr_t<P>::i32_t>(type.value))
         return true;
     else
         return failure("type is not i32_t but ", pretty_name(type.value));
 };
 
 inline constexpr auto is_type_u32 =
-[] <ast::Properties P> (ast::type_t<P> const& type)
+[] <ast::Properties P> (ast::expr_t<P> const& type)
 -> boost::test_tools::predicate_result
 {
-    if (std::holds_alternative<typename ast::type_t<P>::u32_t>(type.value))
+    if (std::holds_alternative<typename ast::expr_t<P>::u32_t>(type.value))
         return true;
     else
         return failure("type is not u32_t but ", pretty_name(type.value));
@@ -287,13 +281,10 @@ boost::test_tools::predicate_result is_plus(ast::expr_t<P> const& expr, F1&& f1,
     return true;
 }
 
-template <ast::Properties P, Predicate<ast::type_t<P>> F>
+template <ast::Properties P, Predicate<ast::expr_t<P>> F>
 boost::test_tools::predicate_result is_type_expr_of(ast::expr_t<P> const& expr, F&& f)
 {
-    auto const t = std::get_if<typename ast::type_t<P>>(&expr.value);
-    if (not t)
-        return failure("expression is not type_t but ", pretty_name(expr.value));
-    return std::forward<F>(f)(*t);
+    return std::forward<F>(f)(expr);
 }
 
 inline constexpr auto is_zero = [] <ast::Properties P> (ast::expr_t<P> const& expr)
@@ -331,12 +322,12 @@ boost::test_tools::predicate_result is_return_of(ast::stmt_t<P> const& stmt, F&&
 }
 
 // factories of sort_t predicates
-template <ast::Properties P, Predicate<ast::type_t<P>> F>
+template <ast::Properties P, Predicate<ast::expr_t<P>> F>
 constexpr auto type_of(F&& f)
 {
-    return [f=std::forward<F>(f)] (ast::sort_t<P> const& sort)
+    return [f=std::forward<F>(f)] (ast::expr_t<P> const& x)
     {
-        return is_type_of(sort, f);
+        return is_type_of(x, f);
     };
 }
 
@@ -349,7 +340,7 @@ inline auto type_binder(std::optional<std::string> const& name)
     };
 }
 
-template <ast::Properties P, Predicate<ast::type_t<P>> F>
+template <ast::Properties P, Predicate<ast::expr_t<P>> F>
 inline auto term_binder(F&& f)
 {
     return [f=std::forward<F>(f)] (ast::func_arg_t<P> const& x)
@@ -358,7 +349,7 @@ inline auto term_binder(F&& f)
     };
 }
 
-template <ast::Properties P, Predicate<ast::type_t<P>> F>
+template <ast::Properties P, Predicate<ast::expr_t<P>> F>
 inline auto term_binder(std::string const& name, F&& f)
 {
     return [name, f=std::forward<F>(f)] (ast::func_arg_t<P> const& x)
@@ -371,7 +362,7 @@ inline auto term_binder(std::string const& name, F&& f)
 
 inline auto type_var(std::string const& name)
 {
-    return [name] <ast::Properties P> (ast::type_t<P> const& type)
+    return [name] <ast::Properties P> (ast::expr_t<P> const& type)
     {
         return is_type_var(type, name);
     };
@@ -379,12 +370,21 @@ inline auto type_var(std::string const& name)
 
 // factories of expr_t predicates
 
-template <ast::Properties P, Predicate<ast::type_t<P>> F>
+template <ast::Properties P, Predicate<ast::expr_t<P>> F>
 constexpr auto type_expr_of(F&& f)
 {
     return [f=std::forward<F>(f)] (ast::expr_t<P> const& expr)
     {
         return is_type_expr_of(expr, f);
+    };
+}
+
+template <ast::Properties P, Predicate<ast::expr_t<P>> F, typename... ArgPredicates>
+constexpr auto app_of(F&& f_func, ArgPredicates&&... f_args)
+{
+    return [f_func=std::forward<F>(f_func), ...f_args=std::forward<ArgPredicates>(f_args)] (ast::expr_t<P> const& x)
+    {
+        return is_app_of(x, f_func, f_args...);
     };
 }
 

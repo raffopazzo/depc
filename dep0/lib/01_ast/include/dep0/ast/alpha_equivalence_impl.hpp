@@ -89,13 +89,10 @@ struct expr_visitor
                 typename expr_t<P>::arith_expr_t::plus_t& x,
                 typename expr_t<P>::arith_expr_t::plus_t& y) const
             {
-                auto lhs = is_alpha_equivalent_impl(x.lhs.get(), y.lhs.get());
-                if (not lhs)
-                    return std::move(lhs.error());
-                auto rhs = is_alpha_equivalent_impl(x.rhs.get(), y.rhs.get());
-                if (not rhs)
-                    return std::move(rhs.error());
-                return {};
+                auto eq = is_alpha_equivalent_impl(x.lhs.get(), y.lhs.get());
+                if (eq)
+                    eq = is_alpha_equivalent_impl(x.rhs.get(), y.rhs.get());
+                return eq;
             }
         };
         return std::visit(visitor{}, x.value, y.value);
@@ -155,33 +152,25 @@ struct stmt_visitor
 
     result_t operator()(typename stmt_t<P>::if_else_t& x, typename stmt_t<P>::if_else_t& y) const
     {
-        if (auto eq = is_alpha_equivalent_impl(x.cond, y.cond); not eq)
-            return std::move(eq.error());
-        if (auto eq = is_alpha_equivalent_impl(x.true_branch, y.true_branch); not eq)
-            return std::move(eq.error());
-        if (x.false_branch.has_value() xor y.false_branch.has_value())
+        auto eq = is_alpha_equivalent_impl(x.cond, y.cond);
+        if (eq)
+            eq = is_alpha_equivalent_impl(x.true_branch, y.true_branch);
+        if (eq)
         {
-            std::ostringstream err;
-            err << "if-statement with an else branch is not alpha-equivalent to one without";
-            return dep0::error_t(err.str());
+            if (x.false_branch.has_value() xor y.false_branch.has_value())
+                return dep0::error_t("if-statement with an else branch is not alpha-equivalent to one without");
+            if (x.false_branch)
+                eq = is_alpha_equivalent_impl(*x.false_branch, *y.false_branch);
         }
-        if (x.false_branch)
-            if (auto eq = is_alpha_equivalent_impl(*x.false_branch, *y.false_branch); not eq)
-                return std::move(eq.error());
-        return {};
+        return eq;
     }
 
     result_t operator()(typename stmt_t<P>::return_t& x, typename stmt_t<P>::return_t& y) const
     {
         if (x.expr.has_value() xor y.expr.has_value())
-        {
-            std::ostringstream err;
-            err << "return statement with expression is not alpha-equivalent to one without";
-            return dep0::error_t(err.str());
-        }
+            return dep0::error_t("return statement with expression is not alpha-equivalent to one without");
         if (x.expr)
-            if (auto eq = is_alpha_equivalent_impl(*x.expr, *y.expr); not eq)
-                return std::move(eq.error());
+            return is_alpha_equivalent_impl(*x.expr, *y.expr);
         return {};
     }
 };
@@ -203,10 +192,10 @@ dep0::expected<std::true_type> is_alpha_equivalent_impl(typename expr_t<P>::app_
         return dep0::error_t(err.str());
     }
     if (auto eq = is_alpha_equivalent_impl(x.func.get(), y.func.get()); not eq)
-        return std::move(eq.error());
+        return eq;
     for (auto const i: std::views::iota(0ul, x.args.size()))
         if (auto eq = is_alpha_equivalent_impl(x.args[i], y.args[i]); not eq)
-            return std::move(eq.error());
+            return eq;
     return {};
 }
 
@@ -322,8 +311,8 @@ dep0::expected<std::true_type> is_alpha_equivalent_impl(body_t<P>& x, body_t<P>&
         return dep0::error_t(err.str());
     }
     for (auto const i: std::views::iota(0ul, x.stmts.size()))
-        if (auto eq = is_alpha_equivalent_impl(x.stmts[i], y.stmts[i]))
-            return std::move(eq.error());
+        if (auto eq = is_alpha_equivalent_impl(x.stmts[i], y.stmts[i]); not eq)
+            return eq;
     return {};
 }
 

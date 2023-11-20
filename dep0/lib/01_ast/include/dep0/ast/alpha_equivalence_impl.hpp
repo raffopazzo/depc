@@ -267,7 +267,6 @@ dep0::expected<std::true_type> is_alpha_equivalent_impl(
             // renaming assigns the next unused index number counting upwards;
             // so if index of x_var is greather than that of y_var, we know that `x_var` does not occur
             // in the renamed y, and viceversa; we can therefore safely replace x_var in y (or viceversa);
-            // if x and y are alpha-equivalent, they will now compare equal in the remaining args and in ret type
             if (x_var.name.idx > y_var.name.idx)
                 replace(y_var, x_var, y_args.begin() + i + 1, y_args.end(), y_ret_type);
             else

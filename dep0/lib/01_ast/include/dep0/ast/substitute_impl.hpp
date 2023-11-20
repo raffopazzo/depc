@@ -44,7 +44,7 @@ void substitute(
         // Also note that we are modifying the elements of the very vector we are iterating on,
         // but we are only modifying the values, no the vector; so iteration is safe.
         if (arg.var and occurs_in(y, *arg.var, occurrence_style::anywhere))
-            arg.var = rename(*arg.var, std::next(it), end, ret_type);
+            arg.var = rename<P>(*arg.var, std::next(it), end, ret_type, nullptr);
     }
     substitute(ret_type, var, y);
 }

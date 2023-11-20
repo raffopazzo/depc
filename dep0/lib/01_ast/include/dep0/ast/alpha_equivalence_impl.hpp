@@ -18,8 +18,8 @@ template <Properties P> dep0::expected<std::true_type> is_alpha_equivalent_impl(
     typename expr_t<P>::app_t&,
     typename expr_t<P>::app_t&);
 template <Properties P> dep0::expected<std::true_type> is_alpha_equivalent_impl(
-    std::vector<func_arg_t<P>>& x_args, expr_t<P>& x_ret_type,
-    std::vector<func_arg_t<P>>& y_args, expr_t<P>& y_ret_type);
+    std::vector<func_arg_t<P>>& x_args, expr_t<P>& x_ret_type, body_t<P>* x_body,
+    std::vector<func_arg_t<P>>& y_args, expr_t<P>& y_ret_type, body_t<P>* y_body);
 
 template <Properties P> dep0::expected<std::true_type> is_alpha_equivalent_impl(body_t<P>&, body_t<P>&);
 template <Properties P> dep0::expected<std::true_type> is_alpha_equivalent_impl(stmt_t<P>&, stmt_t<P>&);
@@ -109,18 +109,12 @@ struct expr_visitor
 
     result_t operator()(typename expr_t<P>::abs_t& x, typename expr_t<P>::abs_t& y) const
     {
-        auto eq = is_alpha_equivalent_impl(x.args, x.ret_type.get(), y.args, y.ret_type.get());
-        if (eq)
-            // TODO if one of the arguments was anonymous but the other named,
-            // we might mistakenly consider the two bodies alpha-equivalent;
-            // eg `(int x) -> int { return x; }` vs `(int) -> int { return x; }`
-            eq = is_alpha_equivalent_impl(x.body, y.body);
-        return eq;
+        return is_alpha_equivalent_impl(x.args, x.ret_type.get(), &x.body, y.args, y.ret_type.get(), &y.body);
     }
 
     result_t operator()(typename expr_t<P>::pi_t& x, typename expr_t<P>::pi_t& y) const
     {
-        return is_alpha_equivalent_impl(x.args, x.ret_type.get(), y.args, y.ret_type.get());
+        return is_alpha_equivalent_impl<P>(x.args, x.ret_type.get(), nullptr, y.args, y.ret_type.get(), nullptr);
     }
 };
 
@@ -195,8 +189,8 @@ dep0::expected<std::true_type> is_alpha_equivalent_impl(typename expr_t<P>::app_
 
 template <Properties P>
 dep0::expected<std::true_type> is_alpha_equivalent_impl(
-    std::vector<func_arg_t<P>>& x_args, expr_t<P>& x_ret_type,
-    std::vector<func_arg_t<P>>& y_args, expr_t<P>& y_ret_type)
+    std::vector<func_arg_t<P>>& x_args, expr_t<P>& x_ret_type, body_t<P>* x_body,
+    std::vector<func_arg_t<P>>& y_args, expr_t<P>& y_ret_type, body_t<P>* y_body)
 {
     if (x_args.size() != y_args.size())
     {
@@ -242,8 +236,8 @@ dep0::expected<std::true_type> is_alpha_equivalent_impl(
             auto& y_var = *y_arg.var;
             if (x_var == y_var)
                 continue;
-            x_var = rename(x_var, x_args.begin() + i + 1, x_args.end(), x_ret_type);
-            y_var = rename(y_var, y_args.begin() + i + 1, y_args.end(), y_ret_type);
+            x_var = rename(x_var, x_args.begin() + i + 1, x_args.end(), x_ret_type, x_body);
+            y_var = rename(y_var, y_args.begin() + i + 1, y_args.end(), y_ret_type, y_body);
             if (x_var == y_var)
                 // by pure luck renaming assigned the same name to both
                 continue;
@@ -253,11 +247,15 @@ dep0::expected<std::true_type> is_alpha_equivalent_impl(
             if (x_var.name.idx > y_var.name.idx)
             {
                 replace(y_var, x_var, y_args.begin() + i + 1, y_args.end(), y_ret_type);
+                if (y_body)
+                    replace(y_var, x_var, *y_body);
                 y_var = x_var; // just in case; otherwise error messages might look odd and even confusing
             }
             else
             {
                 replace(x_var, y_var, x_args.begin() + i + 1, x_args.end(), x_ret_type);
+                if (x_body)
+                    replace(x_var, y_var, *x_body);
                 x_var = y_var; // ditto
             }
         }
@@ -297,7 +295,7 @@ dep0::expected<std::true_type> is_alpha_equivalent_impl(
         pretty_print(err << " is not alpha-equivalent to `", y_ret_type) << '`';
         return dep0::error_t(err.str(), {std::move(eq.error())});
     }
-    return {};
+    return x_body and y_body ? is_alpha_equivalent_impl(*x_body, *y_body) : dep0::expected<std::true_type>{};
 }
 
 template <Properties P>

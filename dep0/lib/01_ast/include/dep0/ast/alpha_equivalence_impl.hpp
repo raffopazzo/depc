@@ -111,6 +111,9 @@ struct expr_visitor
     {
         auto eq = is_alpha_equivalent_impl(x.args, x.ret_type.get(), y.args, y.ret_type.get());
         if (eq)
+            // TODO if one of the arguments was anonymous but the other named,
+            // we might mistakenly consider the two bodies alpha-equivalent;
+            // eg `(int x) -> int { return x; }` vs `(int) -> int { return x; }`
             eq = is_alpha_equivalent_impl(x.body, y.body);
         return eq;
     }

@@ -36,15 +36,14 @@ void substitute(
             // so substitution must stop, including for the return type
             return;
         }
-        // We need to check if `arg.var` appears free in `y` and, if so, rename it.
-        // Technically here we are actually checking whether `arg.var` appears at all in `y`, i.e.
-        // not only free but also as binding variable; this is not strictly necessary,
-        // but the code is simpler and it also avoids possibly confusing types like this
-        // `(typename t) -> (typename t) -> t` which instead become `(typename t:1) -> (typename t) -> t`,
-        // making it more obvious which `t` is binding, so for now let's go with this.
+        // We need to check if `arg.var` appears in `y` and, if so, rename it.
+        // Technically it would suffice to check whether `arg.var` appears free in `y`,
+        // but we prefer to check if it appears anywhere (i.e. also as binding variable)
+        // because it renames possibly confusing types like `(typename t) -> (typename t) -> t` to
+        // `(typename t:1) -> (typename t) -> t`, making it obvious to see which `t` is binding.
         // Also note that we are modifying the elements of the very vector we are iterating on,
         // but we are only modifying the values, no the vector; so iteration is safe.
-        if (arg.var and contains_var(y, *arg.var))
+        if (arg.var and contains_var(y, *arg.var, occurrence_style::anywhere))
             arg.var = rename(*arg.var, std::next(it), end, ret_type);
     }
     substitute(ret_type, var, y);

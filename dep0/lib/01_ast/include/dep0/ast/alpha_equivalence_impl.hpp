@@ -253,14 +253,32 @@ dep0::expected<std::true_type> is_alpha_equivalent_impl(
             err.reasons.push_back(std::move(eq.error()));
             return err;
         }
-        if (x_arg.var.has_value() xor y_arg.var.has_value())
+        if (x_arg.var and y_arg.var)
         {
-            // TODO should define and use something like `occurs_free` instead of using `contains_var`
-            if (x_arg.var and not contains_var(x_args.begin() + i + 1, x_args.end(), x_ret_type, *x_arg.var))
+            auto& x_var = *x_arg.var;
+            auto& y_var = *y_arg.var;
+            if (x_var == y_var)
                 continue;
-            else if (y_arg.var and not contains_var(y_args.begin() + i + 1, y_args.end(), y_ret_type, *y_arg.var))
+            x_var = rename(x_var, x_args.begin() + i + 1, x_args.end(), x_ret_type);
+            y_var = rename(y_var, y_args.begin() + i + 1, y_args.end(), y_ret_type);
+            if (x_var == y_var)
+                // by pure luck renaming assigned the same name to both
                 continue;
+            // renaming assigns the next unused index number counting upwards;
+            // so if index of x_var is greather than that of y_var, we know that `x_var` does not occur
+            // in the renamed y, and viceversa; we can therefore safely replace x_var in y (or viceversa);
+            // if x and y are alpha-equivalent, they will now compare equal in the remaining args and in ret type
+            if (x_var.name.idx > y_var.name.idx)
+                replace(y_var, x_var, y_args.begin() + i + 1, y_args.end(), y_ret_type);
             else
+                replace(x_var, y_var, x_args.begin() + i + 1, x_args.end(), x_ret_type);
+        }
+        else if (x_arg.var.has_value() xor y_arg.var.has_value())
+        {
+            // One function argument is named but the other is anonymous.
+            // The two functions might still be alpha-equivalent if the named argument
+            // does not occur free inside the rest of the signature.
+            auto const occurs_somewhere = [&]
             {
                 auto err = not_alpha_equivalent(i);
                 err.reasons.push_back([&]
@@ -271,27 +289,18 @@ dep0::expected<std::true_type> is_alpha_equivalent_impl(
                     return dep0::error_t(err.str());
                 }());
                 return err;
+            };
+            if (x_arg.var)
+            {
+                if (contains_var(x_args.begin() + i + 1, x_args.end(), x_ret_type, *x_arg.var, occurrence_style::free))
+                    return occurs_somewhere();
+            }
+            else if (y_arg.var)
+            {
+                if (contains_var(y_args.begin() + i + 1, y_args.end(), y_ret_type, *y_arg.var, occurrence_style::free))
+                    return occurs_somewhere();
             }
         }
-        if (not x_arg.var and not y_arg.var)
-            continue;
-        auto& x_var = *x_arg.var;
-        auto& y_var = *y_arg.var;
-        if (x_var == y_var)
-            continue;
-        x_var = rename(x_var, x_args.begin() + i + 1, x_args.end(), x_ret_type);
-        y_var = rename(y_var, y_args.begin() + i + 1, y_args.end(), y_ret_type);
-        if (x_var == y_var)
-            // by pure luck renaming assigned the same name to both
-            continue;
-        // renaming assigns the next unused index number counting upwards;
-        // so if index of x_var is greather than that of y_var, we know that `x_var` does not occur
-        // in the renamed y, and viceversa; we can therefore safely replace x_var in y (or viceversa);
-        // if x and y are alpha-equivalent, they will now compare equal in the remaining args and in ret type
-        if (x_var.name.idx > y_var.name.idx)
-            replace(y_var, x_var, y_args.begin() + i + 1, y_args.end(), y_ret_type);
-        else
-            replace(x_var, y_var, x_args.begin() + i + 1, x_args.end(), x_ret_type);
     }
     if (auto eq = is_alpha_equivalent_impl(x_ret_type, y_ret_type); not eq)
     {

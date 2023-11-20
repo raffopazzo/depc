@@ -11,11 +11,11 @@ enum class occurrence_style
 };
 
 template <Properties P>
-bool contains_var(expr_t<P> const&, typename expr_t<P>::var_t const&, occurrence_style);
+bool occurs_in(expr_t<P> const&, typename expr_t<P>::var_t const&, occurrence_style);
 
 // can also be used for pi-types
 template <Properties P>
-bool contains_var(
+bool occurs_in(
     typename expr_t<P>::abs_t::arg_const_iterator begin,
     typename expr_t<P>::abs_t::arg_const_iterator end,
     expr_t<P> const& ret_type,
@@ -24,4 +24,4 @@ bool contains_var(
 
 } // namespace dep0::ast
 
-#include "dep0/ast/contains_var_impl.hpp"
+#include "dep0/ast/occurs_in_impl.hpp"

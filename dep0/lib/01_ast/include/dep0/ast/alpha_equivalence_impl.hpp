@@ -1,7 +1,7 @@
 #pragma once
 
 #include "dep0/ast/alpha_equivalence.hpp"
-#include "dep0/ast/contains_var.hpp"
+#include "dep0/ast/occurs_in.hpp"
 #include "dep0/ast/pretty_print.hpp"
 #include "dep0/ast/replace.hpp"
 #include "dep0/ast/rename.hpp"
@@ -291,12 +291,12 @@ dep0::expected<std::true_type> is_alpha_equivalent_impl(
             };
             if (x_arg.var)
             {
-                if (contains_var(x_args.begin() + i + 1, x_args.end(), x_ret_type, *x_arg.var, occurrence_style::free))
+                if (occurs_in(x_args.begin() + i + 1, x_args.end(), x_ret_type, *x_arg.var, occurrence_style::free))
                     return occurs_somewhere();
             }
             else if (y_arg.var)
             {
-                if (contains_var(y_args.begin() + i + 1, y_args.end(), y_ret_type, *y_arg.var, occurrence_style::free))
+                if (occurs_in(y_args.begin() + i + 1, y_args.end(), y_ret_type, *y_arg.var, occurrence_style::free))
                     return occurs_somewhere();
             }
         }

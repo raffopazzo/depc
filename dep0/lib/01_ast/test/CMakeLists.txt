@@ -5,6 +5,7 @@ target_link_libraries(dep0_ast_tests_fixture
   PUBLIC
     DepC::Dep0::Ast
     DepC::Dep0::Testing
+    Boost::Boost
     )
 
 add_executable(dep0_alpha_equivalence_tests dep0_alpha_equivalence_tests.cpp)
@@ -19,6 +20,6 @@ add_executable(dep0_delta_reduction_tests dep0_delta_reduction_tests.cpp)
 add_test(NAME dep0_delta_reduction_tests COMMAND dep0_delta_reduction_tests)
 target_link_libraries(dep0_delta_reduction_tests PRIVATE dep0_ast_tests_fixture)
 
-add_executable(dep0_contains_var_tests dep0_contains_var_tests.cpp)
-add_test(NAME dep0_contains_var_tests COMMAND dep0_contains_var_tests)
-target_link_libraries(dep0_contains_var_tests PRIVATE dep0_ast_tests_fixture)
+add_executable(dep0_occurs_in_tests dep0_occurs_in_tests.cpp)
+add_test(NAME dep0_occurs_in_tests COMMAND dep0_occurs_in_tests)
+target_link_libraries(dep0_occurs_in_tests PRIVATE dep0_ast_tests_fixture)

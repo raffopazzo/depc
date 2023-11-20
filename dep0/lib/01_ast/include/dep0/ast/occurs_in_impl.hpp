@@ -1,6 +1,6 @@
 #pragma once
 
-#include "dep0/ast/contains_var.hpp"
+#include "dep0/ast/occurs_in.hpp"
 
 #include "dep0/match.hpp"
 
@@ -10,13 +10,13 @@ namespace dep0::ast {
 
 // forward declaration
 
-template <Properties P> bool contains_var(body_t<P> const&, typename expr_t<P>::var_t const&, occurrence_style);
-template <Properties P> bool contains_var(typename expr_t<P>::app_t const&, typename expr_t<P>::var_t const&, occurrence_style);
+template <Properties P> bool occurs_in(body_t<P> const&, typename expr_t<P>::var_t const&, occurrence_style);
+template <Properties P> bool occurs_in(typename expr_t<P>::app_t const&, typename expr_t<P>::var_t const&, occurrence_style);
 
 // implementation
 
 template <Properties P>
-bool contains_var(expr_t<P> const& x, typename expr_t<P>::var_t const& var, occurrence_style const style)
+bool occurs_in(expr_t<P> const& x, typename expr_t<P>::var_t const& var, occurrence_style const style)
 {
     return match(
         x.value,
@@ -39,7 +39,7 @@ bool contains_var(expr_t<P> const& x, typename expr_t<P>::var_t const& var, occu
                 x.value,
                 [&] (expr_t<P>::arith_expr_t::plus_t const& x)
                 {
-                    return contains_var(x.lhs.get(), var, style) or contains_var(x.rhs.get(), var, style);
+                    return occurs_in(x.lhs.get(), var, style) or occurs_in(x.rhs.get(), var, style);
                 });
         },
         [&] (expr_t<P>::var_t const& x)
@@ -48,33 +48,33 @@ bool contains_var(expr_t<P> const& x, typename expr_t<P>::var_t const& var, occu
         },
         [&] (expr_t<P>::app_t const& x)
         {
-            return contains_var<P>(x, var, style);
+            return occurs_in<P>(x, var, style);
         },
         [&] (expr_t<P>::abs_t const& x)
         {
-            if (contains_var(x.args.begin(), x.args.end(), x.ret_type.get(), var, style))
+            if (occurs_in(x.args.begin(), x.args.end(), x.ret_type.get(), var, style))
                 return true;
             if (style == occurrence_style::free)
                 return std::ranges::none_of(x.args, [&](auto const& arg) { return arg.var == var; })
-                    and contains_var(x.body, var, occurrence_style::free);
+                    and occurs_in(x.body, var, occurrence_style::free);
             else
-                return contains_var(x.body, var, occurrence_style::anywhere);
+                return occurs_in(x.body, var, occurrence_style::anywhere);
         },
         [&] (expr_t<P>::pi_t const& x)
         {
-            return contains_var(x.args.begin(), x.args.end(), x.ret_type.get(), var, style);
+            return occurs_in(x.args.begin(), x.args.end(), x.ret_type.get(), var, style);
         });
 }
 
 template <Properties P>
-bool contains_var(typename expr_t<P>::app_t const& x, typename expr_t<P>::var_t const& var, occurrence_style const style)
+bool occurs_in(typename expr_t<P>::app_t const& x, typename expr_t<P>::var_t const& var, occurrence_style const style)
 {
-    return std::ranges::any_of(x.args, [&] (expr_t<P> const& arg) { return contains_var(arg, var, style); }) or
-        contains_var(x.func.get(), var, style);
+    return std::ranges::any_of(x.args, [&] (expr_t<P> const& arg) { return occurs_in(arg, var, style); }) or
+        occurs_in(x.func.get(), var, style);
 }
 
 template <Properties P>
-bool contains_var(
+bool occurs_in(
     typename expr_t<P>::abs_t::arg_const_iterator begin,
     typename expr_t<P>::abs_t::arg_const_iterator end,
     expr_t<P> const& ret_type,
@@ -85,7 +85,7 @@ bool contains_var(
     {
         for (auto const& arg: std::ranges::subrange(begin, end))
         {
-            if (contains_var(arg.type, var, style))
+            if (occurs_in(arg.type, var, style))
                 return true;
             if (arg.var == var)
                 return true;
@@ -95,18 +95,18 @@ bool contains_var(
     {
         for (auto const& arg: std::ranges::subrange(begin, end))
         {
-            if (contains_var(arg.type, var, style))
+            if (occurs_in(arg.type, var, style))
                 return true;
             if (arg.var == var)
                 return false;
         }
-        return contains_var(ret_type, var, style);
+        return occurs_in(ret_type, var, style);
     }
-    return contains_var(ret_type, var, style);
+    return occurs_in(ret_type, var, style);
 }
 
 template <Properties P>
-bool contains_var(body_t<P> const& x, typename expr_t<P>::var_t const& var, occurrence_style const style)
+bool occurs_in(body_t<P> const& x, typename expr_t<P>::var_t const& var, occurrence_style const style)
 {
     return std::ranges::any_of(
         x.stmts,
@@ -116,17 +116,17 @@ bool contains_var(body_t<P> const& x, typename expr_t<P>::var_t const& var, occu
                 stmt.value,
                 [&] (expr_t<P>::app_t const& app)
                 {
-                    return contains_var<P>(app, var, style);
+                    return occurs_in<P>(app, var, style);
                 },
                 [&] (stmt_t<P>::if_else_t const& if_)
                 {
-                    return contains_var(if_.cond, var, style)
-                        or contains_var(if_.true_branch, var, style)
-                        or if_.false_branch and contains_var(*if_.false_branch, var, style);
+                    return occurs_in(if_.cond, var, style)
+                        or occurs_in(if_.true_branch, var, style)
+                        or if_.false_branch and occurs_in(*if_.false_branch, var, style);
                 },
                 [&] (stmt_t<P>::return_t const& ret)
                 {
-                    return ret.expr and contains_var(*ret.expr, var, style);
+                    return ret.expr and occurs_in(*ret.expr, var, style);
                 });
         });
 }

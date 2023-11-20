@@ -2,7 +2,7 @@
 
 #include "dep0/ast/substitute.hpp"
 
-#include "dep0/ast/contains_var.hpp"
+#include "dep0/ast/occurs_in.hpp"
 #include "dep0/ast/rename.hpp"
 
 #include "dep0/match.hpp"
@@ -43,7 +43,7 @@ void substitute(
         // `(typename t:1) -> (typename t) -> t`, making it obvious to see which `t` is binding.
         // Also note that we are modifying the elements of the very vector we are iterating on,
         // but we are only modifying the values, no the vector; so iteration is safe.
-        if (arg.var and contains_var(y, *arg.var, occurrence_style::anywhere))
+        if (arg.var and occurs_in(y, *arg.var, occurrence_style::anywhere))
             arg.var = rename(*arg.var, std::next(it), end, ret_type);
     }
     substitute(ret_type, var, y);

@@ -19,8 +19,8 @@ void substitute(stmt_t<P>&, typename expr_t<P>::var_t const&, expr_t<P> const&);
 
 template <Properties P>
 void substitute(
-    typename expr_t<P>::abs_t::arg_iterator it,
-    typename expr_t<P>::abs_t::arg_iterator const end,
+    typename std::vector<func_arg_t<P>>::iterator it,
+    typename std::vector<func_arg_t<P>>::iterator const end,
     expr_t<P>& ret_type,
     typename expr_t<P>::var_t const& var,
     expr_t<P> const& y)

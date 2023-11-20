@@ -13,11 +13,10 @@ enum class occurrence_style
 template <Properties P>
 bool occurs_in(expr_t<P> const&, typename expr_t<P>::var_t const&, occurrence_style);
 
-// can also be used for pi-types
 template <Properties P>
 bool occurs_in(
-    typename expr_t<P>::abs_t::arg_const_iterator begin,
-    typename expr_t<P>::abs_t::arg_const_iterator end,
+    typename std::vector<func_arg_t<P>>::const_iterator begin,
+    typename std::vector<func_arg_t<P>>::const_iterator end,
     expr_t<P> const& ret_type,
     typename expr_t<P>::var_t const&,
     occurrence_style);

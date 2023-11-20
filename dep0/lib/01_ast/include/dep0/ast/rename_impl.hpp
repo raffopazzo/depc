@@ -12,8 +12,8 @@ namespace dep0::ast {
 template <Properties P>
 typename expr_t<P>::var_t rename(
     typename expr_t<P>::var_t const& var,
-    typename expr_t<P>::abs_t::arg_iterator const begin,
-    typename expr_t<P>::abs_t::arg_iterator const end,
+    typename std::vector<func_arg_t<P>>::iterator const begin,
+    typename std::vector<func_arg_t<P>>::iterator const end,
     expr_t<P>& ret_type,
     body_t<P>* body)
 {

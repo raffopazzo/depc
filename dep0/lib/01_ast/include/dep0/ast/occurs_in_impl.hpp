@@ -75,8 +75,8 @@ bool occurs_in(typename expr_t<P>::app_t const& x, typename expr_t<P>::var_t con
 
 template <Properties P>
 bool occurs_in(
-    typename expr_t<P>::abs_t::arg_const_iterator begin,
-    typename expr_t<P>::abs_t::arg_const_iterator end,
+    typename std::vector<func_arg_t<P>>::const_iterator begin,
+    typename std::vector<func_arg_t<P>>::const_iterator end,
     expr_t<P> const& ret_type,
     typename expr_t<P>::var_t const& var,
     occurrence_style const style)

@@ -6,11 +6,10 @@ namespace dep0::ast {
 
 // TODO API should be consistent with replace() taking const& first and mutable& after
 
-// can also be used to substitute inside pi-types
 template <Properties P>
 void substitute(
-    typename expr_t<P>::abs_t::arg_iterator begin,
-    typename expr_t<P>::abs_t::arg_iterator end,
+    typename std::vector<func_arg_t<P>>::iterator begin,
+    typename std::vector<func_arg_t<P>>::iterator end,
     expr_t<P>& ret_type,
     typename expr_t<P>::var_t const&,
     expr_t<P> const&);

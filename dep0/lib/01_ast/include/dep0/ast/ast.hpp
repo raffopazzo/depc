@@ -93,19 +93,13 @@ struct expr_t
     };
     struct abs_t
     {
-        using arg_t = func_arg_t<P>;
-        using arg_iterator = std::vector<arg_t>::iterator;
-        using arg_const_iterator = std::vector<arg_t>::const_iterator;
-        std::vector<arg_t> args;
+        std::vector<func_arg_t<P>> args;
         rec_t ret_type;
         body_t body;
     };
     struct pi_t
     {
-        using arg_t = func_arg_t<P>;
-        using arg_iterator = std::vector<arg_t>::iterator;
-        using arg_const_iterator = std::vector<arg_t>::const_iterator;
-        std::vector<arg_t> args;
+        std::vector<func_arg_t<P>> args;
         rec_t ret_type;
     };
 

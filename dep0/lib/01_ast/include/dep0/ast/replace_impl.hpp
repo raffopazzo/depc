@@ -12,8 +12,8 @@ template <Properties P>
 void replace(
     typename expr_t<P>::var_t const& from,
     typename expr_t<P>::var_t const& to,
-    typename expr_t<P>::abs_t::arg_iterator const begin,
-    typename expr_t<P>::abs_t::arg_iterator const end,
+    typename std::vector<func_arg_t<P>>::iterator const begin,
+    typename std::vector<func_arg_t<P>>::iterator const end,
     expr_t<P>& ret_type)
 {
     for (auto& arg: std::ranges::subrange(begin, end))

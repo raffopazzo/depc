@@ -257,9 +257,15 @@ dep0::expected<std::true_type> is_alpha_equivalent_impl(
             // so if index of x_var is greather than that of y_var, we know that `x_var` does not occur
             // in the renamed y, and viceversa; we can therefore safely replace x_var in y (or viceversa);
             if (x_var.name.idx > y_var.name.idx)
+            {
                 replace(y_var, x_var, y_args.begin() + i + 1, y_args.end(), y_ret_type);
+                y_var = x_var; // just in case; otherwise error messages might look odd and even confusing
+            }
             else
+            {
                 replace(x_var, y_var, x_args.begin() + i + 1, x_args.end(), x_ret_type);
+                x_var = y_var; // ditto
+            }
         }
         else if (x_arg.var.has_value() xor y_arg.var.has_value())
         {

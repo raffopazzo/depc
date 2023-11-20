@@ -41,8 +41,6 @@ struct body_t
 
     properties_t properties;
     std::vector<stmt_t> stmts;
-
-    bool operator==(body_t const&) const = default;
 };
 
 template <Properties P>
@@ -66,13 +64,11 @@ struct expr_t
     struct boolean_constant_t
     {
         bool value;
-        bool operator==(boolean_constant_t const&) const = default;
     };
     struct numeric_constant_t
     {
         std::optional<char> sign;
         source_text number;
-        bool operator==(numeric_constant_t const&) const = default;
     };
     struct arith_expr_t
     {
@@ -94,7 +90,6 @@ struct expr_t
     {
         rec_t func;
         std::vector<expr_t> args;
-        bool operator==(app_t const&) const = default;
     };
     struct abs_t
     {
@@ -112,10 +107,6 @@ struct expr_t
         using arg_const_iterator = std::vector<arg_t>::const_iterator;
         std::vector<arg_t> args;
         rec_t ret_type;
-        bool operator==(pi_t const& that) const
-        {
-            return std::tie(args, ret_type.get()) == std::tie(that.args, that.ret_type.get());
-        }
     };
 
     using value_t =
@@ -132,8 +123,6 @@ struct expr_t
 
     properties_t properties;
     value_t value;
-
-    bool operator==(expr_t const&) const = default;
 };
 
 template <Properties P>
@@ -158,19 +147,15 @@ struct stmt_t
         expr_t cond;
         body_t true_branch;
         std::optional<body_t> false_branch;
-        bool operator==(if_else_t const&) const = default;
     };
     struct return_t
     {
         std::optional<expr_t> expr;
-        bool operator==(return_t const&) const = default;
     };
     using value_t = std::variant<typename expr_t::app_t, if_else_t, return_t>;
 
     properties_t properties;
     value_t value;
-
-    bool operator==(stmt_t const&) const = default;
 };
 
 enum class sign_t { signed_v, unsigned_v };
@@ -201,8 +186,6 @@ struct func_def_t
     properties_t properties;
     source_text name;
     expr_t<P>::abs_t value;
-
-    bool operator==(func_def_t const&) const = default;
 };
 
 template <Properties P>
@@ -215,8 +198,6 @@ struct module_t
     properties_t properties;
     std::vector<type_def_t> type_defs;
     std::vector<func_def_t> func_defs;
-
-    bool operator==(module_t const&) const = default;
 };
 
 } // namespace dep0::ast

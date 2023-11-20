@@ -199,7 +199,7 @@ dep0::expected<std::true_type> is_alpha_equivalent_impl(typename expr_t<P>::app_
     {
         std::ostringstream err;
         err << "application of " << x.args.size();
-        err << " is not alpha-equivalent to application of " << y.args.size();
+        err << " is not alpha-equivalent to application with " << y.args.size();
         return dep0::error_t(err.str());
     }
     if (auto eq = is_alpha_equivalent_impl(x.func.get(), y.func.get()); not eq)

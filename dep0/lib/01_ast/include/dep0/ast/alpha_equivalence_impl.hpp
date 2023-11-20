@@ -30,13 +30,19 @@ struct expr_visitor
     using result_t = dep0::expected<std::true_type>;
 
     template <typename T, typename U>
+    result_t not_alpha_equivalent(T const& x, U const& y) const
+    {
+        std::ostringstream err;
+        pretty_print<P>(err << '`', x) << "` is not alpha-equivalent to ";
+        pretty_print<P>(err << '`', y) << '`';
+        return dep0::error_t(err.str());
+    }
+
+    template <typename T, typename U>
     requires (not std::is_same_v<T, U>)
     result_t operator()(T const& x, U const& y) const
     {
-        std::ostringstream err;
-        pretty_print<P>(err << '`', x) << '`';
-        pretty_print<P>(err << "is not alpha-equivalent to `", y) << '`';
-        return dep0::error_t(err.str());
+        return not_alpha_equivalent(x, y);
     }
 
     result_t operator()(typename expr_t<P>::typename_t, typename expr_t<P>::typename_t) const { return {}; }
@@ -58,12 +64,7 @@ struct expr_visitor
         if (x.value == y.value)
             return {};
         else
-        {
-            std::ostringstream err;
-            pretty_print<P>(err << '`', x) << '`';
-            pretty_print<P>(err << "is not alpha-equivalent to `", y) << '`';
-            return dep0::error_t(err.str());
-        }
+            return not_alpha_equivalent(x, y);
     }
 
     result_t operator()(
@@ -73,12 +74,7 @@ struct expr_visitor
         if (x.sign.value_or('+') == y.sign.value_or('+') and x.number == y.number)
             return {};
         else
-        {
-            std::ostringstream err;
-            pretty_print<P>(err << '`', x) << '`';
-            pretty_print<P>(err << "is not alpha-equivalent to `", y) << '`';
-            return dep0::error_t(err.str());
-        }
+            return not_alpha_equivalent(x, y);
     }
 
     result_t operator()(typename expr_t<P>::arith_expr_t& x, typename expr_t<P>::arith_expr_t& y) const
@@ -103,12 +99,7 @@ struct expr_visitor
         if (x == y)
             return std::true_type{};
         else
-        {
-            std::ostringstream err;
-            pretty_print<P>(err << '`', x) << '`';
-            pretty_print<P>(err << " is not alpha-equivalent to `", y) << '`';
-            return dep0::error_t(err.str());
-        }
+            return not_alpha_equivalent(x, y);
     }
 
     result_t operator()(typename expr_t<P>::app_t& x, typename expr_t<P>::app_t& y) const
@@ -140,8 +131,8 @@ struct stmt_visitor
     result_t operator()(T const& x, U const& y) const
     {
         std::ostringstream err;
-        pretty_print<P>(err << '`', x) << '`';
-        pretty_print<P>(err << "is not alpha-equivalent to `", y) << '`';
+        pretty_print<P>(err << '`', x) << "` is not alpha-equivalent to ";
+        pretty_print<P>(err << '`', y) << '`';
         return dep0::error_t(err.str());
     }
 
@@ -187,8 +178,8 @@ dep0::expected<std::true_type> is_alpha_equivalent_impl(typename expr_t<P>::app_
     if (x.args.size() != y.args.size())
     {
         std::ostringstream err;
-        err << "application with " << x.args.size() << " arguments";
-        err << " is not alpha-equivalent to application with " << y.args.size();
+        err << "application with " << x.args.size() << " arguments is not alpha-equivalent to ";
+        err << "application with " << y.args.size();
         return dep0::error_t(err.str());
     }
     if (auto eq = is_alpha_equivalent_impl(x.func.get(), y.func.get()); not eq)

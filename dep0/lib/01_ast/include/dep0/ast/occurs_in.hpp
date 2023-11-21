@@ -19,6 +19,7 @@ bool occurs_in(
     typename std::vector<func_arg_t<P>>::const_iterator begin,
     typename std::vector<func_arg_t<P>>::const_iterator end,
     expr_t<P> const& ret_type,
+    body_t<P> const* body,
     occurrence_style);
 
 } // namespace dep0::ast

@@ -101,6 +101,12 @@ BOOST_AUTO_TEST_CASE(abs_test)
     BOOST_TEST(yay(
         abs({arg(i32())}, i32(), body(return_(var("y")))),
         abs({arg(i32())}, i32(), body(return_(var("y"))))));
+    BOOST_TEST(nay(
+        abs({arg(i32(), "x")}, i32(), body(return_(var("x")))),
+        abs({arg(i32())}, i32(), body(return_(var("x"))))));
+    BOOST_TEST(yay(
+        abs({arg(i32(), "x"), arg(i32(), "x")}, i32(), body(return_(var("y")))),
+        abs({arg(i32()), arg(i32())}, i32(), body(return_(var("y"))))));
 }
 
 BOOST_AUTO_TEST_SUITE_END()

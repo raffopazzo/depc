@@ -246,7 +246,7 @@ dep0::expected<std::true_type> is_alpha_equivalent_impl(
         {
             // One function argument is named but the other is anonymous.
             // The two functions might still be alpha-equivalent if the named argument
-            // does not occur free inside the rest of the signature.
+            // does not occur free inside the rest of the signature or in the body.
             auto const occurs_somewhere = [&]
             {
                 auto err = not_alpha_equivalent(i);
@@ -261,12 +261,12 @@ dep0::expected<std::true_type> is_alpha_equivalent_impl(
             };
             if (x_arg.var)
             {
-                if (occurs_in(*x_arg.var, x_args.begin() + i + 1, x_args.end(), x_ret_type, occurrence_style::free))
+                if (occurs_in(*x_arg.var, x_args.begin() + i + 1, x_args.end(), x_ret_type, x_body, occurrence_style::free))
                     return occurs_somewhere();
             }
             else if (y_arg.var)
             {
-                if (occurs_in(*y_arg.var, y_args.begin() + i + 1, y_args.end(), y_ret_type, occurrence_style::free))
+                if (occurs_in(*y_arg.var, y_args.begin() + i + 1, y_args.end(), y_ret_type, y_body, occurrence_style::free))
                     return occurs_somewhere();
             }
         }

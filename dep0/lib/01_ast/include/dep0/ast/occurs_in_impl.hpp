@@ -8,7 +8,7 @@
 
 namespace dep0::ast {
 
-// forward declaration
+namespace impl {
 
 template <Properties P>
 bool occurs_in(typename expr_t<P>::var_t const&, body_t<P> const&, occurrence_style);
@@ -16,7 +16,40 @@ bool occurs_in(typename expr_t<P>::var_t const&, body_t<P> const&, occurrence_st
 template <Properties P>
 bool occurs_in(typename expr_t<P>::var_t const&, typename expr_t<P>::app_t const&, occurrence_style);
 
-// implementation
+template <Properties P>
+bool occurs_in(typename expr_t<P>::var_t const& var, body_t<P> const& x, occurrence_style const style)
+{
+    return std::ranges::any_of(
+        x.stmts,
+        [&] (stmt_t<P> const& stmt)
+        {
+            return match(
+                stmt.value,
+                [&] (expr_t<P>::app_t const& app)
+                {
+                    return occurs_in<P>(var, app, style);
+                },
+                [&] (stmt_t<P>::if_else_t const& if_)
+                {
+                    return occurs_in(var, if_.cond, style)
+                        or occurs_in(var, if_.true_branch, style)
+                        or if_.false_branch and occurs_in(var, *if_.false_branch, style);
+                },
+                [&] (stmt_t<P>::return_t const& ret)
+                {
+                    return ret.expr and occurs_in(var, *ret.expr, style);
+                });
+        });
+}
+
+template <Properties P>
+bool occurs_in(typename expr_t<P>::var_t const& var, typename expr_t<P>::app_t const& x, occurrence_style const style)
+{
+    return std::ranges::any_of(x.args, [&] (expr_t<P> const& arg) { return occurs_in(var, arg, style); }) or
+        occurs_in(var, x.func.get(), style);
+}
+
+} // namespace impl
 
 template <Properties P>
 bool occurs_in(typename expr_t<P>::var_t const& var, expr_t<P> const& x, occurrence_style const style)
@@ -51,29 +84,16 @@ bool occurs_in(typename expr_t<P>::var_t const& var, expr_t<P> const& x, occurre
         },
         [&] (expr_t<P>::app_t const& x)
         {
-            return occurs_in<P>(var, x, style);
+            return impl::occurs_in<P>(var, x, style);
         },
         [&] (expr_t<P>::abs_t const& x)
         {
-            if (occurs_in(var, x.args.begin(), x.args.end(), x.ret_type.get(), style))
-                return true;
-            if (style == occurrence_style::free)
-                return std::ranges::none_of(x.args, [&](auto const& arg) { return arg.var == var; })
-                    and occurs_in(var, x.body, occurrence_style::free);
-            else
-                return occurs_in(var, x.body, occurrence_style::anywhere);
+            return occurs_in(var, x.args.begin(), x.args.end(), x.ret_type.get(), &x.body, style);
         },
         [&] (expr_t<P>::pi_t const& x)
         {
-            return occurs_in(var, x.args.begin(), x.args.end(), x.ret_type.get(), style);
+            return occurs_in<P>(var, x.args.begin(), x.args.end(), x.ret_type.get(), nullptr, style);
         });
-}
-
-template <Properties P>
-bool occurs_in(typename expr_t<P>::var_t const& var, typename expr_t<P>::app_t const& x, occurrence_style const style)
-{
-    return std::ranges::any_of(x.args, [&] (expr_t<P> const& arg) { return occurs_in(var, arg, style); }) or
-        occurs_in(var, x.func.get(), style);
 }
 
 template <Properties P>
@@ -82,56 +102,22 @@ bool occurs_in(
     typename std::vector<func_arg_t<P>>::const_iterator begin,
     typename std::vector<func_arg_t<P>>::const_iterator end,
     expr_t<P> const& ret_type,
+    body_t<P> const* body,
     occurrence_style const style)
 {
-    if (style == occurrence_style::anywhere)
+    for (auto const& arg: std::ranges::subrange(begin, end))
     {
-        for (auto const& arg: std::ranges::subrange(begin, end))
-        {
-            if (occurs_in(var, arg.type, style))
-                return true;
-            if (arg.var == var)
-                return true;
-        }
+        if (occurs_in(var, arg.type, style))
+            return true;
+        if (arg.var == var)
+            // If we are looking for occurrences anywhere then this is a valid occurrence; return true.
+            // If we are looking for free occurrences only then we can immediately return false,
+            // since any later occurrence is now bound to this argument.
+            return style == occurrence_style::anywhere;
     }
-    else
-    {
-        for (auto const& arg: std::ranges::subrange(begin, end))
-        {
-            if (occurs_in(var, arg.type, style))
-                return true;
-            if (arg.var == var)
-                return false;
-        }
-        return occurs_in(var, ret_type, style);
-    }
-    return occurs_in(var, ret_type, style);
-}
-
-template <Properties P>
-bool occurs_in(typename expr_t<P>::var_t const& var, body_t<P> const& x, occurrence_style const style)
-{
-    return std::ranges::any_of(
-        x.stmts,
-        [&] (stmt_t<P> const& stmt)
-        {
-            return match(
-                stmt.value,
-                [&] (expr_t<P>::app_t const& app)
-                {
-                    return occurs_in<P>(var, app, style);
-                },
-                [&] (stmt_t<P>::if_else_t const& if_)
-                {
-                    return occurs_in(var, if_.cond, style)
-                        or occurs_in(var, if_.true_branch, style)
-                        or if_.false_branch and occurs_in(var, *if_.false_branch, style);
-                },
-                [&] (stmt_t<P>::return_t const& ret)
-                {
-                    return ret.expr and occurs_in(var, *ret.expr, style);
-                });
-        });
+    if (occurs_in(var, ret_type, style))
+        return true;
+    return body and impl::occurs_in(var, *body, style);
 }
 
 } // namespace dep0::ast

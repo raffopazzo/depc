@@ -108,11 +108,11 @@ expected<expr_t> type_assign_app(context_t const& ctx, parser::expr_t::app_t con
             return std::move(arg.error());
         if (func_type->args[i].var)
             substitute(
+                *func_type->args[i].var,
+                *arg,
                 func_type->args.begin() + i + 1,
                 func_type->args.end(),
-                func_type->ret_type.get(),
-                *func_type->args[i].var,
-                *arg);
+                func_type->ret_type.get());
         args.push_back(std::move(*arg));
     }
     return make_legal_expr(std::move(func_type->ret_type.get()), expr_t::app_t{std::move(*func), std::move(args)});

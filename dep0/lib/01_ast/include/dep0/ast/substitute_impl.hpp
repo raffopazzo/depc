@@ -14,39 +14,39 @@ namespace dep0::ast {
 namespace impl {
 
 template <Properties P>
-void substitute(stmt_t<P>&, typename expr_t<P>::var_t const&, expr_t<P> const&);
+void substitute(typename expr_t<P>::var_t const&, expr_t<P> const&, stmt_t<P>&);
 
 template <Properties P>
-void substitute(expr_t<P>&, typename expr_t<P>::var_t const&, expr_t<P> const&);
+void substitute(typename expr_t<P>::var_t const&, expr_t<P> const&, expr_t<P>&);
 
 template <Properties P>
-void substitute(typename expr_t<P>::app_t&, typename expr_t<P>::var_t const&, expr_t<P> const&);
+void substitute(typename expr_t<P>::var_t const&, expr_t<P> const&, typename expr_t<P>::app_t&);
 
 template <Properties P>
-void substitute(stmt_t<P>& stmt, typename expr_t<P>::var_t const& var, expr_t<P> const& expr)
+void substitute(typename expr_t<P>::var_t const& var, expr_t<P> const& expr, stmt_t<P>& stmt)
 {
     match(
         stmt.value,
         [&] (typename expr_t<P>::app_t& app)
         {
-            substitute(app, var, expr);
+            substitute(var, expr, app);
         },
         [&] (typename stmt_t<P>::if_else_t& if_)
         {
-            substitute(if_.cond, var, expr);
-            substitute(if_.true_branch, var, expr);
+            substitute(var, expr, if_.cond);
+            substitute(var, expr, if_.true_branch);
             if (if_.false_branch)
-                substitute(*if_.false_branch, var, expr);
+                substitute(var, expr, *if_.false_branch);
         },
         [&] (typename stmt_t<P>::return_t& ret)
         {
             if (ret.expr)
-                substitute(*ret.expr, var, expr);
+                substitute(var, expr, *ret.expr);
         });
 }
 
 template <Properties P>
-void substitute(expr_t<P>& x, typename expr_t<P>::var_t const& var, expr_t<P> const& expr)
+void substitute(typename expr_t<P>::var_t const& var, expr_t<P> const& expr, expr_t<P>& x)
 {
     match(
         x.value,
@@ -67,8 +67,8 @@ void substitute(expr_t<P>& x, typename expr_t<P>::var_t const& var, expr_t<P> co
                 x.value,
                 [&] (typename expr_t<P>::arith_expr_t::plus_t& x)
                 {
-                    substitute(x.lhs.get(), var, expr);
-                    substitute(x.rhs.get(), var, expr);
+                    substitute(var, expr, x.lhs.get());
+                    substitute(var, expr, x.rhs.get());
                 });
         },
         [&] (typename expr_t<P>::boolean_constant_t&) { },
@@ -80,7 +80,7 @@ void substitute(expr_t<P>& x, typename expr_t<P>::var_t const& var, expr_t<P> co
         },
         [&] (typename expr_t<P>::app_t& x)
         {
-            substitute(x, var, expr);
+            substitute(var, expr, x);
         },
         [&] (typename expr_t<P>::abs_t& x)
         {
@@ -88,37 +88,37 @@ void substitute(expr_t<P>& x, typename expr_t<P>::var_t const& var, expr_t<P> co
             // if any argument introduces a new binding variable, substitution cannot occur
             if (std::ranges::any_of(x.args, [&] (func_arg_t<P> const& arg) { return arg.var == var; }))
                 return;
-            substitute(x.args.begin(), x.args.end(), x.ret_type.get(), var, expr);
-            substitute(x.body, var, expr);
+            substitute(var, expr, x.args.begin(), x.args.end(), x.ret_type.get());
+            substitute(var, expr, x.body);
         },
         [&] (typename expr_t<P>::pi_t& x)
         {
-            substitute(x.args.begin(), x.args.end(), x.ret_type.get(), var, expr);
+            substitute(var, expr, x.args.begin(), x.args.end(), x.ret_type.get());
         });
 }
 
 template <Properties P>
-void substitute(typename expr_t<P>::app_t& app, typename expr_t<P>::var_t const& var, expr_t<P> const& expr)
+void substitute(typename expr_t<P>::var_t const& var, expr_t<P> const& expr, typename expr_t<P>::app_t& app)
 {
-    substitute(app.func.get(), var, expr);
+    substitute(var, expr, app.func.get());
     for (auto& arg: app.args)
-        substitute(arg, var, expr);
+        substitute(var, expr, arg);
 }
 
 } // namespace impl
 
 template <Properties P>
 void substitute(
+    typename expr_t<P>::var_t const& var,
+    expr_t<P> const& y,
     typename std::vector<func_arg_t<P>>::iterator it,
     typename std::vector<func_arg_t<P>>::iterator const end,
-    expr_t<P>& ret_type,
-    typename expr_t<P>::var_t const& var,
-    expr_t<P> const& y)
+    expr_t<P>& ret_type)
 {
     for (; it != end; ++it)
     {
         auto& arg = *it;
-        impl::substitute(arg.type, var, y);
+        impl::substitute(var, y, arg.type);
         if (arg.var == var)
         {
             // `arg.var` is now a new binding type-variable;
@@ -136,14 +136,14 @@ void substitute(
         if (arg.var and occurs_in(*arg.var, y, occurrence_style::anywhere))
             arg.var = rename<P>(*arg.var, std::next(it), end, ret_type, nullptr);
     }
-    impl::substitute(ret_type, var, y);
+    impl::substitute(var, y, ret_type);
 }
 
 template <Properties P>
-void substitute(body_t<P>& body, typename expr_t<P>::var_t const& var, expr_t<P> const& expr)
+void substitute(typename expr_t<P>::var_t const& var, expr_t<P> const& expr, body_t<P>& body)
 {
     for (auto& stmt: body.stmts)
-        impl::substitute(stmt, var, expr);
+        impl::substitute(var, expr, stmt);
 }
 
 } // namespace dep0::ast

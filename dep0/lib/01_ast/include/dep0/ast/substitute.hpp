@@ -4,18 +4,16 @@
 
 namespace dep0::ast {
 
-// TODO API should be consistent with replace() taking const& first and mutable& after
-
 template <Properties P>
 void substitute(
+    typename expr_t<P>::var_t const&,
+    expr_t<P> const&,
     typename std::vector<func_arg_t<P>>::iterator begin,
     typename std::vector<func_arg_t<P>>::iterator end,
-    expr_t<P>& ret_type,
-    typename expr_t<P>::var_t const&,
-    expr_t<P> const&);
+    expr_t<P>& ret_type);
 
 template <Properties P>
-void substitute(body_t<P>&, typename expr_t<P>::var_t const&, expr_t<P> const&);
+void substitute(typename expr_t<P>::var_t const&, expr_t<P> const&, body_t<P>&);
 
 } // namespace dep0::ast
 

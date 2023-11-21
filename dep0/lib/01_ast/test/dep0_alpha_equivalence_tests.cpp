@@ -11,7 +11,7 @@ namespace dep0::ast {
 template <Properties P>
 boost::test_tools::predicate_result yay(expr_t<P> const& x, expr_t<P> const& y)
 {
-    auto result = is_alpha_equivalent(x, y);
+    auto const& result = is_alpha_equivalent(x, y);
     if (result)
         return true;
     else
@@ -25,14 +25,13 @@ boost::test_tools::predicate_result yay(expr_t<P> const& x, expr_t<P> const& y)
 template <Properties P>
 boost::test_tools::predicate_result nay(expr_t<P> const& x, expr_t<P> const& y)
 {
-    auto result = is_alpha_equivalent(x, y);
-    if (not result)
+    if (not is_alpha_equivalent(x, y))
         return true;
     else
     {
         auto failed = boost::test_tools::predicate_result(false);
-        pretty_print(failed.message().stream() << '`', x) << '`';
-        pretty_print(failed.message().stream() << " should not be alpha-equivalent to `", y) << '`';
+        pretty_print(failed.message().stream() << '`', x) << "` should not be alpha-equivalent to ";
+        pretty_print(failed.message().stream() << '`', y) << '`';
         return failed;
     }
 }

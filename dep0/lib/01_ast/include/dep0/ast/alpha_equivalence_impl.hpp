@@ -15,19 +15,25 @@ namespace dep0::ast {
 namespace impl {
 
 // Internally we use an implementation that modifies a copy of the original arguments when renaming is necessary.
-template <Properties P> dep0::expected<std::true_type> is_alpha_equivalent_impl(expr_t<P>&, expr_t<P>&);
-template <Properties P> dep0::expected<std::true_type> is_alpha_equivalent_impl(
-    typename expr_t<P>::app_t&,
-    typename expr_t<P>::app_t&);
-template <Properties P> dep0::expected<std::true_type> is_alpha_equivalent_impl(
+template <Properties P>
+dep0::expected<std::true_type> is_alpha_equivalent_impl(expr_t<P>&, expr_t<P>&);
+
+template <Properties P>
+dep0::expected<std::true_type> is_alpha_equivalent_impl(typename expr_t<P>::app_t&, typename expr_t<P>::app_t&);
+
+template <Properties P>
+dep0::expected<std::true_type> is_alpha_equivalent_impl(
     std::vector<func_arg_t<P>>& x_args, expr_t<P>& x_ret_type, body_t<P>* x_body,
     std::vector<func_arg_t<P>>& y_args, expr_t<P>& y_ret_type, body_t<P>* y_body);
 
-template <Properties P> dep0::expected<std::true_type> is_alpha_equivalent_impl(body_t<P>&, body_t<P>&);
-template <Properties P> dep0::expected<std::true_type> is_alpha_equivalent_impl(stmt_t<P>&, stmt_t<P>&);
+template <Properties P>
+dep0::expected<std::true_type> is_alpha_equivalent_impl(body_t<P>&, body_t<P>&);
 
 template <Properties P>
-struct alpha_equivalence_expr_visitor
+dep0::expected<std::true_type> is_alpha_equivalent_impl(stmt_t<P>&, stmt_t<P>&);
+
+template <Properties P>
+struct alpha_equivalence_visitor
 {
     using result_t = dep0::expected<std::true_type>;
 
@@ -118,27 +124,6 @@ struct alpha_equivalence_expr_visitor
     {
         return is_alpha_equivalent_impl<P>(x.args, x.ret_type.get(), nullptr, y.args, y.ret_type.get(), nullptr);
     }
-};
-
-template <Properties P>
-struct alpha_equivalence_stmt_visitor
-{
-    using result_t = dep0::expected<std::true_type>;
-
-    template <typename T, typename U>
-    requires (not std::is_same_v<T, U>)
-    result_t operator()(T const& x, U const& y) const
-    {
-        std::ostringstream err;
-        pretty_print<P>(err << '`', x) << "` is not alpha-equivalent to ";
-        pretty_print<P>(err << '`', y) << '`';
-        return dep0::error_t(err.str());
-    }
-
-    result_t operator()(typename expr_t<P>::app_t& x, typename expr_t<P>::app_t& y) const
-    {
-        return is_alpha_equivalent_impl<P>(x, y);
-    }
 
     result_t operator()(typename stmt_t<P>::if_else_t& x, typename stmt_t<P>::if_else_t& y) const
     {
@@ -168,7 +153,7 @@ struct alpha_equivalence_stmt_visitor
 template <Properties P>
 dep0::expected<std::true_type> is_alpha_equivalent_impl(expr_t<P>& x, expr_t<P>& y)
 {
-    return std::visit(alpha_equivalence_expr_visitor<P>{}, x.value, y.value);
+    return std::visit(alpha_equivalence_visitor<P>{}, x.value, y.value);
 }
 
 template <Properties P>
@@ -315,7 +300,7 @@ dep0::expected<std::true_type> is_alpha_equivalent_impl(body_t<P>& x, body_t<P>&
 template <Properties P>
 dep0::expected<std::true_type> is_alpha_equivalent_impl(stmt_t<P>& x, stmt_t<P>& y)
 {
-    return std::visit(alpha_equivalence_stmt_visitor<P>{}, x.value, y.value);
+    return std::visit(alpha_equivalence_visitor<P>{}, x.value, y.value);
 }
 
 } // namespace impl

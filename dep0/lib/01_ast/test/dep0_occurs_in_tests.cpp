@@ -29,6 +29,8 @@ BOOST_AUTO_TEST_CASE(abs_test)
     auto const f2 = abs({arg(i32(), "x")}, i32(), body(return_(var("y"))));
     BOOST_TEST(occurs_in(var_t("x"), f2, occurrence_style::anywhere));
     BOOST_TEST(not occurs_in(var_t("x"), f2, occurrence_style::free));
+    BOOST_TEST(occurs_in(var_t("y"), f2, occurrence_style::anywhere));
+    BOOST_TEST(occurs_in(var_t("y"), f2, occurrence_style::free));
 }
 
 BOOST_AUTO_TEST_CASE(pi_test)

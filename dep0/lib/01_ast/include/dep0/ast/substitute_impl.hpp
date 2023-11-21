@@ -43,7 +43,7 @@ void substitute(
         // `(typename t:1) -> (typename t) -> t`, making it obvious to see which `t` is binding.
         // Also note that we are modifying the elements of the very vector we are iterating on,
         // but we are only modifying the values, no the vector; so iteration is safe.
-        if (arg.var and occurs_in(y, *arg.var, occurrence_style::anywhere))
+        if (arg.var and occurs_in(*arg.var, y, occurrence_style::anywhere))
             arg.var = rename<P>(*arg.var, std::next(it), end, ret_type, nullptr);
     }
     substitute(ret_type, var, y);

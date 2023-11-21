@@ -11,14 +11,14 @@ enum class occurrence_style
 };
 
 template <Properties P>
-bool occurs_in(expr_t<P> const&, typename expr_t<P>::var_t const&, occurrence_style);
+bool occurs_in(typename expr_t<P>::var_t const&, expr_t<P> const&, occurrence_style);
 
 template <Properties P>
 bool occurs_in(
+    typename expr_t<P>::var_t const&,
     typename std::vector<func_arg_t<P>>::const_iterator begin,
     typename std::vector<func_arg_t<P>>::const_iterator end,
     expr_t<P> const& ret_type,
-    typename expr_t<P>::var_t const&,
     occurrence_style);
 
 } // namespace dep0::ast

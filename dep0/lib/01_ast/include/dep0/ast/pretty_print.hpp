@@ -224,7 +224,7 @@ std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::i64_t const&, s
 }
 
 template <Properties P>
-std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::u8_t const& x, std::size_t)
+std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::u8_t const&, std::size_t)
 {
     return os << "u8_t";
 }

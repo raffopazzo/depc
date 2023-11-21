@@ -3,6 +3,8 @@
 
 #include "dep0/ast/delta_reduction.hpp"
 
+#include "dep0/testing/literal_string.hpp"
+
 #include "ast_tests_fixture.hpp"
 
 using namespace dep0::testing;

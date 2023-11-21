@@ -1,5 +1,7 @@
 #include "ast_tests_fixture.hpp"
 
+#include "dep0/testing/literal_string.hpp"
+
 namespace dep0::ast {
 
 AstTestsFixture::func_def_t

@@ -2,8 +2,6 @@
 
 #include "dep0/ast/ast.hpp"
 
-#include "dep0/testing/literal_string.hpp"
-
 namespace dep0::ast {
 
 struct dummy_properties_t

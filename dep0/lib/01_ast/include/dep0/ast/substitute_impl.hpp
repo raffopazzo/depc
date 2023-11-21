@@ -11,42 +11,38 @@
 
 namespace dep0::ast {
 
-template <Properties P>
-void substitute(typename expr_t<P>::app_t&, typename expr_t<P>::var_t const&, expr_t<P> const&);
+namespace impl {
 
 template <Properties P>
 void substitute(stmt_t<P>&, typename expr_t<P>::var_t const&, expr_t<P> const&);
 
 template <Properties P>
-void substitute(
-    typename std::vector<func_arg_t<P>>::iterator it,
-    typename std::vector<func_arg_t<P>>::iterator const end,
-    expr_t<P>& ret_type,
-    typename expr_t<P>::var_t const& var,
-    expr_t<P> const& y)
+void substitute(expr_t<P>&, typename expr_t<P>::var_t const&, expr_t<P> const&);
+
+template <Properties P>
+void substitute(typename expr_t<P>::app_t&, typename expr_t<P>::var_t const&, expr_t<P> const&);
+
+template <Properties P>
+void substitute(stmt_t<P>& stmt, typename expr_t<P>::var_t const& var, expr_t<P> const& expr)
 {
-    for (; it != end; ++it)
-    {
-        auto& arg = *it;
-        substitute(arg.type, var, y);
-        if (arg.var == var)
+    match(
+        stmt.value,
+        [&] (typename expr_t<P>::app_t& app)
         {
-            // `arg.var` is now a new binding type-variable;
-            // any later arguments refer to `arg.var` not to the initial `var`;
-            // so substitution must stop, including for the return type
-            return;
-        }
-        // We need to check if `arg.var` appears in `y` and, if so, rename it.
-        // Technically it would suffice to check whether `arg.var` appears free in `y`,
-        // but we prefer to check if it appears anywhere (i.e. also as binding variable)
-        // because it renames possibly confusing types like `(typename t) -> (typename t) -> t` to
-        // `(typename t:1) -> (typename t) -> t`, making it obvious to see which `t` is binding.
-        // Also note that we are modifying the elements of the very vector we are iterating on,
-        // but we are only modifying the values, no the vector; so iteration is safe.
-        if (arg.var and occurs_in(*arg.var, y, occurrence_style::anywhere))
-            arg.var = rename<P>(*arg.var, std::next(it), end, ret_type, nullptr);
-    }
-    substitute(ret_type, var, y);
+            substitute(app, var, expr);
+        },
+        [&] (typename stmt_t<P>::if_else_t& if_)
+        {
+            substitute(if_.cond, var, expr);
+            substitute(if_.true_branch, var, expr);
+            if (if_.false_branch)
+                substitute(*if_.false_branch, var, expr);
+        },
+        [&] (typename stmt_t<P>::return_t& ret)
+        {
+            if (ret.expr)
+                substitute(*ret.expr, var, expr);
+        });
 }
 
 template <Properties P>
@@ -102,13 +98,6 @@ void substitute(expr_t<P>& x, typename expr_t<P>::var_t const& var, expr_t<P> co
 }
 
 template <Properties P>
-void substitute(body_t<P>& body, typename expr_t<P>::var_t const& var, expr_t<P> const& expr)
-{
-    for (auto& stmt: body.stmts)
-        substitute(stmt, var, expr);
-}
-
-template <Properties P>
 void substitute(typename expr_t<P>::app_t& app, typename expr_t<P>::var_t const& var, expr_t<P> const& expr)
 {
     substitute(app.func.get(), var, expr);
@@ -116,27 +105,45 @@ void substitute(typename expr_t<P>::app_t& app, typename expr_t<P>::var_t const&
         substitute(arg, var, expr);
 }
 
+} // namespace impl
+
 template <Properties P>
-void substitute(stmt_t<P>& stmt, typename expr_t<P>::var_t const& var, expr_t<P> const& expr)
+void substitute(
+    typename std::vector<func_arg_t<P>>::iterator it,
+    typename std::vector<func_arg_t<P>>::iterator const end,
+    expr_t<P>& ret_type,
+    typename expr_t<P>::var_t const& var,
+    expr_t<P> const& y)
 {
-    match(
-        stmt.value,
-        [&] (typename expr_t<P>::app_t& app)
+    for (; it != end; ++it)
+    {
+        auto& arg = *it;
+        impl::substitute(arg.type, var, y);
+        if (arg.var == var)
         {
-            substitute(app, var, expr);
-        },
-        [&] (typename stmt_t<P>::if_else_t& if_)
-        {
-            substitute(if_.cond, var, expr);
-            substitute(if_.true_branch, var, expr);
-            if (if_.false_branch)
-                substitute(*if_.false_branch, var, expr);
-        },
-        [&] (typename stmt_t<P>::return_t& ret)
-        {
-            if (ret.expr)
-                substitute(*ret.expr, var, expr);
-        });
+            // `arg.var` is now a new binding type-variable;
+            // any later arguments refer to `arg.var` not to the initial `var`;
+            // so substitution must stop, including for the return type
+            return;
+        }
+        // We need to check if `arg.var` appears in `y` and, if so, rename it.
+        // Technically it would suffice to check whether `arg.var` appears free in `y`,
+        // but we prefer to check if it appears anywhere (i.e. also as binding variable)
+        // because it renames possibly confusing types like `(typename t) -> (typename t) -> t` to
+        // `(typename t:1) -> (typename t) -> t`, making it obvious to see which `t` is binding.
+        // Also note that we are modifying the elements of the very vector we are iterating on,
+        // but we are only modifying the values, no the vector; so iteration is safe.
+        if (arg.var and occurs_in(*arg.var, y, occurrence_style::anywhere))
+            arg.var = rename<P>(*arg.var, std::next(it), end, ret_type, nullptr);
+    }
+    impl::substitute(ret_type, var, y);
+}
+
+template <Properties P>
+void substitute(body_t<P>& body, typename expr_t<P>::var_t const& var, expr_t<P> const& expr)
+{
+    for (auto& stmt: body.stmts)
+        impl::substitute(stmt, var, expr);
 }
 
 } // namespace dep0::ast

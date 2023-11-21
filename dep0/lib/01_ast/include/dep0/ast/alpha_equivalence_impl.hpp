@@ -12,6 +12,8 @@
 
 namespace dep0::ast {
 
+namespace impl {
+
 // Internally we use an implementation that modifies a copy of the original arguments when renaming is necessary.
 template <Properties P> dep0::expected<std::true_type> is_alpha_equivalent_impl(expr_t<P>&, expr_t<P>&);
 template <Properties P> dep0::expected<std::true_type> is_alpha_equivalent_impl(
@@ -25,7 +27,7 @@ template <Properties P> dep0::expected<std::true_type> is_alpha_equivalent_impl(
 template <Properties P> dep0::expected<std::true_type> is_alpha_equivalent_impl(stmt_t<P>&, stmt_t<P>&);
 
 template <Properties P>
-struct expr_visitor
+struct alpha_equivalence_expr_visitor
 {
     using result_t = dep0::expected<std::true_type>;
 
@@ -119,7 +121,7 @@ struct expr_visitor
 };
 
 template <Properties P>
-struct stmt_visitor
+struct alpha_equivalence_stmt_visitor
 {
     using result_t = dep0::expected<std::true_type>;
 
@@ -166,7 +168,7 @@ struct stmt_visitor
 template <Properties P>
 dep0::expected<std::true_type> is_alpha_equivalent_impl(expr_t<P>& x, expr_t<P>& y)
 {
-    return std::visit(expr_visitor<P>{}, x.value, y.value);
+    return std::visit(alpha_equivalence_expr_visitor<P>{}, x.value, y.value);
 }
 
 template <Properties P>
@@ -246,16 +248,12 @@ dep0::expected<std::true_type> is_alpha_equivalent_impl(
             // in the renamed y, and viceversa; we can therefore safely replace x_var in y (or viceversa);
             if (x_var.name.idx > y_var.name.idx)
             {
-                replace(y_var, x_var, y_args.begin() + i + 1, y_args.end(), y_ret_type);
-                if (y_body)
-                    replace(y_var, x_var, *y_body);
+                replace(y_var, x_var, y_args.begin() + i + 1, y_args.end(), y_ret_type, y_body);
                 y_var = x_var; // just in case; otherwise error messages might look odd and even confusing
             }
             else
             {
-                replace(x_var, y_var, x_args.begin() + i + 1, x_args.end(), x_ret_type);
-                if (x_body)
-                    replace(x_var, y_var, *x_body);
+                replace(x_var, y_var, x_args.begin() + i + 1, x_args.end(), x_ret_type, x_body);
                 x_var = y_var; // ditto
             }
         }
@@ -317,8 +315,10 @@ dep0::expected<std::true_type> is_alpha_equivalent_impl(body_t<P>& x, body_t<P>&
 template <Properties P>
 dep0::expected<std::true_type> is_alpha_equivalent_impl(stmt_t<P>& x, stmt_t<P>& y)
 {
-    return std::visit(stmt_visitor<P>{}, x.value, y.value);
+    return std::visit(alpha_equivalence_stmt_visitor<P>{}, x.value, y.value);
 }
+
+} // namespace impl
 
 template <Properties P>
 dep0::expected<std::true_type> is_alpha_equivalent(expr_t<P> const& x, expr_t<P> const& y)
@@ -326,7 +326,7 @@ dep0::expected<std::true_type> is_alpha_equivalent(expr_t<P> const& x, expr_t<P>
     // TODO we should make a lazy copy somehow, because renaming might be often unnecessary
     auto x2 = x;
     auto y2 = y;
-    return is_alpha_equivalent_impl(x2, y2);
+    return impl::is_alpha_equivalent_impl(x2, y2);
 }
 
 } // namespace dep0::ast

@@ -12,9 +12,6 @@ typename expr_t<P>::var_t rename(
     expr_t<P>& ret_type,
     body_t<P>*);
 
-template <Properties P>
-typename expr_t<P>::var_t rename(typename expr_t<P>::var_t const&, body_t<P>&);
-
 } // namespace dep0::ast
 
 #include "dep0/ast/rename_impl.hpp"

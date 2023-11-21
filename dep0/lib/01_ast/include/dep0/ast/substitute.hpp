@@ -17,9 +17,6 @@ void substitute(
 template <Properties P>
 void substitute(body_t<P>&, typename expr_t<P>::var_t const&, expr_t<P> const&);
 
-template <Properties P>
-void substitute(expr_t<P>&, typename expr_t<P>::var_t const&, expr_t<P> const&);
-
 } // namespace dep0::ast
 
 #include "dep0/ast/substitute_impl.hpp"

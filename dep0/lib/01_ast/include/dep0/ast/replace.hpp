@@ -10,16 +10,8 @@ void replace(
     typename expr_t<P>::var_t const&,
     typename std::vector<func_arg_t<P>>::iterator begin,
     typename std::vector<func_arg_t<P>>::iterator end,
-    expr_t<P>& ret_type);
-
-template <Properties P>
-void replace(typename expr_t<P>::var_t const&, typename expr_t<P>::var_t const&, body_t<P>&);
-
-template <Properties P>
-void replace(typename expr_t<P>::var_t const&, typename expr_t<P>::var_t const&, expr_t<P>&);
-
-template <Properties P>
-void replace(typename expr_t<P>::var_t const&, typename expr_t<P>::var_t const&, typename expr_t<P>::app_t&);
+    expr_t<P>& ret_type,
+    body_t<P>*);
 
 } // namespace dep0::ast
 

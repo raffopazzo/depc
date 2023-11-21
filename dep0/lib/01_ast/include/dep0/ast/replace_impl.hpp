@@ -8,25 +8,16 @@
 
 namespace dep0::ast {
 
+namespace impl {
+
 template <Properties P>
-void replace(
-    typename expr_t<P>::var_t const& from,
-    typename expr_t<P>::var_t const& to,
-    typename std::vector<func_arg_t<P>>::iterator const begin,
-    typename std::vector<func_arg_t<P>>::iterator const end,
-    expr_t<P>& ret_type)
-{
-    for (auto& arg: std::ranges::subrange(begin, end))
-    {
-        replace(from, to, arg.type);
-        // Note: in theory it would suffice to replace only the free occurrences of `from`
-        // and we could stop if `from` introduces a new binding variable;
-        // but replacing everything is easier and it shouldn't harm.
-        if (arg.var == from)
-            arg.var = to;
-    }
-    replace(from, to, ret_type);
-}
+void replace(typename expr_t<P>::var_t const&, typename expr_t<P>::var_t const&, body_t<P>&);
+
+template <Properties P>
+void replace(typename expr_t<P>::var_t const&, typename expr_t<P>::var_t const&, expr_t<P>&);
+
+template <Properties P>
+void replace(typename expr_t<P>::var_t const&, typename expr_t<P>::var_t const&, typename expr_t<P>::app_t&);
 
 template <Properties P>
 void replace(typename expr_t<P>::var_t const& from, typename expr_t<P>::var_t const& to, body_t<P>& x)
@@ -91,12 +82,11 @@ void replace(typename expr_t<P>::var_t const& from, typename expr_t<P>::var_t co
         },
         [&] (typename expr_t<P>::abs_t& x)
         {
-            replace(from, to, x.args.begin(), x.args.end(), x.ret_type.get());
-            replace(from, to, x.body);
+            replace(from, to, x.args.begin(), x.args.end(), x.ret_type.get(), &x.body);
         },
         [&] (typename expr_t<P>::pi_t& pi)
         {
-            replace(from, to, pi.args.begin(), pi.args.end(), pi.ret_type.get());
+            replace<P>(from, to, pi.args.begin(), pi.args.end(), pi.ret_type.get(), nullptr);
         });
 }
 
@@ -106,6 +96,31 @@ void replace(typename expr_t<P>::var_t const& from, typename expr_t<P>::var_t co
     replace(from, to, x.func.get());
     for (auto& arg: x.args)
         replace(from, to, arg);
+}
+
+} // namespace impl
+
+template <Properties P>
+void replace(
+    typename expr_t<P>::var_t const& from,
+    typename expr_t<P>::var_t const& to,
+    typename std::vector<func_arg_t<P>>::iterator const begin,
+    typename std::vector<func_arg_t<P>>::iterator const end,
+    expr_t<P>& ret_type,
+    body_t<P>* body)
+{
+    for (auto& arg: std::ranges::subrange(begin, end))
+    {
+        impl::replace(from, to, arg.type);
+        // Note: in theory it would suffice to replace only the free occurrences of `from`
+        // and we could stop if `from` introduces a new binding variable;
+        // but replacing everything is easier and it shouldn't harm.
+        if (arg.var == from)
+            arg.var = to;
+    }
+    impl::replace(from, to, ret_type);
+    if (body)
+        impl::replace(from, to, *body);
 }
 
 } // namespace dep0::ast

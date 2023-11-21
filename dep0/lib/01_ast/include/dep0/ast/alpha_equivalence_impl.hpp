@@ -229,7 +229,7 @@ dep0::expected<std::true_type> is_alpha_equivalent_impl(
                 // by pure luck renaming assigned the same name to both
                 continue;
             // renaming assigns the next unused index number counting upwards;
-            // so if index of x_var is greather than that of y_var, we know that `x_var` does not occur
+            // so if index of x_var is greater than that of y_var, we know that `x_var` does not occur
             // in the renamed y, and viceversa; we can therefore safely replace x_var in y (or viceversa);
             if (x_var.name.idx > y_var.name.idx)
             {

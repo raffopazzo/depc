@@ -8,6 +8,13 @@
 
 namespace dep0::ast {
 
+namespace impl {
+
+template <Properties P> std::size_t max_index(func_arg_t<P> const&);
+template <Properties P> std::size_t max_index(body_t<P> const&);
+template <Properties P> std::size_t max_index(expr_t<P> const&);
+template <Properties P> std::size_t max_index(typename expr_t<P>::app_t const&);
+
 template <Properties P>
 std::size_t max_index(func_arg_t<P> const& x)
 {
@@ -82,23 +89,11 @@ std::size_t max_index(expr_t<P> const& x)
         },
         [&] (expr_t<P>::abs_t const& x)
         {
-            return std::accumulate(
-                x.args.begin(), x.args.end(),
-                std::max(max_index(x.ret_type.get()), max_index(x.body)),
-                [] (std::size_t const acc, func_arg_t<P> const& arg)
-                {
-                    return std::max(acc, max_index(arg));
-                });
+            return max_index<P>(x.args.begin(), x.args.end(), x.ret_type.get(), &x.body);
         },
         [&] (expr_t<P>::pi_t const& x)
         {
-            return std::accumulate(
-                x.args.begin(), x.args.end(),
-                max_index(x.ret_type.get()),
-                [] (std::size_t const acc, func_arg_t<P> const& arg)
-                {
-                    return std::max(acc, max_index(arg));
-                });
+            return max_index<P>(x.args.begin(), x.args.end(), x.ret_type.get(), nullptr);
         });
 }
 
@@ -111,6 +106,24 @@ std::size_t max_index(typename expr_t<P>::app_t const& x)
         [] (std::size_t const acc, expr_t<P> const& arg)
         {
             return std::max(acc, max_index(arg));
+        });
+}
+
+} // namespace impl
+
+template <Properties P>
+std::size_t max_index(
+    typename std::vector<func_arg_t<P>>::const_iterator const begin,
+    typename std::vector<func_arg_t<P>>::const_iterator const end,
+    expr_t<P> const& ret_type,
+    body_t<P> const* body)
+{
+    return std::accumulate(
+        begin, end,
+        std::max(impl::max_index(ret_type), body ? impl::max_index(*body) : 0ul),
+        [] (std::size_t const acc, func_arg_t<P> const& arg)
+        {
+            return std::max(acc, impl::max_index(arg));
         });
 }
 

@@ -17,15 +17,8 @@ typename expr_t<P>::var_t rename(
     expr_t<P>& ret_type,
     body_t<P>* body)
 {
-    auto const max_idx =
-        std::accumulate(
-            begin, end,
-            std::max(var.idx, std::max(max_index(ret_type), body ? max_index(*body) : 0ul)),
-            [] (std::size_t const acc, func_arg_t<P> const& arg)
-            {
-                return std::max(acc, std::max(max_index(arg.type), arg.var ? arg.var->idx : 0ul));
-            });
-    auto const new_var = typename expr_t<P>::var_t{var.name, max_idx + 1ul};
+    auto const new_idx = 1ul + std::max(var.idx, max_index(begin, end, ret_type, body));
+    auto const new_var = typename expr_t<P>::var_t{var.name, new_idx};
     replace(var, new_var, begin, end, ret_type, body);
     return new_var;
 }

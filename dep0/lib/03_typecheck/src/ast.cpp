@@ -11,7 +11,7 @@ std::ostream& pretty_print(std::ostream& os, sort_t const& sort, std::size_t ind
     match(
         sort,
         [&] (expr_t const& expr) { pretty_print(os, expr, indent); },
-        [&] (kind_t) { os << "[]"; });
+        [&] (kind_t) { os << "<kind>"; });
     return os;
 }
 

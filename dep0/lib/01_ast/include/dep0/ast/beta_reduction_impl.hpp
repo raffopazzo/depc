@@ -220,10 +220,13 @@ bool beta_normalize(typename expr_t<P>::app_t& app)
             {
                 auto const& arg = abs->args[i];
                 if (arg.var)
-                {
-                    substitute(*arg.var, app.args[i], abs->args.begin() + i + 1, abs->args.end(), abs->ret_type.get());
-                    substitute(*arg.var, app.args[i], abs->body);
-                }
+                    substitute(
+                        *arg.var,
+                        app.args[i],
+                        abs->args.begin() + i + 1,
+                        abs->args.end(),
+                        abs->ret_type.get(),
+                        &abs->body);
             }
             // at this point all arguments of the abstraction have been substituted,
             // so we can remove them and normalize the new body

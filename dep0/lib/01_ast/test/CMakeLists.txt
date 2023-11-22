@@ -23,3 +23,7 @@ target_link_libraries(dep0_delta_reduction_tests PRIVATE dep0_ast_tests_fixture)
 add_executable(dep0_occurs_in_tests dep0_occurs_in_tests.cpp)
 add_test(NAME dep0_occurs_in_tests COMMAND dep0_occurs_in_tests)
 target_link_libraries(dep0_occurs_in_tests PRIVATE dep0_ast_tests_fixture)
+
+add_executable(dep0_substitute_tests dep0_substitute_tests.cpp)
+add_test(NAME dep0_substitute_tests COMMAND dep0_substitute_tests)
+target_link_libraries(dep0_substitute_tests PRIVATE dep0_ast_tests_fixture)

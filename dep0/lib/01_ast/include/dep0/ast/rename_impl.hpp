@@ -5,7 +5,7 @@
 #include "dep0/ast/max_index.hpp"
 #include "dep0/ast/replace.hpp"
 
-#include <numeric>
+#include <algorithm>
 
 namespace dep0::ast {
 

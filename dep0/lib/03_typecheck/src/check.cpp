@@ -614,7 +614,13 @@ expected<expr_t> check_pi_type(
             else
                 err << "cannot typecheck function argument at index " << arg_index;
             return error_t::from_error(
-                dep0::error_t(err.str(), arg_loc, {std::move(type.error()), std::move(kind.error())}),
+                dep0::error_t(
+                    err.str(),
+                    arg_loc,
+                    {
+                        dep0::error_t("expression is not a type", {std::move(type.error())}),
+                        dep0::error_t("expression is not a kind", {std::move(kind.error())})
+                    }),
                 ctx);
         });
     if (not args)

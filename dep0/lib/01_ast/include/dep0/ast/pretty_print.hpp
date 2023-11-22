@@ -96,6 +96,14 @@ std::ostream& pretty_print(std::ostream&, typename expr_t<P>::abs_t const&, std:
 template <Properties P>
 std::ostream& pretty_print(std::ostream&, typename expr_t<P>::pi_t const&, std::size_t indent = 0ul);
 
+template <Properties P>
+std::ostream& pretty_print(
+    std::ostream&,
+    typename std::vector<func_arg_t<P>>::const_iterator begin,
+    typename std::vector<func_arg_t<P>>::const_iterator end,
+    expr_t<P> const& ret_type,
+    std::size_t indent = 0ul);
+
 // implementations
 
 inline std::ostream& new_line(std::ostream& os, std::size_t indent)
@@ -146,25 +154,7 @@ template <Properties P>
 std::ostream& pretty_print(std::ostream& os, func_def_t<P> const& func_def, std::size_t const indent)
 {
     os << "auto " << func_def.name;
-    bool const args_on_separate_lines =
-        std::ranges::any_of(
-            func_def.value.args,
-            [] (func_arg_t<P> const& arg)
-            {
-                // TODO figure out when we need to use separate lines
-                return false;
-            });
-    os << '(';
-    for (bool first = true; auto const& arg: func_def.value.args)
-    {
-        if (args_on_separate_lines)
-            new_line(std::exchange(first, false) ? os : os << ',', indent + 1ul);
-        else if (not std::exchange(first, false))
-            os << ", ";
-        pretty_print(os, arg, indent + 1ul);
-    }
-    (args_on_separate_lines ? new_line(os, indent) : os) << ')';
-    pretty_print(os << " -> ", func_def.value.ret_type.get(), indent);
+    pretty_print(os, func_def.value.args.begin(), func_def.value.args.end(), func_def.value.ret_type.get(), indent);
     new_line(os, indent);
     pretty_print(os, func_def.value.body, indent);
     return os;
@@ -353,19 +343,7 @@ template <Properties P>
 std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::abs_t const& x, std::size_t const indent)
 {
     os << "[] ";
-    if (x.args.empty())
-        os << "()";
-    else
-    {
-        os << '(';
-        for (bool first = true; auto const& arg: x.args)
-        {
-            new_line(std::exchange(first, false) ? os : os << ',', indent + 1ul);
-            pretty_print(os, arg, indent + 1ul);
-        }
-        new_line(os, indent) << ')';
-    }
-    pretty_print(os << " -> ", x.ret_type.get(), indent);
+    pretty_print(os, x.args.begin(), x.args.end(), x.ret_type.get(), indent);
     new_line(os, indent);
     pretty_print(os, x.body, indent);
     return os;
@@ -374,10 +352,35 @@ std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::abs_t const& x,
 template <Properties P>
 std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::pi_t const& x, std::size_t const indent)
 {
+    return pretty_print(os, x.args.begin(), x.args.end(), x.ret_type.get(), indent);
+}
+
+template <Properties P>
+std::ostream& pretty_print(
+    std::ostream& os,
+    typename std::vector<func_arg_t<P>>::const_iterator const begin,
+    typename std::vector<func_arg_t<P>>::const_iterator const end,
+    expr_t<P> const& ret_type,
+    std::size_t const indent)
+{
+    bool const args_on_separate_lines =
+        std::any_of(
+            begin, end,
+            [] (func_arg_t<P> const& arg)
+            {
+                return std::holds_alternative<typename expr_t<P>::pi_t>(arg.type.value);
+            });
     os << '(';
-    for (bool first = true; auto const& arg: x.args)
-        pretty_print<P>(std::exchange(first, false) ? os : os << ", ", arg, indent);
-    pretty_print(os << ") -> ", x.ret_type.get(), indent);
+    for (bool first = true; auto const& arg: std::ranges::subrange(begin, end))
+    {
+        if (args_on_separate_lines)
+            new_line(std::exchange(first, false) ? os : os << ',', indent + 1ul);
+        else if (not std::exchange(first, false))
+            os << ", ";
+        pretty_print(os, arg, indent + 1ul);
+    }
+    (args_on_separate_lines ? new_line(os, indent) : os) << ')';
+    pretty_print(os << " -> ", ret_type, indent);
     return os;
 }
 

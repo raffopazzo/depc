@@ -13,12 +13,13 @@ namespace dep0::testing {
 
 namespace detail {
 
-inline boost::test_tools::predicate_result check_name(ast::indexed_var_t const& x, std::string_view const y)
+template <ast::Properties P>
+boost::test_tools::predicate_result check_name(typename ast::expr_t<P>::var_t const& x, std::string_view const y)
 {
-    if (std::pair{x.txt.view(), x.idx} != std::pair{y, 0ul})
+    if (std::pair{x.name.view(), x.idx} != std::pair{y, 0ul})
     {
         auto failed = boost::test_tools::predicate_result(false);
-        pretty_print(failed.message().stream(), x) << " != " << y;
+        pretty_print<P>(failed.message().stream(), x) << " != " << y;
         return failed;
     }
     return true;
@@ -126,7 +127,7 @@ is_type_binder(ast::func_arg_t<P> const& x, std::optional<std::string_view> cons
     if (auto const result = is_typename(x.type); not result)
         return failure("function return type predicate failed: ", result.message());
     if (name)
-        return x.var ? detail::check_name(x.var->name, *name) : failure("type binder has no name");
+        return x.var ? detail::check_name<P>(*x.var, *name) : failure("type binder has no name");
     else if (x.var)
         return failure("type binder has a name but should be anonymous");
     else
@@ -140,7 +141,7 @@ is_term_binder(ast::func_arg_t<P> const& x, std::optional<std::string_view> cons
     if (auto const result = std::forward<F>(f)(x.type); not result)
         return failure("argument type predicate failed: ", result.message());
     if (name)
-        return x.var ? detail::check_name(x.var->name, *name) : failure("argument has no name");
+        return x.var ? detail::check_name<P>(*x.var, *name) : failure("argument has no name");
     else if (x.var)
         return failure("argument has a name but should be anonymous");
     else
@@ -155,7 +156,7 @@ boost::test_tools::predicate_result is_type_var(ast::expr_t<P> const& x, std::st
     auto const var = std::get_if<typename ast::expr_t<P>::var_t>(&x.value);
     if (not var)
         return failure("expression is not var_t but ", pretty_name(x.value));
-    return detail::check_name(var->name, name);
+    return detail::check_name<P>(*var, name);
 }
 
 template <ast::Properties P, typename... ArgPredicates, Predicate<typename ast::expr_t<P>> F>
@@ -210,7 +211,7 @@ boost::test_tools::predicate_result is_var(ast::expr_t<P> const& expr, std::stri
     auto const var = std::get_if<typename ast::expr_t<P>::var_t>(&expr.value);
     if (not var)
         return failure("expression is not var_t but ", pretty_name(expr.value));
-    return detail::check_name(var->name, name);
+    return detail::check_name<P>(*var, name);
 }
 
 template <ast::Properties P>

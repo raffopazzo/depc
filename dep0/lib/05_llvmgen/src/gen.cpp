@@ -65,19 +65,19 @@ struct local_context_t
         return local_context_t(values.extend());
     }
 
-    value_t* operator[](ast::indexed_var_t const& k) { return values[k]; }
-    value_t const* operator[](ast::indexed_var_t const& k) const { return values[k]; }
+    value_t* operator[](typecheck::expr_t::var_t const& k) { return values[k]; }
+    value_t const* operator[](typecheck::expr_t::var_t const& k) const { return values[k]; }
 
     template <typename... Args>
-    auto try_emplace(ast::indexed_var_t name, Args&&... args)
+    auto try_emplace(typecheck::expr_t::var_t name, Args&&... args)
     {
         return values.try_emplace(std::move(name), std::forward<Args>(args)...);
     }
 
 private:
-    scope_map<ast::indexed_var_t, value_t> values;
+    scope_map<typecheck::expr_t::var_t, value_t> values;
 
-    explicit local_context_t(scope_map<ast::indexed_var_t, value_t> values) :
+    explicit local_context_t(scope_map<typecheck::expr_t::var_t, value_t> values) :
         values(std::move(values))
     { }
 };
@@ -215,7 +215,7 @@ expected<unique_ref<llvm::Module>> gen(
     for (auto const& def: m.type_defs)
     {
         auto const& name = match(def.value, [] (auto const& x) -> auto const& { return x.name; });
-        bool const inserted = local.try_emplace(ast::indexed_var_t{name}, def).second;
+        bool const inserted = local.try_emplace(typecheck::expr_t::var_t{name}, def).second;
         assert(inserted);
     }
     for (auto const& def: m.func_defs)
@@ -272,7 +272,7 @@ llvm::Type* gen_type(global_context_t& global, local_context_t const& local, typ
         },
         [&] (typecheck::expr_t::var_t const& var) -> llvm::Type*
         {
-            auto const val = local[var.name];
+            auto const val = local[var];
             assert(val and "unknown type");
             return match(
                 *val,
@@ -347,7 +347,7 @@ llvm::Attribute::AttrKind get_sign_ext_attribute(local_context_t const& local, t
         [] (typecheck::expr_t::arith_expr_t const&) { return llvm::Attribute::None; },
         [&] (typecheck::expr_t::var_t const& var)
         {
-            auto const val = local[var.name];
+            auto const val = local[var];
             assert(val and "unknown type");
             return match(
                 *val,
@@ -397,18 +397,18 @@ void gen_func_args(local_context_t& local, llvm_func_proto_t const& proto, llvm:
             llvm_arg->addAttr(attr);
         if (proto.args[i].var)
         {
-            if (proto.args[i].var->name.idx == 0ul)
-                llvm_arg->setName(proto.args[i].var->name.txt.view());
+            if (proto.args[i].var->idx == 0ul)
+                llvm_arg->setName(proto.args[i].var->name.view());
             bool inserted = false;
             if (std::holds_alternative<typecheck::expr_t::pi_t>(proto.args[i].type.value))
             {
                 assert(llvm_arg->getType()->isPointerTy());
                 auto const function_type = cast<llvm::FunctionType>(llvm_arg->getType()->getPointerElementType());
                 assert(function_type);
-                inserted = local.try_emplace(proto.args[i].var->name, llvm_func_t(function_type, llvm_arg)).second;
+                inserted = local.try_emplace(*proto.args[i].var, llvm_func_t(function_type, llvm_arg)).second;
             }
             else
-                inserted = local.try_emplace(proto.args[i].var->name, llvm_arg).second;
+                inserted = local.try_emplace(*proto.args[i].var, llvm_arg).second;
             assert(inserted);
         }
     }
@@ -477,7 +477,7 @@ void gen_func(
             name.view(),
             global.llvm_module);
     // add function to the parent context; but generation must happen in the function context
-    bool const inserted = local.try_emplace(ast::indexed_var_t{name}, llvm_func_t(llvm_f)).second;
+    bool const inserted = local.try_emplace(typecheck::expr_t::var_t{name}, llvm_func_t(llvm_f)).second;
     assert(inserted);
     auto f_ctx = local.extend();
     gen_func_args(f_ctx, proto, llvm_f);
@@ -656,7 +656,7 @@ llvm::Value* gen_val(
         },
         [&] (typecheck::expr_t::var_t const& var) -> llvm::Value*
         {
-            auto const val = local[var.name];
+            auto const val = local[var];
             assert(val and "unknown variable");
             return match(
                 *val,
@@ -696,7 +696,7 @@ llvm::CallInst* gen_func_call(
             app.func.get().value,
             [&] (typecheck::expr_t::var_t const& var)
             {
-                auto const val = local[var.name];
+                auto const val = local[var];
                 assert(val and "unknown function call");
                 return match(
                     *val,

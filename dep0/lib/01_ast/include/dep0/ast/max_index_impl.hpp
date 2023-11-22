@@ -11,7 +11,7 @@ namespace dep0::ast {
 template <Properties P>
 std::size_t max_index(func_arg_t<P> const& x)
 {
-    return std::max(max_index(x.type), x.var ? x.var->name.idx : 0ul);
+    return std::max(max_index(x.type), x.var ? x.var->idx : 0ul);
 }
 
 template <Properties P>
@@ -74,7 +74,7 @@ std::size_t max_index(expr_t<P> const& x)
         },
         [&] (expr_t<P>::var_t const& x)
         {
-            return x.name.idx;
+            return x.idx;
         },
         [&] (expr_t<P>::app_t const& x)
         {

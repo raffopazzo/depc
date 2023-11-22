@@ -67,7 +67,7 @@ expected<expr_t> type_assign_app(context_t const& ctx, parser::expr_t::app_t con
         if (not var)
             // TODO support any `func` expr
             return error("only invocation by function name is currently supported");
-        auto const v = ctx[var->name];
+        auto const v = ctx[expr_t::var_t{var->name}];
         if (not v)
             return error("function prototype not found");
         return match(
@@ -125,7 +125,7 @@ expected<type_def_t> check_type_def(context_t& ctx, parser::type_def_t const& ty
         [&] (parser::type_def_t::integer_t const& x) -> expected<type_def_t>
         {
             auto const result = make_legal_type_def(type_def_t::integer_t{x.name, x.sign, x.width, x.max_abs_value});
-            auto const [it, inserted] = ctx.try_emplace(ast::indexed_var_t{x.name}, result);
+            auto const [it, inserted] = ctx.try_emplace(expr_t::var_t{x.name}, result);
             if (not inserted)
             {
                 std::ostringstream err;
@@ -141,7 +141,7 @@ expected<func_def_t> check_func_def(context_t& ctx, parser::func_def_t const& f)
     auto abs = check_abs(ctx, f.value, f.properties, f.name);
     if (not abs)
         return std::move(abs.error());
-    auto const [it, inserted] = ctx.try_emplace(ast::indexed_var_t{f.name}, *abs);
+    auto const [it, inserted] = ctx.try_emplace(expr_t::var_t{f.name}, *abs);
     if (not inserted)
     {
         std::ostringstream err;
@@ -287,7 +287,7 @@ static expected<expr_t> check_numeric_expr(
         [&] (expr_t::u64_t const&) { return check_integer("u64_t", "+", "18446744073709551615"); },
         [&] (expr_t::var_t const& var) -> expected<expr_t>
         {
-            auto const val = ctx[var.name];
+            auto const val = ctx[var];
             assert(val and "unknown type variable despite typecheck succeeded for the expected type");
             return match(
                 *val,
@@ -504,11 +504,11 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, sort_
         },
         [&] (parser::expr_t::var_t const& x) -> expected<expr_t>
         {
-            auto const val = ctx[x.name];
+            auto const val = ctx[expr_t::var_t{x.name}];
             if (not val)
             {
                 std::ostringstream err;
-                pretty_print(err << "unknown variable `", x.name) << '`';
+                pretty_print<parser::properties_t>(err << "unknown variable `", x) << '`';
                 return error_t::from_error(dep0::error_t(err.str(), loc), ctx, expected_type);
             }
             auto const result = 
@@ -575,7 +575,7 @@ expected<expr_t> check_pi_type(
             {
                 assert(var);
                 std::ostringstream err;
-                pretty_print(err << "cannot redefine `", var->name) << '`';
+                pretty_print<properties_t>(err << "cannot redefine `", *var) << '`';
                 pretty_print(err << " as function argument, previously `", prev) << '`';
                 return error_t::from_error(dep0::error_t(err.str(), arg_loc), ctx);
             };
@@ -591,7 +591,7 @@ expected<expr_t> check_pi_type(
             {
                 if (var)
                 {
-                    auto const [it, inserted] = ctx.try_emplace(var->name, make_legal_expr(*type, *var));
+                    auto const [it, inserted] = ctx.try_emplace(*var, make_legal_expr(*type, *var));
                     if (not inserted)
                         return cannot_redefine(it->second);
                 }
@@ -602,7 +602,7 @@ expected<expr_t> check_pi_type(
             {
                 if (var)
                 {
-                    auto const [it, inserted] = ctx.try_emplace(var->name, make_legal_expr(*kind, *var));
+                    auto const [it, inserted] = ctx.try_emplace(*var, make_legal_expr(*kind, *var));
                     if (not inserted)
                         return cannot_redefine(it->second);
                 }
@@ -610,7 +610,7 @@ expected<expr_t> check_pi_type(
             }
             std::ostringstream err;
             if (var)
-                pretty_print(err << "cannot typecheck function argument `", var->name) << '`';
+                pretty_print<properties_t>(err << "cannot typecheck function argument `", *var) << '`';
             else
                 err << "cannot typecheck function argument at index " << arg_index;
             return error_t::from_error(
@@ -652,8 +652,8 @@ expected<expr_t> check_abs(
     // to typecheck recursive functions we need to add them to the current function context before checking the body
     if (name)
     {
-        auto const func_name = ast::indexed_var_t{*name};
-        auto const [it, inserted] = f_ctx.try_emplace(func_name, make_legal_expr(*func_type, expr_t::var_t{func_name}));
+        auto const func_name = expr_t::var_t{*name};
+        auto const [it, inserted] = f_ctx.try_emplace(func_name, make_legal_expr(*func_type, func_name));
         if (not inserted)
         {
             std::ostringstream err;

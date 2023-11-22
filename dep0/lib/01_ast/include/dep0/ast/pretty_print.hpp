@@ -15,8 +15,6 @@ namespace dep0::ast {
 
 // forward declarations
 
-std::ostream& pretty_print(std::ostream&, indexed_var_t const&, std::size_t indent = 0ul);
-
 template <Properties P>
 std::ostream& pretty_print(std::ostream&, module_t<P> const&, std::size_t indent = 0ul);
 
@@ -334,7 +332,10 @@ std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::numeric_constan
 template <Properties P>
 std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::var_t const& x, std::size_t const indent)
 {
-    return pretty_print(os, x.name);
+    os << x.name;
+    if (x.idx)
+        os << ':' << x.idx;
+    return os;
 }
 
 template <Properties P>

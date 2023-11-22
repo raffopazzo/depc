@@ -29,7 +29,7 @@ BOOST_AUTO_TEST_CASE(expand_function_definition)
 {
     auto f = func_def("f", {}, i32(), body(return_(numeric_constant("0"))));
     auto g = func_def("g", {}, i32(), body(return_(app(var("f"), {}))));
-    bool const inserted = ctx.try_emplace(indexed_var_t{literal_string("f")}, f.value).second;
+    bool const inserted = ctx.try_emplace(expr_t::var_t{literal_string("f")}, f.value).second;
     BOOST_TEST(inserted);
     BOOST_TEST(delta_reduce(ctx, g) == true);
 }
@@ -38,7 +38,7 @@ BOOST_AUTO_TEST_CASE(type_argument_should_shadow_function_definitions)
 {
     auto f = func_def("f", {}, i32(), body(return_(numeric_constant("0"))));
     auto g = func_def("g", {arg(typename_(), "f")}, i32(), body(return_(app(var("f"), {}))));
-    bool const inserted = ctx.try_emplace(indexed_var_t{literal_string("f")}, f.value).second;
+    bool const inserted = ctx.try_emplace(expr_t::var_t{literal_string("f")}, f.value).second;
     BOOST_TEST(inserted);
     BOOST_TEST(delta_reduce(ctx, g) == false);
 }
@@ -47,7 +47,7 @@ BOOST_AUTO_TEST_CASE(term_argument_should_shadow_function_definitions)
 {
     auto f = func_def("f", {}, i32(), body(return_(numeric_constant("0"))));
     auto g = func_def("g", {arg(i32(), "f")}, i32(), body(return_(app(var("f"), {}))));
-    bool const inserted = ctx.try_emplace(indexed_var_t{literal_string("f")}, f.value).second;
+    bool const inserted = ctx.try_emplace(expr_t::var_t{literal_string("f")}, f.value).second;
     BOOST_TEST(inserted);
     BOOST_TEST(delta_reduce(ctx, g) == false);
 }

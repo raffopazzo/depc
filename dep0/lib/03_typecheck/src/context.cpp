@@ -6,7 +6,7 @@
 
 namespace dep0::typecheck {
 
-context_t::context_t(scope_map<ast::indexed_var_t, value_type> values, delta_reduction_context_t ctx) :
+context_t::context_t(scope_map<expr_t::var_t, value_type> values, delta_reduction_context_t ctx) :
     m_values(std::move(values)),
     m_delta_reduction_context(std::move(ctx))
 { }
@@ -27,7 +27,7 @@ auto context_t::end() const -> const_iterator
     return m_values.end();
 }
 
-auto context_t::operator[](ast::indexed_var_t const& name) const -> value_type const*
+auto context_t::operator[](expr_t::var_t const& name) const -> value_type const*
 {
     return m_values[name];
 }
@@ -56,7 +56,7 @@ std::ostream& pretty_print(std::ostream& os, context_t const& ctx)
         std::ranges::subrange(ctx.begin(), ctx.end()),
         [&] (auto const& x)
         {
-            pretty_print(os, x.first) << ": ";
+            pretty_print<properties_t>(os, x.first) << ": ";
             match(
                 x.second,
                 [&] (type_def_t const& t) { pretty_print(os, t); },

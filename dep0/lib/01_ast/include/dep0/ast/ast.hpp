@@ -25,14 +25,6 @@ template <Properties P> struct expr_t;
 
 // definitions
 
-struct indexed_var_t
-{
-    source_text txt;
-    std::size_t idx = 0ul; // >0 if renaming occurred during substitution
-    bool operator<(indexed_var_t const& that) const { return std::tie(txt, idx) < std::tie(that.txt, that.idx); }
-    bool operator==(indexed_var_t const&) const = default;
-};
-
 template <Properties P>
 struct body_t
 {
@@ -82,8 +74,9 @@ struct expr_t
     };
     struct var_t
     {
-        indexed_var_t name;
-        bool operator<(var_t const& that) const { return name < that.name; }
+        source_text name;
+        std::size_t idx = 0ul; // >0 if renaming occurred (eg during substitution or alpha-conversion)
+        bool operator<(var_t const& that) const { return std::tie(name, idx) < std::tie(that.name, that.idx); }
         bool operator==(var_t const&) const = default;
     };
     struct app_t

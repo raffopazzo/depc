@@ -74,7 +74,7 @@ bool delta_reduce(context_t<P> const& ctx, expr_t<P>& expr)
         expr.value,
         [&] (typename expr_t<P>::var_t& var)
         {
-            if (auto const val = ctx[var.name])
+            if (auto const val = ctx[var])
                 if (auto const abs = std::get_if<typename expr_t<P>::abs_t>(val))
                 {
                     expr.value = *abs;
@@ -135,7 +135,7 @@ bool delta_reduce(context_t<P> const& ctx, typename expr_t<P>::abs_t& abs)
             return true;
         if (arg.var)
         {
-            bool const inserted = ctx2.try_emplace(arg.var->name, delta_reduction::something_else_t{}).second;
+            bool const inserted = ctx2.try_emplace(*arg.var, delta_reduction::something_else_t{}).second;
             assert(inserted);
         }
     }
@@ -154,7 +154,7 @@ bool delta_reduce(context_t<P> const& ctx, typename expr_t<P>::pi_t& pi)
             return true;
         if (arg.var)
         {
-            bool const inserted = ctx2.try_emplace(arg.var->name, delta_reduction::something_else_t{}).second;
+            bool const inserted = ctx2.try_emplace(*arg.var, delta_reduction::something_else_t{}).second;
             assert(inserted);
         }
     }

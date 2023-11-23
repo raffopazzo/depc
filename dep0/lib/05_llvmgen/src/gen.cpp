@@ -190,7 +190,7 @@ bool is_first_order_type(typecheck::expr_t const& type)
         [] (typecheck::expr_t::boolean_constant_t const&) { return false; },
         [] (typecheck::expr_t::numeric_constant_t const&) { return false; },
         [] (typecheck::expr_t::arith_expr_t const&) { return false; },
-        [] (typecheck::expr_t::var_t const&) { return true; }, // well, possibly... assuming it refers to a type
+        [] (typecheck::expr_t::var_t const&) { return true; }, // TODO need to double check, it could refer to a kind
         [] (typecheck::expr_t::app_t const&) { return false; },
         [] (typecheck::expr_t::abs_t const&) { return false; },
         [] (typecheck::expr_t::pi_t const& t) { return is_first_order_function_type(t); });

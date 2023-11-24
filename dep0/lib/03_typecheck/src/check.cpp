@@ -521,11 +521,8 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, sort_
         {
             auto result = type_assign_app(ctx, x, loc);
             if (result)
-            {
-                auto eq = is_beta_equivalent(ctx, result->properties.sort.get(), expected_type);
-                if (not eq)
+                if (auto eq = is_beta_equivalent(ctx, result->properties.sort.get(), expected_type); not eq)
                     return type_error(result->properties.sort.get(), std::move(eq.error()));
-            }
             return result;
         },
         [&] (parser::expr_t::abs_t const& f) -> expected<expr_t>
@@ -543,12 +540,10 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, sort_
         {
             auto pi_ctx = ctx.extend();
             auto result = check_pi_type(pi_ctx, pi.args, pi.ret_type.get());
-            if (not result)
-                return result;
-            else if (auto eq = is_beta_equivalent(pi_ctx, result->properties.sort.get(), expected_type))
-                return result;
-            else
-                return type_error(result->properties.sort.get(), std::move(eq.error()));
+            if (result)
+                if (auto eq = is_beta_equivalent(pi_ctx, result->properties.sort.get(), expected_type); not eq)
+                    return type_error(result->properties.sort.get(), std::move(eq.error()));
+            return result;
         });
 }
 

@@ -173,8 +173,7 @@ expected<stmt_t> check_stmt(context_t const& ctx, parser::stmt_t const& s, sort_
         },
         [&] (parser::stmt_t::if_else_t const& x) -> expected<stmt_t>
         {
-            sort_t const cond_type = make_legal_expr(make_legal_expr(kind_t{}, expr_t::typename_t{}), expr_t::bool_t{});
-            auto cond = check_expr(ctx, x.cond, cond_type);
+            auto cond = check_expr(ctx, x.cond, derivation_rules::make_bool());
             if (not cond)
                 return std::move(cond.error());
             auto true_branch = check_body(ctx, x.true_branch, return_type);
@@ -204,10 +203,7 @@ expected<stmt_t> check_stmt(context_t const& ctx, parser::stmt_t const& s, sort_
                         [&] (expr_t const& return_type)
                         {
                             // TODO beta equivalence too)
-                            return is_alpha_equivalent(
-                                return_type,
-                                make_legal_expr(make_legal_expr(kind_t{}, expr_t::typename_t{}), expr_t::unit_t{})
-                            ).has_value();
+                            return is_alpha_equivalent(return_type, derivation_rules::make_unit()).has_value();
                         },
                         [] (kind_t) { return false; });
                 if (ok)
@@ -368,7 +364,7 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, sort_
         x.value,
         [&] (parser::expr_t::typename_t) -> expected<expr_t>
         {
-            auto const result = make_legal_expr(kind_t{}, expr_t::typename_t{});
+            auto const result = derivation_rules::make_typename();
             if (auto eq = is_beta_equivalent(ctx, result.properties.sort.get(), expected_type))
                 return result;
             else
@@ -376,7 +372,7 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, sort_
         },
         [&] (parser::expr_t::bool_t) -> expected<expr_t>
         {
-            auto const result = make_legal_expr(make_legal_expr(kind_t{}, expr_t::typename_t{}), expr_t::bool_t{});
+            auto const result = derivation_rules::make_bool();
             if (auto eq = is_beta_equivalent(ctx, result.properties.sort.get(), expected_type))
                 return result;
             else
@@ -384,7 +380,7 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, sort_
         },
         [&] (parser::expr_t::unit_t) -> expected<expr_t>
         {
-            auto const result = make_legal_expr(make_legal_expr(kind_t{}, expr_t::typename_t{}), expr_t::unit_t{});
+            auto const result = derivation_rules::make_unit();
             if (auto eq = is_beta_equivalent(ctx, result.properties.sort.get(), expected_type))
                 return result;
             else
@@ -392,7 +388,7 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, sort_
         },
         [&] (parser::expr_t::i8_t) -> expected<expr_t>
         {
-            auto const result = make_legal_expr(make_legal_expr(kind_t{}, expr_t::typename_t{}), expr_t::i8_t{});
+            auto const result = derivation_rules::make_i8();
             if (auto eq = is_beta_equivalent(ctx, result.properties.sort.get(), expected_type))
                 return result;
             else
@@ -400,7 +396,7 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, sort_
         },
         [&] (parser::expr_t::i16_t) -> expected<expr_t>
         {
-            auto const result = make_legal_expr(make_legal_expr(kind_t{}, expr_t::typename_t{}), expr_t::i16_t{});
+            auto const result = derivation_rules::make_i16();
             if (auto eq = is_beta_equivalent(ctx, result.properties.sort.get(), expected_type))
                 return result;
             else
@@ -408,7 +404,7 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, sort_
         },
         [&] (parser::expr_t::i32_t) -> expected<expr_t>
         {
-            auto const result = make_legal_expr(make_legal_expr(kind_t{}, expr_t::typename_t{}), expr_t::i32_t{});
+            auto const result = derivation_rules::make_i32();
             if (auto eq = is_beta_equivalent(ctx, result.properties.sort.get(), expected_type))
                 return result;
             else
@@ -416,7 +412,7 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, sort_
         },
         [&] (parser::expr_t::i64_t) -> expected<expr_t>
         {
-            auto const result = make_legal_expr(make_legal_expr(kind_t{}, expr_t::typename_t{}), expr_t::i64_t{});
+            auto const result = derivation_rules::make_i64();
             if (auto eq = is_beta_equivalent(ctx, result.properties.sort.get(), expected_type))
                 return result;
             else
@@ -424,7 +420,7 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, sort_
         },
         [&] (parser::expr_t::u8_t) -> expected<expr_t>
         {
-            auto const result = make_legal_expr(make_legal_expr(kind_t{}, expr_t::typename_t{}), expr_t::u8_t{});
+            auto const result = derivation_rules::make_u8();
             if (auto eq = is_beta_equivalent(ctx, result.properties.sort.get(), expected_type))
                 return result;
             else
@@ -432,7 +428,7 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, sort_
         },
         [&] (parser::expr_t::u16_t) -> expected<expr_t>
         {
-            auto const result = make_legal_expr(make_legal_expr(kind_t{}, expr_t::typename_t{}), expr_t::u16_t{});
+            auto const result = derivation_rules::make_u16();
             if (auto eq = is_beta_equivalent(ctx, result.properties.sort.get(), expected_type))
                 return result;
             else
@@ -440,7 +436,7 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, sort_
         },
         [&] (parser::expr_t::u32_t) -> expected<expr_t>
         {
-            auto const result = make_legal_expr(make_legal_expr(kind_t{}, expr_t::typename_t{}), expr_t::u32_t{});
+            auto const result = derivation_rules::make_u32();
             if (auto eq = is_beta_equivalent(ctx, result.properties.sort.get(), expected_type))
                 return result;
             else
@@ -448,7 +444,7 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, sort_
         },
         [&] (parser::expr_t::u64_t) -> expected<expr_t>
         {
-            auto const result = make_legal_expr(make_legal_expr(kind_t{}, expr_t::typename_t{}), expr_t::u64_t{});
+            auto const result = derivation_rules::make_u64();
             if (auto eq = is_beta_equivalent(ctx, result.properties.sort.get(), expected_type))
                 return result;
             else
@@ -456,10 +452,7 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, sort_
         },
         [&] (parser::expr_t::boolean_constant_t const& x) -> expected<expr_t>
         {
-            auto result =
-                make_legal_expr(
-                    make_legal_expr(make_legal_expr(kind_t{}, expr_t::typename_t{}), expr_t::bool_t{}),
-                    expr_t::boolean_constant_t{x.value});
+            auto result = make_legal_expr(derivation_rules::make_bool(), expr_t::boolean_constant_t{x.value});
             if (auto eq = is_beta_equivalent(ctx, result.properties.sort.get(), expected_type))
                 return result;
             else
@@ -516,7 +509,7 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, sort_
                 make_legal_expr(
                     match(
                         *val,
-                        [&] (type_def_t const&) -> sort_t { return make_legal_expr(kind_t{}, expr_t::typename_t{}); },
+                        [&] (type_def_t const&) -> sort_t { return derivation_rules::make_typename(); },
                         [&] (expr_t const& expr) -> sort_t { return expr.properties.sort.get(); }),
                     expr_t::var_t{x.name});
             if (auto eq = is_beta_equivalent(ctx, result.properties.sort.get(), expected_type))
@@ -587,7 +580,7 @@ expected<expr_t> check_pi_type(
             // If we get rid of that (perhaps by type-assigning consatnts to i32_t and then convert them),
             // We could restructure this entire type-checking around a more "traditional" 2-step approach
             // of type-assigning first and then comparing against the expected type.
-            auto type = check_expr(ctx, arg.type, make_legal_expr(kind_t{}, expr_t::typename_t{}));
+            auto type = check_expr(ctx, arg.type, derivation_rules::make_typename());
             if (type)
             {
                 if (var)
@@ -628,7 +621,7 @@ expected<expr_t> check_pi_type(
         return std::move(args.error());
     auto const ret_type = [&] () -> expected<expr_t>
     {
-        auto type = check_expr(ctx, parser_ret_type, make_legal_expr(kind_t{}, expr_t::typename_t{}));
+        auto type = check_expr(ctx, parser_ret_type, derivation_rules::make_typename());
         if (type)
             return std::move(type);
         auto kind = check_expr(ctx, parser_ret_type, kind_t{});
@@ -675,8 +668,8 @@ expected<expr_t> check_abs(
         return std::move(body.error());
     // so far so good, but we now need to make sure that all branches contain a return statement,
     // with the only exception of functions returning `unit_t` because the return statement is optional;
-    auto const unit = make_legal_expr(make_legal_expr(kind_t{}, expr_t::typename_t{}), expr_t::unit_t{});
-    if (not is_alpha_equivalent(ret_type, unit) and not returns_from_all_branches(*body)) // TODO beta equivalence too
+    // TODO beta equivalence too?
+    if (not is_alpha_equivalent(ret_type, derivation_rules::make_unit()) and not returns_from_all_branches(*body))
     {
         std::ostringstream err;
         if (name)

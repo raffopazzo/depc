@@ -202,7 +202,7 @@ expected<stmt_t> check_stmt(context_t const& ctx, parser::stmt_t const& s, sort_
                         return_type,
                         [&] (expr_t const& return_type)
                         {
-                            // TODO beta equivalence too)
+                            // TODO beta equivalence too?
                             return is_alpha_equivalent(return_type, derivation_rules::make_unit()).has_value();
                         },
                         [] (kind_t) { return false; });

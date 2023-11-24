@@ -109,7 +109,8 @@ struct snippet_t
 
 // Proof that the pointed `pi_t` is a 1st order function type.
 // Non-copyable as we don't intend to pass it by-value or store it, but only to use it as proof object.
-// Must me movable in order to construct an `optional<llvm_func_proto_t>`.
+// Must me movable in order to construct an `optional<llvm_func_proto_t>`;
+// this means that in reality you can actually pass/store it if you try hard enough; please don't do that.
 class llvm_func_proto_t
 {
     typecheck::expr_t::pi_t const& pi;
@@ -649,6 +650,7 @@ llvm::Value* gen_val(
                 number = x.number;
             auto const& type = std::get<typecheck::expr_t>(expr.properties.sort.get());
             auto const llvm_type = cast<llvm::IntegerType>(gen_type(global, local, type));
+            assert(llvm_type);
             return llvm::ConstantInt::get(llvm_type, number, 10);
         },
         [&] (typecheck::expr_t::arith_expr_t const& x) -> llvm::Value*

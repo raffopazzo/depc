@@ -12,6 +12,7 @@
 #include <boost/range/adaptor/indexed.hpp>
 
 #include <algorithm>
+#include <optional>
 #include <ranges>
 
 namespace dep0::llvmgen {
@@ -106,18 +107,39 @@ struct snippet_t
     }
 };
 
+// Proof that the pointed `pi_t` is a 1st order function type.
+// Non-copyable as we don't intend to pass it by-value or store it, but only to use it as proof object.
+// Must me movable in order to construct an `optional<llvm_func_proto_t>`.
+class llvm_func_proto_t
+{
+    typecheck::expr_t::pi_t const& pi;
+    llvm_func_proto_t(typecheck::expr_t::pi_t const& pi) : pi(pi) {}
+    llvm_func_proto_t(llvm_func_proto_t const&) = delete;
+    llvm_func_proto_t& operator=(llvm_func_proto_t const&) = delete;
+
+public:
+    llvm_func_proto_t(llvm_func_proto_t&&) = default;
+    llvm_func_proto_t& operator=(llvm_func_proto_t&&) = default;
+
+    static std::optional<llvm_func_proto_t> from_pi(typecheck::expr_t::pi_t const&);
+
+    std::vector<typecheck::func_arg_t> const& args() const { return pi.args; }
+    typecheck::func_arg_t const& arg(std::size_t const i) const { return pi.args[i]; }
+    typecheck::expr_t const& ret_type() const { return pi.ret_type.get(); }
+};
+
 // all gen functions must be forward-declared here
 
 static llvm_func_t gen_func(
     global_context_t&,
     local_context_t const&,
-    typecheck::expr_t::pi_t const&,
+    llvm_func_proto_t const&,
     typecheck::expr_t::abs_t const&);
 static void gen_func(
     global_context_t&,
     local_context_t&,
     source_text const&,
-    typecheck::expr_t::pi_t const&,
+    llvm_func_proto_t const&,
     typecheck::expr_t::abs_t const&);
 
 static snippet_t gen_body(
@@ -146,18 +168,23 @@ static llvm::CallInst* gen_func_call(
     llvm::IRBuilder<>&,
     llvm_func_t const&,
     std::vector<typecheck::expr_t> const&);
-static llvm::FunctionType* gen_func_type(global_context_t&, local_context_t const&, typecheck::expr_t::pi_t const&);
-static void gen_func_attributes(local_context_t const&, typecheck::expr_t::pi_t const&, llvm::Function*);
-static void gen_func_args(local_context_t&, typecheck::expr_t::pi_t const&, llvm::Function*);
+static llvm::FunctionType* gen_func_type(global_context_t&, local_context_t const&, llvm_func_proto_t const&);
+static void gen_func_attributes(local_context_t const&, llvm_func_proto_t const&, llvm::Function*);
+static void gen_func_args(local_context_t&, llvm_func_proto_t const&, llvm::Function*);
 static void gen_func_body(
     global_context_t&,
     local_context_t const&,
-    typecheck::expr_t::pi_t const&,
+    llvm_func_proto_t const&,
     typecheck::body_t const&,
     llvm::Function*);
 
 static bool is_first_order_function_type(typecheck::expr_t::pi_t const&);
 static bool is_first_order_type(typecheck::expr_t const&);
+
+std::optional<llvm_func_proto_t> llvm_func_proto_t::from_pi(typecheck::expr_t::pi_t const& x)
+{
+    return is_first_order_function_type(x) ? std::optional{llvm_func_proto_t(x)} : std::nullopt;
+}
 
 bool is_first_order_function_type(typecheck::expr_t::pi_t const& x)
 {
@@ -216,8 +243,8 @@ expected<unique_ref<llvm::Module>> gen(
         assert(type and "function cannot be a kind");
         auto const pi = std::get_if<typecheck::expr_t::pi_t>(&type->value);
         assert(pi and "function type must be pi");
-        if (is_first_order_function_type(*pi))
-            gen_func(global, local, def.name, *pi, def.value);
+        if (auto proto = llvm_func_proto_t::from_pi(*pi))
+            gen_func(global, local, def.name, *proto, def.value);
     }
 
     std::string err;
@@ -309,14 +336,9 @@ llvm::Type* gen_type(global_context_t& global, local_context_t const& local, typ
         },
         [&] (typecheck::expr_t::pi_t const& x) -> llvm::Type*
         {
-            assert(is_first_order_function_type(x) and "can only generate an llvm type for 1st order function types");
-            bool constexpr is_var_arg = false;
-            auto const func_type =
-                llvm::FunctionType::get(
-                    gen_type(global, local, x.ret_type.get()),
-                    fmap(x.args, [&] (typecheck::func_arg_t const& arg) { return gen_type(global, local, arg.type); }),
-                    is_var_arg);
-            return func_type->getPointerTo();
+            auto proto = llvm_func_proto_t::from_pi(x);
+            assert(proto and "can only generate an llvm type for 1st order function types");
+            return gen_func_type(global, local, *proto)->getPointerTo();
         });
 }
 
@@ -373,56 +395,57 @@ llvm::Attribute::AttrKind get_sign_ext_attribute(local_context_t const& local, t
 llvm::FunctionType* gen_func_type(
     global_context_t& global,
     local_context_t const& local,
-    typecheck::expr_t::pi_t const& proto)
+    llvm_func_proto_t const& proto)
 {
     bool constexpr is_var_arg = false;
     return llvm::FunctionType::get(
-        gen_type(global, local, proto.ret_type.get()),
-        fmap(proto.args, [&] (auto const& arg) { return gen_type(global, local, arg.type); }),
+        gen_type(global, local, proto.ret_type()),
+        fmap(proto.args(), [&] (auto const& arg) { return gen_type(global, local, arg.type); }),
         is_var_arg);
 }
 
-void gen_func_args(local_context_t& local, typecheck::expr_t::pi_t const& proto, llvm::Function* const llvm_f)
+void gen_func_args(local_context_t& local, llvm_func_proto_t const& proto, llvm::Function* const llvm_f)
 {
-    for (auto const i: std::views::iota(0ul, proto.args.size()))
+    for (auto const i: std::views::iota(0ul, proto.args().size()))
     {
-        auto* const llvm_arg = llvm_f->getArg(i);
-        if (auto const attr = get_sign_ext_attribute(local, proto.args[i].type); attr != llvm::Attribute::None)
+        auto const llvm_arg = llvm_f->getArg(i);
+        auto const [arg_type, arg_var] = std::tie(proto.arg(i).type, proto.arg(i).var);
+        if (auto const attr = get_sign_ext_attribute(local, arg_type); attr != llvm::Attribute::None)
             llvm_arg->addAttr(attr);
-        if (proto.args[i].var)
+        if (arg_var)
         {
-            if (proto.args[i].var->idx == 0ul)
-                llvm_arg->setName(proto.args[i].var->name.view());
+            if (arg_var->idx == 0ul)
+                llvm_arg->setName(arg_var->name.view());
             bool inserted = false;
-            if (std::holds_alternative<typecheck::expr_t::pi_t>(proto.args[i].type.value))
+            if (std::holds_alternative<typecheck::expr_t::pi_t>(arg_type.value))
             {
                 assert(llvm_arg->getType()->isPointerTy());
                 auto const function_type = cast<llvm::FunctionType>(llvm_arg->getType()->getPointerElementType());
                 assert(function_type);
-                inserted = local.try_emplace(*proto.args[i].var, llvm_func_t(function_type, llvm_arg)).second;
+                inserted = local.try_emplace(*arg_var, llvm_func_t(function_type, llvm_arg)).second;
             }
             else
-                inserted = local.try_emplace(*proto.args[i].var, llvm_arg).second;
+                inserted = local.try_emplace(*arg_var, llvm_arg).second;
             assert(inserted);
         }
     }
 }
 
-void gen_func_attributes(local_context_t const& local, typecheck::expr_t::pi_t const& proto, llvm::Function* const llvm_f)
+void gen_func_attributes(local_context_t const& local, llvm_func_proto_t const& proto, llvm::Function* const llvm_f)
 {
-    if (auto const attr = get_sign_ext_attribute(local, proto.ret_type.get()); attr != llvm::Attribute::None)
+    if (auto const attr = get_sign_ext_attribute(local, proto.ret_type()); attr != llvm::Attribute::None)
         llvm_f->addAttribute(llvm::AttributeList::ReturnIndex, attr);
 }
 
 void gen_func_body(
     global_context_t& global,
     local_context_t const& local,
-    typecheck::expr_t::pi_t const& proto,
+    llvm_func_proto_t const& proto,
     typecheck::body_t const& body,
     llvm::Function* const llvm_f)
 {
     auto snippet = gen_body(global, local, body, "entry", llvm_f);
-    if (snippet.open_blocks.size() and std::holds_alternative<typecheck::expr_t::unit_t>(proto.ret_type.get().value))
+    if (snippet.open_blocks.size() and std::holds_alternative<typecheck::expr_t::unit_t>(proto.ret_type().value))
     {
         auto builder = llvm::IRBuilder<>(global.llvm_ctx);
         snippet.seal_open_blocks(builder, [] (auto& builder) { builder.CreateRetVoid(); });
@@ -432,10 +455,9 @@ void gen_func_body(
 llvm_func_t gen_func(
     global_context_t& global,
     local_context_t const& local,
-    typecheck::expr_t::pi_t const& proto,
+    llvm_func_proto_t const& proto,
     typecheck::expr_t::abs_t const& f)
 {
-    assert(is_first_order_function_type(proto) and "can only generate an llvm function for 1st order function types");
     auto const name = std::string{"$_func_"} + std::to_string(global.next_id++);
     auto const llvm_f =
         llvm::Function::Create(
@@ -454,10 +476,9 @@ void gen_func(
     global_context_t& global,
     local_context_t& local,
     source_text const& name,
-    typecheck::expr_t::pi_t const& proto,
+    llvm_func_proto_t const& proto,
     typecheck::expr_t::abs_t const& f)
 {
-    assert(is_first_order_function_type(proto) and "can only generate an llvm function for 1st order function types");
     auto const llvm_f =
         llvm::Function::Create(
             gen_func_type(global, local, proto),
@@ -709,7 +730,9 @@ llvm::CallInst* gen_func_call(
                 assert(type and "function type must not be a kind");
                 auto const pi = std::get_if<typecheck::expr_t::pi_t>(&type->value);
                 assert(pi and "function type must be pi");
-                return gen_func(global, local, *pi, abs);
+                auto proto = llvm_func_proto_t::from_pi(*pi);
+                assert(proto and "can only invoke a 1st order function type");
+                return gen_func(global, local, *proto, abs);
             },
             [] (auto const&) -> llvm_func_t
             {

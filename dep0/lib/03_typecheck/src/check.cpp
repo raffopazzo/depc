@@ -341,7 +341,6 @@ static expected<expr_t> check_numeric_expr(
                     return error(err.str());
                 });
         },
-        // TODO beta-reduction could result in a valid integral type
         [&] (auto const& x)
         {
             std::ostringstream err;

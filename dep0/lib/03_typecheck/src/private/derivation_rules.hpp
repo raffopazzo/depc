@@ -28,9 +28,9 @@ type_def_t make_legal_type_def(Args&&... args)
 }
 
 template <typename... Args>
-func_def_t make_legal_func_def(Args&&... args)
+func_def_t make_legal_func_def(sort_t sort, Args&&... args)
 {
-    return func_def_t{derivation_rules::make_derivation<func_def_t>(), std::forward<Args>(args)...};
+    return func_def_t{derivation_rules::make_derivation<func_def_t>(), std::move(sort), std::forward<Args>(args)...};
 }
 
 template <typename... Args>

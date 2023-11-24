@@ -149,7 +149,7 @@ expected<func_def_t> check_func_def(context_t& ctx, parser::func_def_t const& f)
         pretty_print(err << "cannot redefine `" << f.name << "` as function, previously `", it->second) << '`';
         return error_t::from_error(dep0::error_t(err.str()), ctx);
     }
-    return make_legal_func_def(f.name, std::move(std::get<expr_t::abs_t>(abs->value)));
+    return make_legal_func_def(abs->properties.sort.get(), f.name, std::move(std::get<expr_t::abs_t>(abs->value)));
 }
 
 expected<body_t> check_body(context_t const& ctx, parser::body_t const& x, sort_t const& return_type)

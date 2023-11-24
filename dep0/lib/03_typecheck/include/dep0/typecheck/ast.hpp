@@ -40,6 +40,9 @@ using body_t = ast::body_t<properties_t>;
 using stmt_t = ast::stmt_t<properties_t>;
 using expr_t = ast::expr_t<properties_t>;
 
+struct kind_t{};
+using sort_t = std::variant<expr_t, kind_t>;
+
 struct legal_module_t
 {
     // here I would like to express that a module is legal if *all* its functions, types, etc are legal;
@@ -58,6 +61,7 @@ struct legal_type_def_t
 struct legal_func_def_t
 {
     derivation_t<func_def_t> derivation;
+    boost::recursive_wrapper<sort_t> sort;
     bool operator==(legal_func_def_t const&) const = default;
 };
 
@@ -78,10 +82,6 @@ struct legal_stmt_t
     derivation_t<stmt_t> derivation;
     bool operator==(legal_stmt_t const&) const = default;
 };
-
-struct kind_t{};
-
-using sort_t = std::variant<expr_t, kind_t>;
 
 struct legal_expr_t
 {

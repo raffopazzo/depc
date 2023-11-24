@@ -22,39 +22,28 @@ struct TypecheckTestsFixture
     boost::test_tools::predicate_result pass(std::filesystem::path);
     boost::test_tools::predicate_result fail(std::filesystem::path);
 
-    static constexpr auto bool_ = type_expr_of<dep0::typecheck::properties_t>(dep0::testing::is_type_bool);
-    static constexpr auto i32 = type_expr_of<dep0::typecheck::properties_t>(dep0::testing::is_type_i32);
-    static constexpr auto u32 = type_expr_of<dep0::typecheck::properties_t>(dep0::testing::is_type_u32);
-    static inline auto int_() { return type_expr_of<dep0::typecheck::properties_t>(dep0::testing::type_var("int")); }
-
     template <typename... Args>
     static constexpr auto app_of(Args&&... args)
     {
         return dep0::testing::app_of<dep0::typecheck::properties_t>(std::forward<Args>(args)...);
     }
 
-    template <dep0::testing::Predicate<dep0::typecheck::expr_t> F>
-    static auto term_binder(F&& f)
+    template <typename... Args>
+    static constexpr auto pi_of(Args&&... args)
     {
-        return dep0::testing::term_binder<dep0::typecheck::properties_t>(std::forward<F>(f));
+        return dep0::testing::pi_of<dep0::typecheck::properties_t>(std::forward<Args>(args)...);
     }
 
     template <dep0::testing::Predicate<dep0::typecheck::expr_t> F>
-    static auto term_binder(std::string const& name, F&& f)
+    static auto arg_of(F&& f, std::optional<std::string> name = std::nullopt)
     {
-        return dep0::testing::term_binder<dep0::typecheck::properties_t>(name, std::forward<F>(f));
+        return dep0::testing::arg_of<dep0::typecheck::properties_t>(std::forward<F>(f), std::move(name));
     }
 
-    template <dep0::testing::Predicate<dep0::typecheck::expr_t> F>
-    static auto type_of(F&& f)
+    template <typename... Args>
+    static auto is_arg(dep0::typecheck::func_arg_t const& arg, Args&&... args)
     {
-        return dep0::testing::type_of<dep0::typecheck::properties_t>(std::forward<F>(f));
-    }
-
-    template <dep0::testing::Predicate<dep0::typecheck::func_arg_t> F>
-    static auto is_arg(dep0::typecheck::func_arg_t const& arg, F&& f)
-    {
-        return dep0::testing::is_arg<dep0::typecheck::properties_t>(arg, std::forward<F>(f));
+        return dep0::testing::is_arg<dep0::typecheck::properties_t>(arg, std::forward<Args>(args)...);
     }
 
     template <dep0::testing::Predicate<dep0::typecheck::expr_t> F>

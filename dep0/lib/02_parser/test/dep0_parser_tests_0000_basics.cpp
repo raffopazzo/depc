@@ -31,13 +31,10 @@ BOOST_AUTO_TEST_CASE(pass_001)
     BOOST_TEST(f.properties.line == 1);
     BOOST_TEST(f.properties.col == 1);
     BOOST_TEST(f.properties.txt == source);
-    BOOST_TEST(is_type_of(f.value.ret_type.get(), [] (dep0::parser::expr_t const& ret_type)
-    {
-        BOOST_TEST(ret_type.properties.line == 1);
-        BOOST_TEST(ret_type.properties.col == 1);
-        BOOST_TEST(ret_type.properties.txt == "i32_t");
-        return is_type_i32(ret_type);
-    }));
+    BOOST_TEST(is_i32(f.value.ret_type.get()));
+    BOOST_TEST(f.value.ret_type.get().properties.line == 1);
+    BOOST_TEST(f.value.ret_type.get().properties.col == 1);
+    BOOST_TEST(f.value.ret_type.get().properties.txt == "i32_t");
     BOOST_TEST(f.name == "main");
 }
 

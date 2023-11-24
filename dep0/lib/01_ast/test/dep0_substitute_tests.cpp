@@ -27,8 +27,8 @@ BOOST_AUTO_TEST_CASE(substitute_inside_argument_type_until_first_rebinding)
     BOOST_TEST_REQUIRE(r->expr.has_value());
     auto const f = std::get_if<expr_t::abs_t>(&r->expr->value);
     BOOST_TEST_REQUIRE(f);
-    BOOST_TEST(is_term_binder(f->args[0], "x", is_type_u32));
-    BOOST_TEST(is_term_binder(f->args[1], "u", is_typename));
+    BOOST_TEST(is_arg(f->args[0], is_u32, "x"));
+    BOOST_TEST(is_arg(f->args[1], is_typename, "u"));
     BOOST_TEST(is_var(f->ret_type.get(), "u"));
 
     BOOST_TEST_REQUIRE(f->body.stmts.size() == 1ul);
@@ -42,10 +42,10 @@ BOOST_AUTO_TEST_CASE(substitute_inside_body)
     substitute(var_t("z"), var("y"), f.args.begin(), f.args.end(), f.ret_type.get(), &f.body);
 
     BOOST_TEST_REQUIRE(f.args.size() == 2ul);
-    BOOST_TEST(is_term_binder(f.args[0], "x", testing::var("t")));
+    BOOST_TEST(is_arg(f.args[0], testing::var("t"), "x"));
     BOOST_TEST_REQUIRE(f.args[1].var.has_value());
     BOOST_TEST(f.args[1].var->idx > 0ul);
-    BOOST_TEST(is_type_i32(f.ret_type.get()));
+    BOOST_TEST(is_i32(f.ret_type.get()));
 
     BOOST_TEST_REQUIRE(f.body.stmts.size() == 1ul);
     BOOST_TEST(

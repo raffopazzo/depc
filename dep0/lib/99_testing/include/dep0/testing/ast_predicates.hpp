@@ -50,7 +50,11 @@ boost::test_tools::predicate_result check_all_tuple(std::vector<T> const& v, std
 }
 } // namespace detail
 
-// type_def_t predicates
+// Predicates and factories are defined here, grouped by node type.
+// Predicates come first, immediately followed by the corresponding factories, if any.
+
+// type_def_t
+
 template <ast::Properties P>
 boost::test_tools::predicate_result is_integer_def(
     ast::type_def_t<P> const& t,
@@ -95,13 +99,7 @@ boost::test_tools::predicate_result is_integer_def(
     return result;
 }
 
-// sort_t predicates
-
-template <ast::Properties P, Predicate<ast::expr_t<P>> F>
-boost::test_tools::predicate_result is_type_of(ast::expr_t<P> const& x, F&& f)
-{
-    return std::forward<F>(f)(x);
-}
+// expr_t
 
 inline constexpr auto is_typename =
 [] <ast::Properties P> (ast::expr_t<P> const& x)
@@ -113,67 +111,7 @@ inline constexpr auto is_typename =
         return failure("sort is not typename_t but ", pretty_name(x.value));
 };
 
-// func_arg_t predicates
-template <ast::Properties P, Predicate<ast::func_arg_t<P>> F>
-boost::test_tools::predicate_result is_arg(ast::func_arg_t<P> const& arg, F&& f)
-{
-    return std::forward<F>(f)(arg);
-}
-
-template <ast::Properties P>
-boost::test_tools::predicate_result
-is_type_binder(ast::func_arg_t<P> const& x, std::optional<std::string_view> const name)
-{
-    if (auto const result = is_typename(x.type); not result)
-        return failure("function return type predicate failed: ", result.message());
-    if (name)
-        return x.var ? detail::check_name<P>(*x.var, *name) : failure("type binder has no name");
-    else if (x.var)
-        return failure("type binder has a name but should be anonymous");
-    else
-        return true;
-}
-
-template <ast::Properties P, Predicate<ast::expr_t<P>> F>
-boost::test_tools::predicate_result
-is_term_binder(ast::func_arg_t<P> const& x, std::optional<std::string_view> const name, F&& f)
-{
-    if (auto const result = std::forward<F>(f)(x.type); not result)
-        return failure("argument type predicate failed: ", result.message());
-    if (name)
-        return x.var ? detail::check_name<P>(*x.var, *name) : failure("argument has no name");
-    else if (x.var)
-        return failure("argument has a name but should be anonymous");
-    else
-        return true;
-}
-
-// type_t predicates
-
-template <ast::Properties P>
-boost::test_tools::predicate_result is_type_var(ast::expr_t<P> const& x, std::string_view const name)
-{
-    auto const var = std::get_if<typename ast::expr_t<P>::var_t>(&x.value);
-    if (not var)
-        return failure("expression is not var_t but ", pretty_name(x.value));
-    return detail::check_name<P>(*var, name);
-}
-
-template <ast::Properties P, typename... ArgPredicates, Predicate<typename ast::expr_t<P>> F>
-boost::test_tools::predicate_result
-is_arr_of(ast::expr_t<P> const& type, std::tuple<ArgPredicates...> const& f_args, F&& f_ret_type)
-{
-    auto const arr = std::get_if<typename ast::expr_t<P>::pi_t>(&type.value);
-    if (not arr)
-        return failure("type is not pi_t but ", pretty_name(type.value));
-    if (auto const result = std::forward<F>(f_ret_type)(arr->ret_type.get()); not result)
-        return failure("return type predicate failed: ", result.message());
-    if (arr->args.size() != sizeof...(ArgPredicates))
-        return failure("wrong number of arguments: ", sizeof...(ArgPredicates), " != ", arr->args.size());
-    return detail::check_all_tuple<0ul>(arr->args, f_args);
-}
-
-inline constexpr auto is_type_bool =
+inline constexpr auto is_bool =
 [] <ast::Properties P> (ast::expr_t<P> const& type)
 -> boost::test_tools::predicate_result
 {
@@ -183,7 +121,7 @@ inline constexpr auto is_type_bool =
         return failure("type is not bool_t but ", pretty_name(type.value));
 };
 
-inline constexpr auto is_type_i32 =
+inline constexpr auto is_i32 =
 [] <ast::Properties P> (ast::expr_t<P> const& type)
 -> boost::test_tools::predicate_result
 {
@@ -193,7 +131,7 @@ inline constexpr auto is_type_i32 =
         return failure("type is not i32_t but ", pretty_name(type.value));
 };
 
-inline constexpr auto is_type_u32 =
+inline constexpr auto is_u32 =
 [] <ast::Properties P> (ast::expr_t<P> const& type)
 -> boost::test_tools::predicate_result
 {
@@ -202,17 +140,6 @@ inline constexpr auto is_type_u32 =
     else
         return failure("type is not u32_t but ", pretty_name(type.value));
 };
-
-// expr_t predicates
-
-template <ast::Properties P>
-boost::test_tools::predicate_result is_var(ast::expr_t<P> const& expr, std::string_view const name)
-{
-    auto const var = std::get_if<typename ast::expr_t<P>::var_t>(&expr.value);
-    if (not var)
-        return failure("expression is not var_t but ", pretty_name(expr.value));
-    return detail::check_name<P>(*var, name);
-}
 
 template <ast::Properties P>
 boost::test_tools::predicate_result is_boolean_constant(ast::expr_t<P> const& expr, bool const x)
@@ -250,20 +177,28 @@ boost::test_tools::predicate_result is_numeric_constant(ast::expr_t<P> const& ex
     return failed;
 }
 
-template <ast::Properties P, Predicate<ast::expr_t<P>> F, typename... ArgPredicates>
-boost::test_tools::predicate_result is_app_of(ast::expr_t<P> const& expr, F&& f_func, ArgPredicates&&... f_args)
+inline auto constant(bool value)
 {
-    auto const app = std::get_if<typename ast::expr_t<P>::app_t>(&expr.value);
-    if (not app)
-        return failure("expression is not app_t but ", pretty_name(expr.value));
-    if (auto const result = std::forward<F>(f_func)(app->func.get()); not result)
-        return failure("predicate has failed for func: ", result.message());
-    if (app->args.size() != sizeof...(ArgPredicates))
-        return failure("wrong number of arguments ", app->args.size(), " != ", sizeof...(ArgPredicates));
-    if constexpr (sizeof...(ArgPredicates) > 0ul)
-        return detail::check_all<0ul>(app->args, std::forward<ArgPredicates>(f_args)...);
-    else
-        return true;
+    return [value] <ast::Properties P> (ast::expr_t<P> const& expr)
+    {
+        return is_boolean_constant(expr, value);
+    };
+}
+
+inline auto constant(int value)
+{
+    return [value=std::to_string(value)] <ast::Properties P> (ast::expr_t<P> const& expr)
+    {
+        return is_numeric_constant(expr, value);
+    };
+}
+
+inline auto numeric_constant(std::string const& value)
+{
+    return [value] <ast::Properties P> (ast::expr_t<P> const& expr)
+    {
+        return is_numeric_constant(expr, value);
+    };
 }
 
 template <ast::Properties P, Predicate<ast::expr_t<P>> F1, Predicate<ast::expr_t<P>> F2>
@@ -282,18 +217,107 @@ boost::test_tools::predicate_result is_plus(ast::expr_t<P> const& expr, F1&& f1,
     return true;
 }
 
-template <ast::Properties P, Predicate<ast::expr_t<P>> F>
-boost::test_tools::predicate_result is_type_expr_of(ast::expr_t<P> const& expr, F&& f)
+template <ast::Properties P>
+boost::test_tools::predicate_result is_var(ast::expr_t<P> const& expr, std::string_view const name)
 {
-    return std::forward<F>(f)(expr);
+    auto const var = std::get_if<typename ast::expr_t<P>::var_t>(&expr.value);
+    if (not var)
+        return failure("expression is not var_t but ", pretty_name(expr.value));
+    return detail::check_name<P>(*var, name);
 }
 
-inline constexpr auto is_zero = [] <ast::Properties P> (ast::expr_t<P> const& expr)
+inline auto var(std::string const& name)
 {
-    return is_numeric_constant(expr, "0");
-};
+    return [name] <ast::Properties P> (ast::expr_t<P> const& expr)
+    {
+        return is_var(expr, name);
+    };
+}
 
-// stmt_t predicates
+template <ast::Properties P, Predicate<ast::expr_t<P>> F, typename... ArgPredicates>
+boost::test_tools::predicate_result is_app_of(ast::expr_t<P> const& expr, F&& f_func, ArgPredicates&&... f_args)
+{
+    auto const app = std::get_if<typename ast::expr_t<P>::app_t>(&expr.value);
+    if (not app)
+        return failure("expression is not app_t but ", pretty_name(expr.value));
+    if (auto const result = std::forward<F>(f_func)(app->func.get()); not result)
+        return failure("predicate has failed for func: ", result.message());
+    if (app->args.size() != sizeof...(ArgPredicates))
+        return failure("wrong number of arguments ", app->args.size(), " != ", sizeof...(ArgPredicates));
+    if constexpr (sizeof...(ArgPredicates) > 0ul)
+        return detail::check_all<0ul>(app->args, std::forward<ArgPredicates>(f_args)...);
+    else
+        return true;
+}
+
+template <ast::Properties P, Predicate<ast::expr_t<P>> F, typename... ArgPredicates>
+constexpr auto app_of(F&& f_func, ArgPredicates&&... f_args)
+{
+    return [f_func=std::forward<F>(f_func), ...f_args=std::forward<ArgPredicates>(f_args)] (ast::expr_t<P> const& x)
+    {
+        return is_app_of(x, f_func, f_args...);
+    };
+}
+
+template <ast::Properties P, typename... ArgPredicates, Predicate<typename ast::expr_t<P>> F>
+boost::test_tools::predicate_result
+is_pi_of(ast::expr_t<P> const& type, std::tuple<ArgPredicates...> const& f_args, F&& f_ret_type)
+{
+    auto const arr = std::get_if<typename ast::expr_t<P>::pi_t>(&type.value);
+    if (not arr)
+        return failure("type is not pi_t but ", pretty_name(type.value));
+    if (auto const result = std::forward<F>(f_ret_type)(arr->ret_type.get()); not result)
+        return failure("return type predicate failed: ", result.message());
+    if (arr->args.size() != sizeof...(ArgPredicates))
+        return failure("wrong number of arguments: ", sizeof...(ArgPredicates), " != ", arr->args.size());
+    return detail::check_all_tuple<0ul>(arr->args, f_args);
+}
+
+template <ast::Properties P, Predicate<ast::expr_t<P>> F, typename... ArgPredicates>
+constexpr auto pi_of(std::tuple<ArgPredicates...> args, F&& ret_type)
+{
+    return [args=std::move(args), ret_type=std::forward<F>(ret_type)] (ast::expr_t<P> const& x)
+    {
+        return is_pi_of(x, args, ret_type);
+    };
+}
+
+// func_arg_t
+
+template <ast::Properties P, Predicate<ast::expr_t<P>> F>
+boost::test_tools::predicate_result is_arg(
+    ast::func_arg_t<P> const& arg,
+    F&& type_predicate,
+    std::optional<std::string_view> const name)
+{
+    if (auto const result = std::forward<F>(type_predicate)(arg.type); not result)
+        return failure("argument type predicate failed: ", result.message());
+    if (name)
+        return arg.var ? detail::check_name<P>(*arg.var, *name) : failure("argument has no name");
+    else if (arg.var)
+        return failure("argument has a name but should be anonymous");
+    else
+        return true;
+}
+
+inline auto typename_(std::optional<std::string> name = std::nullopt)
+{
+    return [name=std::move(name)] <ast::Properties P> (typename ast::func_arg_t<P> const& x)
+    {
+        return is_arg(x, is_typename, name);
+    };
+}
+
+template <ast::Properties P, Predicate<ast::expr_t<P>> F>
+inline auto arg_of(F&& f, std::optional<std::string> name = std::nullopt)
+{
+    return [f=std::forward<F>(f), name=std::move(name)] (ast::func_arg_t<P> const& x)
+    {
+        return is_arg<P>(x, f, name);
+    };
+}
+
+// stmt_t
 
 template <ast::Properties P, Predicate<ast::expr_t<P>> F, typename... ArgPredicates>
 boost::test_tools::predicate_result is_func_call_of(ast::stmt_t<P> const& stmt, F&& f_func, ArgPredicates&&... f_args)
@@ -320,97 +344,6 @@ boost::test_tools::predicate_result is_return_of(ast::stmt_t<P> const& stmt, F&&
     if (not ret->expr.has_value())
         return failure("return statement does not contain an expression");
     return std::forward<F>(f)(*ret->expr);
-}
-
-// factories of sort_t predicates
-template <ast::Properties P, Predicate<ast::expr_t<P>> F>
-constexpr auto type_of(F&& f)
-{
-    return [f=std::forward<F>(f)] (ast::expr_t<P> const& x)
-    {
-        return is_type_of(x, f);
-    };
-}
-
-// factories of func_arg_t predicates
-inline auto type_binder(std::optional<std::string> const& name)
-{
-    return [name] <ast::Properties P> (typename ast::func_arg_t<P> const& x)
-    {
-        return is_type_binder(x, name);
-    };
-}
-
-template <ast::Properties P, Predicate<ast::expr_t<P>> F>
-inline auto term_binder(F&& f)
-{
-    return [f=std::forward<F>(f)] (ast::func_arg_t<P> const& x)
-    {
-        return is_term_binder<P>(x, std::nullopt, f);
-    };
-}
-
-template <ast::Properties P, Predicate<ast::expr_t<P>> F>
-inline auto term_binder(std::string const& name, F&& f)
-{
-    return [name, f=std::forward<F>(f)] (ast::func_arg_t<P> const& x)
-    {
-        return is_term_binder<P>(x, name, f);
-    };
-}
-
-// factories of type_t predicates
-
-inline auto type_var(std::string const& name)
-{
-    return [name] <ast::Properties P> (ast::expr_t<P> const& type)
-    {
-        return is_type_var(type, name);
-    };
-}
-
-// factories of expr_t predicates
-
-template <ast::Properties P, Predicate<ast::expr_t<P>> F>
-constexpr auto type_expr_of(F&& f)
-{
-    return [f=std::forward<F>(f)] (ast::expr_t<P> const& expr)
-    {
-        return is_type_expr_of(expr, f);
-    };
-}
-
-template <ast::Properties P, Predicate<ast::expr_t<P>> F, typename... ArgPredicates>
-constexpr auto app_of(F&& f_func, ArgPredicates&&... f_args)
-{
-    return [f_func=std::forward<F>(f_func), ...f_args=std::forward<ArgPredicates>(f_args)] (ast::expr_t<P> const& x)
-    {
-        return is_app_of(x, f_func, f_args...);
-    };
-}
-
-inline auto var(std::string const& name)
-{
-    return [name] <ast::Properties P> (ast::expr_t<P> const& expr)
-    {
-        return is_var(expr, name);
-    };
-}
-
-inline auto boolean_constant(bool const value)
-{
-    return [value] <ast::Properties P> (ast::expr_t<P> const& expr)
-    {
-        return is_boolean_constant(expr, value);
-    };
-}
-
-inline auto numeric_constant(std::string const& value)
-{
-    return [value] <ast::Properties P> (ast::expr_t<P> const& expr)
-    {
-        return is_numeric_constant(expr, value);
-    };
 }
 
 } // namespace dep0::testing

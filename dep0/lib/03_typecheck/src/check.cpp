@@ -572,7 +572,7 @@ expected<expr_t> check_pi_type(
             // Therefore there should not be any need for "guessing". This is coming from the fact that
             // currently numerical constants cannot be type-assigned without providing a "tie-breaker".
             // If we get rid of that (perhaps by type-assigning consatnts to i32_t and then convert them),
-            // We could restructure this entire type-checking around a more "traditional" 2-step approach
+            // we could restructure this entire type-checking around a more "traditional" 2-step approach
             // of type-assigning first and then comparing against the expected type.
             auto type = check_expr(ctx, arg.type, derivation_rules::make_typename());
             if (type)

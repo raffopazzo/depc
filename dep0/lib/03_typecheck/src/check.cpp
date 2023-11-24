@@ -358,7 +358,7 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, sort_
         std::ostringstream err;
         pretty_print(err << "type mismatch between expression of type `", actual_type) << '`';
         pretty_print(err << " and expected type `", expected_type) << '`';
-        return error_t::from_error(dep0::error_t(err.str(), loc, {reason}), ctx, expected_type);
+        return error_t::from_error(dep0::error_t(err.str(), loc, std::vector{std::move(reason)}), ctx, expected_type);
     };
     return match(
         x.value,

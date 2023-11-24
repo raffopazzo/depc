@@ -213,7 +213,7 @@ expected<unique_ref<llvm::Module>> gen(
         // LLVM can only generate functions for 1st order abstractions;
         // for 2nd order abstractions we rely on beta-delta normalization to produce a value or a 1st order application
         auto const type = std::get_if<typecheck::expr_t>(&def.properties.sort.get());
-        assert(type and "function cannot me a kind");
+        assert(type and "function cannot be a kind");
         auto const pi = std::get_if<typecheck::expr_t::pi_t>(&type->value);
         assert(pi and "function type must be pi");
         if (is_first_order_function_type(*pi))

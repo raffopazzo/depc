@@ -162,14 +162,31 @@ static void gen_func_body(
     typecheck::body_t const&,
     llvm::Function*);
 
-static bool is_first_order_abstraction(typecheck::expr_t::abs_t const&);
-static bool is_first_order_type(typecheck::expr_t const&);
+static bool is_first_order_function_type(
+    std::vector<typecheck::func_arg_t>::const_iterator begin,
+    std::vector<typecheck::func_arg_t>::const_iterator end,
+    typecheck::expr_t const& ret_type);
+static bool is_first_order_function_type(typecheck::expr_t::abs_t const&);
 static bool is_first_order_function_type(typecheck::expr_t::pi_t const&);
+static bool is_first_order_type(typecheck::expr_t const&);
 
-bool is_first_order_abstraction(typecheck::expr_t::abs_t const& f)
+bool is_first_order_function_type(
+    std::vector<typecheck::func_arg_t>::const_iterator const begin,
+    std::vector<typecheck::func_arg_t>::const_iterator const end,
+    typecheck::expr_t const& ret_type)
 {
-    return is_first_order_type(f.ret_type.get()) and
-        std::ranges::all_of(f.args, [] (typecheck::func_arg_t const& arg) { return is_first_order_type(arg.type); });
+    return std::all_of(begin, end, [] (typecheck::func_arg_t const& arg) { return is_first_order_type(arg.type); })
+        and is_first_order_type(ret_type);
+}
+
+bool is_first_order_function_type(typecheck::expr_t::abs_t const& f)
+{
+    return is_first_order_function_type(f.args.begin(), f.args.end(), f.ret_type.get());
+}
+
+bool is_first_order_function_type(typecheck::expr_t::pi_t const& x)
+{
+    return is_first_order_function_type(x.args.begin(), x.args.end(), x.ret_type.get());
 }
 
 bool is_first_order_type(typecheck::expr_t const& type)
@@ -190,16 +207,10 @@ bool is_first_order_type(typecheck::expr_t const& type)
         [] (typecheck::expr_t::boolean_constant_t const&) { return false; },
         [] (typecheck::expr_t::numeric_constant_t const&) { return false; },
         [] (typecheck::expr_t::arith_expr_t const&) { return false; },
-        [] (typecheck::expr_t::var_t const&) { return true; }, // TODO need to double check, it could refer to a kind
+        [] (typecheck::expr_t::var_t const&) { return true; }, // caller must call only if expr is a type
         [] (typecheck::expr_t::app_t const&) { return false; },
         [] (typecheck::expr_t::abs_t const&) { return false; },
         [] (typecheck::expr_t::pi_t const& t) { return is_first_order_function_type(t); });
-}
-
-bool is_first_order_function_type(typecheck::expr_t::pi_t const& x)
-{
-    return is_first_order_type(x.ret_type.get()) and
-        std::ranges::all_of(x.args, [] (typecheck::func_arg_t const& arg) { return is_first_order_type(arg.type); });
 }
 
 expected<unique_ref<llvm::Module>> gen(
@@ -222,7 +233,7 @@ expected<unique_ref<llvm::Module>> gen(
     {
         // LLVM can only generate functions for 1st order abstractions;
         // for 2nd order abstractions we rely on beta-delta normalization to produce a value or a 1st order application
-        if (is_first_order_abstraction(def.value))
+        if (is_first_order_function_type(def.value))
             gen_func(global, local, def.name, def.value);
     }
 
@@ -440,7 +451,7 @@ llvm_func_t gen_func(
     local_context_t const& local,
     typecheck::expr_t::abs_t const& f)
 {
-    assert(is_first_order_abstraction(f) and "can only generate an llvm function for 1st order abstractions");
+    assert(is_first_order_function_type(f) and "can only generate an llvm function for 1st order abstractions");
     auto const proto =
         llvm_func_proto_t{
             fmap(f.args, [] (typecheck::func_arg_t const& x) { return llvm_func_proto_t::arg_t{x.type, x.var}; }),
@@ -465,7 +476,7 @@ void gen_func(
     source_text const& name,
     typecheck::expr_t::abs_t const& f)
 {
-    assert(is_first_order_abstraction(f) and "can only generate an llvm function for 1st order abstractions");
+    assert(is_first_order_function_type(f) and "can only generate an llvm function for 1st order abstractions");
     auto const proto =
         llvm_func_proto_t{
             fmap(f.args, [] (typecheck::func_arg_t const& x) { return llvm_func_proto_t::arg_t{x.type, x.var}; }),

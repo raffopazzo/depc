@@ -178,7 +178,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
                         {
                             return std::any_cast<func_arg_t>(visitFuncArg(x));
                         }),
-                    std::any_cast<expr_t>(visitType(ctx->retType))}};
+                    std::any_cast<expr_t>(visitExpr(ctx->retType))}};
         if (ctx->KW_TYPENAME())
             return expr_t{
                 loc,
@@ -204,22 +204,14 @@ struct parse_visitor_t : dep0::DepCParserVisitor
     {
         assert(ctx);
         auto const loc = get_loc(src, *ctx);
+        auto const get_name = [&]
+        {
+            return ctx->name ? std::optional{expr_t::var_t{get_text(src, *ctx->name)}} : std::nullopt;
+        };
         if (ctx->KW_TYPENAME())
-            return func_arg_t{
-                loc,
-                visitTypename(ctx->KW_TYPENAME()),
-                ctx->name
-                    ? std::optional{expr_t::var_t{get_text(src, *ctx->name)}}
-                    : std::nullopt
-            };
-        if (ctx->type())
-            return func_arg_t{
-                loc,
-                std::any_cast<expr_t>(visitType(ctx->type())),
-                ctx->name
-                    ? std::optional{expr_t::var_t{get_text(src, *ctx->name)}}
-                    : std::nullopt
-            };
+            return func_arg_t{loc, visitTypename(ctx->KW_TYPENAME()), get_name()};
+        if (ctx->expr())
+            return func_arg_t{loc, std::any_cast<expr_t>(visitExpr(ctx->expr())), get_name()};
         throw error_t{"unexpected alternative when parsing FuncArgContext", loc};
     }
 

@@ -29,6 +29,12 @@ struct ParserTestsFixture
         return dep0::testing::pi_of<dep0::parser::properties_t>(std::forward<Args>(args)...);
     }
 
+    template <typename... Args>
+    constexpr auto plus(Args&&... args)
+    {
+        return dep0::testing::plus<dep0::parser::properties_t>(std::forward<Args>(args)...);
+    }
+
     template <dep0::testing::Predicate<dep0::parser::expr_t> F>
     static auto arg_of(F&& f, std::optional<std::string> name = std::nullopt)
     {

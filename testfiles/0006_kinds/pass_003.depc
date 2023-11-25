@@ -1,0 +1,39 @@
+bool negate(bool x)
+{
+    if (x) return false;
+    else return true;
+}
+
+i32_t plus_1(i32_t x)
+{
+    return x + 1;
+}
+
+auto int_or_bool(bool which) -> typename
+{
+    if (which) return i32_t;
+    else return bool;
+}
+
+auto select(bool which) -> (int_or_bool(which)) -> int_or_bool(which)
+{
+    if (which)
+        return plus_1;
+    else
+        return negate;
+}
+
+auto apply(typename t, (t) -> t f, t x) -> t
+{
+    return f(x);
+}
+
+i32_t apply_1()
+{
+    return apply(int_or_bool(true), select(true), 1);
+}
+
+bool apply_false()
+{
+    return apply(int_or_bool(false), select(false), false);
+}

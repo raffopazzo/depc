@@ -347,10 +347,7 @@ BOOST_AUTO_TEST_CASE(typecheck_error_000)
     BOOST_TEST(is_arg(f.value.args[0ul], is_typename, "t"));
     BOOST_TEST(is_arg(f.value.args[1ul], var("t"), "x"));
     BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-    BOOST_TEST(is_return_of(f.value.body.stmts[0ul], [] (dep0::parser::expr_t const& expr)
-    {
-        return is_plus(expr, var("x"), constant(1));
-    }));
+    BOOST_TEST(is_return_of(f.value.body.stmts[0ul], plus(var("x"), constant(1))));
 }
 BOOST_AUTO_TEST_CASE(typecheck_error_001)
 {
@@ -368,10 +365,7 @@ BOOST_AUTO_TEST_CASE(typecheck_error_001)
     BOOST_TEST(is_arg(f.value.args[0ul], is_typename, "t"));
     BOOST_TEST(is_arg(f.value.args[1ul], var("t"), "x"));
     BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-    BOOST_TEST(is_return_of(f.value.body.stmts[0ul], [] (dep0::parser::expr_t const& expr)
-    {
-        return is_plus(expr, var("x"), constant(1));
-    }));
+    BOOST_TEST(is_return_of(f.value.body.stmts[0ul], plus(var("x"), constant(1))));
 }
 BOOST_AUTO_TEST_CASE(typecheck_error_002)
 {

@@ -217,6 +217,15 @@ boost::test_tools::predicate_result is_plus(ast::expr_t<P> const& expr, F1&& f1,
     return true;
 }
 
+template <ast::Properties P, Predicate<ast::expr_t<P>> F1, Predicate<ast::expr_t<P>> F2>
+constexpr auto plus(F1&& f1, F2&& f2)
+{
+    return [f1=std::forward<F1>(f1), f2=std::forward<F2>(f2)] (ast::expr_t<P> const& x)
+    {
+        return is_plus(x, f1, f2);
+    };
+}
+
 template <ast::Properties P>
 boost::test_tools::predicate_result is_var(ast::expr_t<P> const& expr, std::string_view const name)
 {
@@ -333,6 +342,15 @@ boost::test_tools::predicate_result is_func_call_of(ast::stmt_t<P> const& stmt, 
         return detail::check_all<0ul>(app->args, std::forward<ArgPredicates>(f_args)...);
     else
         return true;
+}
+
+template <ast::Properties P, Predicate<typename ast::stmt_t<P>::if_else_t> F>
+boost::test_tools::predicate_result is_if_else(ast::stmt_t<P> const& stmt, F&& f)
+{
+    auto const if_ = std::get_if<typename ast::stmt_t<P>::if_else_t>(&stmt.value);
+    if (not if_)
+        return failure("statement is not if-else but ", pretty_name(stmt.value));
+    return std::forward<F>(f)(*if_);
 }
 
 template <ast::Properties P, Predicate<ast::expr_t<P>> F>

@@ -110,6 +110,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         assert(ctx);
         assert(ctx->name);
         assert(ctx->body());
+        auto const loc = get_loc(src, *ctx);
         auto const name = [&] { return get_text(src, *ctx->name); };
         auto const body = [&] { return std::any_cast<body_t>(visitBody(ctx->body())); };
         auto const args = [&]
@@ -118,7 +119,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         };
         if (ctx->type())
             return func_def_t{
-                get_loc(src, *ctx),
+                loc,
                 name(),
                 expr_t::abs_t{
                     args(),
@@ -127,14 +128,14 @@ struct parse_visitor_t : dep0::DepCParserVisitor
                 }};
         if (ctx->KW_TYPENAME())
             return func_def_t{
-                get_loc(src, *ctx),
+                loc,
                 name(),
                 expr_t::abs_t{
                     args(),
                     visitTypename(ctx->KW_TYPENAME()),
                     body()
                 }};
-        throw error_t{"unexpected alternative when parsing FuncDefContext", get_loc(src, *ctx)};
+        throw error_t{"unexpected alternative when parsing FuncDefContext", loc};
     }
 
     virtual std::any visitType(DepCParser::TypeContext* ctx) override
@@ -202,9 +203,10 @@ struct parse_visitor_t : dep0::DepCParserVisitor
     virtual std::any visitFuncArg(DepCParser::FuncArgContext* ctx) override
     {
         assert(ctx);
+        auto const loc = get_loc(src, *ctx);
         if (ctx->KW_TYPENAME())
             return func_arg_t{
-                get_loc(src, *ctx),
+                loc,
                 visitTypename(ctx->KW_TYPENAME()),
                 ctx->name
                     ? std::optional{expr_t::var_t{get_text(src, *ctx->name)}}
@@ -212,13 +214,13 @@ struct parse_visitor_t : dep0::DepCParserVisitor
             };
         if (ctx->type())
             return func_arg_t{
-                get_loc(src, *ctx),
+                loc,
                 std::any_cast<expr_t>(visitType(ctx->type())),
                 ctx->name
                     ? std::optional{expr_t::var_t{get_text(src, *ctx->name)}}
                     : std::nullopt
             };
-        throw error_t{"unexpected alternative when parsing FuncArgContext", get_loc(src, *ctx)};
+        throw error_t{"unexpected alternative when parsing FuncArgContext", loc};
     }
 
     virtual std::any visitBody(DepCParser::BodyContext* ctx) override
@@ -243,9 +245,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
     {
         assert(ctx);
         assert(ctx->funcCall());
-        return stmt_t{
-            get_loc(src, *ctx),
-            std::any_cast<expr_t::app_t>(visitFuncCall(ctx->funcCall()))};
+        return stmt_t{get_loc(src, *ctx), std::any_cast<expr_t::app_t>(visitFuncCall(ctx->funcCall()))};
     }
 
     virtual std::any visitIfElse(DepCParser::IfElseContext* ctx) override
@@ -278,8 +278,9 @@ struct parse_visitor_t : dep0::DepCParserVisitor
     {
         assert(ctx);
         if (ctx->body()) return visitBody(ctx->body());
-        if (ctx->stmt()) return body_t{get_loc(src, *ctx), {std::any_cast<stmt_t>(visitStmt(ctx->stmt()))}};
-        throw error_t{"unexpected alternative when parsing BodyOrStmtContext", get_loc(src, *ctx)};
+        auto const loc = get_loc(src, *ctx);
+        if (ctx->stmt()) return body_t{loc, {std::any_cast<stmt_t>(visitStmt(ctx->stmt()))}};
+        throw error_t{"unexpected alternative when parsing BodyOrStmtContext", loc};
     }
 
     virtual std::any visitPlusExpr(DepCParser::PlusExprContext* ctx) override

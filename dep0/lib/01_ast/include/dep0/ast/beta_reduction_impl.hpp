@@ -96,7 +96,9 @@ bool beta_normalize(typename expr_t<P>::app_t& app)
     bool changed = beta_normalize(app.func.get());
     for (auto& arg: app.args)
         changed |= beta_normalize(arg);
-    // TODO could also be application of pi_t
+    // In case you wonder whether we should reduce pi-expr too,
+    // beta-reduction of pi-application is not defined and
+    // it's not typeable anyway.
     if (auto* const abs = std::get_if<typename expr_t<P>::abs_t>(&app.func.get().value))
     {
         if (abs->args.size() > 0ul)

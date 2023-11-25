@@ -15,10 +15,7 @@ BOOST_AUTO_TEST_CASE(pass_000)
     BOOST_TEST(f.name == "three");
     BOOST_TEST(is_i32(f.value.ret_type.get()));
     BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-    BOOST_TEST(is_return_of(f.value.body.stmts[0ul], [] (dep0::typecheck::expr_t const& expr)
-    {
-        return is_plus(expr, constant(1), constant(2));
-    }));
+    BOOST_TEST(is_return_of(f.value.body.stmts[0ul], plus(constant(1), constant(2))));
 }
 
 BOOST_AUTO_TEST_CASE(pass_001)
@@ -29,10 +26,7 @@ BOOST_AUTO_TEST_CASE(pass_001)
     BOOST_TEST(f.name == "three");
     BOOST_TEST(is_i32(f.value.ret_type.get()));
     BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-    BOOST_TEST(is_return_of(f.value.body.stmts[0ul], [] (dep0::typecheck::expr_t const& expr)
-    {
-        return is_plus(expr, constant(1), constant(2));
-    }));
+    BOOST_TEST(is_return_of(f.value.body.stmts[0ul], plus(constant(1), constant(2))));
 }
 
 BOOST_AUTO_TEST_CASE(pass_002)
@@ -43,10 +37,7 @@ BOOST_AUTO_TEST_CASE(pass_002)
     BOOST_TEST(f.name == "three");
     BOOST_TEST(is_i32(f.value.ret_type.get()));
     BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-    BOOST_TEST(is_return_of(f.value.body.stmts[0ul], [] (dep0::typecheck::expr_t const& expr)
-    {
-        return is_plus(expr, constant(1), numeric_constant("+2"));
-    }));
+    BOOST_TEST(is_return_of(f.value.body.stmts[0ul], plus(constant(1), numeric_constant("+2"))));
 }
 
 BOOST_AUTO_TEST_CASE(pass_003)
@@ -57,10 +48,7 @@ BOOST_AUTO_TEST_CASE(pass_003)
     BOOST_TEST(f.name == "minus_one");
     BOOST_TEST(is_i32(f.value.ret_type.get()));
     BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-    BOOST_TEST(is_return_of(f.value.body.stmts[0ul], [] (dep0::typecheck::expr_t const& expr)
-    {
-        return is_plus(expr, constant(1), constant(-2));
-    }));
+    BOOST_TEST(is_return_of(f.value.body.stmts[0ul], plus(constant(1), constant(-2))));
 }
 
 BOOST_AUTO_TEST_CASE(typecheck_error_000)

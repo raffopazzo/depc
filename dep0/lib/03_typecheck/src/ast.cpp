@@ -6,12 +6,14 @@
 
 namespace dep0::typecheck {
 
+std::ostream& pretty_print(std::ostream& os, kind_t, std::size_t indent)
+{
+    return os << "<kind>";
+}
+
 std::ostream& pretty_print(std::ostream& os, sort_t const& sort, std::size_t indent)
 {
-    match(
-        sort,
-        [&] (expr_t const& expr) { pretty_print(os, expr, indent); },
-        [&] (kind_t) { os << "<kind>"; });
+    match(sort, [&] (auto const& x) { pretty_print(os, x, indent); });
     return os;
 }
 

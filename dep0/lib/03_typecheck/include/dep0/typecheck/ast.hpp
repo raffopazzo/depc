@@ -90,6 +90,7 @@ struct legal_expr_t
     bool operator==(legal_expr_t const&) const = default;
 };
 
+std::ostream& pretty_print(std::ostream&, kind_t, std::size_t indent = 0ul);
 std::ostream& pretty_print(std::ostream&, sort_t const&, std::size_t indent = 0ul);
 
 } // namespace dep0::typecheck

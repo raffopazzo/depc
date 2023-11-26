@@ -308,7 +308,11 @@ dep0::expected<std::true_type> is_alpha_equivalent_impl(stmt_t<P>& x, stmt_t<P>&
 template <Properties P>
 dep0::expected<std::true_type> is_alpha_equivalent(expr_t<P> const& x, expr_t<P> const& y)
 {
-    // TODO we should make a lazy copy somehow, because renaming might be often unnecessary
+    // TODO we should make a lazy copy somehow, because renaming might be often unnecessary.
+    // Alternatively we could try something like this:
+    // 1. make the whole implementation templated over const-ref or mutable-ref, eg via `bool mutable` flag;
+    // 2. the immutable version will return an empty optional if renaming is necessary to establish equivalence;
+    // 3. only at that point actually make the copy and try again, but the mutable-ref does not return an optional.
     auto x2 = x;
     auto y2 = y;
     return impl::is_alpha_equivalent_impl(x2, y2);

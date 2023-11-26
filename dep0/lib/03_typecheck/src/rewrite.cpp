@@ -187,6 +187,7 @@ void rewrite(
     legal_expr_t const& old_properties,
     std::optional<expr_t>& result)
 {
+    // if a new binding variable occurs free in `to`, we cannot rewrite any further args, ret type or body
     bool stop = false;
     auto new_args =
         fmap(

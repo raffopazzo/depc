@@ -22,6 +22,9 @@ struct derivation_rules
     static expr_t make_u16();
     static expr_t make_u32();
     static expr_t make_u64();
+
+    static expr_t make_true();
+    static expr_t make_false();
 };
 
 template <typename... Args>
@@ -83,5 +86,8 @@ expr_t derivation_rules::make_u8() { return make_legal_expr(make_typename(), exp
 expr_t derivation_rules::make_u16() { return make_legal_expr(make_typename(), expr_t::u16_t{}); }
 expr_t derivation_rules::make_u32() { return make_legal_expr(make_typename(), expr_t::u32_t{}); }
 expr_t derivation_rules::make_u64() { return make_legal_expr(make_typename(), expr_t::u64_t{}); }
+
+expr_t derivation_rules::make_true() { return make_legal_expr(make_bool(), expr_t::boolean_constant_t{true}); }
+expr_t derivation_rules::make_false() { return make_legal_expr(make_bool(), expr_t::boolean_constant_t{false}); }
 
 } // namespace dep0::typecheck

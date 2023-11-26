@@ -8,6 +8,7 @@
 #include "private/beta_equivalence.hpp"
 #include "private/derivation_rules.hpp"
 #include "private/returns_from_all_branches.hpp"
+#include "private/rewrite.hpp"
 
 #include "dep0/digit_separator.hpp"
 #include "dep0/fmap.hpp"
@@ -176,16 +177,25 @@ expected<stmt_t> check_stmt(context_t const& ctx, parser::stmt_t const& s, sort_
             auto cond = check_expr(ctx, x.cond, derivation_rules::make_bool());
             if (not cond)
                 return std::move(cond.error());
-            auto true_branch = check_body(ctx, x.true_branch, return_type);
+            auto true_branch = [&]
+            {
+                auto new_type = rewrite(*cond, derivation_rules::make_true(), return_type);
+                return check_body(ctx, x.true_branch, new_type ? *new_type : return_type);
+            }();
             if (not true_branch)
                 return std::move(true_branch.error());
             std::optional<body_t> false_branch;
             if (x.false_branch)
             {
-                if (auto f = check_body(ctx, *x.false_branch, return_type))
-                    false_branch.emplace(std::move(*f));
+                auto tmp = [&]
+                {
+                    auto new_type = rewrite(*cond, derivation_rules::make_false(), return_type);
+                    return check_body(ctx, *x.false_branch, new_type ? *new_type : return_type);
+                }();
+                if (tmp)
+                    false_branch.emplace(std::move(*tmp));
                 else
-                    return std::move(f.error());
+                    return std::move(tmp.error());
             }
             return make_legal_stmt(
                 stmt_t::if_else_t{

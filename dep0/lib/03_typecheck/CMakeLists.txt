@@ -11,6 +11,7 @@ add_library(dep0_typecheck_lib
   src/private/beta_equivalence.hpp
   src/private/derivation_rules.hpp
   src/private/returns_from_all_branches.hpp
+  src/private/rewrite.hpp
   # source files
   src/ast.cpp
   src/beta_equivalence.cpp
@@ -20,6 +21,7 @@ add_library(dep0_typecheck_lib
   src/derivation_rules.cpp
   src/error.cpp
   src/returns_from_all_branches.cpp
+  src/rewrite.cpp
   )
 add_library(DepC::Dep0::TypeCheck ALIAS dep0_typecheck_lib)
 target_compile_features(dep0_typecheck_lib PUBLIC cxx_std_20)

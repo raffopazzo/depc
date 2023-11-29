@@ -7,6 +7,7 @@
 
 #include "private/beta_equivalence.hpp"
 #include "private/derivation_rules.hpp"
+#include "private/proof_state.hpp"
 #include "private/returns_from_all_branches.hpp"
 #include "private/rewrite.hpp"
 
@@ -27,8 +28,8 @@ namespace dep0::typecheck {
 static expected<expr_t> type_assign_app(context_t const&, parser::expr_t::app_t const&, source_loc_t const&);
 static expected<type_def_t> check_type_def(context_t&, parser::type_def_t const&);
 static expected<func_def_t> check_func_def(context_t&, parser::func_def_t const&);
-static expected<body_t> check_body(context_t const&, parser::body_t const&, sort_t const& return_type);
-static expected<stmt_t> check_stmt(context_t const&, parser::stmt_t const&, sort_t const& return_type);
+static expected<body_t> check_body(proof_state_t&, parser::body_t const&);
+static expected<stmt_t> check_stmt(proof_state_t&, parser::stmt_t const&);
 static expected<expr_t> check_expr(context_t const&, parser::expr_t const&, sort_t const& expected_type);
 static expected<expr_t> check_abs(
     context_t const&,
@@ -153,55 +154,64 @@ expected<func_def_t> check_func_def(context_t& ctx, parser::func_def_t const& f)
     return make_legal_func_def(abs->properties.sort.get(), f.name, std::move(std::get<expr_t::abs_t>(abs->value)));
 }
 
-expected<body_t> check_body(context_t const& ctx, parser::body_t const& x, sort_t const& return_type)
+expected<body_t> check_body(proof_state_t& state, parser::body_t const& x)
 {
-    if (auto stmts = fmap_or_error(x.stmts, [&] (parser::stmt_t const& s) { return check_stmt(ctx, s, return_type); }))
+    if (auto stmts = fmap_or_error(x.stmts, [&] (parser::stmt_t const& s) { return check_stmt(state, s); }))
         return make_legal_body(std::move(*stmts));
     else
         return std::move(stmts.error());
 }
 
-expected<stmt_t> check_stmt(context_t const& ctx, parser::stmt_t const& s, sort_t const& return_type)
+expected<stmt_t> check_stmt(proof_state_t& state, parser::stmt_t const& s)
 {
     return match(
         s.value,
         [&] (parser::expr_t::app_t const& x) -> expected<stmt_t>
         {
-            if (auto app = type_assign_app(ctx, x, s.properties))
+            if (auto app = type_assign_app(state.context, x, s.properties))
                 return make_legal_stmt(std::move(std::get<expr_t::app_t>(app->value)));
             else
                 return std::move(app.error());
         },
         [&] (parser::stmt_t::if_else_t const& x) -> expected<stmt_t>
         {
-            auto cond = check_expr(ctx, x.cond, derivation_rules::make_bool());
+            auto cond = check_expr(state.context, x.cond, derivation_rules::make_bool());
             if (not cond)
                 return std::move(cond.error());
             auto true_branch = [&]
             {
-                auto new_type = rewrite(*cond, derivation_rules::make_true(), return_type);
-                return check_body(ctx, x.true_branch, new_type ? *new_type : return_type);
+                auto new_state = proof_state_t(state.context.extend(), state.goal);
+                new_state.rewrite(*cond, derivation_rules::make_true());
+                return check_body(new_state, x.true_branch);
             }();
             if (not true_branch)
                 return std::move(true_branch.error());
-            std::optional<body_t> false_branch;
             if (x.false_branch)
             {
-                auto tmp = [&]
-                {
-                    auto new_type = rewrite(*cond, derivation_rules::make_false(), return_type);
-                    return check_body(ctx, *x.false_branch, new_type ? *new_type : return_type);
-                }();
-                if (tmp)
-                    false_branch.emplace(std::move(*tmp));
-                else
-                    return std::move(tmp.error());
+                auto new_state = proof_state_t(state.context.extend(), state.goal);
+                new_state.rewrite(*cond, derivation_rules::make_false());
+                auto false_branch = check_body(new_state, *x.false_branch);
+                if (not false_branch)
+                    return std::move(false_branch.error());
+                return make_legal_stmt(
+                    stmt_t::if_else_t{
+                        std::move(*cond),
+                        std::move(*true_branch),
+                        std::move(*false_branch)
+                    });
             }
+            // we are dealing with an if-else without an explicit else branch;
+            // but if the true branch returns from all its sub-branches,
+            // then it means we are now in the implied else branch;
+            // we can then rewrite `cond = false` inside the current proof state
+            if (returns_from_all_branches(*true_branch))
+                state.rewrite(*cond, derivation_rules::make_false());
             return make_legal_stmt(
                 stmt_t::if_else_t{
                     std::move(*cond),
                     std::move(*true_branch),
-                    std::move(false_branch)});
+                    std::nullopt
+                });
         },
         [&] (parser::stmt_t::return_t const& x) -> expected<stmt_t>
         {
@@ -209,7 +219,7 @@ expected<stmt_t> check_stmt(context_t const& ctx, parser::stmt_t const& s, sort_
             {
                 bool const ok =
                     match(
-                        return_type,
+                        state.goal,
                         [&] (expr_t const& return_type)
                         {
                             // TODO beta equivalence too?
@@ -221,11 +231,11 @@ expected<stmt_t> check_stmt(context_t const& ctx, parser::stmt_t const& s, sort_
                 else
                 {
                     std::ostringstream err;
-                    pretty_print(err << "expecting expression of type `", return_type) << '`';
-                    return error_t::from_error(dep0::error_t(err.str(), s.properties), ctx, return_type);
+                    pretty_print(err << "expecting expression of type `", state.goal) << '`';
+                    return error_t::from_error(dep0::error_t(err.str(), s.properties), state.context, state.goal);
                 }
             }
-            else if (auto expr = check_expr(ctx, *x.expr, return_type))
+            else if (auto expr = check_expr(state.context, *x.expr, state.goal))
                 return make_legal_stmt(stmt_t::return_t{std::move(*expr)});
             else
                 return std::move(expr.error());
@@ -667,7 +677,8 @@ expected<expr_t> check_abs(
     }
     auto const& pi_type = std::get<expr_t::pi_t>(func_type->value);
     auto const& ret_type = pi_type.ret_type.get();
-    auto body = check_body(f_ctx, f.body, ret_type);
+    auto state = proof_state_t(f_ctx, ret_type);
+    auto body = check_body(state, f.body);
     if (not body)
         return std::move(body.error());
     // so far so good, but we now need to make sure that all branches contain a return statement,

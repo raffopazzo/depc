@@ -167,7 +167,7 @@ BOOST_AUTO_TEST_CASE(pass_002)
 BOOST_AUTO_TEST_CASE(pass_003)
 {
     BOOST_TEST_REQUIRE(pass("0006_kinds/pass_003.depc"));
-    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 7ul);
+    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 10ul);
     {
         auto const& f = pass_result->func_defs[0ul];
         BOOST_TEST(f.name == "negate");
@@ -268,7 +268,7 @@ BOOST_AUTO_TEST_CASE(pass_003)
     }
     {
         auto const& f = pass_result->func_defs[5ul];
-        BOOST_TEST(f.name == "apply_1");
+        BOOST_TEST(f.name == "f");
         BOOST_TEST(is_expr_of(f.properties.sort.get(), pi_of(std::tuple{}, is_i32)));
         BOOST_TEST(f.value.args.size() == 0ul);
         BOOST_TEST(is_i32(f.value.ret_type.get()));
@@ -284,7 +284,7 @@ BOOST_AUTO_TEST_CASE(pass_003)
     }
     {
         auto const& f = pass_result->func_defs[6ul];
-        BOOST_TEST(f.name == "apply_false");
+        BOOST_TEST(f.name == "g");
         BOOST_TEST(is_expr_of(f.properties.sort.get(), pi_of(std::tuple{}, is_bool)));
         BOOST_TEST(f.value.args.size() == 0ul);
         BOOST_TEST(is_bool(f.value.ret_type.get()));
@@ -296,6 +296,67 @@ BOOST_AUTO_TEST_CASE(pass_003)
                     var("apply"),
                     app_of(var("int_or_bool"), constant(false)),
                     app_of(var("select"), constant(false)),
+                    constant(false))));
+    }
+    {
+        auto const& f = pass_result->func_defs[7ul];
+        BOOST_TEST(f.name == "select2");
+        BOOST_TEST(
+            is_expr_of(
+                f.properties.sort.get(),
+                pi_of(
+                    std::tuple{arg_of(is_bool, "which")},
+                    pi_of(
+                        std::tuple{arg_of(app_of(var("int_or_bool"), var("which")))},
+                        app_of(var("int_or_bool"), var("which"))))));
+        BOOST_TEST_REQUIRE(f.value.args.size() == 1ul);
+        BOOST_TEST(is_arg(f.value.args[0], is_bool, "which"));
+        BOOST_TEST(
+            is_pi_of(
+                f.value.ret_type.get(),
+                std::tuple{arg_of(app_of(var("int_or_bool"), var("which")))},
+                app_of(var("int_or_bool"), var("which"))));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 2ul);
+        BOOST_TEST(is_if_else(f.value.body.stmts[0ul], [] (dep0::typecheck::stmt_t::if_else_t const& if_)
+        {
+            BOOST_TEST(is_var(if_.cond, "which"));
+            BOOST_TEST_REQUIRE(if_.true_branch.stmts.size() == 1ul);
+            BOOST_TEST(is_return_of(if_.true_branch.stmts[0], var("plus_1")));
+            BOOST_TEST(not if_.false_branch.has_value());
+            return boost::test_tools::predicate_result(true);
+        }));
+        BOOST_TEST(is_return_of(f.value.body.stmts[1ul], var("negate")));
+    }
+    {
+        auto const& f = pass_result->func_defs[8ul];
+        BOOST_TEST(f.name == "f2");
+        BOOST_TEST(is_expr_of(f.properties.sort.get(), pi_of(std::tuple{}, is_i32)));
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_i32(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(
+            is_return_of(
+                f.value.body.stmts[0ul],
+                app_of(
+                    var("apply"),
+                    app_of(var("int_or_bool"), constant(true)),
+                    app_of(var("select2"), constant(true)),
+                    constant(1))));
+    }
+    {
+        auto const& f = pass_result->func_defs[9ul];
+        BOOST_TEST(f.name == "g2");
+        BOOST_TEST(is_expr_of(f.properties.sort.get(), pi_of(std::tuple{}, is_bool)));
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_bool(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(
+            is_return_of(
+                f.value.body.stmts[0ul],
+                app_of(
+                    var("apply"),
+                    app_of(var("int_or_bool"), constant(false)),
+                    app_of(var("select2"), constant(false)),
                     constant(false))));
     }
 }

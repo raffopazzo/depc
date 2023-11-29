@@ -10,6 +10,7 @@ add_library(dep0_typecheck_lib
   # private headers
   src/private/beta_equivalence.hpp
   src/private/derivation_rules.hpp
+  src/private/proof_state.hpp
   src/private/returns_from_all_branches.hpp
   src/private/rewrite.hpp
   # source files
@@ -20,6 +21,7 @@ add_library(dep0_typecheck_lib
   src/derivation.cpp
   src/derivation_rules.cpp
   src/error.cpp
+  src/proof_state.cpp
   src/returns_from_all_branches.cpp
   src/rewrite.cpp
   )

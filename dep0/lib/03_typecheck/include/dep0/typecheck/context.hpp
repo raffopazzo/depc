@@ -41,7 +41,7 @@ public:
     value_type const* operator[](expr_t::var_t const&) const;
 
     template <typename... Args>
-    auto try_emplace(expr_t::var_t name, Args&&... args)
+    std::pair<const_iterator, bool> try_emplace(expr_t::var_t name, Args&&... args)
     {
         auto const res = m_values.try_emplace(std::move(name), std::forward<Args>(args)...);
         if (res.second)

@@ -187,7 +187,9 @@ void rewrite(
     legal_expr_t const& old_properties,
     std::optional<expr_t>& result)
 {
-    // if a new binding variable occurs free in `to`, we cannot rewrite any further args, ret type or body
+    // Rewriting must stop if a binding variable occurs free in either `from` or `to`, because:
+    // 1. in `from`, for consistency with alpha-equivalence, i.e. if it was named differently we would not rewrite;
+    // 2. in `to`, for the same reason as term substition, i.e. it would change the meaning of the overall type.
     bool stop = false;
     auto new_args =
         fmap(
@@ -198,7 +200,10 @@ void rewrite(
                 if (not stop)
                 {
                     auto new_type = rewrite(from, to, old_arg.type);
-                    stop |= old_arg.var and ast::occurs_in(*old_arg.var, to, ast::occurrence_style::free);
+                    if (old_arg.var)
+                        stop |=
+                            ast::occurs_in(*old_arg.var, from, ast::occurrence_style::free) or
+                            ast::occurs_in(*old_arg.var, to, ast::occurrence_style::free);
                     if (new_type)
                         new_arg.emplace(old_arg.properties, std::move(*new_type), old_arg.var);
                 }

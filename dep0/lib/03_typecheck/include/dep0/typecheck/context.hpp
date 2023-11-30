@@ -5,6 +5,7 @@
 #include "dep0/scope_map.hpp"
 
 #include <cassert>
+#include <set>
 #include <vector>
 
 namespace dep0::typecheck {
@@ -22,7 +23,6 @@ private:
     context_t(scope_map<expr_t::var_t, value_type>, delta_reduction_context_t);
 
 public:
-    using iterator = typename scope_map<expr_t::var_t, value_type>::iterator;
     using const_iterator = typename scope_map<expr_t::var_t, value_type>::const_iterator;
 
     context_t() = default;
@@ -33,12 +33,16 @@ public:
 
     context_t extend() const;
 
+    std::set<expr_t::var_t> keys() const;
+
     // Allow iteration over the members of the current scope level.
     // Use `parent()` if you want to walk up the stack.
     const_iterator begin() const;
     const_iterator end() const;
 
     value_type const* operator[](expr_t::var_t const&) const;
+
+    context_t rewrite(expr_t const& from, expr_t const& to) const;
 
     template <typename... Args>
     std::pair<const_iterator, bool> try_emplace(expr_t::var_t name, Args&&... args)

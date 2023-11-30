@@ -2,6 +2,11 @@
 #include "dep0/ast/pretty_print.hpp"
 #include "dep0/match.hpp"
 
+#include "private/rewrite.hpp"
+
+#include "dep0/ast/beta_delta_reduction.hpp"
+
+#include <cassert>
 #include <ranges>
 
 namespace dep0::typecheck {
@@ -32,6 +37,42 @@ auto context_t::operator[](expr_t::var_t const& name) const -> value_type const*
     return m_values[name];
 }
 
+std::set<expr_t::var_t> context_t::keys() const
+{
+    std::set<expr_t::var_t> result;
+    for (auto x = std::optional{m_values}; x.has_value(); x = x->parent())
+        for (auto const y: *x)
+            result.insert(y.first);
+    return result;
+}
+
+context_t context_t::rewrite(expr_t const& from, expr_t const& to) const
+{
+    auto result = extend();
+    for (auto const& var: keys())
+        match(
+            *(*this)[var],
+            [] (type_def_t const&) { },
+            [&] (expr_t const& expr)
+            {
+                if (auto new_sort = typecheck::rewrite(from, to, expr.properties.sort.get()))
+                {
+                    // TODO should check that the new type actually got shorter after reduction,
+                    // in case we only managed to perform delta-reduction, in which case better
+                    // stick to the original, as it's easier to read for the user in case of error
+                    match(
+                        *new_sort,
+                        [&] (expr_t& new_type) { ast::beta_delta_normalize(m_delta_reduction_context, new_type); },
+                        [] (kind_t) { });
+                    auto new_expr = expr;
+                    new_expr.properties.sort = std::move(*new_sort);
+                    bool const inserted = result.try_emplace(var, new_expr).second;
+                    assert(inserted);
+                }
+            });
+    return result;
+}
+
 auto context_t::delta_reduction_context() const -> delta_reduction_context_t const&
 {
     return m_delta_reduction_context;
@@ -53,12 +94,14 @@ std::ostream& pretty_print(std::ostream& os, context_t const& ctx)
 {
     for_each_line(
         os,
-        std::ranges::subrange(ctx.begin(), ctx.end()),
-        [&] (auto const& x)
+        ctx.keys(),
+        [&] (expr_t::var_t const& var)
         {
-            pretty_print<properties_t>(os, x.first) << ": ";
+            auto const val = ctx[var];
+            assert(val);
+            pretty_print<properties_t>(os, var) << ": ";
             match(
-                x.second,
+                *val,
                 [&] (type_def_t const& t) { pretty_print(os, t); },
                 [&] (expr_t const& x) { pretty_print(os, x.properties.sort.get()); });
         });

@@ -1,5 +1,6 @@
 i32_t id(i32_t x) { return x; }
 
+// parse error: cannot use complex return type on the left
 (i32_t) -> i32_t get_id()
 {
     return id;

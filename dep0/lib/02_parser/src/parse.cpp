@@ -90,15 +90,15 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         if (sign == "unsigned")
         {
             if (not min or min != "0")
-                throw error_t{"lower bound of unsigned integer must be 0", loc};
+                throw error_t("lower bound of unsigned integer must be 0", loc);
             return type_def_t{loc, type_def_t::integer_t{name, ast::sign_t::unsigned_v, w, max}};
         }
         else if (min.has_value() xor max.has_value())
-            throw error_t{"lower and upper bound of signed integer must be either both present or both missing", loc};
+            throw error_t("lower and upper bound of signed integer must be either both present or both missing", loc);
         else if (min)
         {
             if (min != max)
-                throw error_t{"lower and upper bound of signed integer must have same absolute value", loc};
+                throw error_t("lower and upper bound of signed integer must have same absolute value", loc);
             return type_def_t{loc, type_def_t::integer_t{name, ast::sign_t::signed_v, w, max}};
         }
         else
@@ -120,7 +120,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
                 ctx->simpleRetType ? std::any_cast<expr_t>(visitTypeVar(ctx->simpleRetType)) :
                 ctx->complexRetType ? std::any_cast<expr_t>(visitExpr(ctx->complexRetType)) :
                 ctx->KW_TYPENAME() ? visitTypename(ctx->KW_TYPENAME())
-                : throw error_t{"unexpected alternative when parsing FuncDefContext", loc};
+                : throw error_t("unexpected alternative when parsing FuncDefContext", loc);
         };
         return func_def_t{loc, name(), expr_t::abs_t{visitFuncArgs(ctx->funcArg()), ret_type(), body()}};
     }
@@ -131,7 +131,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         if (ctx->primitiveType()) return visitPrimitiveType(ctx->primitiveType());
         if (ctx->funcType()) return visitFuncType(ctx->funcType());
         if (ctx->typeVar()) return visitTypeVar(ctx->typeVar());
-        throw error_t{"unexpected alternative when parsing TypeContext", get_loc(src, *ctx)};
+        throw error_t("unexpected alternative when parsing TypeContext", get_loc(src, *ctx));
     }
 
     virtual std::any visitPrimitiveType(DepCParser::PrimitiveTypeContext* ctx) override
@@ -148,7 +148,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         if (ctx->KW_U16_T()) return expr_t{loc, expr_t::u16_t{}};
         if (ctx->KW_U32_T()) return expr_t{loc, expr_t::u32_t{}};
         if (ctx->KW_U64_T()) return expr_t{loc, expr_t::u64_t{}};
-        throw error_t{"unexpected alternative when parsing PrimitiveTypeContext", loc};
+        throw error_t("unexpected alternative when parsing PrimitiveTypeContext", loc);
     }
 
     virtual std::any visitFuncType(DepCParser::FuncTypeContext* ctx) override
@@ -160,7 +160,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
             return
                 ctx->retType ? std::any_cast<expr_t>(visitExpr(ctx->retType)) :
                 ctx->KW_TYPENAME() ? visitTypename(ctx->KW_TYPENAME())
-                : throw error_t{"unexpected alternative when parsing FuncTypeContext", loc};
+                : throw error_t("unexpected alternative when parsing FuncTypeContext", loc);
         };
         return expr_t{loc, expr_t::pi_t{visitFuncArgs(ctx->funcArg()), ret_type()}};
     }
@@ -184,7 +184,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
             return func_arg_t{loc, visitTypename(ctx->KW_TYPENAME()), get_name()};
         if (ctx->expr())
             return func_arg_t{loc, std::any_cast<expr_t>(visitExpr(ctx->expr())), get_name()};
-        throw error_t{"unexpected alternative when parsing FuncArgContext", loc};
+        throw error_t("unexpected alternative when parsing FuncArgContext", loc);
     }
 
     virtual std::any visitBody(DepCParser::BodyContext* ctx) override
@@ -202,7 +202,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         if (ctx->funcCallStmt()) return std::any_cast<stmt_t>(visitFuncCallStmt(ctx->funcCallStmt()));
         if (ctx->ifElse()) return std::any_cast<stmt_t>(visitIfElse(ctx->ifElse()));
         if (ctx->returnStmt()) return std::any_cast<stmt_t>(visitReturnStmt(ctx->returnStmt()));
-        throw error_t{"unexpected alternative when parsing StmtContext", get_loc(src, *ctx)};
+        throw error_t("unexpected alternative when parsing StmtContext", get_loc(src, *ctx));
     }
 
     virtual std::any visitFuncCallStmt(DepCParser::FuncCallStmtContext* ctx) override
@@ -244,7 +244,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         if (ctx->body()) return visitBody(ctx->body());
         auto const loc = get_loc(src, *ctx);
         if (ctx->stmt()) return body_t{loc, {std::any_cast<stmt_t>(visitStmt(ctx->stmt()))}};
-        throw error_t{"unexpected alternative when parsing BodyOrStmtContext", loc};
+        throw error_t("unexpected alternative when parsing BodyOrStmtContext", loc);
     }
 
     virtual std::any visitPlusExpr(DepCParser::PlusExprContext* ctx) override
@@ -326,7 +326,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
             return std::any_cast<expr_t>(visitVarExpr(p));
         if (auto const p = dynamic_cast<DepCParser::TypeExprContext*>(ctx))
             return std::any_cast<expr_t>(visitTypeExpr(p));
-        throw error_t{"unexpected alternative when parsing ExprContext", get_loc(src, *ctx)};
+        throw error_t("unexpected alternative when parsing ExprContext", get_loc(src, *ctx));
     }
 
     std::vector<func_arg_t> visitFuncArgs(std::vector<DepCParser::FuncArgContext*> const& args)
@@ -398,7 +398,7 @@ struct FirstErrorListener : antlr4::ANTLRErrorListener
     {
         if (error) return;
         auto text = token ? try_get_text(src, *token) : std::nullopt;
-        error = error_t{msg, source_loc_t{line, 1+col, text ? std::move(*text) : src.substr(0, 0)}};
+        error = error_t(msg, source_loc_t(line, 1+col, text ? std::move(*text) : src.substr(0, 0)));
     }
 };
 

@@ -41,8 +41,8 @@ std::set<expr_t::var_t> context_t::vars() const
 {
     std::set<expr_t::var_t> result;
     for (auto x = std::optional{m_values}; x.has_value(); x = x->parent())
-        for (auto const y: *x)
-            result.insert(y.first);
+        for (auto const kv: *x)
+            result.insert(kv.first);
     return result;
 }
 

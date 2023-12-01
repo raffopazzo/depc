@@ -33,7 +33,7 @@ public:
 
     context_t extend() const;
 
-    std::set<expr_t::var_t> keys() const;
+    std::set<expr_t::var_t> vars() const;
 
     // Allow iteration over the members of the current scope level.
     // Use `parent()` if you want to walk up the stack.

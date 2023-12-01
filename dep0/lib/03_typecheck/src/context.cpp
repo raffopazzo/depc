@@ -37,7 +37,7 @@ auto context_t::operator[](expr_t::var_t const& name) const -> value_type const*
     return m_values[name];
 }
 
-std::set<expr_t::var_t> context_t::keys() const
+std::set<expr_t::var_t> context_t::vars() const
 {
     std::set<expr_t::var_t> result;
     for (auto x = std::optional{m_values}; x.has_value(); x = x->parent())
@@ -49,7 +49,7 @@ std::set<expr_t::var_t> context_t::keys() const
 context_t context_t::rewrite(expr_t const& from, expr_t const& to) const
 {
     auto result = extend();
-    for (auto const& var: keys())
+    for (auto const& var: vars())
         match(
             *(*this)[var],
             [] (type_def_t const&) { },
@@ -94,7 +94,7 @@ std::ostream& pretty_print(std::ostream& os, context_t const& ctx)
 {
     for_each_line(
         os,
-        ctx.keys(),
+        ctx.vars(),
         [&] (expr_t::var_t const& var)
         {
             auto const val = ctx[var];

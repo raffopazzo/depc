@@ -15,11 +15,10 @@ std::ostream& pretty_print(std::ostream& os, error_t const& err)
         os << std::endl << "------------" << std::endl;
         match(
             *err.tgt,
-            [&] (expr_t const& type)
+            [&] (expr_t type)
             {
-                auto normalized = type;
-                ast::beta_delta_normalize(err.ctx.delta_reduction_context(), normalized);
-                pretty_print(os, normalized);
+                ast::beta_delta_normalize(err.ctx.delta_reduction_context(), type);
+                pretty_print(os, type);
             },
             [&] (kind_t)
             {

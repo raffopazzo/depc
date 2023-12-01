@@ -1,5 +1,6 @@
 #pragma once
 
+#include "dep0/typecheck/ast.hpp"
 #include "dep0/typecheck/context.hpp"
 
 namespace dep0::typecheck {

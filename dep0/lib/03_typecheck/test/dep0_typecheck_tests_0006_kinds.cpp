@@ -633,4 +633,28 @@ BOOST_AUTO_TEST_CASE(pass_005)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_006)
+{
+    BOOST_TEST_REQUIRE(pass("0006_kinds/pass_006.depc"));
+    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 2ul);
+    {
+        auto const& f = pass_result->func_defs[0ul];
+        BOOST_TEST(f.name == "type_id");
+        BOOST_TEST(is_expr_of(f.properties.sort.get(), pi_of(std::tuple{arg_of(is_typename, "t")}, is_typename)));
+        BOOST_TEST_REQUIRE(f.value.args.size() == 1ul);
+        BOOST_TEST(is_arg(f.value.args[0], is_typename, "t"));
+        BOOST_TEST(is_typename(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], var("t")));
+    }
+    {
+        auto const& f = pass_result->func_defs[1ul];
+        BOOST_TEST(f.name == "f");
+        BOOST_TEST(is_expr_of(f.properties.sort.get(), pi_of(std::tuple{}, app_of(var("type_id"), is_unit))));
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_app_of(f.value.ret_type.get(), var("type_id"), is_unit));
+        BOOST_TEST(f.value.body.stmts.size() == 0ul);
+    }
+}
+
 BOOST_AUTO_TEST_SUITE_END()

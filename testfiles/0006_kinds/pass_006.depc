@@ -1,0 +1,8 @@
+auto type_id(typename t) -> typename
+{
+    return t;
+}
+
+auto f() -> type_id(unit_t)
+{
+}

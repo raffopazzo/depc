@@ -683,14 +683,16 @@ expected<expr_t> check_abs(
         return std::move(body.error());
     // so far so good, but we now need to make sure that all branches contain a return statement,
     // with the only exception of functions returning `unit_t` because the return statement is optional;
-    // TODO beta equivalence too?
-    if (not is_alpha_equivalent(ret_type, derivation_rules::make_unit()) and not returns_from_all_branches(*body))
+    if (not returns_from_all_branches(*body))
     {
-        std::ostringstream err;
-        if (name)
-            err << "in function `" << *name << "` ";
-        err << "missing return statement";
-        return error_t::from_error(dep0::error_t(err.str(), location), f_ctx);
+        if (not is_beta_delta_equivalent(f_ctx, ret_type, derivation_rules::make_unit()))
+        {
+            std::ostringstream err;
+            if (name)
+                err << "in function `" << *name << "` ";
+            err << "missing return statement";
+            return error_t::from_error(dep0::error_t(err.str(), location), f_ctx);
+        }
     }
     return make_legal_expr(*func_type, expr_t::abs_t{pi_type.args, ret_type, std::move(*body)});
 }

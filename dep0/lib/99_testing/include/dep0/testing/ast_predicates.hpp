@@ -141,6 +141,16 @@ inline constexpr auto is_u32 =
         return failure("type is not u32_t but ", pretty_name(type.value));
 };
 
+inline constexpr auto is_unit =
+[] <ast::Properties P> (ast::expr_t<P> const& type)
+-> boost::test_tools::predicate_result
+{
+    if (std::holds_alternative<typename ast::expr_t<P>::unit_t>(type.value))
+        return true;
+    else
+        return failure("type is not unit_t but ", pretty_name(type.value));
+};
+
 template <ast::Properties P>
 boost::test_tools::predicate_result is_boolean_constant(ast::expr_t<P> const& expr, bool const x)
 {

@@ -1,0 +1,27 @@
+auto int_or_bool(bool which) -> typename
+{
+    if (which) return i32_t;
+    else return bool;
+}
+
+auto zero_of(bool which) -> int_or_bool(which)
+{
+    if (which)
+        return 0;
+    else
+        return false;
+}
+
+// same but with implicit else branch
+auto zero_of_2(bool which) -> int_or_bool(which)
+{
+    if (which)
+        return 0;
+    return false;
+}
+
+i32_t zero_int() { return zero_of(true); }
+i32_t zero_int_2() { return zero_of_2(true); }
+
+bool zero_bool() { return zero_of(false); }
+bool zero_bool_2() { return zero_of_2(false); }

@@ -126,6 +126,15 @@ struct parse_visitor_t : dep0::DepCParserVisitor
                     std::any_cast<expr_t>(visitType(ctx->type())),
                     body()
                 }};
+        if (ctx->retType)
+            return func_def_t{
+                loc,
+                name(),
+                expr_t::abs_t{
+                    args(),
+                    std::any_cast<expr_t>(visitExpr(ctx->retType)),
+                    body()
+                }};
         if (ctx->KW_TYPENAME())
             return func_def_t{
                 loc,

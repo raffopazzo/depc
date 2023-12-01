@@ -113,10 +113,6 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         auto const loc = get_loc(src, *ctx);
         auto const name = [&] { return get_text(src, *ctx->name); };
         auto const body = [&] { return std::any_cast<body_t>(visitBody(ctx->body())); };
-        auto const args = [&]
-        {
-            return fmap(ctx->funcArg(), [this](auto *x) { return std::any_cast<func_arg_t>(visitFuncArg(x)); });
-        };
         auto const ret_type = [&]
         {
             return
@@ -126,7 +122,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
                 ctx->KW_TYPENAME() ? visitTypename(ctx->KW_TYPENAME())
                 : throw error_t{"unexpected alternative when parsing FuncDefContext", loc};
         };
-        return func_def_t{loc, name(), expr_t::abs_t{args(), ret_type(), body()}};
+        return func_def_t{loc, name(), expr_t::abs_t{visitFuncArgs(ctx->funcArg()), ret_type(), body()}};
     }
 
     virtual std::any visitType(DepCParser::TypeContext* ctx) override
@@ -159,10 +155,6 @@ struct parse_visitor_t : dep0::DepCParserVisitor
     {
         assert(ctx);
         auto const loc = get_loc(src, *ctx);
-        auto const args = [&]
-        {
-            return fmap(ctx->funcArg(), [this] (auto* const x) { return std::any_cast<func_arg_t>(visitFuncArg(x)); });
-        };
         auto const ret_type = [&]
         {
             return
@@ -170,7 +162,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
                 ctx->KW_TYPENAME() ? visitTypename(ctx->KW_TYPENAME())
                 : throw error_t{"unexpected alternative when parsing FuncTypeContext", loc};
         };
-        return expr_t{loc, expr_t::pi_t{args(), ret_type()}};
+        return expr_t{loc, expr_t::pi_t{visitFuncArgs(ctx->funcArg()), ret_type()}};
     }
 
     virtual std::any visitTypeVar(DepCParser::TypeVarContext* ctx) override
@@ -335,6 +327,16 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         if (auto const p = dynamic_cast<DepCParser::TypeExprContext*>(ctx))
             return std::any_cast<expr_t>(visitTypeExpr(p));
         throw error_t{"unexpected alternative when parsing ExprContext", get_loc(src, *ctx)};
+    }
+
+    std::vector<func_arg_t> visitFuncArgs(std::vector<DepCParser::FuncArgContext*> const& args)
+    {
+        return fmap(
+            args,
+            [this] (DepCParser::FuncArgContext* const x)
+            {
+                return std::any_cast<func_arg_t>(visitFuncArg(x));
+            });
     }
 
     expr_t visitTypename(antlr4::tree::TerminalNode* typename_)

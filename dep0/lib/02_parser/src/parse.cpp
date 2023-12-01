@@ -159,29 +159,18 @@ struct parse_visitor_t : dep0::DepCParserVisitor
     {
         assert(ctx);
         auto const loc = get_loc(src, *ctx);
-        if (ctx->retType)
-            return expr_t{
-                loc,
-                expr_t::pi_t{
-                    fmap(
-                        ctx->funcArg(),
-                        [this] (DepCParser::FuncArgContext* const x)
-                        {
-                            return std::any_cast<func_arg_t>(visitFuncArg(x));
-                        }),
-                    std::any_cast<expr_t>(visitExpr(ctx->retType))}};
-        if (ctx->KW_TYPENAME())
-            return expr_t{
-                loc,
-                expr_t::pi_t{
-                    fmap(
-                        ctx->funcArg(),
-                        [this] (DepCParser::FuncArgContext* const x)
-                        {
-                            return std::any_cast<func_arg_t>(visitFuncArg(x));
-                        }),
-                    visitTypename(ctx->KW_TYPENAME())}};
-        throw error_t{"unexpected alternative when parsing FuncTypeContext", loc};
+        auto const args = [&]
+        {
+            return fmap(ctx->funcArg(), [this] (auto* const x) { return std::any_cast<func_arg_t>(visitFuncArg(x)); });
+        };
+        auto const ret_type = [&]
+        {
+            return
+                ctx->retType ? std::any_cast<expr_t>(visitExpr(ctx->retType)) :
+                ctx->KW_TYPENAME() ? visitTypename(ctx->KW_TYPENAME())
+                : throw error_t{"unexpected alternative when parsing FuncTypeContext", loc};
+        };
+        return expr_t{loc, expr_t::pi_t{args(), ret_type()}};
     }
 
     virtual std::any visitTypeVar(DepCParser::TypeVarContext* ctx) override

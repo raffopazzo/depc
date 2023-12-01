@@ -1,0 +1,6 @@
+// parse error: cannot use complex return type on the left
+typename int_or_bool(bool which)
+{
+    if (which) return i32_t;
+    else return bool;
+}

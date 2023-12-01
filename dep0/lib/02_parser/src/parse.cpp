@@ -117,34 +117,16 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         {
             return fmap(ctx->funcArg(), [this](auto *x) { return std::any_cast<func_arg_t>(visitFuncArg(x)); });
         };
-        if (ctx->type())
-            return func_def_t{
-                loc,
-                name(),
-                expr_t::abs_t{
-                    args(),
-                    std::any_cast<expr_t>(visitType(ctx->type())),
-                    body()
-                }};
-        if (ctx->retType)
-            return func_def_t{
-                loc,
-                name(),
-                expr_t::abs_t{
-                    args(),
-                    std::any_cast<expr_t>(visitExpr(ctx->retType)),
-                    body()
-                }};
-        if (ctx->KW_TYPENAME())
-            return func_def_t{
-                loc,
-                name(),
-                expr_t::abs_t{
-                    args(),
-                    visitTypename(ctx->KW_TYPENAME()),
-                    body()
-                }};
-        throw error_t{"unexpected alternative when parsing FuncDefContext", loc};
+        auto const ret_type = [&]
+        {
+            return
+                ctx->primitiveRetType ? std::any_cast<expr_t>(visitPrimitiveType(ctx->primitiveRetType)) :
+                ctx->simpleRetType ? std::any_cast<expr_t>(visitTypeVar(ctx->simpleRetType)) :
+                ctx->complexRetType ? std::any_cast<expr_t>(visitExpr(ctx->complexRetType)) :
+                ctx->KW_TYPENAME() ? visitTypename(ctx->KW_TYPENAME())
+                : throw error_t{"unexpected alternative when parsing FuncDefContext", loc};
+        };
+        return func_def_t{loc, name(), expr_t::abs_t{args(), ret_type(), body()}};
     }
 
     virtual std::any visitType(DepCParser::TypeContext* ctx) override

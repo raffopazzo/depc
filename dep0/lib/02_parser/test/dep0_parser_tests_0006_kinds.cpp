@@ -532,4 +532,8 @@ BOOST_AUTO_TEST_CASE(pass_005)
     }
 }
 
+BOOST_AUTO_TEST_CASE(parse_error_000) { BOOST_TEST(fail("0006_kinds/parser_error_000.depc")); }
+BOOST_AUTO_TEST_CASE(parse_error_001) { BOOST_TEST(fail("0006_kinds/parser_error_001.depc")); }
+BOOST_AUTO_TEST_CASE(parse_error_002) { BOOST_TEST(fail("0006_kinds/parser_error_002.depc")); }
+
 BOOST_AUTO_TEST_SUITE_END()

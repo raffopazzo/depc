@@ -1,0 +1,12 @@
+auto int_or_bool(bool which) -> typename
+{
+    if (which) return i32_t;
+    else return bool;
+}
+
+// parse error: cannot use complex return type on the left
+int_or_bool(which) zero_of(bool which)
+{
+    if (which) return 0;
+    else return false;
+}

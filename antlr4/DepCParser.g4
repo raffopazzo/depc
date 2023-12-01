@@ -31,8 +31,8 @@ options { tokenVocab=DepCLexer; }
 
 // Module and top level expressions
 module: (typeDef | funcDef)* EOF;
-funcDef: type name=ID '(' (funcArg (',' funcArg)*)? ')' body
-    | 'auto' name=ID '(' (funcArg (',' funcArg)*)? ')' '->' ('typename' | retType=expr) body
+funcDef: (primitiveRetType=primitiveType | simpleRetType=typeVar) name=ID '(' (funcArg (',' funcArg)*)? ')' body
+    | 'auto' name=ID '(' (funcArg (',' funcArg)*)? ')' '->' ('typename' | complexRetType=expr) body
     ;
 typeDef:
     'typedef' name=ID '='

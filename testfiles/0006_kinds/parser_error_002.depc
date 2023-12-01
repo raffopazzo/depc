@@ -1,0 +1,6 @@
+i32_t id(i32_t x) { return x; }
+
+(i32_t) -> i32_t get_id()
+{
+    return id;
+}

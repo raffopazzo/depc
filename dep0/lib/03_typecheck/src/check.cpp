@@ -5,7 +5,7 @@
 #include "dep0/ast/pretty_print.hpp"
 #include "dep0/ast/substitute.hpp"
 
-#include "private/beta_equivalence.hpp"
+#include "private/beta_delta_equivalence.hpp"
 #include "private/derivation_rules.hpp"
 #include "private/proof_state.hpp"
 #include "private/returns_from_all_branches.hpp"
@@ -384,7 +384,7 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, sort_
         [&] (parser::expr_t::typename_t) -> expected<expr_t>
         {
             auto const result = derivation_rules::make_typename();
-            if (auto eq = is_beta_equivalent(ctx, result.properties.sort.get(), expected_type))
+            if (auto eq = is_beta_delta_equivalent(ctx, result.properties.sort.get(), expected_type))
                 return result;
             else
                 return type_error(result.properties.sort.get(), std::move(eq.error()));
@@ -392,7 +392,7 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, sort_
         [&] (parser::expr_t::bool_t) -> expected<expr_t>
         {
             auto const result = derivation_rules::make_bool();
-            if (auto eq = is_beta_equivalent(ctx, result.properties.sort.get(), expected_type))
+            if (auto eq = is_beta_delta_equivalent(ctx, result.properties.sort.get(), expected_type))
                 return result;
             else
                 return type_error(result.properties.sort.get(), std::move(eq.error()));
@@ -400,7 +400,7 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, sort_
         [&] (parser::expr_t::unit_t) -> expected<expr_t>
         {
             auto const result = derivation_rules::make_unit();
-            if (auto eq = is_beta_equivalent(ctx, result.properties.sort.get(), expected_type))
+            if (auto eq = is_beta_delta_equivalent(ctx, result.properties.sort.get(), expected_type))
                 return result;
             else
                 return type_error(result.properties.sort.get(), std::move(eq.error()));
@@ -408,7 +408,7 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, sort_
         [&] (parser::expr_t::i8_t) -> expected<expr_t>
         {
             auto const result = derivation_rules::make_i8();
-            if (auto eq = is_beta_equivalent(ctx, result.properties.sort.get(), expected_type))
+            if (auto eq = is_beta_delta_equivalent(ctx, result.properties.sort.get(), expected_type))
                 return result;
             else
                 return type_error(result.properties.sort.get(), std::move(eq.error()));
@@ -416,7 +416,7 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, sort_
         [&] (parser::expr_t::i16_t) -> expected<expr_t>
         {
             auto const result = derivation_rules::make_i16();
-            if (auto eq = is_beta_equivalent(ctx, result.properties.sort.get(), expected_type))
+            if (auto eq = is_beta_delta_equivalent(ctx, result.properties.sort.get(), expected_type))
                 return result;
             else
                 return type_error(result.properties.sort.get(), std::move(eq.error()));
@@ -424,7 +424,7 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, sort_
         [&] (parser::expr_t::i32_t) -> expected<expr_t>
         {
             auto const result = derivation_rules::make_i32();
-            if (auto eq = is_beta_equivalent(ctx, result.properties.sort.get(), expected_type))
+            if (auto eq = is_beta_delta_equivalent(ctx, result.properties.sort.get(), expected_type))
                 return result;
             else
                 return type_error(result.properties.sort.get(), std::move(eq.error()));
@@ -432,7 +432,7 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, sort_
         [&] (parser::expr_t::i64_t) -> expected<expr_t>
         {
             auto const result = derivation_rules::make_i64();
-            if (auto eq = is_beta_equivalent(ctx, result.properties.sort.get(), expected_type))
+            if (auto eq = is_beta_delta_equivalent(ctx, result.properties.sort.get(), expected_type))
                 return result;
             else
                 return type_error(result.properties.sort.get(), std::move(eq.error()));
@@ -440,7 +440,7 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, sort_
         [&] (parser::expr_t::u8_t) -> expected<expr_t>
         {
             auto const result = derivation_rules::make_u8();
-            if (auto eq = is_beta_equivalent(ctx, result.properties.sort.get(), expected_type))
+            if (auto eq = is_beta_delta_equivalent(ctx, result.properties.sort.get(), expected_type))
                 return result;
             else
                 return type_error(result.properties.sort.get(), std::move(eq.error()));
@@ -448,7 +448,7 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, sort_
         [&] (parser::expr_t::u16_t) -> expected<expr_t>
         {
             auto const result = derivation_rules::make_u16();
-            if (auto eq = is_beta_equivalent(ctx, result.properties.sort.get(), expected_type))
+            if (auto eq = is_beta_delta_equivalent(ctx, result.properties.sort.get(), expected_type))
                 return result;
             else
                 return type_error(result.properties.sort.get(), std::move(eq.error()));
@@ -456,7 +456,7 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, sort_
         [&] (parser::expr_t::u32_t) -> expected<expr_t>
         {
             auto const result = derivation_rules::make_u32();
-            if (auto eq = is_beta_equivalent(ctx, result.properties.sort.get(), expected_type))
+            if (auto eq = is_beta_delta_equivalent(ctx, result.properties.sort.get(), expected_type))
                 return result;
             else
                 return type_error(result.properties.sort.get(), std::move(eq.error()));
@@ -464,7 +464,7 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, sort_
         [&] (parser::expr_t::u64_t) -> expected<expr_t>
         {
             auto const result = derivation_rules::make_u64();
-            if (auto eq = is_beta_equivalent(ctx, result.properties.sort.get(), expected_type))
+            if (auto eq = is_beta_delta_equivalent(ctx, result.properties.sort.get(), expected_type))
                 return result;
             else
                 return type_error(result.properties.sort.get(), std::move(eq.error()));
@@ -472,7 +472,7 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, sort_
         [&] (parser::expr_t::boolean_constant_t const& x) -> expected<expr_t>
         {
             auto result = make_legal_expr(derivation_rules::make_bool(), expr_t::boolean_constant_t{x.value});
-            if (auto eq = is_beta_equivalent(ctx, result.properties.sort.get(), expected_type))
+            if (auto eq = is_beta_delta_equivalent(ctx, result.properties.sort.get(), expected_type))
                 return result;
             else
                 return type_error(result.properties.sort.get(), std::move(eq.error()));
@@ -531,7 +531,7 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, sort_
                         [&] (type_def_t const&) -> sort_t { return derivation_rules::make_typename(); },
                         [&] (expr_t const& expr) -> sort_t { return expr.properties.sort.get(); }),
                     expr_t::var_t{x.name});
-            if (auto eq = is_beta_equivalent(ctx, result.properties.sort.get(), expected_type))
+            if (auto eq = is_beta_delta_equivalent(ctx, result.properties.sort.get(), expected_type))
                 return result;
             else
                 return type_error(result.properties.sort.get(), std::move(eq.error()));
@@ -540,7 +540,7 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, sort_
         {
             auto result = type_assign_app(ctx, x, loc);
             if (result)
-                if (auto eq = is_beta_equivalent(ctx, result->properties.sort.get(), expected_type); not eq)
+                if (auto eq = is_beta_delta_equivalent(ctx, result->properties.sort.get(), expected_type); not eq)
                     return type_error(result->properties.sort.get(), std::move(eq.error()));
             return result;
         },
@@ -560,7 +560,7 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, sort_
             auto pi_ctx = ctx.extend();
             auto result = check_pi_type(pi_ctx, pi.args, pi.ret_type.get());
             if (result)
-                if (auto eq = is_beta_equivalent(pi_ctx, result->properties.sort.get(), expected_type); not eq)
+                if (auto eq = is_beta_delta_equivalent(pi_ctx, result->properties.sort.get(), expected_type); not eq)
                     return type_error(result->properties.sort.get(), std::move(eq.error()));
             return result;
         });

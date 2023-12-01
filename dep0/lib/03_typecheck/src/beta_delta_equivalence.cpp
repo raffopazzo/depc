@@ -1,4 +1,4 @@
-#include "private/beta_equivalence.hpp"
+#include "private/beta_delta_equivalence.hpp"
 
 #include "dep0/ast/alpha_equivalence.hpp"
 #include "dep0/ast/beta_delta_reduction.hpp"
@@ -8,7 +8,7 @@
 
 namespace dep0::typecheck {
 
-dep0::expected<std::true_type> is_beta_equivalent(context_t const& ctx, sort_t const& x, sort_t const& y)
+dep0::expected<std::true_type> is_beta_delta_equivalent(context_t const& ctx, sort_t const& x, sort_t const& y)
 {
     struct visitor
     {
@@ -37,13 +37,13 @@ dep0::expected<std::true_type> is_beta_equivalent(context_t const& ctx, sort_t c
         dep0::expected<std::true_type> operator()(kind_t const& x, expr_t const& y)
         {
             std::ostringstream err;
-            pretty_print(pretty_print(err << '`', x) << "` is not beta-equivalent to `", y) << '`';
+            pretty_print(pretty_print(err << '`', x) << "` is not beta-delta-equivalent to `", y) << '`';
             return dep0::error_t(err.str());
         }
         dep0::expected<std::true_type> operator()(expr_t const& x, kind_t const& y)
         {
             std::ostringstream err;
-            pretty_print(pretty_print(err << '`', x) << "` is not beta-equivalent to `", y) << '`';
+            pretty_print(pretty_print(err << '`', x) << "` is not beta-delta-equivalent to `", y) << '`';
             return dep0::error_t(err.str());
         }
     };

@@ -373,10 +373,13 @@ std::ostream& pretty_print(
     os << '(';
     for (bool first = true; auto const& arg: std::ranges::subrange(begin, end))
     {
-        if (args_on_separate_lines)
-            new_line(std::exchange(first, false) ? os : os << ',', indent + 1ul);
-        else if (not std::exchange(first, false))
-            os << ", ";
+        if (not std::exchange(first, false))
+        {
+            if (args_on_separate_lines)
+                new_line(os << ',', indent + 1ul);
+            else
+                os << ", ";
+        }
         pretty_print(os, arg, indent + 1ul);
     }
     (args_on_separate_lines ? new_line(os, indent) : os) << ')';

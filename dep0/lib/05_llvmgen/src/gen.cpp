@@ -653,6 +653,9 @@ llvm::Value* gen_val(
             }
             else
                 number = x.number;
+            // TODO currently beta-delta normalization operates on the templated AST,
+            // so it does not reduce inside `properties.sort`, which means we might fail to generate a type;
+            // we should in fact check all usages of `properties.sort`
             auto const& type = std::get<typecheck::expr_t>(expr.properties.sort.get());
             auto const llvm_type = cast<llvm::IntegerType>(gen_type(global, local, type));
             assert(llvm_type);

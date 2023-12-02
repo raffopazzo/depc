@@ -8,10 +8,10 @@
 namespace dep0 {
 
 template <typename T, typename F>
-auto fmap(std::vector<T> const& xs, F const& f)
--> std::vector<std::invoke_result_t<F const&, typename std::vector<T>::value_type>>
+auto fmap(std::vector<T> const& xs, F&& f)
+-> std::vector<std::invoke_result_t<F, typename std::vector<T>::value_type>>
 {
-    std::vector<std::invoke_result_t<F const&, typename std::vector<T>::value_type>> result;
+    std::vector<std::invoke_result_t<F, typename std::vector<T>::value_type>> result;
     result.reserve(xs.size());
     for (auto const& x: xs)
         result.push_back(f(x));
@@ -20,16 +20,16 @@ auto fmap(std::vector<T> const& xs, F const& f)
 
 template <typename T, typename F>
 // requires ...
-auto fmap_or_error(std::vector<T> const& xs, F const& f)
+auto fmap_or_error(std::vector<T> const& xs, F&& f)
 -> expected<
-    std::vector<typename std::invoke_result_t<F const&, typename std::vector<T>::value_type>::value_type>,
-    typename std::invoke_result_t<F const&, typename std::vector<T>::value_type>::error_type
+    std::vector<typename std::invoke_result_t<F, typename std::vector<T>::value_type>::value_type>,
+    typename std::invoke_result_t<F, typename std::vector<T>::value_type>::error_type
     >
 {
     using result_t =
         expected<
-            std::vector<typename std::invoke_result_t<F const&, typename std::vector<T>::value_type>::value_type>,
-            typename std::invoke_result_t<F const&, typename std::vector<T>::value_type>::error_type
+            std::vector<typename std::invoke_result_t<F, typename std::vector<T>::value_type>::value_type>,
+            typename std::invoke_result_t<F, typename std::vector<T>::value_type>::error_type
         >;
     result_t result;
     result.value().reserve(xs.size());

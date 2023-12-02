@@ -461,7 +461,7 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, sort_
         },
         [&] (parser::expr_t::boolean_constant_t const& x) -> expected<expr_t>
         {
-            auto result = make_legal_expr(derivation_rules::make_bool(), expr_t::boolean_constant_t{x.value});
+            auto const result = make_legal_expr(derivation_rules::make_bool(), expr_t::boolean_constant_t{x.value});
             if (auto eq = is_beta_delta_equivalent(ctx, result.properties.sort.get(), expected_type))
                 return result;
             else

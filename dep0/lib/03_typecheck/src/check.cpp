@@ -8,7 +8,6 @@
 #include "private/derivation_rules.hpp"
 #include "private/proof_state.hpp"
 #include "private/returns_from_all_branches.hpp"
-#include "private/rewrite.hpp"
 
 #include "dep0/digit_separator.hpp"
 #include "dep0/fmap.hpp"

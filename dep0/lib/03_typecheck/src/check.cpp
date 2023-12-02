@@ -560,10 +560,9 @@ expected<expr_t> check_pi_type(
     std::vector<parser::func_arg_t> const& parser_args,
     parser::expr_t const& parser_ret_type)
 {
-    int next_arg_index = 0;
     auto args = fmap_or_error(
         parser_args,
-        [&] (parser::func_arg_t const& arg) -> expected<func_arg_t>
+        [&, next_arg_index=0] (parser::func_arg_t const& arg) mutable -> expected<func_arg_t>
         {
             auto const arg_index = next_arg_index++;
             auto const arg_loc = arg.properties;

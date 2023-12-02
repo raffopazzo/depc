@@ -10,6 +10,7 @@
 #include <boost/test/tools/assertion_result.hpp>
 
 #include <optional>
+#include <utility>
 
 namespace dep0::llvmgen::testing {
 
@@ -18,8 +19,13 @@ boost::test_tools::predicate_result is_bool(llvm::Argument const*, std::optional
 boost::test_tools::predicate_result is_i32(llvm::Argument const*, std::optional<std::string_view>);
 boost::test_tools::predicate_result is_u32(llvm::Argument const*, std::optional<std::string_view>);
 
-template <dep0::testing::Predicate<llvm::FunctionType> F>
-boost::test_tools::predicate_result is_pointer_to_function(llvm::Type const* const type, F&& f)
+boost::test_tools::predicate_result is_i32_type(llvm::Type const&);
+
+template <dep0::testing::Predicate<llvm::Type> F_ret, typename... F_args>
+boost::test_tools::predicate_result is_pointer_to_function(
+    llvm::Type const* const type,
+    std::tuple<F_args...> const& f_args,
+    F_ret&& f_ret)
 {
     if (not type)
         return dep0::testing::failure("type is null");
@@ -28,7 +34,22 @@ boost::test_tools::predicate_result is_pointer_to_function(llvm::Type const* con
     auto const fn_type = dyn_cast<llvm::FunctionType>(type->getPointerElementType());
     if (not fn_type)
         return dep0::testing::failure("type is not a pointer to function");
-    return std::forward<F>(f)(*fn_type);
+    auto constexpr N = sizeof...(F_args);
+    if (fn_type->getNumParams() != N)
+        return dep0::testing::failure("FunctionType has ", fn_type->getNumParams(), " arguments but was expecting ", N);
+    if (auto const result = std::forward<F_ret>(f_ret)(*fn_type->getReturnType()); not result)
+        return dep0::testing::failure("predicate failed for return type: ", result.message());
+    auto result = boost::test_tools::predicate_result(true);
+    [&] <std::size_t... Is> (std::index_sequence<Is...>)
+    {
+        ([&]
+        {
+            if (result)
+                if (auto const tmp = std::get<Is>(f_args)(*fn_type->getParamType(Is)); not tmp)
+                    result = dep0::testing::failure("predicate failed for argument at index ", Is, tmp.message());
+        }(), ...);
+    } (std::make_index_sequence<N>{});
+    return result;
 }
 
 // instruction/value predicates and factories; sorted by name, predicate before the corresponding factories

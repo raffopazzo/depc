@@ -2,6 +2,14 @@
 
 namespace dep0::llvmgen::testing {
 
+boost::test_tools::predicate_result is_i32_type(llvm::Type const& type)
+{
+    if (not type.isIntegerTy(32))
+        return dep0::testing::failure("type is not 32bit integer");
+    else
+        return true;
+}
+
 boost::test_tools::predicate_result is_bool(
     llvm::Argument const* const arg,
     std::optional<std::string_view> const name)

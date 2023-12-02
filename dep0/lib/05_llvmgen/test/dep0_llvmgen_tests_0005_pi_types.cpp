@@ -102,13 +102,7 @@ BOOST_AUTO_TEST_CASE(pass_000)
         BOOST_TEST_REQUIRE(f->arg_size() == 1ul);
         auto const arg = f->getArg(0ul);
         BOOST_TEST(arg->getName().str() == "apply");
-        BOOST_TEST(is_pointer_to_function(arg->getType(), [] (llvm::FunctionType const& t)
-        {
-            BOOST_TEST(t.getReturnType()->isIntegerTy(32ul));
-            BOOST_TEST_REQUIRE(t.getNumParams() == 1ul);
-            BOOST_TEST(t.getParamType(0ul)->isIntegerTy(32ul));
-            return boost::test_tools::predicate_result(true);
-        }));
+        BOOST_TEST(is_pointer_to_function(arg->getType(), std::tuple{is_i32_type}, is_i32_type));
         BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), call_inst([arg] (llvm::CallInst const& call)
         {
             BOOST_TEST(call.isIndirectCall());
@@ -296,13 +290,7 @@ BOOST_AUTO_TEST_CASE(pass_005)
         BOOST_TEST_REQUIRE(f->arg_size() == 1ul);
         auto const arg = f->getArg(0);
         BOOST_TEST(arg->getName().str() == "h");
-        BOOST_TEST(is_pointer_to_function(arg->getType(), [] (llvm::FunctionType const& t)
-        {
-            BOOST_TEST(t.getReturnType()->isIntegerTy(32ul));
-            BOOST_TEST_REQUIRE(t.getNumParams() == 1ul);
-            BOOST_TEST(t.getParamType(0ul)->isIntegerTy(32ul));
-            return boost::test_tools::predicate_result(true);
-        }));
+        BOOST_TEST(is_pointer_to_function(arg->getType(), std::tuple{is_i32_type}, is_i32_type));
         BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), call_inst([arg] (llvm::CallInst const& call)
         {
             BOOST_TEST(call.isIndirectCall());
@@ -349,12 +337,7 @@ BOOST_AUTO_TEST_CASE(pass_006)
         BOOST_TEST_REQUIRE(f->arg_size() == 1ul);
         auto const arg = f->getArg(0);
         BOOST_TEST(arg->getName().str() == "f");
-        BOOST_TEST(is_pointer_to_function(arg->getType(), [] (llvm::FunctionType const& t)
-        {
-            BOOST_TEST(t.getNumParams() == 0ul);
-            BOOST_TEST(t.getReturnType()->isIntegerTy(32ul));
-            return boost::test_tools::predicate_result(true);
-        }));
+        BOOST_TEST(is_pointer_to_function(arg->getType(), std::tuple{}, is_i32_type));
         BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), call_inst([arg] (llvm::CallInst const& call)
         {
             BOOST_TEST(call.isIndirectCall());

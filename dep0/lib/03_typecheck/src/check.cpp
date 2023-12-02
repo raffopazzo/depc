@@ -527,7 +527,7 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, sort_
         },
         [&] (parser::expr_t::app_t const& x) -> expected<expr_t>
         {
-            auto result = type_assign_app(ctx, x, loc);
+            auto const result = type_assign_app(ctx, x, loc);
             if (result)
                 if (auto eq = is_beta_delta_equivalent(ctx, result->properties.sort.get(), expected_type); not eq)
                     return type_error(result->properties.sort.get(), std::move(eq.error()));

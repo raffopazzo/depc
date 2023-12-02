@@ -486,7 +486,7 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, sort_
                     beta_delta_normalize(ctx.delta_reduction_context(), expected_type);
                     return check_numeric_expr(ctx, x, loc, expected_type);
                 },
-                [&] (kind_t const&) -> expected<expr_t>
+                [&] (kind_t) -> expected<expr_t>
                 {
                     std::ostringstream err;
                     pretty_print(err << "type mismatch between numeric constant and `", kind_t{}) << '`';

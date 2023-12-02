@@ -83,15 +83,9 @@ BOOST_AUTO_TEST_CASE(pass_003)
         BOOST_TEST(is_i32(f->getArg(0ul), "x"));
         BOOST_TEST_REQUIRE(f->getEntryBlock().size() == 2ul);
         auto const& bb = f->getEntryBlock();
-        auto it = bb.begin();
-        BOOST_TEST(is_add_of(&*it++, add_of([&] (llvm::BinaryOperator const& add)
-        {
-            BOOST_TEST_REQUIRE(add.getNumOperands() == 2ul);
-            BOOST_TEST(add.getOperand(0ul) == f->getArg(0ul));
-            BOOST_TEST(is_signed_constant(*add.getOperand(1ul), 1));
-            return boost::test_tools::predicate_result(true);
-        })));
-        BOOST_TEST(is_return_of(&*it++, *bb.begin()));
+        auto const [first, second] = std::tie(*bb.begin(), *std::next(bb.begin()));
+        BOOST_TEST(is_add_of(&first, exactly<llvm::Value>(f->getArg(0ul)), signed_constant(1)));
+        BOOST_TEST(is_return_of(&second, first));
     }
     {
         auto const f = pass_result.value()->getFunction("f");

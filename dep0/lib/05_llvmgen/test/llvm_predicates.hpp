@@ -33,8 +33,8 @@ boost::test_tools::predicate_result is_pointer_to_function(llvm::Type const* con
 
 // instruction/value predicates and factories; sorted by name, predicate before the corresponding factories
 
-template <dep0::testing::Predicate<llvm::BinaryOperator> F>
-boost::test_tools::predicate_result is_add_of(llvm::Value const* const val, F&& f)
+template <dep0::testing::Predicate<llvm::Value> F1, dep0::testing::Predicate<llvm::Value> F2>
+boost::test_tools::predicate_result is_add_of(llvm::Value const* const val, F1&& f1, F2&& f2)
 {
     if (not val)
         return dep0::testing::failure("val is null");
@@ -47,7 +47,13 @@ boost::test_tools::predicate_result is_add_of(llvm::Value const* const val, F&& 
             static_cast<int>(llvm::Instruction::BinaryOps::Add),
             " != ",
             static_cast<int>(op->getOpcode()));
-    return std::forward<F>(f)(*op);
+    if (op->getNumOperands() != 2)
+        return dep0::testing::failure("addition does not have 2 operands but ", op->getNumOperands());
+    if (auto const result = std::forward<F1>(f1)(*op->getOperand(0)); not result)
+        return dep0::testing::failure("predicate has failed for 1st operand: ", result.message());
+    if (auto const result = std::forward<F2>(f2)(*op->getOperand(1)); not result)
+        return dep0::testing::failure("predicate has failed for 2nd operand: ", result.message());
+    return true;
 }
 
 template <dep0::testing::Predicate<llvm::BinaryOperator> F>
@@ -88,6 +94,18 @@ auto call_inst(F&& f)
         if (not call)
             return dep0::testing::failure("value is not a function call");
         return f(*call);
+    };
+}
+
+template <typename T>
+auto exactly(T const* const p)
+{
+    return [p] (T const& x) -> boost::test_tools::predicate_result
+    {
+        if (p != &x)
+            return dep0::testing::failure(p, " != ", &x);
+        else
+            return true;
     };
 }
 

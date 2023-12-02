@@ -1,4 +1,6 @@
 #include "dep0/typecheck/context.hpp"
+
+#include "dep0/ast/occurs_in.hpp"
 #include "dep0/ast/pretty_print.hpp"
 #include "dep0/match.hpp"
 
@@ -93,6 +95,8 @@ std::ostream& for_each_line(std::ostream& os, R&& r, F&& f)
     return os;
 }
 
+static std::vector<expr_t::var_t> topologically_ordered_vars(context_t const& ctx);
+
 std::ostream& pretty_print(std::ostream& os, context_t const& ctx)
 {
     auto const length_of = [] (expr_t::var_t const& var)
@@ -111,11 +115,10 @@ std::ostream& pretty_print(std::ostream& os, context_t const& ctx)
             });
     auto const indent = (longest / 4ul) + 1ul;
     auto const alignment = indent * 4ul;
-    std::string padding;
     for_each_line(
         os,
-        ctx.vars(),
-        [&] (expr_t::var_t const& var)
+        topologically_ordered_vars(ctx),
+        [&, padding=std::string()] (expr_t::var_t const& var) mutable
         {
             auto const val = ctx[var];
             assert(val);
@@ -134,6 +137,60 @@ std::ostream& pretty_print(std::ostream& os, context_t const& ctx)
 std::ostream& pretty_print(std::ostream& os, context_t::value_type const& v)
 {
     return match(v, [&] (auto const& x) -> std::ostream& { return pretty_print<properties_t>(os, x); });
+}
+
+std::vector<expr_t::var_t> topologically_ordered_vars(context_t const& ctx)
+{
+    std::vector<expr_t::var_t> result;
+    std::ranges::copy(ctx.vars(), std::back_inserter(result));
+    std::stable_sort( // if two vars are equivalent, keep them in alphabetical order
+        result.begin(), result.end(),
+        [&] (expr_t::var_t const& x, expr_t::var_t const& y)
+        {
+            struct comparator
+            {
+                expr_t::var_t const& var_x;
+                expr_t::var_t const& var_y;
+                bool operator()(type_def_t const& x, type_def_t const& y) const
+                {
+                    return std::get<type_def_t::integer_t>(x.value).name <
+                        std::get<type_def_t::integer_t>(y.value).name;
+                }
+                bool operator()(type_def_t const&, expr_t const&) const
+                {
+                    return true;
+                }
+                bool operator()(expr_t const&, type_def_t const&) const
+                {
+                    return false;
+                }
+                bool operator()(expr_t const& x, expr_t const& y) const
+                {
+                    return match(
+                        x.properties.sort.get(),
+                        [&] (expr_t const& type_x)
+                        {
+                            return match(
+                                y.properties.sort.get(),
+                                [&] (expr_t const& type_y)
+                                {
+                                    return ast::occurs_in(var_x, type_y, ast::occurrence_style::free)
+                                        and not ast::occurs_in(var_y, type_x, ast::occurrence_style::free);
+                                },
+                                [] (kind_t) { return false; });
+                        },
+                        [&] (kind_t)
+                        {
+                            return match(
+                                y.properties.sort.get(),
+                                [] (expr_t const&) { return true; },
+                                [] (kind_t) { return false; });
+                        });
+                }
+            };
+            return std::visit(comparator{x, y}, *ctx[x], *ctx[y]);
+        });
+    return result;
 }
 
 } // namespace dep0::typecheck

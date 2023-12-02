@@ -1,6 +1,5 @@
 #include "dep0/typecheck/check.hpp"
 
-#include "dep0/ast/alpha_equivalence.hpp"
 #include "dep0/ast/beta_delta_reduction.hpp"
 #include "dep0/ast/pretty_print.hpp"
 #include "dep0/ast/substitute.hpp"

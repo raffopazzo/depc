@@ -21,11 +21,11 @@ auto select(bool which) -> (int_or_bool(which)) -> int_or_bool(negate(which))
         return to_int;
 }
 
-auto always_int(
+i32_t always_int(
     bool which,
     (int_or_bool(which)) -> int_or_bool(negate(which)) f,
     int_or_bool(which) x
-) -> i32_t
+)
 {
     if (which)
         return x;

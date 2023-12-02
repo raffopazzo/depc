@@ -547,7 +547,7 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, sort_
         [&] (parser::expr_t::pi_t const& pi) -> expected<expr_t>
         {
             auto pi_ctx = ctx.extend();
-            auto result = check_pi_type(pi_ctx, pi.args, pi.ret_type.get());
+            auto const result = check_pi_type(pi_ctx, pi.args, pi.ret_type.get());
             if (result)
                 if (auto eq = is_beta_delta_equivalent(pi_ctx, result->properties.sort.get(), expected_type); not eq)
                     return type_error(result->properties.sort.get(), std::move(eq.error()));

@@ -11,72 +11,72 @@ BOOST_FIXTURE_TEST_SUITE(dep0_llvmgen_tests_0001_integral_primitives, LLVMGenTes
 BOOST_AUTO_TEST_CASE(pass_000)
 {
     BOOST_TEST_REQUIRE(pass("0001_integral_primitives/pass_000.depc"));
-    BOOST_TEST(has_function("f0", [] (llvm::Function const& f)
     {
-        BOOST_TEST(f.hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::SExt));
-        BOOST_TEST(is_return_of(f.getEntryBlock().getTerminator(), signed_constant(127)));
-        return boost::test_tools::predicate_result(true);
-    }));
-    BOOST_TEST(has_function("f18", [] (llvm::Function const& f)
+        auto const f = pass_result.value()->getFunction("f0");
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::SExt));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), signed_constant(127)));
+    }
     {
-        BOOST_TEST(f.hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::SExt));
-        BOOST_TEST(is_return_of(f.getEntryBlock().getTerminator(), signed_constant(32767)));
-        return boost::test_tools::predicate_result(true);
-    }));
-    BOOST_TEST(has_function("f42", [] (llvm::Function const& f)
+        auto const f = pass_result.value()->getFunction("f18");
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::SExt));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), signed_constant(32767)));
+    }
     {
-        BOOST_TEST(f.hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::SExt));
-        BOOST_TEST(is_return_of(f.getEntryBlock().getTerminator(), signed_constant(2147483647)));
-        return boost::test_tools::predicate_result(true);
-    }));
-    BOOST_TEST(has_function("f81", [] (llvm::Function const& f)
+        auto const f = pass_result.value()->getFunction("f42");
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::SExt));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), signed_constant(2147483647)));
+    }
     {
-        BOOST_TEST(f.hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::SExt));
-        BOOST_TEST(is_return_of(f.getEntryBlock().getTerminator(), signed_constant(9223372036854775807)));
-        return boost::test_tools::predicate_result(true);
-    }));
-    BOOST_TEST(has_function("f141", [] (llvm::Function const& f)
+        auto const f = pass_result.value()->getFunction("f81");
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::SExt));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), signed_constant(9223372036854775807)));
+    }
     {
-        BOOST_TEST(f.hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::ZExt));
-        BOOST_TEST(is_return_of(f.getEntryBlock().getTerminator(), unsigned_constant(255ul)));
-        return boost::test_tools::predicate_result(true);
-    }));
-    BOOST_TEST(has_function("f153", [] (llvm::Function const& f)
+        auto const f = pass_result.value()->getFunction("f141");
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::ZExt));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), unsigned_constant(255ul)));
+    }
     {
-        BOOST_TEST(f.hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::ZExt));
-        BOOST_TEST(is_return_of(f.getEntryBlock().getTerminator(), unsigned_constant(65535ul)));
-        return boost::test_tools::predicate_result(true);
-    }));
-    BOOST_TEST(has_function("f169", [] (llvm::Function const& f)
+        auto const f = pass_result.value()->getFunction("f153");
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::ZExt));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), unsigned_constant(65535ul)));
+    }
     {
-        BOOST_TEST(f.hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::ZExt));
-        BOOST_TEST(is_return_of(f.getEntryBlock().getTerminator(), unsigned_constant(4294967295ul)));
-        return boost::test_tools::predicate_result(true);
-    }));
-    BOOST_TEST(has_function("f195", [] (llvm::Function const& f)
+        auto const f = pass_result.value()->getFunction("f169");
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::ZExt));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), unsigned_constant(4294967295ul)));
+    }
     {
-        BOOST_TEST(f.hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::ZExt));
-        BOOST_TEST(is_return_of(f.getEntryBlock().getTerminator(), unsigned_constant(18446744073709551615ul)));
-        return boost::test_tools::predicate_result(true);
-    }));
-    BOOST_TEST(has_function("f235", [] (llvm::Function const& f)
+        auto const f = pass_result.value()->getFunction("f195");
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::ZExt));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), unsigned_constant(18446744073709551615ul)));
+    }
     {
-        BOOST_TEST(f.hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::ZExt));
-        BOOST_TEST(is_return_of(f.getEntryBlock().getTerminator(), unsigned_constant(9999999999999999999ul)));
-        return boost::test_tools::predicate_result(true);
-    }));
-    BOOST_TEST(has_function("f237", [] (llvm::Function const& f)
+        auto const f = pass_result.value()->getFunction("f235");
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::ZExt));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), unsigned_constant(9999999999999999999ul)));
+    }
     {
-        BOOST_TEST(f.hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::ZExt));
-        BOOST_TEST(is_return_of(f.getEntryBlock().getTerminator(), unsigned_constant(9999999999999999999ul)));
-        return boost::test_tools::predicate_result(true);
-    }));
-    BOOST_TEST(has_function("f238", [] (llvm::Function const& f)
+        auto const f = pass_result.value()->getFunction("f237");
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::ZExt));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), unsigned_constant(9999999999999999999ul)));
+    }
     {
-        BOOST_TEST(f.hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::ZExt));
-        BOOST_TEST(is_return_of(f.getEntryBlock().getTerminator(), unsigned_constant(9999999999999999999ul)));
-        return boost::test_tools::predicate_result(true);
-    }));
+        auto const f = pass_result.value()->getFunction("f238");
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::ZExt));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), unsigned_constant(9999999999999999999ul)));
+    }
 }
 
 // BOOST_AUTO_TEST_CASE(parse_error_000)

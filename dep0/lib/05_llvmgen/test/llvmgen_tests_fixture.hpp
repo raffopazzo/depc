@@ -22,13 +22,4 @@ struct LLVMGenTestsFixture
     bool apply_beta_delta_normalization = false;
 
     boost::test_tools::predicate_result pass(std::filesystem::path);
-
-    template <dep0::testing::Predicate<llvm::Function> F>
-    boost::test_tools::predicate_result has_function(std::string_view const name, F&& f)
-    {
-        auto const function = pass_result.value()->getFunction(name);
-        if (not function)
-            return dep0::testing::failure("function not found: ", name);
-        return std::forward<F>(f)(*function);
-    }
 };

@@ -36,18 +36,6 @@ boost::test_tools::predicate_result check_all(std::vector<T> const& v, F&& f, Pr
         return true;
 }
 
-template <std::size_t I, typename T, typename... Predicates>
-boost::test_tools::predicate_result check_all_tuple(std::vector<T> const& v, std::tuple<Predicates...> const& fs)
-{
-    if constexpr (I < sizeof...(Predicates))
-    {
-        if (auto const result = std::get<I>(fs)(v.at(I)); not result)
-            return failure("predicate at index ", I, ": ", result.message());
-        return check_all_tuple<I+1>(v, fs);
-    }
-    else
-        return true;
-}
 } // namespace detail
 
 // Predicates and factories are defined here, grouped by node type.
@@ -287,9 +275,20 @@ is_pi_of(ast::expr_t<P> const& type, std::tuple<ArgPredicates...> const& f_args,
         return failure("type is not pi_t but ", pretty_name(type.value));
     if (auto const result = std::forward<F>(f_ret_type)(arr->ret_type.get()); not result)
         return failure("return type predicate failed: ", result.message());
-    if (arr->args.size() != sizeof...(ArgPredicates))
-        return failure("wrong number of arguments: ", sizeof...(ArgPredicates), " != ", arr->args.size());
-    return detail::check_all_tuple<0ul>(arr->args, f_args);
+    auto constexpr N = sizeof...(ArgPredicates);
+    if (arr->args.size() != N)
+        return failure("wrong number of arguments: ", N, " != ", arr->args.size());
+    auto result = boost::test_tools::predicate_result(true);
+    [&] <std::size_t... Is> (std::index_sequence<Is...>)
+    {
+        ([&]
+        {
+            if (result)
+                if (auto const tmp = std::get<Is>(f_args)(arr->args[Is]); not tmp)
+                    result = failure("argument predicate at index ", Is, " failed: ", tmp.message());
+        }(), ...);
+    } (std::make_index_sequence<N>{});
+    return result;
 }
 
 template <ast::Properties P, Predicate<ast::expr_t<P>> F, typename... ArgPredicates>

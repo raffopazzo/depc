@@ -362,6 +362,18 @@ boost::test_tools::predicate_result is_if_else(ast::stmt_t<P> const& stmt, F&& f
     return std::forward<F>(f)(*if_);
 }
 
+template <ast::Properties P>
+boost::test_tools::predicate_result is_return_of_void(ast::stmt_t<P> const& stmt)
+{
+    auto const ret = std::get_if<typename ast::stmt_t<P>::return_t>(&stmt.value);
+    if (not ret)
+        return failure("statement is not return but ", pretty_name(stmt.value));
+    if (ret->expr.has_value())
+        return failure("return statement contains an expression but it should not");
+    else
+        return true;
+}
+
 template <ast::Properties P, Predicate<ast::expr_t<P>> F>
 boost::test_tools::predicate_result is_return_of(ast::stmt_t<P> const& stmt, F&& f)
 {

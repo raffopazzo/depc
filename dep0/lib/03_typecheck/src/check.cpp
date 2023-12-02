@@ -217,16 +217,7 @@ expected<stmt_t> check_stmt(proof_state_t& state, parser::stmt_t const& s)
         {
             if (not x.expr)
             {
-                bool const ok =
-                    match(
-                        state.goal,
-                        [&] (expr_t const& return_type)
-                        {
-                            // TODO beta equivalence too?
-                            return is_alpha_equivalent(return_type, derivation_rules::make_unit()).has_value();
-                        },
-                        [] (kind_t) { return false; });
-                if (ok)
+                if (is_beta_delta_equivalent(state.context, state.goal, derivation_rules::make_unit()))
                     return make_legal_stmt(stmt_t::return_t{});
                 else
                 {

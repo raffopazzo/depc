@@ -636,7 +636,7 @@ BOOST_AUTO_TEST_CASE(pass_005)
 BOOST_AUTO_TEST_CASE(pass_006)
 {
     BOOST_TEST_REQUIRE(pass("0006_kinds/pass_006.depc"));
-    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 2ul);
+    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 3ul);
     {
         auto const& f = pass_result->func_defs[0ul];
         BOOST_TEST(f.name == "type_id");
@@ -654,6 +654,15 @@ BOOST_AUTO_TEST_CASE(pass_006)
         BOOST_TEST(f.value.args.size() == 0ul);
         BOOST_TEST(is_app_of(f.value.ret_type.get(), var("type_id"), is_unit));
         BOOST_TEST(f.value.body.stmts.size() == 0ul);
+    }
+    {
+        auto const& f = pass_result->func_defs[2ul];
+        BOOST_TEST(f.name == "g");
+        BOOST_TEST(is_expr_of(f.properties.sort.get(), pi_of(std::tuple{}, app_of(var("type_id"), is_unit))));
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_app_of(f.value.ret_type.get(), var("type_id"), is_unit));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of_void(f.value.body.stmts[0ul]));
     }
 }
 

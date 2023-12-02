@@ -39,7 +39,5 @@ auto select2(bool which) -> (int_or_bool(which)) -> int_or_bool(which)
         return plus_1;
     return negate;
 }
-
-
 i32_t f2() { return apply(int_or_bool(true), select2(true), 1); }
 bool g2() { return apply(int_or_bool(false), select2(false), false); }

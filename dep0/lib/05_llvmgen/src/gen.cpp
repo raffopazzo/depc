@@ -113,8 +113,11 @@ struct snippet_t
 // this means that in reality you can actually pass/store it if you try hard enough; please don't do that.
 class llvm_func_proto_t
 {
-    typecheck::expr_t::pi_t const& pi;
-    llvm_func_proto_t(typecheck::expr_t::pi_t const& pi) : pi(pi) {}
+    std::vector<typecheck::func_arg_t> m_args;
+    typecheck::expr_t m_ret_type;
+
+    llvm_func_proto_t(typecheck::expr_t::pi_t const& x)  : m_args(x.args), m_ret_type(x.ret_type.get()) { }
+    llvm_func_proto_t(typecheck::expr_t::abs_t const& x) : m_args(x.args), m_ret_type(x.ret_type.get()) { }
     llvm_func_proto_t(llvm_func_proto_t const&) = delete;
     llvm_func_proto_t& operator=(llvm_func_proto_t const&) = delete;
 
@@ -123,10 +126,11 @@ public:
     llvm_func_proto_t& operator=(llvm_func_proto_t&&) = default;
 
     static std::optional<llvm_func_proto_t> from_pi(typecheck::expr_t::pi_t const&);
+    static std::optional<llvm_func_proto_t> from_abs(typecheck::expr_t::abs_t const&);
 
-    std::vector<typecheck::func_arg_t> const& args() const { return pi.args; }
-    typecheck::func_arg_t const& arg(std::size_t const i) const { return pi.args[i]; }
-    typecheck::expr_t const& ret_type() const { return pi.ret_type.get(); }
+    std::vector<typecheck::func_arg_t> const& args() const { return m_args; }
+    typecheck::func_arg_t const& arg(std::size_t const i) const { return m_args[i]; }
+    typecheck::expr_t const& ret_type() const { return m_ret_type; }
 };
 
 // all gen functions must be forward-declared here
@@ -179,21 +183,24 @@ static void gen_func_body(
     typecheck::body_t const&,
     llvm::Function*);
 
-static bool is_first_order_function_type(typecheck::expr_t::pi_t const&);
+static bool is_first_order_function_type(std::vector<typecheck::func_arg_t> const&, typecheck::expr_t const& ret_type);
 static bool is_first_order_type(typecheck::expr_t const&);
 
 std::optional<llvm_func_proto_t> llvm_func_proto_t::from_pi(typecheck::expr_t::pi_t const& x)
 {
-    return is_first_order_function_type(x) ? std::optional{llvm_func_proto_t(x)} : std::nullopt;
+    return is_first_order_function_type(x.args, x.ret_type.get()) ? std::optional{llvm_func_proto_t(x)} : std::nullopt;
 }
 
-bool is_first_order_function_type(typecheck::expr_t::pi_t const& x)
+std::optional<llvm_func_proto_t> llvm_func_proto_t::from_abs(typecheck::expr_t::abs_t const& x)
+{
+    return is_first_order_function_type(x.args, x.ret_type.get()) ? std::optional{llvm_func_proto_t(x)} : std::nullopt;
+}
+
+bool is_first_order_function_type(std::vector<typecheck::func_arg_t> const& args, typecheck::expr_t const& ret_type)
 {
     return
-        std::all_of(
-            x.args.begin(), x.args.end(),
-            [] (typecheck::func_arg_t const& arg) { return is_first_order_type(arg.type); })
-        and is_first_order_type(x.ret_type.get());
+        std::ranges::all_of(args, [] (typecheck::func_arg_t const& arg) { return is_first_order_type(arg.type); })
+        and is_first_order_type(ret_type);
 }
 
 bool is_first_order_type(typecheck::expr_t const& type)
@@ -217,7 +224,7 @@ bool is_first_order_type(typecheck::expr_t const& type)
         [] (typecheck::expr_t::var_t const&) { return true; }, // caller must call only if expr is a type
         [] (typecheck::expr_t::app_t const&) { return false; },
         [] (typecheck::expr_t::abs_t const&) { return false; },
-        [] (typecheck::expr_t::pi_t const& t) { return is_first_order_function_type(t); });
+        [] (typecheck::expr_t::pi_t const &t) { return is_first_order_function_type(t.args, t.ret_type.get()); });
 }
 
 expected<unique_ref<llvm::Module>> gen(
@@ -239,12 +246,10 @@ expected<unique_ref<llvm::Module>> gen(
     for (auto const& def: m.func_defs)
     {
         // LLVM can only generate functions for 1st order abstractions;
-        // for 2nd order abstractions we rely on beta-delta normalization to produce a value or a 1st order application
-        auto const type = std::get_if<typecheck::expr_t>(&def.properties.sort.get());
-        assert(type and "function cannot be a kind");
-        auto const pi = std::get_if<typecheck::expr_t::pi_t>(&type->value);
-        assert(pi and "function type must be pi");
-        if (auto proto = llvm_func_proto_t::from_pi(*pi))
+        // for 2nd order abstractions we rely on beta-delta normalization to produce a value or a 1st order application;
+        // also note that we could in theory check `def.properites.sort` as a pi-type instead of using `from_abs()` but
+        // currently beta-delta normalization operates on the templated AST, so it does not reduce inside `properties`
+        if (auto proto = llvm_func_proto_t::from_abs(def.value))
             gen_func(global, local, def.name, *proto, def.value);
     }
 

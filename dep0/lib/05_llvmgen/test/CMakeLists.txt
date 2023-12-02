@@ -2,7 +2,10 @@ add_custom_target(dep0_llvmgen_tests)
 
 add_library(dep0_llvmgen_tests_fixture
     llvmgen_tests_fixture.hpp
-    llvmgen_tests_fixture.cpp)
+    llvmgen_tests_fixture.cpp
+    llvm_predicates.hpp
+    llvm_predicates.cpp
+    )
 target_link_libraries(dep0_llvmgen_tests_fixture
   PUBLIC
     DepC::Dep0::Parser

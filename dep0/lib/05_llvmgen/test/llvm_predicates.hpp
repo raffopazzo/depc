@@ -1,0 +1,151 @@
+#pragma once
+
+#include "dep0/testing/predicate.hpp"
+#include "dep0/testing/failure.hpp"
+
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/Module.h>
+
+#include <boost/test/tools/assertion_result.hpp>
+
+#include <optional>
+
+namespace dep0::llvmgen::testing {
+
+// type predicates
+boost::test_tools::predicate_result is_bool(llvm::Argument const*, std::optional<std::string_view>);
+boost::test_tools::predicate_result is_i32(llvm::Argument const*, std::optional<std::string_view>);
+boost::test_tools::predicate_result is_u32(llvm::Argument const*, std::optional<std::string_view>);
+
+template <dep0::testing::Predicate<llvm::FunctionType> F>
+boost::test_tools::predicate_result is_pointer_to_function(llvm::Type const* const type, F&& f)
+{
+    if (not type)
+        return dep0::testing::failure("type is null");
+    if (not type->isPointerTy())
+        return dep0::testing::failure("type is not a pointer");
+    auto const fn_type = dyn_cast<llvm::FunctionType>(type->getPointerElementType());
+    if (not fn_type)
+        return dep0::testing::failure("type is not a pointer to function");
+    return std::forward<F>(f)(*fn_type);
+}
+
+// instruction/value predicates and factories; sorted by name, predicate before the corresponding factories
+
+template <dep0::testing::Predicate<llvm::BinaryOperator> F>
+boost::test_tools::predicate_result is_add_of(llvm::Value const* const val, F&& f)
+{
+    if (not val)
+        return dep0::testing::failure("val is null");
+    auto const op = dyn_cast<llvm::BinaryOperator>(val);
+    if (not op)
+        return dep0::testing::failure("not a binary operator");
+    if (op->getOpcode() != llvm::Instruction::BinaryOps::Add)
+        return dep0::testing::failure(
+            "binary operator is not Add: ",
+            static_cast<int>(llvm::Instruction::BinaryOps::Add),
+            " != ",
+            static_cast<int>(op->getOpcode()));
+    return std::forward<F>(f)(*op);
+}
+
+template <dep0::testing::Predicate<llvm::BinaryOperator> F>
+inline auto add_of(F&& f)
+{
+    return [f=std::forward<F>(f)] (llvm::Value const& val)
+    {
+        return is_add_of(&val, f);
+    };
+}
+
+template <dep0::testing::Predicate<llvm::BranchInst> F>
+boost::test_tools::predicate_result is_branch_of(llvm::Instruction const* const instr, F&& f)
+{
+    if (not instr)
+        return dep0::testing::failure("instr is null");
+    auto const br = dyn_cast<llvm::BranchInst>(instr);
+    if (not br)
+        return dep0::testing::failure("not a branch instruction");
+    return std::forward<F>(f)(*br);
+}
+
+template <dep0::testing::Predicate<llvm::CallInst> F>
+boost::test_tools::predicate_result is_call_inst(llvm::Instruction const& instr, F&& f)
+{
+    auto const call = dyn_cast<llvm::CallInst>(&instr);
+    if (not call)
+        return dep0::testing::failure("not a call instruction");
+    return std::forward<F>(f)(*call);
+}
+
+template <dep0::testing::Predicate<llvm::CallInst> F>
+auto call_inst(F&& f)
+{
+    return [f=std::forward<F>(f)] (llvm::Value const& v) -> boost::test_tools::predicate_result
+    {
+        auto const call = dyn_cast<llvm::CallInst>(&v);
+        if (not call)
+            return dep0::testing::failure("value is not a function call");
+        return f(*call);
+    };
+}
+
+boost::test_tools::predicate_result is_return_of_void(llvm::Instruction const*);
+boost::test_tools::predicate_result is_return_of(llvm::Instruction const*, std::string_view);
+boost::test_tools::predicate_result is_return_of(llvm::Instruction const*, llvm::Value const&);
+
+template <dep0::testing::Predicate<llvm::Value> F>
+boost::test_tools::predicate_result is_return_of(llvm::Instruction const* const instr, F&& f)
+{
+    if (not instr)
+        return dep0::testing::failure("instr is null");
+    auto const ret = dyn_cast<llvm::ReturnInst>(instr);
+    if (not ret)
+        return dep0::testing::failure("not a return instruction");
+    if (not ret->getReturnValue())
+        return dep0::testing::failure("return instruction has no value");
+    return std::forward<F>(f)(*ret->getReturnValue());
+}
+
+boost::test_tools::predicate_result is_signed_constant(llvm::Value const&, long long);
+
+inline auto signed_constant(long long const value)
+{
+    return [value] (llvm::Value const& v) -> boost::test_tools::predicate_result
+    {
+        auto const c = dyn_cast<llvm::ConstantInt>(&v);
+        if (not c)
+            return dep0::testing::failure("value is not a constant");
+        if (c->getSExtValue() != value)
+            return dep0::testing::failure(c->getSExtValue(), " != ", value);
+        return true;
+    };
+}
+
+template <dep0::testing::Predicate<llvm::ConstantInt> F>
+auto constant_int(F&& f)
+{
+    return [f=std::forward<F>(f)] (llvm::Value const& v) -> boost::test_tools::predicate_result
+    {
+        auto const c = dyn_cast<llvm::ConstantInt>(&v);
+        if (not c)
+            return dep0::testing::failure("value is not a constant");
+        return f(*c);
+    };
+}
+
+inline auto unsigned_constant(unsigned long long const value)
+{
+    return [value] (llvm::Value const& v) -> boost::test_tools::predicate_result
+    {
+        auto const c = dyn_cast<llvm::ConstantInt>(&v);
+        if (not c)
+            return dep0::testing::failure("value is not a constant");
+        if (c->getZExtValue() != value)
+            return dep0::testing::failure(c->getZExtValue(), " != ", value);
+        return true;
+    };
+}
+
+} // namespace dep0::llvmgen::testing

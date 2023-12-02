@@ -2,6 +2,9 @@
 #include <boost/test/included/unit_test.hpp>
 
 #include "llvmgen_tests_fixture.hpp"
+#include "llvm_predicates.hpp"
+
+using namespace dep0::llvmgen::testing;
 
 BOOST_FIXTURE_TEST_SUITE(dep0_llvmgen_tests_0003_function_arguments, LLVMGenTestsFixture)
 

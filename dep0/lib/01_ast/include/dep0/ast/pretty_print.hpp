@@ -371,6 +371,8 @@ std::ostream& pretty_print(
                 return std::holds_alternative<typename expr_t<P>::pi_t>(arg.type.value);
             });
     os << '(';
+    if (args_on_separate_lines)
+        new_line(os, indent + 1ul);
     for (bool first = true; auto const& arg: std::ranges::subrange(begin, end))
     {
         if (not std::exchange(first, false))

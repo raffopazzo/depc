@@ -6,7 +6,10 @@
 
 #include "dep0/ast/beta_delta_reduction.hpp"
 
+#include <algorithm>
 #include <cassert>
+#include <cmath>
+#include <numeric>
 #include <ranges>
 
 namespace dep0::typecheck {
@@ -92,6 +95,23 @@ std::ostream& for_each_line(std::ostream& os, R&& r, F&& f)
 
 std::ostream& pretty_print(std::ostream& os, context_t const& ctx)
 {
+    auto const length_of = [] (expr_t::var_t const& var)
+    {
+        // length of the name, plus possibly the length of the index with the colon separator
+        return var.name.size() + (var.idx == 0ul ? 0ul : 2ul + static_cast<std::size_t>(std::log10(var.idx)));
+    };
+    auto const& vars = ctx.vars();
+    auto const longest =
+        std::accumulate(
+            vars.begin(), vars.end(),
+            0ul,
+            [&] (std::size_t const acc, expr_t::var_t const& var)
+            {
+                return std::max(acc, length_of(var));
+            });
+    auto const indent = (longest / 4ul) + 1ul;
+    auto const alignment = indent * 4ul;
+    std::string padding;
     for_each_line(
         os,
         ctx.vars(),
@@ -99,11 +119,14 @@ std::ostream& pretty_print(std::ostream& os, context_t const& ctx)
         {
             auto const val = ctx[var];
             assert(val);
-            pretty_print<properties_t>(os, var) << ": ";
+            pretty_print<properties_t>(os, var);
+            padding.clear();
+            std::fill_n(std::back_inserter(padding), alignment - length_of(var), ' ');
+            os << padding << ": ";
             match(
                 *val,
-                [&] (type_def_t const& t) { pretty_print(os, t); },
-                [&] (expr_t const& x) { pretty_print(os, x.properties.sort.get()); });
+                [&] (type_def_t const& t) { pretty_print(os, t, indent); },
+                [&] (expr_t const& x) { pretty_print(os, x.properties.sort.get(), indent); });
         });
     return os;
 }

@@ -736,11 +736,7 @@ llvm::CallInst* gen_func_call(
             },
             [&] (typecheck::expr_t::abs_t const& abs) -> llvm_func_t
             {
-                auto const type = std::get_if<typecheck::expr_t>(&app.func.get().properties.sort.get());
-                assert(type and "function type must not be a kind");
-                auto const pi = std::get_if<typecheck::expr_t::pi_t>(&type->value);
-                assert(pi and "function type must be pi");
-                auto proto = llvm_func_proto_t::from_pi(*pi);
+                auto proto = llvm_func_proto_t::from_abs(abs);
                 assert(proto and "can only invoke a 1st order function type");
                 return gen_func(global, local, *proto, abs);
             },

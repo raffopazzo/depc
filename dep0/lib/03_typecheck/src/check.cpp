@@ -99,10 +99,12 @@ expected<expr_t> type_assign_app(context_t const& ctx, parser::expr_t::app_t con
         return std::move(func.error());
     auto func_type = [&] () -> expected<expr_t::pi_t>
     {
-        if (auto const type = std::get_if<expr_t>(&func->properties.sort.get()))
-            // TODO we might also need to perform beta-delta-reduction
+        if (auto* const type = std::get_if<expr_t>(&func->properties.sort.get()))
+        {
+            ast::beta_delta_normalize(ctx.delta_reduction_context(), *type);
             if (auto const pi = std::get_if<expr_t::pi_t>(&type->value))
                 return *pi;
+        }
         std::ostringstream err;
         pretty_print(err << "cannot invoke expression of type `", func->properties.sort.get()) << '`';
         return error(err.str());

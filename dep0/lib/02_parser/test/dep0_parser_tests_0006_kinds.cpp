@@ -562,6 +562,47 @@ BOOST_AUTO_TEST_CASE(pass_006)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_007)
+{
+    BOOST_TEST_REQUIRE(pass("0006_kinds/pass_007.depc"));
+    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 4ul);
+    {
+        auto const& f = pass_result->func_defs[0ul];
+        BOOST_TEST(f.name == "succ");
+        BOOST_TEST_REQUIRE(f.value.args.size() == 1ul);
+        BOOST_TEST(is_arg(f.value.args[0], is_i32, "x"));
+        BOOST_TEST(is_i32(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], plus(var("x"), constant(1))));
+    }
+    {
+        auto const& f = pass_result->func_defs[1ul];
+        BOOST_TEST(f.name == "type_id");
+        BOOST_TEST_REQUIRE(f.value.args.size() == 1ul);
+        BOOST_TEST(is_arg(f.value.args[0], is_typename, "t"));
+        BOOST_TEST(is_typename(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], var("t")));
+    }
+    {
+        auto const& f = pass_result->func_defs[2ul];
+        BOOST_TEST(f.name == "apply_0");
+        BOOST_TEST_REQUIRE(f.value.args.size() == 1ul);
+        BOOST_TEST(is_arg(f.value.args[0], app_of(var("type_id"), pi_of(std::tuple{arg_of(is_i32)}, is_i32)), "f"));
+        BOOST_TEST(is_i32(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(var("f"), constant(0))));
+    }
+    {
+        auto const& f = pass_result->func_defs[3ul];
+        BOOST_TEST(f.name == "one");
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_i32(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(var("apply_0"), var("succ"))));
+    }
+}
+
 BOOST_AUTO_TEST_CASE(parse_error_000) { BOOST_TEST(fail("0006_kinds/parser_error_000.depc")); }
 BOOST_AUTO_TEST_CASE(parse_error_001) { BOOST_TEST(fail("0006_kinds/parser_error_001.depc")); }
 BOOST_AUTO_TEST_CASE(parse_error_002) { BOOST_TEST(fail("0006_kinds/parser_error_002.depc")); }

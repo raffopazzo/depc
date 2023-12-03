@@ -77,12 +77,12 @@ boost::test_tools::predicate_result is_add_of(llvm::Value const* const val, F1&&
     return true;
 }
 
-template <dep0::testing::Predicate<llvm::BinaryOperator> F>
-inline auto add_of(F&& f)
+template <dep0::testing::Predicate<llvm::Value> F1, dep0::testing::Predicate<llvm::Value> F2>
+inline auto add_of(F1&& f1, F2&& f2)
 {
-    return [f=std::forward<F>(f)] (llvm::Value const& val)
+    return [f1=std::forward<F1>(f1), f2=std::forward<F2>(f2)] (llvm::Value const& val)
     {
-        return is_add_of(&val, f);
+        return is_add_of(&val, f1, f2);
     };
 }
 

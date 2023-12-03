@@ -4,6 +4,7 @@
 
 #include "dep0/match.hpp"
 
+#include <algorithm>
 #include <numeric>
 
 namespace dep0::ast {
@@ -11,10 +12,9 @@ namespace dep0::ast {
 namespace impl {
 
 template <Properties P> std::size_t size(body_t<P> const&);
+template <Properties P> std::size_t size(stmt_t<P> const&);
 template <Properties P> std::size_t size(typename expr_t<P>::app_t const&);
-
-template <Properties P>
-std::size_t size(
+template <Properties P> std::size_t size(
     typename std::vector<func_arg_t<P>>::const_iterator begin,
     typename std::vector<func_arg_t<P>>::const_iterator end,
     expr_t<P> const& ret_type,
@@ -28,24 +28,28 @@ std::size_t size(body_t<P> const& x)
         0ul,
         [] (std::size_t const acc, stmt_t<P> const& s)
         {
-            return std::max(
-                acc,
-                match(
-                    s.value,
-                    [] (expr_t<P>::app_t const& x)
-                    {
-                        return size<P>(x);
-                    },
-                    [] (stmt_t<P>::if_else_t const& if_)
-                    {
-                        return 1ul + std::max(
-                            size(if_.cond),
-                            std::max(size(if_.true_branch), if_.false_branch ? size(*if_.false_branch) : 0ul));
-                    },
-                    [] (stmt_t<P>::return_t const& ret)
-                    {
-                        return ret.expr ? 1ul + size(*ret.expr) : 1ul;
-                    }));
+            return std::max(acc, size(s) );
+        });
+}
+
+template <Properties P>
+std::size_t size(stmt_t<P> const& x)
+{
+    return match(
+        x.value,
+        [] (expr_t<P>::app_t const& x)
+        {
+            return size<P>(x);
+        },
+        [] (stmt_t<P>::if_else_t const& if_)
+        {
+            return 1ul + std::max(
+                size(if_.cond),
+                std::max(size(if_.true_branch), if_.false_branch ? size(*if_.false_branch) : 0ul));
+        },
+        [] (stmt_t<P>::return_t const& ret)
+        {
+            return ret.expr ? 1ul + size(*ret.expr) : 1ul;
         });
 }
 

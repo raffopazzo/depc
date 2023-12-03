@@ -107,10 +107,7 @@ struct snippet_t
     }
 };
 
-// Proof that the pointed `pi_t` is a 1st order function type.
-// Non-copyable as we don't intend to pass it by-value or store it, but only to use it as proof object.
-// Must me movable in order to construct an `optional<llvm_func_proto_t>`;
-// this means that in reality you can actually pass/store it if you try hard enough; please don't do that.
+// Proof that some `pi_t` or `abs_t` were a 1st order function type, suitable to generate LLVM functions.
 class llvm_func_proto_t
 {
     std::vector<typecheck::func_arg_t> m_args;
@@ -118,7 +115,7 @@ class llvm_func_proto_t
 
     llvm_func_proto_t(typecheck::expr_t::pi_t const& x)  : m_args(x.args), m_ret_type(x.ret_type.get()) { }
     llvm_func_proto_t(typecheck::expr_t::abs_t const& x) : m_args(x.args), m_ret_type(x.ret_type.get()) { }
-    llvm_func_proto_t(llvm_func_proto_t const&) = delete;
+    llvm_func_proto_t(llvm_func_proto_t const&) = delete; // prevent accidental copies
     llvm_func_proto_t& operator=(llvm_func_proto_t const&) = delete;
 
 public:

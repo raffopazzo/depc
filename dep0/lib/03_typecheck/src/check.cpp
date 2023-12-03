@@ -23,6 +23,7 @@
 namespace dep0::typecheck {
 
 // forward declarations
+static error_t cannot_redefine(source_text, source_loc_t, context_t::value_type const& prev);
 static expected<expr_t> type_assign_app(context_t const&, parser::expr_t::app_t const&, source_loc_t const&);
 static expected<type_def_t> check_type_def(context_t&, parser::type_def_t const&);
 static expected<func_def_t> check_func_def(context_t&, parser::func_def_t const&);
@@ -55,6 +56,18 @@ expected<module_t> check(parser::module_t const& x) noexcept
 }
 
 // implementations
+error_t cannot_redefine(source_text const name, source_loc_t const loc, context_t::value_type const& prev)
+{
+    std::ostringstream err;
+    err << "cannot redefine `" << name << "`, previously defined as `";
+    match(
+        prev,
+        [&] (type_def_t const& t) { pretty_print(err, t); },
+        [&] (expr_t const& x) { pretty_print(err, x.properties.sort.get()); });
+    err << '`';
+    return error_t::from_error(dep0::error_t(err.str(), loc));
+}
+
 expected<expr_t> type_assign_app(context_t const& ctx, parser::expr_t::app_t const& app, source_loc_t const& loc)
 {
     auto const error = [&] (std::string msg)
@@ -129,11 +142,7 @@ expected<type_def_t> check_type_def(context_t& ctx, parser::type_def_t const& ty
             auto const result = make_legal_type_def(type_def_t::integer_t{x.name, x.sign, x.width, x.max_abs_value});
             auto const [it, inserted] = ctx.try_emplace(expr_t::var_t{x.name}, result);
             if (not inserted)
-            {
-                std::ostringstream err;
-                pretty_print(err << "cannot redefine `" << x.name << "` as typedef, previously `", it->second) << '`';
-                return error_t::from_error(dep0::error_t(err.str(), type_def.properties));
-            }
+                return cannot_redefine(x.name, type_def.properties, it->second);
             return result;
         });
 }
@@ -145,11 +154,7 @@ expected<func_def_t> check_func_def(context_t& ctx, parser::func_def_t const& f)
         return std::move(abs.error());
     auto const [it, inserted] = ctx.try_emplace(expr_t::var_t{f.name}, *abs);
     if (not inserted)
-    {
-        std::ostringstream err;
-        pretty_print(err << "cannot redefine `" << f.name << "` as function, previously `", it->second) << '`';
-        return error_t::from_error(dep0::error_t(err.str()));
-    }
+        return cannot_redefine(f.name, f.properties, it->second);
     return make_legal_func_def(abs->properties.sort.get(), f.name, std::move(std::get<expr_t::abs_t>(abs->value)));
 }
 
@@ -568,13 +573,10 @@ expected<expr_t> check_pi_type(
             auto const arg_index = next_arg_index++;
             auto const arg_loc = arg.properties;
             auto var = arg.var ? std::optional{expr_t::var_t{arg.var->name}} : std::nullopt;
-            auto const cannot_redefine = [&] (auto const& prev) -> expected<func_arg_t>
+            auto const cannot_redefine_ = [&] (auto const& prev) -> expected<func_arg_t>
             {
                 assert(var);
-                std::ostringstream err;
-                pretty_print<properties_t>(err << "cannot redefine `", *var) << '`';
-                pretty_print(err << " as function argument, previously `", prev) << '`';
-                return error_t::from_error(dep0::error_t(err.str(), arg_loc));
+                return cannot_redefine(var->name, arg_loc, prev);
             };
             // It can be argued that here we are "guessing" whether the argument is a type or a kind.
             // Type-assignment in lambda-c is decidable and unique up to alpha/beta-equivalence.
@@ -589,7 +591,7 @@ expected<expr_t> check_pi_type(
                 {
                     auto const [it, inserted] = ctx.try_emplace(*var, make_legal_expr(*type, *var));
                     if (not inserted)
-                        return cannot_redefine(it->second);
+                        return cannot_redefine_(it->second);
                 }
                 return make_legal_func_arg(std::move(*type), std::move(var));
             }
@@ -600,7 +602,7 @@ expected<expr_t> check_pi_type(
                 {
                     auto const [it, inserted] = ctx.try_emplace(*var, make_legal_expr(*kind, *var));
                     if (not inserted)
-                        return cannot_redefine(it->second);
+                        return cannot_redefine_(it->second);
                 }
                 return make_legal_func_arg(std::move(*kind), std::move(var));
             }
@@ -661,11 +663,7 @@ expected<expr_t> check_abs(
         auto const func_name = expr_t::var_t{*name};
         auto const [it, inserted] = f_ctx.try_emplace(func_name, make_legal_expr(*func_type, func_name));
         if (not inserted)
-        {
-            std::ostringstream err;
-            pretty_print(err << "cannot redefine `" << *name << "` as function, previously `", it->second) << '`';
-            return error_t::from_error(dep0::error_t(err.str(), location));
-        }
+            return cannot_redefine(*name, location, it->second);
     }
     auto const& pi_type = std::get<expr_t::pi_t>(func_type->value);
     auto const& ret_type = pi_type.ret_type.get();

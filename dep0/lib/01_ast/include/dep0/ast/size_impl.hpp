@@ -114,11 +114,11 @@ std::size_t size(expr_t<P> const& x)
         [] (expr_t<P>::app_t const& x) { return impl::size<P>(x); },
         [] (expr_t<P>::abs_t const& x)
         {
-            return impl::size<P>(x.args.begin(), x.args.end(), x.ret_type.get(), &x.body);
+            return 1ul + impl::size<P>(x.args.begin(), x.args.end(), x.ret_type.get(), &x.body);
         },
         [] (expr_t<P>::pi_t const& x)
         {
-            return impl::size<P>(x.args.begin(), x.args.end(), x.ret_type.get(), nullptr);
+            return 1ul + impl::size<P>(x.args.begin(), x.args.end(), x.ret_type.get(), nullptr);
         });
 }
 

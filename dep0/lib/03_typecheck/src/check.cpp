@@ -23,7 +23,7 @@
 namespace dep0::typecheck {
 
 // forward declarations
-static error_t cannot_redefine(source_text, source_loc_t, context_t::value_type const& prev);
+static error_t cannot_redefine(source_text name, source_loc_t, context_t::value_type const& prev);
 static expected<expr_t> type_assign_app(context_t const&, parser::expr_t::app_t const&, source_loc_t const&);
 static expected<type_def_t> check_type_def(context_t&, parser::type_def_t const&);
 static expected<func_def_t> check_func_def(context_t&, parser::func_def_t const&);

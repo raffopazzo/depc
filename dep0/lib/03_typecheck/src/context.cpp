@@ -24,33 +24,16 @@ context_t::context_t(scope_map<expr_t::var_t, value_type> values, delta_reductio
     m_delta_reduction_context(std::move(ctx))
 { }
 
+// const member functions
+
+context_t::delta_reduction_context_t const& context_t::delta_reduction_context() const
+{
+    return m_delta_reduction_context;
+}
 
 context_t context_t::extend() const
 {
     return context_t(m_values.extend(), m_delta_reduction_context.extend());
-}
-
-auto context_t::begin() const -> const_iterator
-{
-    return m_values.begin();
-}
-
-auto context_t::end() const -> const_iterator
-{
-    return m_values.end();
-}
-
-auto context_t::operator[](expr_t::var_t const& name) const -> value_type const*
-{
-    return m_values[name];
-}
-
-std::set<expr_t::var_t> context_t::vars() const
-{
-    std::set<expr_t::var_t> result;
-    for (auto x = std::optional{m_values}; x.has_value(); x = x->parent())
-        std::ranges::copy(std::views::keys(*x), std::inserter(result, result.end()));
-    return result;
 }
 
 context_t context_t::rewrite(expr_t const& from, expr_t const& to) const
@@ -86,6 +69,21 @@ context_t context_t::rewrite(expr_t const& from, expr_t const& to) const
     }
     return result;
 }
+
+std::set<expr_t::var_t> context_t::vars() const
+{
+    std::set<expr_t::var_t> result;
+    for (auto x = std::optional{m_values}; x.has_value(); x = x->parent())
+        std::ranges::copy(std::views::keys(*x), std::inserter(result, result.end()));
+    return result;
+}
+
+context_t::value_type const* context_t::operator[](expr_t::var_t const& name) const
+{
+    return m_values[name];
+}
+
+// non-const member functions
 
 dep0::expected<context_t::const_iterator> context_t::try_emplace(
     expr_t::var_t name,
@@ -123,10 +121,7 @@ dep0::expected<context_t::const_iterator> context_t::try_emplace(
     }
 }
 
-auto context_t::delta_reduction_context() const -> delta_reduction_context_t const&
-{
-    return m_delta_reduction_context;
-}
+// non-member functions
 
 template <typename R, typename F>
 std::ostream& for_each_line(std::ostream& os, R&& r, F&& f)

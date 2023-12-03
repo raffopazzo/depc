@@ -2,6 +2,7 @@
 
 #include "dep0/ast/occurs_in.hpp"
 #include "dep0/ast/pretty_print.hpp"
+#include "dep0/ast/size.hpp"
 #include "dep0/match.hpp"
 
 #include "private/rewrite.hpp"
@@ -65,12 +66,15 @@ context_t context_t::rewrite(expr_t const& from, expr_t const& to) const
             {
                 if (auto new_sort = typecheck::rewrite(from, to, expr.properties.sort.get()))
                 {
-                    // TODO should check that the new type actually got shorter after reduction,
-                    // in case we only managed to perform delta-reduction, in which case better
-                    // stick to the original, as it's easier to read for the user in case of error
                     match(
                         *new_sort,
-                        [&] (expr_t& new_type) { ast::beta_delta_normalize(m_delta_reduction_context, new_type); },
+                        [&] (expr_t& new_type)
+                        {
+                            auto copy = new_type;
+                            bool const changed = ast::beta_delta_normalize(m_delta_reduction_context, copy);
+                            if (changed and ast::size(copy) < ast::size(new_type))
+                                new_type = std::move(copy);
+                        },
                         [] (kind_t) { });
                     auto new_expr = expr;
                     new_expr.properties.sort = std::move(*new_sort);
@@ -132,7 +136,18 @@ std::ostream& pretty_print(std::ostream& os, context_t const& ctx)
             match(
                 val->value,
                 [&] (type_def_t const& t) { pretty_print(os, t, indent); },
-                [&] (expr_t const& x) { pretty_print(os, x.properties.sort.get(), indent); });
+                [&] (expr_t const& x)
+                {
+                    match(
+                        x.properties.sort.get(),
+                        [&] (expr_t const& type)
+                        {
+                            auto copy = type;
+                            bool const changed = ast::beta_delta_normalize(ctx.delta_reduction_context(), copy);
+                            pretty_print(os, changed and ast::size(copy) < ast::size(type) ? copy : type, indent);
+                        },
+                        [&] (kind_t) { pretty_print(os, kind_t{}, indent); });
+                });
         });
     return os;
 }

@@ -17,6 +17,8 @@ add_library(dep0_ast_lib
     include/dep0/ast/rename_impl.hpp
     include/dep0/ast/replace.hpp
     include/dep0/ast/replace_impl.hpp
+    include/dep0/ast/size.hpp
+    include/dep0/ast/size_impl.hpp
     include/dep0/ast/substitute.hpp
     include/dep0/ast/substitute_impl.hpp
     src/alpha_equivalence.cpp
@@ -29,6 +31,7 @@ add_library(dep0_ast_lib
     src/pretty_print.cpp
     src/rename.cpp
     src/replace.cpp
+    src/size.cpp
     src/substitute.cpp
     )
 add_library(DepC::Dep0::Ast ALIAS dep0_ast_lib)

@@ -412,7 +412,7 @@ void gen_func_args(local_context_t& local, llvm_func_proto_t const& proto, llvm:
     for (auto const i: std::views::iota(0ul, proto.args().size()))
     {
         auto const llvm_arg = llvm_f->getArg(i);
-        auto const [arg_type, arg_var] = std::tie(proto.arg(i).type, proto.arg(i).var);
+        auto const& [arg_type, arg_var] = std::tie(proto.arg(i).type, proto.arg(i).var);
         if (auto const attr = get_sign_ext_attribute(local, arg_type); attr != llvm::Attribute::None)
             llvm_arg->addAttr(attr);
         if (arg_var)

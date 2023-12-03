@@ -3,10 +3,8 @@
 #include "dep0/typecheck/ast.hpp"
 
 #include "dep0/ast/delta_reduction.hpp"
-#include "dep0/ast/pretty_print.hpp"
 
 #include "dep0/error.hpp"
-#include "dep0/match.hpp"
 #include "dep0/scope_map.hpp"
 
 #include <cassert>
@@ -55,39 +53,7 @@ public:
 
     context_t rewrite(expr_t const& from, expr_t const& to) const;
 
-    template <typename... Args>
-    dep0::expected<const_iterator> try_emplace(expr_t::var_t name, source_loc_t const loc, Args&&... args)
-    {
-        auto const res = m_values.try_emplace(std::move(name), loc, std::forward<Args>(args)...);
-        if (res.second)
-        {
-            bool const inserted = [&]
-            {
-                if (auto const expr = std::get_if<expr_t>(&res.first->second.value))
-                    if (auto const abs = std::get_if<expr_t::abs_t>(&expr->value))
-                        return m_delta_reduction_context.try_emplace(res.first->first, *abs).second;
-                return m_delta_reduction_context.try_emplace(
-                    res.first->first,
-                    ast::delta_reduction::something_else_t{}
-                ).second;
-            }();
-            assert(inserted);
-            return dep0::expected<const_iterator>(res.first);
-        }
-        else
-        {
-            auto const& prev = res.first->second;
-            std::ostringstream err;
-            pretty_print<properties_t>(err << "cannot redefine `", name) << '`';
-            err << ", previously defined at "<< prev.origin.line << ':' << prev.origin.col << " as `";
-            match(
-                prev.value,
-                [&] (type_def_t const& t) { pretty_print(err, t); },
-                [&] (expr_t const& x) { pretty_print(err, x.properties.sort.get()); });
-            err << '`';
-            return dep0::error_t(err.str(), loc);
-        }
-    }
+    dep0::expected<const_iterator> try_emplace(expr_t::var_t, source_loc_t, std::variant<type_def_t, expr_t>);
 
     delta_reduction_context_t const& delta_reduction_context() const;
 };

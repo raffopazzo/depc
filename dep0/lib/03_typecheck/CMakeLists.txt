@@ -8,14 +8,22 @@ add_library(dep0_typecheck_lib
   include/dep0/typecheck/derivation.hpp
   include/dep0/typecheck/error.hpp
   # private headers
+  src/private/beta_delta_equivalence.hpp
   src/private/derivation_rules.hpp
+  src/private/proof_state.hpp
   src/private/returns_from_all_branches.hpp
+  src/private/rewrite.hpp
   # source files
   src/ast.cpp
+  src/beta_delta_equivalence.cpp
   src/check.cpp
   src/context.cpp
+  src/derivation.cpp
+  src/derivation_rules.cpp
   src/error.cpp
+  src/proof_state.cpp
   src/returns_from_all_branches.cpp
+  src/rewrite.cpp
   )
 add_library(DepC::Dep0::TypeCheck ALIAS dep0_typecheck_lib)
 target_compile_features(dep0_typecheck_lib PUBLIC cxx_std_20)

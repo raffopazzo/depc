@@ -1,0 +1,44 @@
+bool negate(bool x)
+{
+    if (x) return false;
+    else return true;
+}
+
+auto int_or_bool(bool which) -> typename
+{
+    if (which) return i32_t;
+    else return bool;
+}
+
+bool to_bool(i32_t) { return false; }
+i32_t to_int(bool) { return 0; }
+
+auto select(bool which) -> (int_or_bool(which)) -> int_or_bool(negate(which))
+{
+    if (which)
+        return to_bool;
+    else
+        return to_int;
+}
+
+i32_t always_int(
+    bool which,
+    (int_or_bool(which)) -> int_or_bool(negate(which)) f,
+    int_or_bool(which) x
+)
+{
+    if (which)
+        return x;
+    else
+        return f(x);
+}
+
+i32_t zero_from_int()
+{
+    return always_int(true, select(true), 0);
+}
+
+i32_t zero_from_bool()
+{
+    return always_int(false, select(false), false);
+}

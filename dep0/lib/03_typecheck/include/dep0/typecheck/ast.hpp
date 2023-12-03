@@ -5,6 +5,8 @@
 #include "dep0/ast/ast.hpp"
 #include "dep0/ast/concepts.hpp"
 
+#include <boost/variant/recursive_wrapper.hpp>
+
 #include <optional>
 #include <ostream>
 
@@ -14,7 +16,6 @@ struct legal_module_t;
 struct legal_type_def_t;
 struct legal_func_def_t;
 struct legal_func_arg_t;
-struct legal_type_t;
 struct legal_body_t;
 struct legal_stmt_t;
 struct legal_expr_t;
@@ -25,7 +26,6 @@ struct properties_t
     using type_def_properties_type = legal_type_def_t;
     using func_def_properties_type = legal_func_def_t;
     using func_arg_properties_type = legal_func_arg_t;
-    using type_properties_type = legal_type_t;
     using body_properties_type = legal_body_t;
     using stmt_properties_type = legal_stmt_t;
     using expr_properties_type = legal_expr_t;
@@ -36,11 +36,12 @@ using module_t = ast::module_t<properties_t>;
 using type_def_t = ast::type_def_t<properties_t>;
 using func_def_t = ast::func_def_t<properties_t>;
 using func_arg_t = ast::func_arg_t<properties_t>;
-using type_t = ast::type_t<properties_t>;
 using body_t = ast::body_t<properties_t>;
 using stmt_t = ast::stmt_t<properties_t>;
 using expr_t = ast::expr_t<properties_t>;
-using sort_t = ast::sort_t<properties_t>;
+
+struct kind_t{};
+using sort_t = std::variant<expr_t, kind_t>;
 
 struct legal_module_t
 {
@@ -57,22 +58,16 @@ struct legal_type_def_t
     bool operator==(legal_type_def_t const&) const = default;
 };
 
-struct legal_type_t
-{
-    derivation_t<type_t> derivation;
-    bool operator==(legal_type_t const&) const = default;
-};
-
 struct legal_func_def_t
 {
     derivation_t<func_def_t> derivation;
+    boost::recursive_wrapper<sort_t> sort;
     bool operator==(legal_func_def_t const&) const = default;
 };
 
 struct legal_func_arg_t
 {
     derivation_t<func_arg_t> derivation;
-    // could consider adding a field `sort_t sort` but it's redundant as the same information is in func_arg_t
     bool operator==(legal_func_arg_t const&) const = default;
 };
 
@@ -91,8 +86,11 @@ struct legal_stmt_t
 struct legal_expr_t
 {
     derivation_t<expr_t> derivation;
-    sort_t sort;
+    boost::recursive_wrapper<sort_t> sort;
     bool operator==(legal_expr_t const&) const = default;
 };
+
+std::ostream& pretty_print(std::ostream&, kind_t, std::size_t indent = 0ul);
+std::ostream& pretty_print(std::ostream&, sort_t const&, std::size_t indent = 0ul);
 
 } // namespace dep0::typecheck

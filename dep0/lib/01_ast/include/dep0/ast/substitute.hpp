@@ -5,26 +5,13 @@
 namespace dep0::ast {
 
 template <Properties P>
-void substitute(type_t<P>&, typename type_t<P>::var_t const&, type_t<P> const&);
-
-template <Properties P>
 void substitute(
-    typename type_t<P>::arr_t::arg_iterator begin,
-    typename type_t<P>::arr_t::arg_iterator end,
-    type_t<P>& ret_type,
-    typename type_t<P>::var_t const&,
-    type_t<P> const&);
-
-template <Properties P>
-void substitute(
-    typename expr_t<P>::abs_t::arg_iterator begin,
-    typename expr_t<P>::abs_t::arg_iterator end,
-    body_t<P>&,
     typename expr_t<P>::var_t const&,
-    expr_t<P> const&);
-
-template <Properties P>
-void substitute(expr_t<P>&, typename expr_t<P>::var_t const&, expr_t<P> const&);
+    expr_t<P> const&,
+    typename std::vector<func_arg_t<P>>::iterator begin,
+    typename std::vector<func_arg_t<P>>::iterator end,
+    expr_t<P>& ret_type,
+    body_t<P>* body);
 
 } // namespace dep0::ast
 

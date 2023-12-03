@@ -1,6 +1,8 @@
 #pragma once
 
+#include "dep0/typecheck/ast.hpp"
 #include "dep0/typecheck/context.hpp"
+
 #include "dep0/error.hpp"
 
 #include <ostream>
@@ -10,17 +12,10 @@ namespace dep0::typecheck {
 // Extend the basic error type with the context information available when the typecheck failure occurred.
 struct error_t : dep0::error_t
 {
-    context_t ctx;
-    std::optional<sort_t> tgt;
+    std::optional<std::pair<context_t, sort_t>> context;
 
-    static error_t from_error(dep0::error_t err, context_t ctx = {})
-    {
-        return error_t{std::move(err), std::move(ctx)};
-    }
-    static error_t from_error(dep0::error_t err, context_t ctx, sort_t tgt)
-    {
-        return error_t{std::move(err), std::move(ctx), std::move(tgt)};
-    }
+    static error_t from_error(dep0::error_t);
+    static error_t from_error(dep0::error_t, context_t, sort_t);
 };
 
 template <typename T>

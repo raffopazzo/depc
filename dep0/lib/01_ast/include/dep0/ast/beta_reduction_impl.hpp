@@ -11,6 +11,8 @@
 
 namespace dep0::ast {
 
+namespace impl {
+
 template <typename T>
 void destructive_self_assign(T& x, T&& y)
 {
@@ -20,13 +22,134 @@ void destructive_self_assign(T& x, T&& y)
 
 template <Properties P> bool beta_normalize(typename stmt_t<P>::if_else_t&);
 template <Properties P> bool beta_normalize(typename stmt_t<P>::return_t&);
-template <Properties P> bool beta_normalize(typename expr_t<P>::arith_expr_t&);
+template <Properties P> bool beta_normalize(typename expr_t<P>::typename_t&);
+template <Properties P> bool beta_normalize(typename expr_t<P>::bool_t&);
+template <Properties P> bool beta_normalize(typename expr_t<P>::unit_t&);
+template <Properties P> bool beta_normalize(typename expr_t<P>::i8_t&);
+template <Properties P> bool beta_normalize(typename expr_t<P>::i16_t&);
+template <Properties P> bool beta_normalize(typename expr_t<P>::i32_t&);
+template <Properties P> bool beta_normalize(typename expr_t<P>::i64_t&);
+template <Properties P> bool beta_normalize(typename expr_t<P>::u8_t&);
+template <Properties P> bool beta_normalize(typename expr_t<P>::u16_t&);
+template <Properties P> bool beta_normalize(typename expr_t<P>::u32_t&);
+template <Properties P> bool beta_normalize(typename expr_t<P>::u64_t&);
 template <Properties P> bool beta_normalize(typename expr_t<P>::boolean_constant_t&);
 template <Properties P> bool beta_normalize(typename expr_t<P>::numeric_constant_t&);
+template <Properties P> bool beta_normalize(typename expr_t<P>::arith_expr_t&);
 template <Properties P> bool beta_normalize(typename expr_t<P>::var_t&);
 template <Properties P> bool beta_normalize(typename expr_t<P>::app_t&);
 template <Properties P> bool beta_normalize(typename expr_t<P>::abs_t&);
+template <Properties P> bool beta_normalize(typename expr_t<P>::pi_t&);
 
+template <Properties P>
+bool beta_normalize(typename stmt_t<P>::if_else_t& if_)
+{
+    bool changed = beta_normalize(if_.cond);
+    changed |= beta_normalize(if_.true_branch);
+    if (if_.false_branch)
+        changed |= beta_normalize(*if_.false_branch);
+    return changed;
+}
+
+template <Properties P>
+bool beta_normalize(typename stmt_t<P>::return_t& ret)
+{
+    return ret.expr and beta_normalize(*ret.expr);
+}
+
+template <Properties P> bool beta_normalize(typename expr_t<P>::typename_t&) { return false; }
+template <Properties P> bool beta_normalize(typename expr_t<P>::bool_t&) { return false; }
+template <Properties P> bool beta_normalize(typename expr_t<P>::unit_t&) { return false; }
+template <Properties P> bool beta_normalize(typename expr_t<P>::i8_t&) { return false; }
+template <Properties P> bool beta_normalize(typename expr_t<P>::i16_t&) { return false; }
+template <Properties P> bool beta_normalize(typename expr_t<P>::i32_t&) { return false; }
+template <Properties P> bool beta_normalize(typename expr_t<P>::i64_t&) { return false; }
+template <Properties P> bool beta_normalize(typename expr_t<P>::u8_t&) { return false; }
+template <Properties P> bool beta_normalize(typename expr_t<P>::u16_t&) { return false; }
+template <Properties P> bool beta_normalize(typename expr_t<P>::u32_t&) { return false; }
+template <Properties P> bool beta_normalize(typename expr_t<P>::u64_t&) { return false; }
+template <Properties P> bool beta_normalize(typename expr_t<P>::boolean_constant_t&) { return false; }
+template <Properties P> bool beta_normalize(typename expr_t<P>::numeric_constant_t&) { return false; }
+
+template <Properties P>
+bool beta_normalize(typename expr_t<P>::arith_expr_t& x)
+{
+    // TODO constant folding?
+    return match(
+        x.value,
+        [&] (typename expr_t<P>::arith_expr_t::plus_t& x)
+        {
+            bool changed = beta_normalize(x.lhs.get());
+            changed |= beta_normalize(x.rhs.get());
+            return changed;
+        });
+}
+
+template <Properties P> bool beta_normalize(typename expr_t<P>::var_t&) { return false; }
+
+template <Properties P>
+bool beta_normalize(typename expr_t<P>::app_t& app)
+{
+    // Technically, this classifies as applicative-order-reduction;
+    // as such, if the abstraction discards some/all arguments we might waste time reducing those arguments.
+    // Currently it doesn't matter; we can reassess in future.
+    bool changed = beta_normalize(app.func.get());
+    for (auto& arg: app.args)
+        changed |= beta_normalize(arg);
+    // In case you wonder whether we should also reduce application of pi-expr,
+    // beta-reduction is not defined for them and it's not even typeable;
+    // we only really care about beta-reducing legal terms.
+    if (auto* const abs = std::get_if<typename expr_t<P>::abs_t>(&app.func.get().value))
+    {
+        if (abs->args.size() > 0ul)
+        {
+            if (abs->args.size() != app.args.size()) // always false when beta-normalizing legal terms
+                return changed;
+            for (auto const i: std::views::iota(0ul, abs->args.size()))
+            {
+                auto const& arg = abs->args[i];
+                if (arg.var)
+                    substitute(
+                        *arg.var,
+                        app.args[i],
+                        abs->args.begin() + i + 1,
+                        abs->args.end(),
+                        abs->ret_type.get(),
+                        &abs->body);
+            }
+            // at this point all arguments of the abstraction have been substituted,
+            // so we can remove them and normalize the new body
+            app.args.clear();
+            abs->args.clear();
+            changed = true;
+            beta_normalize(abs->body);
+        }
+    }
+    return changed;
+}
+
+template <Properties P>
+bool beta_normalize(typename expr_t<P>::abs_t& abs)
+{
+    bool changed = false;
+    for (auto& arg: abs.args)
+        changed |= beta_normalize(arg.type);
+    changed |= beta_normalize(abs.ret_type.get());
+    changed |= beta_normalize(abs.body);
+    return changed;
+}
+
+template <Properties P>
+bool beta_normalize(typename expr_t<P>::pi_t& pi)
+{
+    bool changed = false;
+    for (auto& arg: pi.args)
+        changed |= beta_normalize(arg.type);
+    changed |= beta_normalize(pi.ret_type.get());
+    return changed;
+}
+
+} // namespace impl
 template <Properties P>
 bool beta_normalize(module_t<P>& m)
 {
@@ -39,7 +162,7 @@ bool beta_normalize(module_t<P>& m)
 template <Properties P>
 bool beta_normalize(func_def_t<P>& def)
 {
-    return beta_normalize(def.value.body);
+    return impl::beta_normalize<P>(def.value);
 }
 
 template <Properties P>
@@ -117,23 +240,7 @@ bool beta_normalize(body_t<P>& body)
 template <Properties P>
 bool beta_normalize(stmt_t<P>& stmt)
 {
-    return match(stmt.value, [&] (auto& x) { return beta_normalize<P>(x); });
-}
-
-template <Properties P>
-bool beta_normalize(typename stmt_t<P>::if_else_t& if_)
-{
-    bool changed = beta_normalize(if_.cond);
-    changed |= beta_normalize(if_.true_branch);
-    if (if_.false_branch)
-        changed |= beta_normalize(*if_.false_branch);
-    return changed;
-}
-
-template <Properties P>
-bool beta_normalize(typename stmt_t<P>::return_t& ret)
-{
-    return ret.expr and beta_normalize(*ret.expr);
+    return match(stmt.value, [&] (auto& x) { return impl::beta_normalize<P>(x); });
 }
 
 template <Properties P>
@@ -143,7 +250,7 @@ bool beta_normalize(expr_t<P>& expr)
         expr.value,
         [&] (typename expr_t<P>::app_t& app)
         {
-            bool changed = beta_normalize<P>(app);
+            bool changed = impl::beta_normalize<P>(app);
             // if this reduced to a parameterless single return statement, we can extract the returned expression
             if (app.args.empty())
                 if (auto* const abs = std::get_if<typename expr_t<P>::abs_t>(&app.func.get().value))
@@ -152,77 +259,12 @@ bool beta_normalize(expr_t<P>& expr)
                             if (ret->expr)
                             {
                                 changed = true;
-                                destructive_self_assign(expr, std::move(*ret->expr));
+                                impl::destructive_self_assign(expr, std::move(*ret->expr));
                             }
             return changed;
         },
-        [&] (auto& x) { return beta_normalize<P>(x); });
+        [&] (auto& x) { return impl::beta_normalize<P>(x); });
 }
-
-template <Properties P>
-bool beta_normalize(typename expr_t<P>::arith_expr_t& x)
-{
-    // TODO constant folding?
-    return match(
-        x.value,
-        [&] (typename expr_t<P>::arith_expr_t::plus_t& x)
-        {
-            bool changed = beta_normalize(x.lhs.get());
-            changed |= beta_normalize(x.rhs.get());
-            return changed;
-        });
-}
-
-template <Properties P> bool beta_normalize(typename expr_t<P>::boolean_constant_t&) { return false; }
-template <Properties P> bool beta_normalize(typename expr_t<P>::numeric_constant_t&) { return false; }
-template <Properties P> bool beta_normalize(typename expr_t<P>::var_t&) { return false; }
-
-template <Properties P>
-bool beta_normalize(typename expr_t<P>::app_t& app)
-{
-    // Technically, this classifies as applicative-order-reduction;
-    // as such, if the abstraction discards some/all arguments we might waste time reducing those arguments.
-    // Currently it doesn't matter; we can reassess in future.
-    bool changed = beta_normalize(app.func.get());
-    for (auto& arg: app.args)
-        changed |= beta_normalize(arg);
-    if (auto* const abs = std::get_if<typename expr_t<P>::abs_t>(&app.func.get().value))
-    {
-        if (abs->args.size() > 0ul)
-        {
-            assert(abs->args.size() == app.args.size());
-            auto arg_it = abs->args.begin();
-            for (auto const i: std::views::iota(0ul, abs->args.size()))
-            {
-                match(
-                    arg_it->value,
-                    [] (typename func_arg_t<P>::type_arg_t const&) {},
-                    [&](typename func_arg_t<P>::term_arg_t const& arg)
-                    {
-                        if (arg.var)
-                            substitute(arg_it+1, abs->args.end(), abs->body, *arg.var, app.args[i]);
-                    });
-                ++arg_it;
-            }
-            // at this point all arguments of the abstraction have been substituted,
-            // so we can remove them and normalize the new body
-            app.args.clear();
-            abs->args.clear();
-            changed = true;
-            beta_normalize(abs->body);
-        }
-    }
-    return changed;
-}
-
-template <Properties P>
-bool beta_normalize(typename expr_t<P>::abs_t& abs)
-{
-    return beta_normalize(abs.body);
-}
-
-template <Properties P>
-bool beta_normalize(type_t<P>&) { return false; }
 
 } // namespace dep0::ast
 

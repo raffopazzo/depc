@@ -9,7 +9,6 @@ template <Properties P> bool beta_normalize(func_def_t<P>&);
 template <Properties P> bool beta_normalize(body_t<P>&);
 template <Properties P> bool beta_normalize(stmt_t<P>&);
 template <Properties P> bool beta_normalize(expr_t<P>&);
-template <Properties P> bool beta_normalize(type_t<P>&);
 
 } // namespace dep0::ast
 

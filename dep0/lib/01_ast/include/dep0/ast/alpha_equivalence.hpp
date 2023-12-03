@@ -6,7 +6,7 @@
 namespace dep0::ast {
 
 template <Properties P>
-dep0::expected<std::true_type> is_alpha_equivalent(type_t<P> const&, type_t<P> const&);
+dep0::expected<std::true_type> is_alpha_equivalent(expr_t<P> const&, expr_t<P> const&);
 
 } // namespace dep0::ast
 

@@ -2,7 +2,10 @@ add_custom_target(dep0_llvmgen_tests)
 
 add_library(dep0_llvmgen_tests_fixture
     llvmgen_tests_fixture.hpp
-    llvmgen_tests_fixture.cpp)
+    llvmgen_tests_fixture.cpp
+    llvm_predicates.hpp
+    llvm_predicates.cpp
+    )
 target_link_libraries(dep0_llvmgen_tests_fixture
   PUBLIC
     DepC::Dep0::Parser
@@ -26,3 +29,4 @@ add_dep0_llvmgen_test(0002_user_defined_integrals)
 add_dep0_llvmgen_test(0003_function_arguments)
 add_dep0_llvmgen_test(0004_plus_expr)
 add_dep0_llvmgen_test(0005_pi_types)
+add_dep0_llvmgen_test(0006_kinds)

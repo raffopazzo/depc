@@ -1,10 +1,12 @@
 #include "dep0/typecheck/check.hpp"
 
-#include "dep0/ast/alpha_equivalence.hpp"
+#include "dep0/ast/beta_delta_reduction.hpp"
 #include "dep0/ast/pretty_print.hpp"
 #include "dep0/ast/substitute.hpp"
 
+#include "private/beta_delta_equivalence.hpp"
 #include "private/derivation_rules.hpp"
+#include "private/proof_state.hpp"
 #include "private/returns_from_all_branches.hpp"
 
 #include "dep0/digit_separator.hpp"
@@ -21,18 +23,24 @@
 namespace dep0::typecheck {
 
 // forward declarations
-// TODO `type_assign_func_call` should return `expected<expr_t>` but that means it can be inhabited by
-// an expression of sort `typename` which at the moment it's not yet true
-static expected<std::pair<type_t, expr_t::app_t>> type_assign_func_call(context_t const&, parser::expr_t::app_t const&);
+static expected<expr_t> type_assign_app(context_t const&, parser::expr_t::app_t const&, source_loc_t const&);
 static expected<type_def_t> check_type_def(context_t&, parser::type_def_t const&);
 static expected<func_def_t> check_func_def(context_t&, parser::func_def_t const&);
-static expected<type_t> check_type(context_t const&, parser::type_t const&);
-static expected<body_t> check_body(context_t const&, parser::body_t const&, type_t const& return_type);
-static expected<stmt_t> check_stmt(context_t const&, parser::stmt_t const&, type_t const& return_type);
-static expected<expr_t> check_expr(context_t const&, parser::expr_t const&, type_t const& expected_type);
-static expected<type_t> check_type_expr(context_t const&, parser::expr_t const&);
-static expected<std::pair<type_t, expr_t::abs_t>>
-    check_abs(context_t const&, parser::expr_t::abs_t const&, std::optional<source_text> const&);
+static expected<expr_t> check_type(context_t const&, parser::expr_t const&);
+static expected<body_t> check_body(proof_state_t&, parser::body_t const&);
+static expected<stmt_t> check_stmt(proof_state_t&, parser::stmt_t const&);
+static expected<expr_t> check_expr(context_t const&, parser::expr_t const&, sort_t const& expected_type);
+static expected<expr_t> check_abs(
+    context_t const&,
+    parser::expr_t::abs_t const&,
+    source_loc_t const&,
+    std::optional<source_text> const&);
+static expected<expr_t> check_numeric_expr(
+    context_t const&,
+    parser::expr_t::numeric_constant_t const&,
+    source_loc_t const&,
+    expr_t const& expected_type);
+static expected<expr_t> check_pi_type(context_t&, std::vector<parser::func_arg_t> const&, parser::expr_t const& ret_ty);
 
 expected<module_t> check(parser::module_t const& x) noexcept
 {
@@ -48,83 +56,71 @@ expected<module_t> check(parser::module_t const& x) noexcept
 }
 
 // implementations
-expected<std::pair<type_t, expr_t::app_t>>
-type_assign_func_call(context_t const& ctx, parser::expr_t::app_t const& f)
+expected<expr_t> type_assign_app(context_t const& ctx, parser::expr_t::app_t const& app, source_loc_t const& loc)
 {
     auto const error = [&] (std::string msg)
     {
-        return error_t::from_error(dep0::error_t(std::move(msg)), ctx);
+        return error_t::from_error(dep0::error_t(std::move(msg), loc));
     };
-    auto const func = [&] () -> expected<expr_t>
+    auto func = [&] () -> expected<expr_t>
     {
-        auto const var = std::get_if<parser::expr_t::var_t>(&f.func.get().value);
-        assert(var and "only invocation by function name is currently supported"); // TODO support any `func` expr
-        auto const v = ctx[var->name];
+        auto const var = std::get_if<parser::expr_t::var_t>(&app.func.get().value);
+        if (not var)
+            // TODO support any `func` expr
+            return error("only invocation by function name is currently supported");
+        auto const v = ctx[expr_t::var_t{var->name}];
         if (not v)
             return error("function prototype not found");
         return match(
-            *v,
+            v->value,
             [&] (type_def_t const&) -> expected<expr_t>
             {
                 return error("cannot invoke a typedef");
             },
-            [&] (type_t::var_t const&) -> expected<expr_t>
-            {
-                return error("cannot invoke a type variable");
-            },
             [&] (expr_t const& expr) -> expected<expr_t>
             {
-                return make_legal_expr(expr.properties.sort, expr_t::var_t{var->name});
+                return make_legal_expr(expr.properties.sort.get(), expr_t::var_t{var->name});
             });
     }();
     if (not func)
-        return func.error();
-    auto func_type = [&] () -> expected<type_t::arr_t>
+        return std::move(func.error());
+    auto func_type = [&] () -> expected<expr_t::pi_t>
     {
-        if (auto const type = std::get_if<type_t>(&func->properties.sort))
-            if (auto const arr = std::get_if<type_t::arr_t>(&type->value))
-                return *arr;
+        if (auto* const type = std::get_if<expr_t>(&func->properties.sort.get()))
+        {
+            ast::beta_delta_normalize(ctx.delta_reduction_context(), *type);
+            if (auto const pi = std::get_if<expr_t::pi_t>(&type->value))
+                return *pi;
+        }
         std::ostringstream err;
-        pretty_print(err << "cannot invoke expression of type `", func->properties.sort) << '`';
+        pretty_print(err << "cannot invoke expression of type `", func->properties.sort.get()) << '`';
         return error(err.str());
     }();
     if (not func_type)
-        return func_type.error();
-    if (func_type->args.size() != f.args.size())
+        return std::move(func_type.error());
+    if (func_type->args.size() != app.args.size())
     {
         std::ostringstream err;
-        err << "passed " << f.args.size() << " arguments but was expecting " << func_type->args.size();
+        err << "passed " << app.args.size() << " arguments but was expecting " << func_type->args.size();
         return error(err.str());
     }
     std::vector<expr_t> args;
     for (auto const i: std::views::iota(0ul, func_type->args.size()))
     {
-        auto arg = match(
-            func_type->args[i].value,
-            [&] (func_arg_t::type_arg_t& type_arg) -> expected<expr_t>
-            {
-                auto type = check_type_expr(ctx, f.args[i]);
-                if (not type)
-                    return std::move(type.error());
-                if (type_arg.var)
-                    substitute(
-                        func_type->args.begin() + i + 1,
-                        func_type->args.end(),
-                        func_type->ret_type.get(),
-                        *type_arg.var,
-                        *type);
-                return make_legal_expr(ast::typename_t{}, std::move(*type));
-            },
-            [&] (func_arg_t::term_arg_t const& term_arg) -> expected<expr_t>
-            {
-                return check_expr(ctx, f.args[i], term_arg.type);
-            });
-        if (arg)
-            args.push_back(std::move(*arg));
-        else
+        auto arg = check_expr(ctx, app.args[i], func_type->args[i].type);
+        if (not arg)
             return std::move(arg.error());
+        if (func_type->args[i].var)
+            substitute<properties_t>(
+                *func_type->args[i].var,
+                *arg,
+                func_type->args.begin() + i + 1,
+                func_type->args.end(),
+                func_type->ret_type.get(),
+                nullptr);
+        args.push_back(std::move(*arg));
     }
-    return std::make_pair(std::move(func_type->ret_type.get()), expr_t::app_t{std::move(*func), std::move(args)});
+    return make_legal_expr(std::move(func_type->ret_type.get()), expr_t::app_t{std::move(*func), std::move(args)});
 }
 
 expected<type_def_t> check_type_def(context_t& ctx, parser::type_def_t const& type_def)
@@ -134,194 +130,116 @@ expected<type_def_t> check_type_def(context_t& ctx, parser::type_def_t const& ty
         [&] (parser::type_def_t::integer_t const& x) -> expected<type_def_t>
         {
             auto const result = make_legal_type_def(type_def_t::integer_t{x.name, x.sign, x.width, x.max_abs_value});
-            auto const [it, inserted] = ctx.try_emplace(ast::indexed_var_t{x.name}, result);
-            if (not inserted)
-            {
-                std::ostringstream err;
-                pretty_print(err << "cannot redefine `" << x.name << "` as typedef, previously `", it->second) << '`';
-                return error_t::from_error(dep0::error_t{err.str(), type_def.properties}, ctx);
-            }
+            if (auto ok = ctx.try_emplace(expr_t::var_t{x.name}, type_def.properties, result); not ok)
+                return error_t::from_error(std::move(ok.error()));
             return result;
         });
 }
 
 expected<func_def_t> check_func_def(context_t& ctx, parser::func_def_t const& f)
 {
-    if (auto abs = check_abs(ctx, f.value, f.name))
-    {
-        auto const [it, inserted] = ctx.try_emplace(ast::indexed_var_t{f.name}, make_legal_expr(abs->first, abs->second));
-        if (not inserted)
-        {
-            std::ostringstream err;
-            pretty_print(err << "cannot redefine `" << f.name << "` as function, previously `", it->second) << '`';
-            return error_t::from_error(dep0::error_t(err.str()), ctx);
-        }
-        return make_legal_func_def(f.name, std::move(abs->second));
-    }
-    else
-    {
-        if (not abs.error().location)
-            abs.error().location = f.properties;
+    auto abs = check_abs(ctx, f.value, f.properties, f.name);
+    if (not abs)
         return std::move(abs.error());
-    }
+    if (auto ok = ctx.try_emplace(expr_t::var_t{f.name}, f.properties, *abs); not ok)
+        return error_t::from_error(std::move(ok.error()));
+    return make_legal_func_def(abs->properties.sort.get(), f.name, std::move(std::get<expr_t::abs_t>(abs->value)));
 }
 
-expected<type_t> check_type(context_t const& ctx, parser::type_t const& t)
+expected<expr_t> check_type(context_t const& ctx, parser::expr_t const& type)
 {
-    auto const loc = t.properties;
-    auto const error = [&] (std::string msg)
-    {
-        return error_t::from_error(dep0::error_t{std::move(msg), t.properties}, ctx);
-    };
-    return match(
-        t.value,
-        [&] (parser::type_t::bool_t const&) -> expected<type_t> { return make_legal_type(type_t::bool_t{}); },
-        [&] (parser::type_t::unit_t const&) -> expected<type_t> { return make_legal_type(type_t::unit_t{}); },
-        [&] (parser::type_t::i8_t const&) -> expected<type_t> { return make_legal_type(type_t::i8_t{}); },
-        [&] (parser::type_t::i16_t const&) -> expected<type_t> { return make_legal_type(type_t::i16_t{}); },
-        [&] (parser::type_t::i32_t const&) -> expected<type_t> { return make_legal_type(type_t::i32_t{}); },
-        [&] (parser::type_t::i64_t const&) -> expected<type_t> { return make_legal_type(type_t::i64_t{}); },
-        [&] (parser::type_t::u8_t const&) -> expected<type_t> { return make_legal_type(type_t::u8_t{}); },
-        [&] (parser::type_t::u16_t const&) -> expected<type_t> { return make_legal_type(type_t::u16_t{}); },
-        [&] (parser::type_t::u32_t const&) -> expected<type_t> { return make_legal_type(type_t::u32_t{}); },
-        [&] (parser::type_t::u64_t const&) -> expected<type_t> { return make_legal_type(type_t::u64_t{}); },
-        [&] (parser::type_t::var_t const& var) -> expected<type_t>
-        {
-            auto const val = ctx[var.name];
-            if (not val)
-            {
-                std::ostringstream err;
-                pretty_print(err << "unknown type `", var.name) << '`';
-                return error(err.str());
-            }
-            return match(
-                *val,
-                [&] (type_def_t const&) -> expected<type_t> { return make_legal_type(type_t::var_t{var.name}); },
-                [] (type_t::var_t const& v) -> expected<type_t> { return make_legal_type(v); },
-                [&] (expr_t const& expr) -> expected<type_t>
-                {
-                    return match(
-                        expr.properties.sort,
-                        [&] (type_t const& type) -> expected<type_t>
-                        {
-                            std::ostringstream err;
-                            pretty_print(err << "expression does not yield a type but a value of type `", type) << '`';
-                            return error(err.str());
-                        },
-                        [&] (ast::typename_t) -> expected<type_t>
-                        {
-                            return make_legal_type(type_t::var_t{var.name});
-                        });
-                });
-        },
-        [&] (parser::type_t::arr_t const& x) -> expected<type_t>
-        {
-            auto arr_ctx = ctx.extend();
-            auto args =
-                fmap_or_error(
-                    x.args,
-                    [&] (parser::func_arg_t const& arg)
-                    {
-                        return match(
-                            arg.value,
-                            [&] (parser::func_arg_t::type_arg_t const& type_arg) -> expected<func_arg_t>
-                            {
-                                auto type_var =
-                                    type_arg.var
-                                    ? std::optional{type_t::var_t{type_arg.var->name}}
-                                    : std::nullopt;
-                                if (type_var)
-                                {
-                                    auto const [it, inserted] = arr_ctx.try_emplace(type_var->name, *type_var);
-                                    if (not inserted)
-                                    {
-                                        std::ostringstream err;
-                                        pretty_print(err << "cannot redefine `", type_var->name) << "` as typename";
-                                        pretty_print(err << ", previously `", it->second) << '`';
-                                        return error_t::from_error(dep0::error_t(err.str()), arr_ctx);
-                                    }
-                                }
-                                return make_legal_func_arg(func_arg_t::type_arg_t{type_var});
-                            },
-                            [&] (parser::func_arg_t::term_arg_t const& term_arg) -> expected<func_arg_t>
-                            {
-                                if (auto t = check_type(arr_ctx, term_arg.type))
-                                    return make_legal_func_arg(
-                                        func_arg_t::term_arg_t{
-                                            std::move(*t),
-                                            term_arg.var
-                                                ? std::optional{expr_t::var_t{term_arg.var->name}}
-                                                : std::nullopt});
-                                else
-                                    return std::move(t.error());
-                            });
-                    });
-            if (not args)
-                return std::move(args.error());
-            if (auto ret_type = check_type(arr_ctx, x.ret_type.get()))
-                return make_legal_type(type_t::arr_t{std::move(*args), std::move(*ret_type)});
-            else
-                return std::move(ret_type.error());
-        });
+    // TODO try move to a "traditional" 2-step approach: type-assign first and then compare to the expected type;
+    // numerical constants might get in the way, if so could maybe pass a "tie-breaker"?
+    auto as_type = check_expr(ctx, type, derivation_rules::make_typename());
+    if (as_type)
+        return as_type;
+    auto as_kind = check_expr(ctx, type, kind_t{});
+    if (as_kind)
+        return as_kind;
+    std::ostringstream err;
+    pretty_print(err << "expression `", type) << "` cannot be assigned to neither types nor kinds";
+    return error_t::from_error(
+        dep0::error_t(
+            err.str(),
+            type.properties,
+            as_type.error() == as_kind.error() // please don't print stupid duplicate error messages...
+                ? std::vector<dep0::error_t>{std::move(as_type.error())}
+                : std::vector<dep0::error_t>{std::move(as_type.error()), std::move(as_kind.error())}));
 }
 
-expected<body_t> check_body(context_t const& ctx, parser::body_t const& x, type_t const& return_type)
+expected<body_t> check_body(proof_state_t& state, parser::body_t const& x)
 {
-    if (auto stmts = fmap_or_error(x.stmts, [&] (parser::stmt_t const& s) { return check_stmt(ctx, s, return_type); }))
+    if (auto stmts = fmap_or_error(x.stmts, [&] (parser::stmt_t const& s) { return check_stmt(state, s); }))
         return make_legal_body(std::move(*stmts));
     else
         return std::move(stmts.error());
 }
 
-expected<stmt_t> check_stmt(context_t const& ctx, parser::stmt_t const& s, type_t const& return_type)
+expected<stmt_t> check_stmt(proof_state_t& state, parser::stmt_t const& s)
 {
     return match(
         s.value,
         [&] (parser::expr_t::app_t const& x) -> expected<stmt_t>
         {
-            if (auto f = type_assign_func_call(ctx, x))
-                return make_legal_stmt(std::move(f->second));
+            if (auto app = type_assign_app(state.context, x, s.properties))
+                return make_legal_stmt(std::move(std::get<expr_t::app_t>(app->value)));
             else
-            {
-                if (not f.error().location)
-                    f.error().location = s.properties;
-                return std::move(f.error());
-            }
+                return std::move(app.error());
         },
         [&] (parser::stmt_t::if_else_t const& x) -> expected<stmt_t>
         {
-            // TODO can we do lazy bind here? something like `expected::bind([] {a}, [] {b}, [] {c}, [] (a,b,c) {x})`
-            auto cond = check_expr(ctx, x.cond, make_legal_type(type_t::bool_t{}));
+            auto cond = check_expr(state.context, x.cond, derivation_rules::make_bool());
             if (not cond)
                 return std::move(cond.error());
-            auto true_branch = check_body(ctx, x.true_branch, return_type);
+            auto true_branch = [&]
+            {
+                auto new_state = proof_state_t(state.context.extend(), state.goal);
+                new_state.rewrite(*cond, derivation_rules::make_true());
+                return check_body(new_state, x.true_branch);
+            }();
             if (not true_branch)
                 return std::move(true_branch.error());
-            std::optional<body_t> false_branch;
             if (x.false_branch)
             {
-                if (auto f = check_body(ctx, *x.false_branch, return_type))
-                    false_branch.emplace(std::move(*f));
-                else
-                    return std::move(f.error());
+                auto new_state = proof_state_t(state.context.extend(), state.goal);
+                new_state.rewrite(*cond, derivation_rules::make_false());
+                auto false_branch = check_body(new_state, *x.false_branch);
+                if (not false_branch)
+                    return std::move(false_branch.error());
+                return make_legal_stmt(
+                    stmt_t::if_else_t{
+                        std::move(*cond),
+                        std::move(*true_branch),
+                        std::move(*false_branch)
+                    });
             }
+            // we are dealing with an if-else without an explicit else branch;
+            // but if the true branch returns from all its sub-branches,
+            // then it means we are now in the implied else branch;
+            // we can then rewrite `cond = false` inside the current proof state
+            if (returns_from_all_branches(*true_branch))
+                state.rewrite(*cond, derivation_rules::make_false());
             return make_legal_stmt(
                 stmt_t::if_else_t{
                     std::move(*cond),
                     std::move(*true_branch),
-                    std::move(false_branch)});
+                    std::nullopt
+                });
         },
         [&] (parser::stmt_t::return_t const& x) -> expected<stmt_t>
         {
             if (not x.expr)
             {
-                if (std::holds_alternative<type_t::unit_t>(return_type.value))
+                if (is_beta_delta_equivalent(state.context, state.goal, derivation_rules::make_unit()))
                     return make_legal_stmt(stmt_t::return_t{});
-                std::ostringstream err;
-                pretty_print(err << "expecting expression of type `", return_type) << '`';
-                return error_t::from_error(dep0::error_t{err.str(), s.properties}, ctx, return_type);
+                else
+                {
+                    std::ostringstream err;
+                    pretty_print(err << "expecting expression of type `", state.goal) << '`';
+                    return error_t::from_error(dep0::error_t(err.str(), s.properties), state.context, state.goal);
+                }
             }
-            else if (auto expr = check_expr(ctx, *x.expr, return_type))
+            else if (auto expr = check_expr(state.context, *x.expr, state.goal))
                 return make_legal_stmt(stmt_t::return_t{std::move(*expr)});
             else
                 return std::move(expr.error());
@@ -332,11 +250,11 @@ static expected<expr_t> check_numeric_expr(
     context_t const& ctx,
     parser::expr_t::numeric_constant_t const& x,
     source_loc_t const& loc,
-    type_t const& expected_type)
+    expr_t const& expected_type)
 {
     auto const error = [&] (std::string msg) -> expected<expr_t>
     {
-        return error_t::from_error(dep0::error_t{std::move(msg), loc}, ctx, expected_type);
+        return error_t::from_error(dep0::error_t(std::move(msg), loc), ctx, expected_type);
     };
     auto const check_integer = [&] (
         std::string_view const type_name,
@@ -347,7 +265,7 @@ static expected<expr_t> check_numeric_expr(
         auto const skip_any = [] (std::string_view& s, std::string_view const chars)
         {
             for (auto const c: chars)
-                if (s.starts_with(c))
+                if (s.starts_with(c)) // TODO should this be `while` instead of `if`?
                     s.remove_prefix(1);
         };
         // assuming `a` and `b` represent positive integer numbers without leading 0s, returns whether `a > b`
@@ -380,22 +298,20 @@ static expected<expr_t> check_numeric_expr(
     };
     return match(
         expected_type.value,
-        [&] (type_t::bool_t const&) { return error("type mismatch between numeric constant and `bool`"); },
-        [&] (type_t::unit_t const&) { return error("type mismatch between numeric constant and `unit_t`"); },
-        [&] (type_t::i8_t const&) { return check_integer("i8_t", "+-", "127"); },
-        [&] (type_t::i16_t const&) { return check_integer("i16_t", "+-", "32767"); },
-        [&] (type_t::i32_t const&) { return check_integer("i32_t", "+-", "2147483647"); },
-        [&] (type_t::i64_t const&) { return check_integer("i64_t", "+-", "9223372036854775807"); },
-        [&] (type_t::u8_t const&) { return check_integer("u8_t", "+", "255"); },
-        [&] (type_t::u16_t const&) { return check_integer("u16_t", "+", "65535"); },
-        [&] (type_t::u32_t const&) { return check_integer("u32_t", "+", "4294967295"); },
-        [&] (type_t::u64_t const&) { return check_integer("u64_t", "+", "18446744073709551615"); },
-        [&] (type_t::var_t const& var) -> expected<expr_t>
+        [&] (expr_t::i8_t const&) { return check_integer("i8_t", "+-", "127"); },
+        [&] (expr_t::i16_t const&) { return check_integer("i16_t", "+-", "32767"); },
+        [&] (expr_t::i32_t const&) { return check_integer("i32_t", "+-", "2147483647"); },
+        [&] (expr_t::i64_t const&) { return check_integer("i64_t", "+-", "9223372036854775807"); },
+        [&] (expr_t::u8_t const&) { return check_integer("u8_t", "+", "255"); },
+        [&] (expr_t::u16_t const&) { return check_integer("u16_t", "+", "65535"); },
+        [&] (expr_t::u32_t const&) { return check_integer("u32_t", "+", "4294967295"); },
+        [&] (expr_t::u64_t const&) { return check_integer("u64_t", "+", "18446744073709551615"); },
+        [&] (expr_t::var_t const& var) -> expected<expr_t>
         {
-            auto const val = ctx[var.name];
+            auto const val = ctx[var];
             assert(val and "unknown type variable despite typecheck succeeded for the expected type");
             return match(
-                *val,
+                val->value,
                 [&] (type_def_t const& t) -> expected<expr_t>
                 {
                     return match(
@@ -414,9 +330,9 @@ static expected<expr_t> check_numeric_expr(
                                 if (max_abs.empty())
                                 {
                                     std::ostringstream err;
-                                    err << "uknown width for signed integer `static_cast<int>(integer.width)="
-                                        << static_cast<int>(integer.width) << "`. ";
-                                    err << "This is a compiler bug, please report it!";
+                                    err << "unknown width for signed integer `static_cast<int>(integer.width)="
+                                        << static_cast<int>(integer.width) << '`';
+                                    err << ". This is a compiler bug, please report it!";
                                     return error(err.str());
                                 }
                                 return check_integer(integer.name, "+-", max_abs);
@@ -433,7 +349,7 @@ static expected<expr_t> check_numeric_expr(
                                 if (max_abs.empty())
                                 {
                                     std::ostringstream err;
-                                    err << "uknown width for unsigned integer `static_cast<int>(integer.width)="
+                                    err << "unknown width for unsigned integer `static_cast<int>(integer.width)="
                                         << static_cast<int>(integer.width) << '`';
                                     err << ". This is a compiler bug, please report it!";
                                     return error(err.str());
@@ -442,22 +358,14 @@ static expected<expr_t> check_numeric_expr(
                             }
                         });
                 },
-                [&] (type_t::var_t const& t) -> expected<expr_t>
+                [&] (expr_t const& expr) -> expected<expr_t>
                 {
                     std::ostringstream err;
-                    pretty_print<properties_t>(err << "type mismatch between numeric constant and `", t) << '`';
-                    return error(err.str());
-                },
-                [&] (expr_t const&) -> expected<expr_t>
-                {
-                    assert(false and "type variable yielded an expression");
-                    std::ostringstream err;
-                    err << "type variable yielded an expression";
-                    err << ". This is a compiler bug, please report it!";
+                    pretty_print(err << "type mismatch between numeric constant and `", expr) << '`';
                     return error(err.str());
                 });
         },
-        [&] (type_t::arr_t const& x)
+        [&] (auto const& x)
         {
             std::ostringstream err;
             pretty_print<properties_t>(err << "type mismatch between numeric constant and `", x) << '`';
@@ -465,18 +373,130 @@ static expected<expr_t> check_numeric_expr(
         });
 }
 
-expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, type_t const& expected_type)
+expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, sort_t const& expected_type)
 {
     auto const loc = x.properties;
-    auto const type_error = [&] (sort_t const& actual_ty)
+    auto const type_error = [&] (sort_t const& actual_type, dep0::error_t reason)
     {
         std::ostringstream err;
-        pretty_print(err << "type mismatch between expression of type `", actual_ty) << '`';
+        pretty_print(err << "type mismatch between expression of type `", actual_type) << '`';
         pretty_print(err << " and expected type `", expected_type) << '`';
-        return error_t::from_error(dep0::error_t{err.str(), loc}, ctx, expected_type);
+        return error_t::from_error(dep0::error_t(err.str(), loc, std::vector{std::move(reason)}), ctx, expected_type);
     };
     return match(
         x.value,
+        [&] (parser::expr_t::typename_t) -> expected<expr_t>
+        {
+            auto const result = derivation_rules::make_typename();
+            if (auto eq = is_beta_delta_equivalent(ctx, result.properties.sort.get(), expected_type))
+                return result;
+            else
+                return type_error(result.properties.sort.get(), std::move(eq.error()));
+        },
+        [&] (parser::expr_t::bool_t) -> expected<expr_t>
+        {
+            auto const result = derivation_rules::make_bool();
+            if (auto eq = is_beta_delta_equivalent(ctx, result.properties.sort.get(), expected_type))
+                return result;
+            else
+                return type_error(result.properties.sort.get(), std::move(eq.error()));
+        },
+        [&] (parser::expr_t::unit_t) -> expected<expr_t>
+        {
+            auto const result = derivation_rules::make_unit();
+            if (auto eq = is_beta_delta_equivalent(ctx, result.properties.sort.get(), expected_type))
+                return result;
+            else
+                return type_error(result.properties.sort.get(), std::move(eq.error()));
+        },
+        [&] (parser::expr_t::i8_t) -> expected<expr_t>
+        {
+            auto const result = derivation_rules::make_i8();
+            if (auto eq = is_beta_delta_equivalent(ctx, result.properties.sort.get(), expected_type))
+                return result;
+            else
+                return type_error(result.properties.sort.get(), std::move(eq.error()));
+        },
+        [&] (parser::expr_t::i16_t) -> expected<expr_t>
+        {
+            auto const result = derivation_rules::make_i16();
+            if (auto eq = is_beta_delta_equivalent(ctx, result.properties.sort.get(), expected_type))
+                return result;
+            else
+                return type_error(result.properties.sort.get(), std::move(eq.error()));
+        },
+        [&] (parser::expr_t::i32_t) -> expected<expr_t>
+        {
+            auto const result = derivation_rules::make_i32();
+            if (auto eq = is_beta_delta_equivalent(ctx, result.properties.sort.get(), expected_type))
+                return result;
+            else
+                return type_error(result.properties.sort.get(), std::move(eq.error()));
+        },
+        [&] (parser::expr_t::i64_t) -> expected<expr_t>
+        {
+            auto const result = derivation_rules::make_i64();
+            if (auto eq = is_beta_delta_equivalent(ctx, result.properties.sort.get(), expected_type))
+                return result;
+            else
+                return type_error(result.properties.sort.get(), std::move(eq.error()));
+        },
+        [&] (parser::expr_t::u8_t) -> expected<expr_t>
+        {
+            auto const result = derivation_rules::make_u8();
+            if (auto eq = is_beta_delta_equivalent(ctx, result.properties.sort.get(), expected_type))
+                return result;
+            else
+                return type_error(result.properties.sort.get(), std::move(eq.error()));
+        },
+        [&] (parser::expr_t::u16_t) -> expected<expr_t>
+        {
+            auto const result = derivation_rules::make_u16();
+            if (auto eq = is_beta_delta_equivalent(ctx, result.properties.sort.get(), expected_type))
+                return result;
+            else
+                return type_error(result.properties.sort.get(), std::move(eq.error()));
+        },
+        [&] (parser::expr_t::u32_t) -> expected<expr_t>
+        {
+            auto const result = derivation_rules::make_u32();
+            if (auto eq = is_beta_delta_equivalent(ctx, result.properties.sort.get(), expected_type))
+                return result;
+            else
+                return type_error(result.properties.sort.get(), std::move(eq.error()));
+        },
+        [&] (parser::expr_t::u64_t) -> expected<expr_t>
+        {
+            auto const result = derivation_rules::make_u64();
+            if (auto eq = is_beta_delta_equivalent(ctx, result.properties.sort.get(), expected_type))
+                return result;
+            else
+                return type_error(result.properties.sort.get(), std::move(eq.error()));
+        },
+        [&] (parser::expr_t::boolean_constant_t const& x) -> expected<expr_t>
+        {
+            auto const result = make_legal_expr(derivation_rules::make_bool(), expr_t::boolean_constant_t{x.value});
+            if (auto eq = is_beta_delta_equivalent(ctx, result.properties.sort.get(), expected_type))
+                return result;
+            else
+                return type_error(result.properties.sort.get(), std::move(eq.error()));
+        },
+        [&] (parser::expr_t::numeric_constant_t const& x) -> expected<expr_t>
+        {
+            return match(
+                expected_type,
+                [&] (expr_t expected_type) -> expected<expr_t>
+                {
+                    beta_delta_normalize(ctx.delta_reduction_context(), expected_type);
+                    return check_numeric_expr(ctx, x, loc, expected_type);
+                },
+                [&] (kind_t) -> expected<expr_t>
+                {
+                    std::ostringstream err;
+                    pretty_print(err << "type mismatch between numeric constant and `", kind_t{}) << '`';
+                    return error_t::from_error(dep0::error_t(err.str(), loc), ctx, expected_type);
+                });
+        },
         [&] (parser::expr_t::arith_expr_t const& x) -> expected<expr_t>
         {
             return match(
@@ -499,266 +519,135 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, type_
                                 std::move(*rhs)}});
                 });
         },
-        [&] (parser::expr_t::boolean_constant_t const& x) -> expected<expr_t>
-        {
-            if (not std::holds_alternative<type_t::bool_t>(expected_type.value))
-                return type_error(make_legal_type(type_t::bool_t{}));
-            return make_legal_expr(expected_type, expr_t::boolean_constant_t{x.value});
-        },
-        [&] (parser::expr_t::numeric_constant_t const& x) -> expected<expr_t>
-        {
-            return check_numeric_expr(ctx, x, loc, expected_type);
-        },
         [&] (parser::expr_t::var_t const& x) -> expected<expr_t>
         {
-            auto const val = ctx[x.name];
+            auto const var = expr_t::var_t{x.name};
+            auto const val = ctx[var];
             if (not val)
             {
                 std::ostringstream err;
-                pretty_print(err << "unknown variable `", x.name) << '`';
-                return error_t::from_error(dep0::error_t{err.str(), loc}, ctx, expected_type);
+                pretty_print<properties_t>(err << "unknown variable `", var) << '`';
+                return error_t::from_error(dep0::error_t(err.str(), loc), ctx, expected_type);
             }
-            return match(
-                *val,
-                [&] (type_def_t const&) -> expected<expr_t>
-                {
-                    std::ostringstream err;
-                    pretty_print(err << "expression yields a type not a value of type `", expected_type) << '`';
-                    return error_t::from_error(dep0::error_t{err.str(), loc}, ctx, expected_type);
-                },
-                [&] (type_t::var_t const&) -> expected<expr_t>
-                {
-                    std::ostringstream err;
-                    pretty_print(err << "expression yields a type not a value of type `", expected_type) << '`';
-                    return error_t::from_error(dep0::error_t{err.str(), loc}, ctx, expected_type);
-                },
-                [&] (expr_t const& expr) -> expected<expr_t>
-                {
-                    return match(
-                        expr.properties.sort,
-                        [&] (type_t const& t) -> expected<expr_t>
-                        {
-                            if (auto equivalent = is_alpha_equivalent(t, expected_type))
-                                return make_legal_expr(expected_type, expr_t::var_t{x.name});
-                            else
-                            {
-                                auto err = type_error(t);
-                                err.reasons.push_back(std::move(equivalent.error()));
-                                return err;
-                            }
-                        },
-                        [&] (ast::typename_t) -> expected<expr_t>
-                        {
-                            return type_error(expr.properties.sort);
-                        });
-                });
+            auto const result = 
+                make_legal_expr(
+                    match(
+                        val->value,
+                        [&] (type_def_t const&) -> sort_t { return derivation_rules::make_typename(); },
+                        [&] (expr_t const& expr) -> sort_t { return expr.properties.sort.get(); }),
+                    var);
+            if (auto eq = is_beta_delta_equivalent(ctx, result.properties.sort.get(), expected_type))
+                return result;
+            else
+                return type_error(result.properties.sort.get(), std::move(eq.error()));
         },
         [&] (parser::expr_t::app_t const& x) -> expected<expr_t>
         {
-            if (auto f = type_assign_func_call(ctx, x))
-            {
-                if (is_alpha_equivalent(f->first, expected_type))
-                    return make_legal_expr(f->first, std::move(f->second));
-                else
-                    return type_error(f->first);
-            }
-            else
-            {
-                if (not f.error().location)
-                    f.error().location = loc;
-                if (not f.error().tgt)
-                    f.error().tgt = expected_type;
-                return std::move(f.error());
-            }
+            auto const result = type_assign_app(ctx, x, loc);
+            if (result)
+                if (auto eq = is_beta_delta_equivalent(ctx, result->properties.sort.get(), expected_type); not eq)
+                    return type_error(result->properties.sort.get(), std::move(eq.error()));
+            return result;
         },
         [&] (parser::expr_t::abs_t const& f) -> expected<expr_t>
         {
-            auto abs = check_abs(ctx, f, std::nullopt);
+            auto abs = check_abs(ctx, f, loc, std::nullopt);
             if (not abs)
-            {
-                if (not abs.error().location)
-                    abs.error().location = loc;
                 return std::move(abs.error());
-            }
             // TODO check expected_type
             return error_t::from_error(
                 dep0::error_t{"Abstraction expressions not yet supported", loc},
                 ctx,
                 expected_type);
         },
-        [&] (parser::type_t const& x) -> expected<expr_t>
+        [&] (parser::expr_t::pi_t const& pi) -> expected<expr_t>
         {
-            std::ostringstream err;
-            pretty_print(err << "expression yields a type not a value of type `", expected_type) << '`';
-            return error_t::from_error(dep0::error_t{err.str(), loc}, ctx, expected_type);
+            auto pi_ctx = ctx.extend();
+            auto const result = check_pi_type(pi_ctx, pi.args, pi.ret_type.get());
+            if (result)
+                if (auto eq = is_beta_delta_equivalent(pi_ctx, result->properties.sort.get(), expected_type); not eq)
+                    return type_error(result->properties.sort.get(), std::move(eq.error()));
+            return result;
         });
 }
 
-expected<type_t> check_type_expr(context_t const& ctx, parser::expr_t const& x)
+expected<expr_t> check_pi_type(
+    context_t& ctx,
+    std::vector<parser::func_arg_t> const& parser_args,
+    parser::expr_t const& parser_ret_type)
 {
-    auto const loc = x.properties;
-    auto const error = [&] (std::string err)
-    {
-        return error_t::from_error(dep0::error_t{std::move(err), loc}, ctx, ast::typename_t{});
-    };
-    return match(
-        x.value,
-        [&] (parser::expr_t::arith_expr_t const& x) -> expected<type_t>
-        {
-            return error("arithmetic expression does not yield a type");
-        },
-        [&] (parser::expr_t::boolean_constant_t const& x) -> expected<type_t>
-        {
-            return error("boolean constant does not yield a type");
-        },
-        [&] (parser::expr_t::numeric_constant_t const& x) -> expected<type_t>
-        {
-            return error("numeric constant does not yield a type");
-        },
-        [&] (parser::expr_t::var_t const& x) -> expected<type_t>
-        {
-            auto const val = ctx[x.name];
-            if (not val)
-            {
-                std::ostringstream err;
-                pretty_print(err << "unknown type `", x.name) << '`';
-                return error(err.str());
-            }
-            return match(
-                *val,
-                [&] (type_def_t const&) -> expected<type_t>
-                {
-                    return make_legal_type(type_t::var_t{x.name});
-                },
-                [] (type_t::var_t const& v) -> expected<type_t>
-                {
-                    return make_legal_type(v);
-                },
-                [&] (expr_t const& expr) -> expected<type_t>
-                {
-                    return match(
-                        expr.properties.sort,
-                        [&] (type_t const& t) -> expected<type_t>
-                        {
-                            std::ostringstream err;
-                            pretty_print(err << "expression does not yield a type but a value of type `", t) << '`';
-                            return error(err.str());
-                        },
-                        [&] (ast::typename_t) -> expected<type_t>
-                        {
-                            return make_legal_type(type_t::var_t{x.name});
-                        });
-                });
-        },
-        [&] (parser::expr_t::app_t const& x) -> expected<type_t>
-        {
-            // in lambda-2 a function cannot return a type, so we could bail out immediately;
-            // but we want to give nice error messages, so just perform typechecking as usual;
-            // we'll need to do this in lambda-omega anyway, so might as well do it now
-            if (auto f = type_assign_func_call(ctx, x))
-            {
-                std::ostringstream err;
-                pretty_print(err << "function invocation does not yield a type but a value of type `", f->first) << '`';
-                return error(err.str());
-            }
-            else
-            {
-                if (not f.error().location)
-                    f.error().location = loc;
-                if (not f.error().tgt)
-                    f.error().tgt = ast::typename_t{};
-                return std::move(f.error());
-            }
-        },
-        [&] (parser::expr_t::abs_t const& x) -> expected<type_t>
-        {
-            return error("abstraction expression does not yield a type");
-        },
-        [&] (parser::type_t const& x) -> expected<type_t>
-        {
-            return check_type(ctx, x);
-        });
-}
-
-expected<std::pair<type_t, expr_t::abs_t>> check_abs(
-    context_t const& ctx,
-    parser::expr_t::abs_t const& f,
-    std::optional<source_text> const& name)
-{
-    auto f_ctx = ctx.extend();
     auto args = fmap_or_error(
-        f.args,
-        [&] (parser::func_arg_t const& x) -> expected<func_arg_t>
+        parser_args,
+        [&, next_arg_index=0] (parser::func_arg_t const& arg) mutable -> expected<func_arg_t>
         {
-            auto const cannot_redefine =
-                [&f_ctx] (ast::indexed_var_t const& name, auto const& prev) -> expected<func_arg_t>
-                {
-                    std::ostringstream err;
-                    pretty_print(err << "cannot redefine `", name) << '`';
-                    pretty_print(err << " as function argument, previously `", prev) << '`';
-                    return error_t::from_error(dep0::error_t{err.str()}, f_ctx);
-                };
-            return match(
-                x.value,
-                [&] (parser::func_arg_t::type_arg_t const& arg) -> expected<func_arg_t>
-                {
-                    auto const type_var = arg.var ? std::optional{type_t::var_t{arg.var->name}} : std::nullopt;
-                    if (type_var)
-                    {
-                        auto const [it, inserted] = f_ctx.try_emplace(type_var->name, *type_var);
-                        if (not inserted)
-                            return cannot_redefine(type_var->name, it->second);
-                    }
-                    return make_legal_func_arg(func_arg_t::type_arg_t{type_var});
-                },
-                [&] (parser::func_arg_t::term_arg_t const& arg) -> expected<func_arg_t>
-                {
-                    auto ty = check_type(f_ctx, arg.type);
-                    if (not ty)
-                        return std::move(ty.error());
-                    auto const var = arg.var ? std::optional{expr_t::var_t{arg.var->name}} : std::nullopt;
-                    if (var)
-                    {
-                        auto const [it, inserted] = f_ctx.try_emplace(var->name, make_legal_expr(*ty, *var));
-                        if (not inserted)
-                            return cannot_redefine(var->name, it->second);
-                    }
-                    return make_legal_func_arg(func_arg_t::term_arg_t{std::move(*ty), var});
-                });
+            auto const arg_index = next_arg_index++;
+            auto const arg_loc = arg.properties;
+            auto var = arg.var ? std::optional{expr_t::var_t{arg.var->name}} : std::nullopt;
+            auto type = check_type(ctx, arg.type);
+            if (not type)
+            {
+                std::ostringstream err;
+                if (var)
+                    pretty_print<properties_t>(err << "cannot typecheck function argument `", *var) << '`';
+                else
+                    err << "cannot typecheck function argument at index " << arg_index;
+                return error_t::from_error(dep0::error_t(err.str(), arg_loc, {std::move(type.error())}));
+            }
+            if (var)
+                if (auto ok =ctx.try_emplace(*var, arg_loc, make_legal_expr(*type, *var)); not ok)
+                    return error_t::from_error(std::move(ok.error()));
+            return make_legal_func_arg(std::move(*type), std::move(var));
         });
     if (not args)
         return std::move(args.error());
-    auto ret_type = check_type(f_ctx, f.ret_type);
+    auto const ret_type = check_type(ctx, parser_ret_type);
     if (not ret_type)
-        return std::move(ret_type.error());
-    auto const func_type = make_legal_type(type_t::arr_t{*args, *ret_type});
+    {
+        std::ostringstream err;
+        err << "cannot typecheck function return type";
+        return error_t::from_error(dep0::error_t(err.str(), parser_ret_type.properties, {std::move(ret_type.error())}));
+    }
+    return make_legal_expr(ret_type->properties.sort.get(), expr_t::pi_t{std::move(*args), *ret_type});
+}
+
+expected<expr_t> check_abs(
+    context_t const& ctx,
+    parser::expr_t::abs_t const& f,
+    source_loc_t const& location,
+    std::optional<source_text> const& name)
+{
+    auto f_ctx = ctx.extend();
+    auto func_type = check_pi_type(f_ctx, f.args, f.ret_type.get());
+    if (not func_type)
+        return std::move(func_type.error());
     // if a function has a name it can call itself recursively;
     // to typecheck recursive functions we need to add them to the current function context before checking the body
     if (name)
     {
-        auto const func_name = ast::indexed_var_t{*name};
-        auto const [it, inserted] = f_ctx.try_emplace(func_name, make_legal_expr(func_type, expr_t::var_t{func_name}));
-        if (not inserted)
-        {
-            std::ostringstream err;
-            pretty_print(err << "cannot redefine `" << *name << "` as function, previously `", it->second) << '`';
-            return error_t::from_error(dep0::error_t{err.str()}, f_ctx);
-        }
+        auto const func_name = expr_t::var_t{*name};
+        if (auto ok = f_ctx.try_emplace(func_name, location, make_legal_expr(*func_type, func_name)); not ok)
+            return error_t::from_error(std::move(ok.error()));
     }
-    auto body = check_body(f_ctx, f.body, *ret_type);
+    auto const& pi_type = std::get<expr_t::pi_t>(func_type->value);
+    auto const& ret_type = pi_type.ret_type.get();
+    auto state = proof_state_t(f_ctx, ret_type);
+    auto body = check_body(state, f.body);
     if (not body)
         return std::move(body.error());
     // so far so good, but we now need to make sure that all branches contain a return statement,
     // with the only exception of functions returning `unit_t` because the return statement is optional;
-    if (not std::holds_alternative<type_t::unit_t>(ret_type->value) and not returns_from_all_branches(*body))
+    if (not returns_from_all_branches(*body))
     {
-        std::ostringstream err;
-        if (name)
-            err << "in function `" << *name << "` ";
-        err << "missing return statement";
-        return error_t::from_error(dep0::error_t{err.str()}, f_ctx);
+        if (not is_beta_delta_equivalent(f_ctx, ret_type, derivation_rules::make_unit()))
+        {
+            std::ostringstream err;
+            if (name)
+                err << "in function `" << *name << "` ";
+            err << "missing return statement";
+            return error_t::from_error(dep0::error_t(err.str(), location));
+        }
     }
-    return std::make_pair(func_type, expr_t::abs_t{std::move(*args), *ret_type, std::move(*body)});
+    return make_legal_expr(*func_type, expr_t::abs_t{pi_type.args, ret_type, std::move(*body)});
 }
 
 } // namespace dep0::typecheck

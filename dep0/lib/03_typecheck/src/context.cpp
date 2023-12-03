@@ -127,8 +127,7 @@ std::ostream& pretty_print(std::ostream& os, context_t const& ctx)
             auto const val = ctx[var];
             assert(val);
             pretty_print<properties_t>(os, var);
-            padding.clear();
-            std::fill_n(std::back_inserter(padding), alignment - length_of(var), ' ');
+            padding.resize(alignment - length_of(var), ' ');
             os << padding << ": ";
             match(
                 val->value,

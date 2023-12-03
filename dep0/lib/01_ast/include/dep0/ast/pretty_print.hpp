@@ -364,6 +364,7 @@ std::ostream& pretty_print(
     std::size_t const indent)
 {
     bool const args_on_separate_lines =
+        std::distance(begin, end) > 1ul and
         std::any_of(
             begin, end,
             [] (func_arg_t<P> const& arg)

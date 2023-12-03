@@ -577,11 +577,6 @@ expected<expr_t> check_pi_type(
             auto const arg_index = next_arg_index++;
             auto const arg_loc = arg.properties;
             auto var = arg.var ? std::optional{expr_t::var_t{arg.var->name}} : std::nullopt;
-            auto const cannot_redefine_ = [&] (auto const& prev) -> expected<func_arg_t>
-            {
-                assert(var);
-                return cannot_redefine(var->name, arg_loc, prev);
-            };
             // It can be argued that here we are "guessing" whether the argument is a type or a kind.
             // Type-assignment in lambda-c is decidable and unique up to alpha/beta-equivalence.
             // Therefore there should not be any need for "guessing". This is coming from the fact that
@@ -595,7 +590,7 @@ expected<expr_t> check_pi_type(
                 {
                     auto const [it, inserted] = ctx.try_emplace(*var, arg_loc, make_legal_expr(*type, *var));
                     if (not inserted)
-                        return cannot_redefine_(it->second);
+                        return cannot_redefine(var->name, arg_loc, it->second);
                 }
                 return make_legal_func_arg(std::move(*type), std::move(var));
             }
@@ -606,7 +601,7 @@ expected<expr_t> check_pi_type(
                 {
                     auto const [it, inserted] = ctx.try_emplace(*var, arg_loc, make_legal_expr(*kind, *var));
                     if (not inserted)
-                        return cannot_redefine_(it->second);
+                        return cannot_redefine(var->name, arg_loc, it->second);
                 }
                 return make_legal_func_arg(std::move(*kind), std::move(var));
             }

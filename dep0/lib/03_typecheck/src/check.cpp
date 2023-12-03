@@ -59,9 +59,10 @@ expected<module_t> check(parser::module_t const& x) noexcept
 error_t cannot_redefine(source_text const name, source_loc_t const loc, context_t::value_type const& prev)
 {
     std::ostringstream err;
-    err << "cannot redefine `" << name << "`, previously defined as `";
+    err << "cannot redefine `" << name << '`';
+    err << ", previously defined at "<< prev.origin.line << ':' << prev.origin.col << " as `";
     match(
-        prev,
+        prev.value,
         [&] (type_def_t const& t) { pretty_print(err, t); },
         [&] (expr_t const& x) { pretty_print(err, x.properties.sort.get()); });
     err << '`';
@@ -84,7 +85,7 @@ expected<expr_t> type_assign_app(context_t const& ctx, parser::expr_t::app_t con
         if (not v)
             return error("function prototype not found");
         return match(
-            *v,
+            v->value,
             [&] (type_def_t const&) -> expected<expr_t>
             {
                 return error("cannot invoke a typedef");
@@ -140,7 +141,7 @@ expected<type_def_t> check_type_def(context_t& ctx, parser::type_def_t const& ty
         [&] (parser::type_def_t::integer_t const& x) -> expected<type_def_t>
         {
             auto const result = make_legal_type_def(type_def_t::integer_t{x.name, x.sign, x.width, x.max_abs_value});
-            auto const [it, inserted] = ctx.try_emplace(expr_t::var_t{x.name}, result);
+            auto const [it, inserted] = ctx.try_emplace(expr_t::var_t{x.name}, type_def.properties, result);
             if (not inserted)
                 return cannot_redefine(x.name, type_def.properties, it->second);
             return result;
@@ -152,7 +153,7 @@ expected<func_def_t> check_func_def(context_t& ctx, parser::func_def_t const& f)
     auto abs = check_abs(ctx, f.value, f.properties, f.name);
     if (not abs)
         return std::move(abs.error());
-    auto const [it, inserted] = ctx.try_emplace(expr_t::var_t{f.name}, *abs);
+    auto const [it, inserted] = ctx.try_emplace(expr_t::var_t{f.name}, f.properties, *abs);
     if (not inserted)
         return cannot_redefine(f.name, f.properties, it->second);
     return make_legal_func_def(abs->properties.sort.get(), f.name, std::move(std::get<expr_t::abs_t>(abs->value)));
@@ -302,7 +303,7 @@ static expected<expr_t> check_numeric_expr(
             auto const val = ctx[var];
             assert(val and "unknown type variable despite typecheck succeeded for the expected type");
             return match(
-                *val,
+                val->value,
                 [&] (type_def_t const& t) -> expected<expr_t>
                 {
                     return match(
@@ -522,7 +523,7 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, sort_
             auto const result = 
                 make_legal_expr(
                     match(
-                        *val,
+                        val->value,
                         [&] (type_def_t const&) -> sort_t { return derivation_rules::make_typename(); },
                         [&] (expr_t const& expr) -> sort_t { return expr.properties.sort.get(); }),
                     expr_t::var_t{x.name});
@@ -589,7 +590,7 @@ expected<expr_t> check_pi_type(
             {
                 if (var)
                 {
-                    auto const [it, inserted] = ctx.try_emplace(*var, make_legal_expr(*type, *var));
+                    auto const [it, inserted] = ctx.try_emplace(*var, arg_loc, make_legal_expr(*type, *var));
                     if (not inserted)
                         return cannot_redefine_(it->second);
                 }
@@ -600,7 +601,7 @@ expected<expr_t> check_pi_type(
             {
                 if (var)
                 {
-                    auto const [it, inserted] = ctx.try_emplace(*var, make_legal_expr(*kind, *var));
+                    auto const [it, inserted] = ctx.try_emplace(*var, arg_loc, make_legal_expr(*kind, *var));
                     if (not inserted)
                         return cannot_redefine_(it->second);
                 }
@@ -661,7 +662,7 @@ expected<expr_t> check_abs(
     if (name)
     {
         auto const func_name = expr_t::var_t{*name};
-        auto const [it, inserted] = f_ctx.try_emplace(func_name, make_legal_expr(*func_type, func_name));
+        auto const [it, inserted] = f_ctx.try_emplace(func_name, location, make_legal_expr(*func_type, func_name));
         if (not inserted)
             return cannot_redefine(*name, location, it->second);
     }

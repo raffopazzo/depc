@@ -14,7 +14,12 @@ class context_t
 {
 public:
     using delta_reduction_context_t = ast::delta_reduction::context_t<properties_t>;
-    using value_type = std::variant<type_def_t, expr_t>;
+
+    struct value_type
+    {
+        source_loc_t origin;
+        std::variant<type_def_t, expr_t> value;
+    };
 
 private:
     scope_map<expr_t::var_t, value_type> m_values;
@@ -45,12 +50,12 @@ public:
     context_t rewrite(expr_t const& from, expr_t const& to) const;
 
     template <typename... Args>
-    std::pair<const_iterator, bool> try_emplace(expr_t::var_t name, Args&&... args)
+    std::pair<const_iterator, bool> try_emplace(expr_t::var_t name, source_loc_t const loc, Args&&... args)
     {
-        auto const res = m_values.try_emplace(std::move(name), std::forward<Args>(args)...);
+        auto const res = m_values.try_emplace(std::move(name), loc, std::forward<Args>(args)...);
         if (res.second)
         {
-            if (auto const expr = std::get_if<expr_t>(&res.first->second))
+            if (auto const expr = std::get_if<expr_t>(&res.first->second.value))
                 if (auto const abs = std::get_if<expr_t::abs_t>(&expr->value))
                 {
                     bool const inserted = m_delta_reduction_context.try_emplace(res.first->first, *abs).second;

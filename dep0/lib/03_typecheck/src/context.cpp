@@ -55,8 +55,11 @@ context_t context_t::rewrite(expr_t const& from, expr_t const& to) const
 {
     auto result = extend();
     for (auto const& var: vars())
+    {
+        auto const val = (*this)[var];
+        assert(val);
         match(
-            *(*this)[var],
+            val->value,
             [] (type_def_t const&) { },
             [&] (expr_t const& expr)
             {
@@ -71,10 +74,11 @@ context_t context_t::rewrite(expr_t const& from, expr_t const& to) const
                         [] (kind_t) { });
                     auto new_expr = expr;
                     new_expr.properties.sort = std::move(*new_sort);
-                    bool const inserted = result.try_emplace(var, new_expr).second;
+                    bool const inserted = result.try_emplace(var, val->origin, new_expr).second;
                     assert(inserted);
                 }
             });
+    }
     return result;
 }
 
@@ -127,7 +131,7 @@ std::ostream& pretty_print(std::ostream& os, context_t const& ctx)
             std::fill_n(std::back_inserter(padding), alignment - length_of(var), ' ');
             os << padding << ": ";
             match(
-                *val,
+                val->value,
                 [&] (type_def_t const& t) { pretty_print(os, t, indent); },
                 [&] (expr_t const& x) { pretty_print(os, x.properties.sort.get(), indent); });
         });
@@ -136,7 +140,7 @@ std::ostream& pretty_print(std::ostream& os, context_t const& ctx)
 
 std::ostream& pretty_print(std::ostream& os, context_t::value_type const& v)
 {
-    return match(v, [&] (auto const& x) -> std::ostream& { return pretty_print<properties_t>(os, x); });
+    return match(v.value, [&] (auto const& x) -> std::ostream& { return pretty_print<properties_t>(os, x); });
 }
 
 std::vector<expr_t::var_t> topologically_ordered_vars(context_t const& ctx)
@@ -188,7 +192,7 @@ std::vector<expr_t::var_t> topologically_ordered_vars(context_t const& ctx)
                         });
                 }
             };
-            return std::visit(comparator{x, y}, *ctx[x], *ctx[y]);
+            return std::visit(comparator{x, y}, ctx[x]->value, ctx[y]->value);
         });
     return result;
 }

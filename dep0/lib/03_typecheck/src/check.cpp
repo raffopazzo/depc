@@ -626,8 +626,6 @@ expected<expr_t> check_pi_type(
         err << "cannot typecheck function return type";
         return error_t::from_error(dep0::error_t(err.str(), parser_ret_type.properties, {std::move(ret_type.error())}));
     }
-    if (not ret_type)
-        return std::move(ret_type.error());
     return make_legal_expr(ret_type->properties.sort.get(), expr_t::pi_t{std::move(*args), *ret_type});
 }
 

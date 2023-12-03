@@ -515,11 +515,12 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, sort_
         },
         [&] (parser::expr_t::var_t const& x) -> expected<expr_t>
         {
-            auto const val = ctx[expr_t::var_t{x.name}];
+            auto const var = expr_t::var_t{x.name};
+            auto const val = ctx[var];
             if (not val)
             {
                 std::ostringstream err;
-                pretty_print<parser::properties_t>(err << "unknown variable `", x) << '`';
+                pretty_print<properties_t>(err << "unknown variable `", var) << '`';
                 return error_t::from_error(dep0::error_t(err.str(), loc), ctx, expected_type);
             }
             auto const result = 
@@ -528,7 +529,7 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, sort_
                         val->value,
                         [&] (type_def_t const&) -> sort_t { return derivation_rules::make_typename(); },
                         [&] (expr_t const& expr) -> sort_t { return expr.properties.sort.get(); }),
-                    expr_t::var_t{x.name});
+                    var);
             if (auto eq = is_beta_delta_equivalent(ctx, result.properties.sort.get(), expected_type))
                 return result;
             else

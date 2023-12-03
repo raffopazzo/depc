@@ -15,6 +15,7 @@
 #include <iterator>
 #include <numeric>
 #include <ranges>
+#include <sstream>
 
 namespace dep0::typecheck {
 

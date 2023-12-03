@@ -8,8 +8,8 @@
 #include "dep0/scope_map.hpp"
 
 #include <cassert>
+#include <ostream>
 #include <set>
-#include <sstream>
 #include <vector>
 
 namespace dep0::typecheck {

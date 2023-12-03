@@ -11,10 +11,10 @@ namespace dep0::typecheck {
 
 std::ostream& pretty_print(std::ostream& os, error_t const& err)
 {
-    dep0::pretty_print(os, err) << std::endl;
-    os << "In context:" << std::endl;
+    dep0::pretty_print(os, err);
     if (err.tgt)
     {
+        os << std::endl << "In context:" << std::endl;
         std::ostringstream buf;
         pretty_print(buf, err.ctx);
         auto const& ctx_str = buf.str();
@@ -34,10 +34,6 @@ std::ostream& pretty_print(std::ostream& os, error_t const& err)
             {
                 pretty_print(os, kind_t{});
             });
-    }
-    else
-    {
-        dep0::pretty_print(os, err);
     }
     return os;
 }

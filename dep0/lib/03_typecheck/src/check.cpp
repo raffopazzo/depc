@@ -27,6 +27,7 @@ static error_t cannot_redefine(source_text name, source_loc_t, context_t::value_
 static expected<expr_t> type_assign_app(context_t const&, parser::expr_t::app_t const&, source_loc_t const&);
 static expected<type_def_t> check_type_def(context_t&, parser::type_def_t const&);
 static expected<func_def_t> check_func_def(context_t&, parser::func_def_t const&);
+static expected<expr_t> check_type(context_t const&, parser::expr_t const&);
 static expected<body_t> check_body(proof_state_t&, parser::body_t const&);
 static expected<stmt_t> check_stmt(proof_state_t&, parser::stmt_t const&);
 static expected<expr_t> check_expr(context_t const&, parser::expr_t const&, sort_t const& expected_type);
@@ -159,6 +160,28 @@ expected<func_def_t> check_func_def(context_t& ctx, parser::func_def_t const& f)
     if (not inserted)
         return cannot_redefine(f.name, f.properties, it->second);
     return make_legal_func_def(abs->properties.sort.get(), f.name, std::move(std::get<expr_t::abs_t>(abs->value)));
+}
+
+expected<expr_t> check_type(context_t const& ctx, parser::expr_t const& type)
+{
+    // TODO try move to a "traditional" 2-step approach: type-assign first and then compare to the expected type;
+    // numerical constants might get in the way, if so could maybe pass a "tie-breaker"?
+    auto as_type = check_expr(ctx, type, derivation_rules::make_typename());
+    if (as_type)
+        return as_type;
+    auto as_kind = check_expr(ctx, type, kind_t{});
+    if (as_kind)
+        return as_kind;
+    std::ostringstream err;
+    pretty_print(err << "expression `", type) << "` cannot be assigned to neither types nor kinds";
+    return error_t::from_error(
+        dep0::error_t(
+            err.str(),
+            type.properties,
+            {
+                std::move(as_type.error()),
+                std::move(as_kind.error())
+            }));
 }
 
 expected<body_t> check_body(proof_state_t& state, parser::body_t const& x)
@@ -577,69 +600,33 @@ expected<expr_t> check_pi_type(
             auto const arg_index = next_arg_index++;
             auto const arg_loc = arg.properties;
             auto var = arg.var ? std::optional{expr_t::var_t{arg.var->name}} : std::nullopt;
-            // It can be argued that here we are "guessing" whether the argument is a type or a kind.
-            // Type-assignment in lambda-c is decidable and unique up to alpha/beta-equivalence.
-            // Therefore there should not be any need for "guessing". This is coming from the fact that
-            // currently numerical constants cannot be type-assigned without providing a "tie-breaker".
-            // Without that we could restructure our type-checking around a "traditional" 2-step approach
-            // of type-assigning first and then comparing against the expected type.
-            auto type = check_expr(ctx, arg.type, derivation_rules::make_typename());
-            if (type)
+            auto type = check_type(ctx, arg.type);
+            if (not type)
             {
+                std::ostringstream err;
                 if (var)
-                {
-                    auto const [it, inserted] = ctx.try_emplace(*var, arg_loc, make_legal_expr(*type, *var));
-                    if (not inserted)
-                        return cannot_redefine(var->name, arg_loc, it->second);
-                }
-                return make_legal_func_arg(std::move(*type), std::move(var));
+                    pretty_print<properties_t>(err << "cannot typecheck function argument `", *var) << '`';
+                else
+                    err << "cannot typecheck function argument at index " << arg_index;
+                return error_t::from_error(dep0::error_t(err.str(), arg_loc, {std::move(type.error())}));
             }
-            auto kind = check_expr(ctx, arg.type, kind_t{});
-            if (kind)
-            {
-                if (var)
-                {
-                    auto const [it, inserted] = ctx.try_emplace(*var, arg_loc, make_legal_expr(*kind, *var));
-                    if (not inserted)
-                        return cannot_redefine(var->name, arg_loc, it->second);
-                }
-                return make_legal_func_arg(std::move(*kind), std::move(var));
-            }
-            std::ostringstream err;
             if (var)
-                pretty_print<properties_t>(err << "cannot typecheck function argument `", *var) << '`';
-            else
-                err << "cannot typecheck function argument at index " << arg_index;
-            return error_t::from_error(
-                dep0::error_t(
-                    err.str(),
-                    arg_loc,
-                    {
-                        dep0::error_t("expression is not a type", {std::move(type.error())}),
-                        dep0::error_t("expression is not a kind", {std::move(kind.error())})
-                    }));
+            {
+                auto const [it, inserted] = ctx.try_emplace(*var, arg_loc, make_legal_expr(*type, *var));
+                if (not inserted)
+                    return cannot_redefine(var->name, arg_loc, it->second);
+            }
+            return make_legal_func_arg(std::move(*type), std::move(var));
         });
     if (not args)
         return std::move(args.error());
-    auto const ret_type = [&] () -> expected<expr_t>
+    auto const ret_type = check_type(ctx, parser_ret_type);
+    if (not ret_type)
     {
-        auto type = check_expr(ctx, parser_ret_type, derivation_rules::make_typename());
-        if (type)
-            return std::move(type);
-        auto kind = check_expr(ctx, parser_ret_type, kind_t{});
-        if (kind)
-            return std::move(kind);
         std::ostringstream err;
         err << "cannot typecheck function return type";
-        return error_t::from_error(
-            dep0::error_t(
-                err.str(),
-                parser_ret_type.properties,
-                {
-                    std::move(type.error()),
-                    std::move(kind.error())
-                }));
-    }();
+        return error_t::from_error(dep0::error_t(err.str(), parser_ret_type.properties, {std::move(ret_type.error())}));
+    }
     if (not ret_type)
         return std::move(ret_type.error());
     return make_legal_expr(ret_type->properties.sort.get(), expr_t::pi_t{std::move(*args), *ret_type});

@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <iterator>
 #include <numeric>
 #include <ranges>
 
@@ -46,8 +47,7 @@ std::set<expr_t::var_t> context_t::vars() const
 {
     std::set<expr_t::var_t> result;
     for (auto x = std::optional{m_values}; x.has_value(); x = x->parent())
-        for (auto const kv: *x)
-            result.insert(kv.first);
+        std::ranges::copy(std::views::keys(*x), std::inserter(result, result.end()));
     return result;
 }
 

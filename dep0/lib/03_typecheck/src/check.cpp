@@ -178,10 +178,9 @@ expected<expr_t> check_type(context_t const& ctx, parser::expr_t const& type)
         dep0::error_t(
             err.str(),
             type.properties,
-            {
-                std::move(as_type.error()),
-                std::move(as_kind.error())
-            }));
+            as_type.error() == as_kind.error() // please don't print stupid duplicate error messages...
+                ? std::vector<dep0::error_t>{std::move(as_type.error())}
+                : std::vector<dep0::error_t>{std::move(as_type.error()), std::move(as_kind.error())}));
 }
 
 expected<body_t> check_body(proof_state_t& state, parser::body_t const& x)

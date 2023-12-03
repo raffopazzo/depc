@@ -78,8 +78,8 @@ context_t context_t::rewrite(expr_t const& from, expr_t const& to) const
                         [] (kind_t) { });
                     auto new_expr = expr;
                     new_expr.properties.sort = std::move(*new_sort);
-                    bool const inserted = result.try_emplace(var, val->origin, new_expr).second;
-                    assert(inserted);
+                    auto const inserted = result.try_emplace(var, val->origin, new_expr);
+                    assert(inserted.has_value());
                 }
             });
     }

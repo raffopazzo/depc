@@ -23,7 +23,6 @@
 namespace dep0::typecheck {
 
 // forward declarations
-static error_t cannot_redefine(source_text name, source_loc_t, context_t::value_type const& prev);
 static expected<expr_t> type_assign_app(context_t const&, parser::expr_t::app_t const&, source_loc_t const&);
 static expected<type_def_t> check_type_def(context_t&, parser::type_def_t const&);
 static expected<func_def_t> check_func_def(context_t&, parser::func_def_t const&);
@@ -57,19 +56,6 @@ expected<module_t> check(parser::module_t const& x) noexcept
 }
 
 // implementations
-error_t cannot_redefine(source_text const name, source_loc_t const loc, context_t::value_type const& prev)
-{
-    std::ostringstream err;
-    err << "cannot redefine `" << name << '`';
-    err << ", previously defined at "<< prev.origin.line << ':' << prev.origin.col << " as `";
-    match(
-        prev.value,
-        [&] (type_def_t const& t) { pretty_print(err, t); },
-        [&] (expr_t const& x) { pretty_print(err, x.properties.sort.get()); });
-    err << '`';
-    return error_t::from_error(dep0::error_t(err.str(), loc));
-}
-
 expected<expr_t> type_assign_app(context_t const& ctx, parser::expr_t::app_t const& app, source_loc_t const& loc)
 {
     auto const error = [&] (std::string msg)
@@ -144,9 +130,8 @@ expected<type_def_t> check_type_def(context_t& ctx, parser::type_def_t const& ty
         [&] (parser::type_def_t::integer_t const& x) -> expected<type_def_t>
         {
             auto const result = make_legal_type_def(type_def_t::integer_t{x.name, x.sign, x.width, x.max_abs_value});
-            auto const [it, inserted] = ctx.try_emplace(expr_t::var_t{x.name}, type_def.properties, result);
-            if (not inserted)
-                return cannot_redefine(x.name, type_def.properties, it->second);
+            if (auto ok = ctx.try_emplace(expr_t::var_t{x.name}, type_def.properties, result); not ok)
+                return error_t::from_error(std::move(ok.error()));
             return result;
         });
 }
@@ -156,9 +141,8 @@ expected<func_def_t> check_func_def(context_t& ctx, parser::func_def_t const& f)
     auto abs = check_abs(ctx, f.value, f.properties, f.name);
     if (not abs)
         return std::move(abs.error());
-    auto const [it, inserted] = ctx.try_emplace(expr_t::var_t{f.name}, f.properties, *abs);
-    if (not inserted)
-        return cannot_redefine(f.name, f.properties, it->second);
+    if (auto ok = ctx.try_emplace(expr_t::var_t{f.name}, f.properties, *abs); not ok)
+        return error_t::from_error(std::move(ok.error()));
     return make_legal_func_def(abs->properties.sort.get(), f.name, std::move(std::get<expr_t::abs_t>(abs->value)));
 }
 
@@ -610,11 +594,8 @@ expected<expr_t> check_pi_type(
                 return error_t::from_error(dep0::error_t(err.str(), arg_loc, {std::move(type.error())}));
             }
             if (var)
-            {
-                auto const [it, inserted] = ctx.try_emplace(*var, arg_loc, make_legal_expr(*type, *var));
-                if (not inserted)
-                    return cannot_redefine(var->name, arg_loc, it->second);
-            }
+                if (auto ok =ctx.try_emplace(*var, arg_loc, make_legal_expr(*type, *var)); not ok)
+                    return error_t::from_error(std::move(ok.error()));
             return make_legal_func_arg(std::move(*type), std::move(var));
         });
     if (not args)
@@ -644,9 +625,8 @@ expected<expr_t> check_abs(
     if (name)
     {
         auto const func_name = expr_t::var_t{*name};
-        auto const [it, inserted] = f_ctx.try_emplace(func_name, location, make_legal_expr(*func_type, func_name));
-        if (not inserted)
-            return cannot_redefine(*name, location, it->second);
+        if (auto ok = f_ctx.try_emplace(func_name, location, make_legal_expr(*func_type, func_name)); not ok)
+            return error_t::from_error(std::move(ok.error()));
     }
     auto const& pi_type = std::get<expr_t::pi_t>(func_type->value);
     auto const& ret_type = pi_type.ret_type.get();

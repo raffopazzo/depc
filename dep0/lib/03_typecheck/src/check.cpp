@@ -59,7 +59,7 @@ expected<expr_t> type_assign_app(context_t const& ctx, parser::expr_t::app_t con
 {
     auto const error = [&] (std::string msg)
     {
-        return error_t::from_error(dep0::error_t(std::move(msg), loc), ctx);
+        return error_t::from_error(dep0::error_t(std::move(msg), loc));
     };
     auto func = [&] () -> expected<expr_t>
     {
@@ -132,7 +132,7 @@ expected<type_def_t> check_type_def(context_t& ctx, parser::type_def_t const& ty
             {
                 std::ostringstream err;
                 pretty_print(err << "cannot redefine `" << x.name << "` as typedef, previously `", it->second) << '`';
-                return error_t::from_error(dep0::error_t(err.str(), type_def.properties), ctx);
+                return error_t::from_error(dep0::error_t(err.str(), type_def.properties));
             }
             return result;
         });
@@ -148,7 +148,7 @@ expected<func_def_t> check_func_def(context_t& ctx, parser::func_def_t const& f)
     {
         std::ostringstream err;
         pretty_print(err << "cannot redefine `" << f.name << "` as function, previously `", it->second) << '`';
-        return error_t::from_error(dep0::error_t(err.str()), ctx);
+        return error_t::from_error(dep0::error_t(err.str()));
     }
     return make_legal_func_def(abs->properties.sort.get(), f.name, std::move(std::get<expr_t::abs_t>(abs->value)));
 }
@@ -574,7 +574,7 @@ expected<expr_t> check_pi_type(
                 std::ostringstream err;
                 pretty_print<properties_t>(err << "cannot redefine `", *var) << '`';
                 pretty_print(err << " as function argument, previously `", prev) << '`';
-                return error_t::from_error(dep0::error_t(err.str(), arg_loc), ctx);
+                return error_t::from_error(dep0::error_t(err.str(), arg_loc));
             };
             // It can be argued that here we are "guessing" whether the argument is a type or a kind.
             // Type-assignment in lambda-c is decidable and unique up to alpha/beta-equivalence.
@@ -616,8 +616,7 @@ expected<expr_t> check_pi_type(
                     {
                         dep0::error_t("expression is not a type", {std::move(type.error())}),
                         dep0::error_t("expression is not a kind", {std::move(kind.error())})
-                    }),
-                ctx);
+                    }));
         });
     if (not args)
         return std::move(args.error());
@@ -632,8 +631,13 @@ expected<expr_t> check_pi_type(
         std::ostringstream err;
         err << "cannot typecheck function return type";
         return error_t::from_error(
-            dep0::error_t(err.str(), parser_ret_type.properties, {std::move(type.error()), std::move(kind.error())}),
-            ctx);
+            dep0::error_t(
+                err.str(),
+                parser_ret_type.properties,
+                {
+                    std::move(type.error()),
+                    std::move(kind.error())
+                }));
     }();
     if (not ret_type)
         return std::move(ret_type.error());
@@ -660,7 +664,7 @@ expected<expr_t> check_abs(
         {
             std::ostringstream err;
             pretty_print(err << "cannot redefine `" << *name << "` as function, previously `", it->second) << '`';
-            return error_t::from_error(dep0::error_t(err.str(), location), f_ctx);
+            return error_t::from_error(dep0::error_t(err.str(), location));
         }
     }
     auto const& pi_type = std::get<expr_t::pi_t>(func_type->value);
@@ -679,7 +683,7 @@ expected<expr_t> check_abs(
             if (name)
                 err << "in function `" << *name << "` ";
             err << "missing return statement";
-            return error_t::from_error(dep0::error_t(err.str(), location), f_ctx);
+            return error_t::from_error(dep0::error_t(err.str(), location));
         }
     }
     return make_legal_expr(*func_type, expr_t::abs_t{pi_type.args, ret_type, std::move(*body)});

@@ -56,9 +56,9 @@ BOOST_AUTO_TEST_CASE(typecheck_error_000)
     BOOST_TEST_REQUIRE(fail("0004_plus_expr/typecheck_error_000.depc"));
     BOOST_TEST(fail_result->error == "invalid sign for numeric constant");
     BOOST_TEST(fail_result->location.has_value());
-    BOOST_TEST_REQUIRE(fail_result->tgt.has_value());
+    BOOST_TEST_REQUIRE(fail_result->context.has_value());
     std::ostringstream tgt;
-    pretty_print(tgt, fail_result->tgt.value());
+    pretty_print(tgt, fail_result->context->second);
     BOOST_TEST(tgt.str() == "u32_t");
 }
 

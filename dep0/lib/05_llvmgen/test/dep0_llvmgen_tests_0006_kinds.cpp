@@ -298,4 +298,9 @@ BOOST_AUTO_TEST_CASE(pass_007)
     }
 }
 
+// BOOST_AUTO_TEST_CASE(typecheck_error_000)
+// BOOST_AUTO_TEST_CASE(typecheck_error_001)
+// BOOST_AUTO_TEST_CASE(typecheck_error_002)
+// BOOST_AUTO_TEST_CASE(typecheck_error_003)
+
 BOOST_AUTO_TEST_SUITE_END()

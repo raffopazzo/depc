@@ -69,7 +69,9 @@ expr: lhs=expr '+' rhs=expr # plusExpr
     | value=('true'|'false') # booleanExpr
     | funcCall # funcCallExpr
     | var=ID # varExpr
+    | 'array_t' '(' expr ',' expr ')' # arrayExpr
     | type # typeExpr // in an expression `f(x)` x should be parsed as `var` so this rule must come after `var`
+    | '{' (expr (',' expr)*)? '}' # initListExpr
     ;
 
 funcCall: name=ID '(' (expr (',' expr)*)? ')';

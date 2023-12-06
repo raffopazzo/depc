@@ -267,10 +267,33 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         return expr_t{get_loc(src, *ctx->var), expr_t::var_t{get_text(src, *ctx->var)}};
     }
 
+    virtual std::any visitArrayExpr(DepCParser::ArrayExprContext* ctx) override
+    {
+        assert(ctx);
+        return expr_t{
+            get_loc(src, *ctx),
+            expr_t::array_t{
+                std::any_cast<expr_t>(visitExpr(ctx->expr(0ul))),
+                std::any_cast<expr_t>(visitExpr(ctx->expr(1ul)))
+            }
+        };
+    }
+
     virtual std::any visitTypeExpr(DepCParser::TypeExprContext* ctx) override
     {
         assert(ctx);
         return visitType(ctx->type());
+    }
+
+    virtual std::any visitInitListExpr(DepCParser::InitListExprContext* ctx) override
+    {
+        assert(ctx);
+        return expr_t{
+            get_loc(src, *ctx),
+            expr_t::init_list_t{
+                fmap(ctx->expr(), [this] (auto* x) { return std::any_cast<expr_t>(visitExpr(x)); })
+            }
+        };
     }
 
     virtual std::any visitBooleanExpr(DepCParser::BooleanExprContext* ctx)
@@ -324,8 +347,12 @@ struct parse_visitor_t : dep0::DepCParserVisitor
             return std::any_cast<expr_t>(visitFuncCallExpr(p));
         if (auto const p = dynamic_cast<DepCParser::VarExprContext*>(ctx))
             return std::any_cast<expr_t>(visitVarExpr(p));
+        if (auto const p = dynamic_cast<DepCParser::ArrayExprContext*>(ctx))
+            return std::any_cast<expr_t>(visitArrayExpr(p));
         if (auto const p = dynamic_cast<DepCParser::TypeExprContext*>(ctx))
             return std::any_cast<expr_t>(visitTypeExpr(p));
+        if (auto const p = dynamic_cast<DepCParser::InitListExprContext*>(ctx))
+            return std::any_cast<expr_t>(visitInitListExpr(p));
         throw error_t("unexpected alternative when parsing ExprContext", get_loc(src, *ctx));
     }
 

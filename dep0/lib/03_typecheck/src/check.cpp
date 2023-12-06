@@ -568,6 +568,77 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, sort_
                 if (auto eq = is_beta_delta_equivalent(pi_ctx, result->properties.sort.get(), expected_type); not eq)
                     return type_error(result->properties.sort.get(), std::move(eq.error()));
             return result;
+        },
+        [&] (parser::expr_t::array_t const& array) -> expected<expr_t>
+        {
+            auto type = check_type(ctx, array.type.get());
+            if (not type)
+                return type;
+            auto size = check_expr(ctx, array.size.get(), derivation_rules::make_u64());
+            if (not size)
+                return size;
+            // TODO perform beta-delta-normalization of size
+            if (auto const n = std::get_if<expr_t::numeric_constant_t>(&size->value);
+                n and n->sign.value_or('+') != '+')
+            {
+                std::ostringstream err;
+                pretty_print<properties_t>(err << "array size must be positive, not `", *n) << '`';
+                return error_t::from_error(dep0::error_t(err.str(), loc), ctx, expected_type);
+            }
+            auto result = make_legal_expr(
+                derivation_rules::make_typename(),
+                expr_t::array_t{std::move(*type), std::move(*size)});
+            if (auto eq = is_beta_delta_equivalent(ctx, result.properties.sort.get(), expected_type))
+                return result;
+            else
+                return type_error(result.properties.sort.get(), std::move(eq.error()));
+        },
+        [&] (parser::expr_t::init_list_t const& init_list) -> expected<expr_t>
+        {
+            return match(
+                expected_type,
+                [&] (expr_t expected_type) -> expected<expr_t>
+                {
+                    beta_delta_normalize(ctx.delta_reduction_context(), expected_type);
+                    auto const array = std::get_if<expr_t::array_t>(&expected_type.value);
+                    if (not array)
+                    {
+                        std::ostringstream err;
+                        pretty_print(err << "type mismatch between initializer list and `", expected_type) << '`';
+                        return error_t::from_error(dep0::error_t(err.str(), loc), ctx, expected_type);
+                    }
+                    auto const n = std::get_if<expr_t::numeric_constant_t>(&array->size.get().value);
+                    if (not n)
+                    {
+                        std::ostringstream err;
+                        pretty_print(err << "type mismatch between initializer list and `", expected_type) << '`';
+                        return error_t::from_error(dep0::error_t(err.str(), loc), ctx, expected_type);
+                    }
+                    // sign was already checked for array_t; TODO we should really use some big-int type
+                    if (std::stoll(std::string(n->number.view())) != init_list.values.size())
+                    {
+                        std::ostringstream err;
+                        err << "initializer list has " << init_list.values.size() << " elements but was expecting ";
+                        pretty_print<properties_t>(err, *n);
+                        return error_t::from_error(dep0::error_t(err.str(), loc), ctx, expected_type);
+                    }
+                    auto values =
+                        fmap_or_error(
+                            init_list.values,
+                            [&] (parser::expr_t const& v)
+                            {
+                                return check_expr(ctx, v, array->type.get());
+                            });
+                    if (not values)
+                        return std::move(values.error());
+                    return make_legal_expr(expected_type, expr_t::init_list_t{std::move(*values)});
+                },
+                [&] (kind_t) -> expected<expr_t>
+                {
+                    std::ostringstream err;
+                    pretty_print(err << "type mismatch between initializer list and `", kind_t{}) << '`';
+                    return error_t::from_error(dep0::error_t(err.str(), loc), ctx, expected_type);
+                });
         });
 }
 

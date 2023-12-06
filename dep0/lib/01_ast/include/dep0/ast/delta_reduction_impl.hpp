@@ -32,7 +32,9 @@ template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P
 template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::numeric_constant_t&);
 template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::var_t&);
 template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::app_t&);
-template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::abs_t&);
+template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::pi_t&);
+template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::array_t&);
+template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::init_list_t&);
 
 template <Properties P>
 bool delta_reduce(context_t<P> const& ctx, typename stmt_t<P>::if_else_t& if_)
@@ -122,6 +124,21 @@ bool delta_reduce(context_t<P> const& ctx, typename expr_t<P>::pi_t& pi)
         }
     }
     return delta_reduce(ctx2, pi.ret_type.get());
+}
+
+template <Properties P>
+bool delta_reduce(context_t<P> const& ctx, typename expr_t<P>::array_t& array)
+{
+    return delta_reduce(ctx, array.type.get()) or delta_reduce(ctx, array.size.get());
+}
+
+template <Properties P>
+bool delta_reduce(context_t<P> const& ctx, typename expr_t<P>::init_list_t& init_list)
+{
+    for (auto& v: init_list.values)
+        if (delta_reduce(ctx, v))
+            return true;
+    return false;
 }
 
 } // namespace impl

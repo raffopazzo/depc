@@ -9,6 +9,8 @@
 
 namespace dep0::ast {
 
+namespace impl {
+
 template <Properties P>
 using context_t = delta_reduction::context_t<P>;
 
@@ -33,27 +35,6 @@ template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P
 template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::abs_t&);
 
 template <Properties P>
-bool delta_reduce(context_t<P> const& ctx, func_def_t<P>& def)
-{
-    return delta_reduce<P>(ctx, def.value);
-}
-
-template <Properties P>
-bool delta_reduce(context_t<P> const& ctx, body_t<P>& body)
-{
-    for (auto& stmt: body.stmts)
-        if (delta_reduce(ctx, stmt))
-            return true;
-    return false;
-}
-
-template <Properties P>
-bool delta_reduce(context_t<P> const& ctx, stmt_t<P>& stmt)
-{
-    return match(stmt.value, [&] (auto& x) { return delta_reduce<P>(ctx, x); });
-}
-
-template <Properties P>
 bool delta_reduce(context_t<P> const& ctx, typename stmt_t<P>::if_else_t& if_)
 {
     return delta_reduce(ctx, if_.cond)
@@ -67,35 +48,6 @@ bool delta_reduce(context_t<P> const& ctx, typename stmt_t<P>::return_t& ret)
     return ret.expr and delta_reduce(ctx, *ret.expr);
 }
 
-template <Properties P>
-bool delta_reduce(context_t<P> const& ctx, expr_t<P>& expr)
-{
-    return match(
-        expr.value,
-        [&] (typename expr_t<P>::var_t& var)
-        {
-            if (auto const val = ctx[var])
-                if (auto const abs = std::get_if<typename expr_t<P>::abs_t>(val))
-                {
-                    expr.value = *abs;
-                    return true;
-                }
-            return false;
-        },
-        [&] (auto& x) { return delta_reduce<P>(ctx, x); });
-}
-
-template <Properties P>
-bool delta_reduce(context_t<P> const& ctx, typename expr_t<P>::arith_expr_t& x)
-{
-    return match(
-        x.value,
-        [&] (typename expr_t<P>::arith_expr_t::plus_t& x)
-        {
-            return delta_reduce(ctx, x.lhs.get()) or delta_reduce(ctx, x.rhs.get());
-        });
-}
-
 template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::typename_t&) { return false; }
 template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::bool_t&) { return false; }
 template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::unit_t&) { return false; }
@@ -107,6 +59,17 @@ template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P
 template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::u16_t&) { return false; }
 template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::u32_t&) { return false; }
 template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::u64_t&) { return false; }
+
+template <Properties P>
+bool delta_reduce(context_t<P> const& ctx, typename expr_t<P>::arith_expr_t& x)
+{
+    return match(
+        x.value,
+        [&] (typename expr_t<P>::arith_expr_t::plus_t& x)
+        {
+            return delta_reduce(ctx, x.lhs.get()) or delta_reduce(ctx, x.rhs.get());
+        });
+}
 
 template <Properties P>
 bool delta_reduce(context_t<P> const&, typename expr_t<P>::boolean_constant_t&) { return false; }
@@ -159,6 +122,47 @@ bool delta_reduce(context_t<P> const& ctx, typename expr_t<P>::pi_t& pi)
         }
     }
     return delta_reduce(ctx2, pi.ret_type.get());
+}
+
+} // namespace impl
+
+template <Properties P>
+bool delta_reduce(delta_reduction::context_t<P> const& ctx, func_def_t<P>& def)
+{
+    return impl::delta_reduce<P>(ctx, def.value);
+}
+
+template <Properties P>
+bool delta_reduce(delta_reduction::context_t<P> const& ctx, body_t<P>& body)
+{
+    for (auto& stmt: body.stmts)
+        if (delta_reduce(ctx, stmt))
+            return true;
+    return false;
+}
+
+template <Properties P>
+bool delta_reduce(delta_reduction::context_t<P> const& ctx, stmt_t<P>& stmt)
+{
+    return match(stmt.value, [&] (auto& x) { return impl::delta_reduce<P>(ctx, x); });
+}
+
+template <Properties P>
+bool delta_reduce(delta_reduction::context_t<P> const& ctx, expr_t<P>& expr)
+{
+    return match(
+        expr.value,
+        [&] (typename expr_t<P>::var_t& var)
+        {
+            if (auto const val = ctx[var])
+                if (auto const abs = std::get_if<typename expr_t<P>::abs_t>(val))
+                {
+                    expr.value = *abs;
+                    return true;
+                }
+            return false;
+        },
+        [&] (auto& x) { return impl::delta_reduce<P>(ctx, x); });
 }
 
 } // namespace dep0::ast

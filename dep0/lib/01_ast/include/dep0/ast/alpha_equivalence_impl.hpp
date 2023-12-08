@@ -79,7 +79,7 @@ struct alpha_equivalence_visitor
         typename expr_t<P>::numeric_constant_t const& x,
         typename expr_t<P>::numeric_constant_t const& y) const
     {
-        if (x.sign.value_or('+') == y.sign.value_or('+') and x.number == y.number)
+        if (x.value == y.value)
             return {};
         else
             return not_alpha_equivalent(x, y);

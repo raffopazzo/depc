@@ -33,11 +33,9 @@ AstTestsFixture::expr_t AstTestsFixture::app(expr_t f, std::vector<expr_t> args)
     return expr_t{dummy_properties_t{}, expr_t::app_t{std::move(f), std::move(args)}};
 }
 
-AstTestsFixture::expr_t AstTestsFixture::numeric_constant(char const* const number)
+AstTestsFixture::expr_t AstTestsFixture::numeric_constant(int const value)
 {
-    return expr_t{
-        dummy_properties_t{},
-        expr_t::numeric_constant_t{std::nullopt, testing::literal_string(number)}};
+    return expr_t{dummy_properties_t{}, expr_t::numeric_constant_t{value}};
 }
 
 AstTestsFixture::expr_t AstTestsFixture::var(char const* const name)

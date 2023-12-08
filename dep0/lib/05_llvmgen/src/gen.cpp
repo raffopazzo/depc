@@ -1,6 +1,5 @@
 #include "dep0/llvmgen/gen.hpp"
 
-#include "dep0/digit_separator.hpp"
 #include "dep0/fmap.hpp"
 #include "dep0/match.hpp"
 #include "dep0/scope_map.hpp"
@@ -637,26 +636,13 @@ llvm::Value* gen_val(
         },
         [&] (typecheck::expr_t::numeric_constant_t const& x) -> llvm::Value*
         {
-            std::optional<std::string> tmp;
-            std::string_view number;
-            if (x.sign or contains_digit_separator(x.number))
-            {
-                auto& s = tmp.emplace();
-                s.reserve(x.number.size() + 1);
-                if (x.sign)
-                    s.push_back(*x.sign);
-                remove_digit_separator(x.number, s);
-                number = s;
-            }
-            else
-                number = x.number;
             // TODO currently beta-delta normalization operates on the templated AST,
             // so it does not reduce inside `properties.sort`, which means we might fail to generate a type;
             // we should in fact check all usages of `properties.sort`
             auto const& type = std::get<typecheck::expr_t>(expr.properties.sort.get());
             auto const llvm_type = cast<llvm::IntegerType>(gen_type(global, local, type));
             assert(llvm_type);
-            return llvm::ConstantInt::get(llvm_type, number, 10);
+            return llvm::ConstantInt::get(llvm_type, x.value.str(), 10);
         },
         [&] (typecheck::expr_t::arith_expr_t const& x) -> llvm::Value*
         {

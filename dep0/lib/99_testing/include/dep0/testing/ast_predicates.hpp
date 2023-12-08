@@ -49,7 +49,7 @@ boost::test_tools::predicate_result is_integer_def(
     std::string_view const name,
     dep0::ast::sign_t const sign,
     dep0::ast::width_t const width,
-    std::optional<std::string_view> max_abs_value)
+    std::optional<int> max_abs_value)
 {
     auto const integer = std::get_if<typename ast::type_def_t<P>::integer_t>(&t.value);
     if (not integer)
@@ -151,28 +151,14 @@ boost::test_tools::predicate_result is_boolean_constant(ast::expr_t<P> const& ex
 }
 
 template <ast::Properties P>
-boost::test_tools::predicate_result is_numeric_constant(ast::expr_t<P> const& expr, std::string_view const x)
+boost::test_tools::predicate_result is_numeric_constant(ast::expr_t<P> const& expr, int const x)
 {
-    assert(x.size() > 0ul);
     auto const c = std::get_if<typename ast::expr_t<P>::numeric_constant_t>(&expr.value);
     if (not c)
         return failure("expression is not numeric_constant_t but ", pretty_name(expr.value));
-    if (x[0] == '+' or x[0] == '-')
-    {
-        if (c->sign.value_or(0) == x[0] and c->number == x.substr(1))
-            return true;
-    }
-    else
-    {
-        if (c->sign.has_value() == false and c->number == x)
-            return true;
-    }
-    auto failed = boost::test_tools::predicate_result(false);
-    failed.message().stream() << "numeric constant is not " << x << " but ";
-    if (c->sign.has_value())
-        failed.message().stream() << *c->sign;
-    failed.message().stream() << c->number.view();
-    return failed;
+    if (c->value != x)
+        return failure("numeric constant ", c->value, " != ", x);
+    return true;
 }
 
 inline auto constant(bool value)
@@ -183,15 +169,7 @@ inline auto constant(bool value)
     };
 }
 
-inline auto constant(int value)
-{
-    return [value=std::to_string(value)] <ast::Properties P> (ast::expr_t<P> const& expr)
-    {
-        return is_numeric_constant(expr, value);
-    };
-}
-
-inline auto numeric_constant(std::string const& value)
+inline auto constant(int const value)
 {
     return [value] <ast::Properties P> (ast::expr_t<P> const& expr)
     {

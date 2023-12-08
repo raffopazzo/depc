@@ -9,7 +9,6 @@
 #include "private/proof_state.hpp"
 #include "private/returns_from_all_branches.hpp"
 
-#include "dep0/digit_separator.hpp"
 #include "dep0/fmap.hpp"
 #include "dep0/match.hpp"
 #include "dep0/scope_map.hpp"
@@ -258,54 +257,30 @@ static expected<expr_t> check_numeric_expr(
     };
     auto const check_integer = [&] (
         std::string_view const type_name,
-        std::string_view const sign_chars,
-        std::string_view const max_abs_value
+        ast::sign_t const sign,
+        boost::multiprecision::cpp_int const& max_abs_value
     ) -> expected<expr_t>
     {
-        auto const skip_any = [] (std::string_view& s, std::string_view const chars)
-        {
-            for (auto const c: chars)
-                if (s.starts_with(c)) // TODO should this be `while` instead of `if`?
-                    s.remove_prefix(1);
-        };
-        // assuming `a` and `b` represent positive integer numbers without leading 0s, returns whether `a > b`
-        auto const bigger_than = [] (std::string_view const a, std::string_view const b)
-        {
-            if (a.size() > b.size())
-                return true;
-            if (a.size() == b.size())
-                for (auto const i: std::views::iota(0ul, a.size()))
-                    if (a[i] != b[i]) return a[i] > b[i];
-            return false;
-        };
-
-        std::optional<std::string> without_separator; // keeps alive the string pointed to by `number`
-        std::string_view number;
-        if (contains_digit_separator(x.number))
-            number = without_separator.emplace(remove_digit_separator(x.number));
-        else
-            number = x.number;
-        if (x.sign and sign_chars.find(*x.sign) == std::string_view::npos)
+        if (sign == ast::sign_t::unsigned_v and x.value.sign() == -1)
             return error("invalid sign for numeric constant");
-        skip_any(number, "0");
-        if (bigger_than(number, max_abs_value))
+        if (boost::multiprecision::abs(x.value) > max_abs_value)
         {
             std::ostringstream err;
             err << "numeric constant does not fit inside `" << type_name << '`';
             return error(err.str());
         }
-        return make_legal_expr(expected_type, expr_t::numeric_constant_t{x.sign, x.number});
+        return make_legal_expr(expected_type, expr_t::numeric_constant_t{x.value});
     };
     return match(
         expected_type.value,
-        [&] (expr_t::i8_t const&) { return check_integer("i8_t", "+-", "127"); },
-        [&] (expr_t::i16_t const&) { return check_integer("i16_t", "+-", "32767"); },
-        [&] (expr_t::i32_t const&) { return check_integer("i32_t", "+-", "2147483647"); },
-        [&] (expr_t::i64_t const&) { return check_integer("i64_t", "+-", "9223372036854775807"); },
-        [&] (expr_t::u8_t const&) { return check_integer("u8_t", "+", "255"); },
-        [&] (expr_t::u16_t const&) { return check_integer("u16_t", "+", "65535"); },
-        [&] (expr_t::u32_t const&) { return check_integer("u32_t", "+", "4294967295"); },
-        [&] (expr_t::u64_t const&) { return check_integer("u64_t", "+", "18446744073709551615"); },
+        [&] (expr_t::i8_t  const&) { return check_integer("i8_t",  ast::sign_t::signed_v,   127ul); },
+        [&] (expr_t::i16_t const&) { return check_integer("i16_t", ast::sign_t::signed_v,   32767ul); },
+        [&] (expr_t::i32_t const&) { return check_integer("i32_t", ast::sign_t::signed_v,   2147483647ul); },
+        [&] (expr_t::i64_t const&) { return check_integer("i64_t", ast::sign_t::signed_v,   9223372036854775807ul); },
+        [&] (expr_t::u8_t  const&) { return check_integer("u8_t",  ast::sign_t::unsigned_v, 255ul); },
+        [&] (expr_t::u16_t const&) { return check_integer("u16_t", ast::sign_t::unsigned_v, 65535ul); },
+        [&] (expr_t::u32_t const&) { return check_integer("u32_t", ast::sign_t::unsigned_v, 4294967295ul); },
+        [&] (expr_t::u64_t const&) { return check_integer("u64_t", ast::sign_t::unsigned_v, 18446744073709551615ul); },
         [&] (expr_t::var_t const& var) -> expected<expr_t>
         {
             auto const val = ctx[var];
@@ -318,44 +293,21 @@ static expected<expr_t> check_numeric_expr(
                         t.value,
                         [&] (type_def_t::integer_t const& integer) -> expected<expr_t>
                         {
-                            if (integer.sign == ast::sign_t::signed_v)
-                            {
-                                std::string_view const max_abs =
-                                    integer.max_abs_value ? integer.max_abs_value->view() :
-                                    integer.width == ast::width_t::_8 ? "127" :
-                                    integer.width == ast::width_t::_16 ? "32767" :
-                                    integer.width == ast::width_t::_32 ? "2147483647" :
-                                    integer.width == ast::width_t::_64 ? "9223372036854775807" :
-                                    "";
-                                if (max_abs.empty())
+                            return check_integer(
+                                integer.name,
+                                integer.sign,
+                                integer.max_abs_value.value_or([&]
                                 {
-                                    std::ostringstream err;
-                                    err << "unknown width for signed integer `static_cast<int>(integer.width)="
-                                        << static_cast<int>(integer.width) << '`';
-                                    err << ". This is a compiler bug, please report it!";
-                                    return error(err.str());
-                                }
-                                return check_integer(integer.name, "+-", max_abs);
-                            }
-                            else
-                            {
-                                std::string_view const max_abs =
-                                    integer.max_abs_value ? integer.max_abs_value->view() :
-                                    integer.width == ast::width_t::_8 ? "255" :
-                                    integer.width == ast::width_t::_16 ? "65535" :
-                                    integer.width == ast::width_t::_32 ? "4294967295" :
-                                    integer.width == ast::width_t::_64 ? "18446744073709551615" :
-                                    "";
-                                if (max_abs.empty())
-                                {
-                                    std::ostringstream err;
-                                    err << "unknown width for unsigned integer `static_cast<int>(integer.width)="
-                                        << static_cast<int>(integer.width) << '`';
-                                    err << ". This is a compiler bug, please report it!";
-                                    return error(err.str());
-                                }
-                                return check_integer(integer.name, "+", max_abs);
-                            }
+                                    bool const with_sign = integer.sign == ast::sign_t::signed_v;
+                                    switch (integer.width)
+                                    {
+                                        using enum ast::width_t;
+                                        case _8:  return with_sign ? 127ul : 255ul;
+                                        case _16: return with_sign ? 32767ul : 65535ul;
+                                        case _32: return with_sign ? 2147483647ul : 4294967295ul;
+                                        default:  return with_sign ? 9223372036854775807ul : 18446744073709551615ul;
+                                    }
+                                }()));
                         });
                 },
                 [&] (expr_t const& expr) -> expected<expr_t>

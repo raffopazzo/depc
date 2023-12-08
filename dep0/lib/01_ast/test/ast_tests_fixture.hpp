@@ -34,7 +34,7 @@ struct AstTestsFixture
     static body_t body(stmt_t);
     static stmt_t return_(expr_t);
     static expr_t app(expr_t f, std::vector<expr_t> args);
-    static expr_t numeric_constant(char const* const number);
+    static expr_t numeric_constant(int);
     static expr_t var(char const* const name);
     static expr_t::var_t var_t(char const* const name);
     static func_arg_t arg(expr_t type, char const* const var_name = nullptr);

@@ -645,7 +645,7 @@ BOOST_AUTO_TEST_CASE(typecheck_error_002)
         auto const& f = pass_result->func_defs[0ul];
         BOOST_TEST(f.name == "f");
         BOOST_TEST(f.value.args.size() == 0ul);
-        BOOST_TEST(is_numeric_constant(f.value.ret_type.get(), "1"));
+        BOOST_TEST(is_numeric_constant(f.value.ret_type.get(), 1));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
         BOOST_TEST(is_return_of(f.value.body.stmts[0ul], constant(0)));
     }

@@ -4,6 +4,7 @@
 
 #include "dep0/source.hpp"
 
+#include <boost/multiprecision/cpp_int.hpp>
 #include <boost/variant/recursive_wrapper.hpp>
 
 #include <optional>
@@ -59,8 +60,7 @@ struct expr_t
     };
     struct numeric_constant_t
     {
-        std::optional<char> sign;
-        source_text number;
+        boost::multiprecision::cpp_int value;
     };
     struct arith_expr_t
     {
@@ -156,7 +156,7 @@ struct type_def_t
         source_text name;
         sign_t sign;
         width_t width;
-        std::optional<source_text> max_abs_value;
+        std::optional<boost::multiprecision::cpp_int> max_abs_value;
     };
 
     using properties_t = typename P::type_def_properties_type;

@@ -140,7 +140,10 @@ std::ostream& pretty_print(std::ostream& os, type_def_t<P> const& type_def, std:
                 x.width == width_t::_32 ? "32" :
                 "64") << " bit integer from ";
             if (x.sign == sign_t::unsigned_v)
-                os << "0 to " << (x.max_abs_value ? x.max_abs_value->view() : "...");
+            {
+                os << "0 to ";
+                x.max_abs_value ? os << *x.max_abs_value : os << "...";
+            }
             else if (x.max_abs_value)
                 os << '-' << *x.max_abs_value << " to " << *x.max_abs_value;
             else
@@ -316,7 +319,7 @@ std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::boolean_constan
 template <Properties P>
 std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::numeric_constant_t const& x, std::size_t const indent)
 {
-    return (x.sign ? os << *x.sign : os) << x.number;
+    return os << x.value;
 }
 
 template <Properties P>

@@ -17,31 +17,31 @@ BOOST_AUTO_TEST_CASE(pass_000)
         "hours_t",
         dep0::ast::sign_t::unsigned_v,
         dep0::ast::width_t::_8,
-        "23"));
+        23));
     BOOST_TEST(is_integer_def(
         pass_result->type_defs[1],
         "minutes_t",
         dep0::ast::sign_t::unsigned_v,
         dep0::ast::width_t::_8,
-        "59"));
+        59));
     BOOST_TEST(is_integer_def(
         pass_result->type_defs[2],
         "seconds_t",
         dep0::ast::sign_t::unsigned_v,
         dep0::ast::width_t::_8,
-        "59"));
+        59));
     BOOST_TEST(is_integer_def(
         pass_result->type_defs[3],
         "millis_t",
         dep0::ast::sign_t::unsigned_v,
         dep0::ast::width_t::_16,
-        "999"));
+        999));
     BOOST_TEST(is_integer_def(
         pass_result->type_defs[4],
         "nanos_t",
         dep0::ast::sign_t::unsigned_v,
         dep0::ast::width_t::_32,
-        "999'999'999"));
+        999999999));
     BOOST_TEST(is_integer_def(
         pass_result->type_defs[5],
         "duration_t",
@@ -53,19 +53,19 @@ BOOST_AUTO_TEST_CASE(pass_000)
         "ascii_t",
         dep0::ast::sign_t::unsigned_v,
         dep0::ast::width_t::_8,
-        "127"));
+        127));
     BOOST_TEST(is_integer_def(
         pass_result->type_defs[7],
         "sign_t",
         dep0::ast::sign_t::signed_v,
         dep0::ast::width_t::_8,
-        "1"));
+        1));
     BOOST_TEST(is_integer_def(
         pass_result->type_defs[8],
         "signal_t",
         dep0::ast::sign_t::signed_v,
         dep0::ast::width_t::_8,
-        "15"));
+        15));
     BOOST_TEST(is_integer_def(
         pass_result->type_defs[9],
         "key_t",

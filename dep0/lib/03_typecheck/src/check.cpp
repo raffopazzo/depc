@@ -530,11 +530,10 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, sort_
             if (not size)
                 return size;
             // TODO perform beta-delta-normalization of size
-            if (auto const n = std::get_if<expr_t::numeric_constant_t>(&size->value);
-                n and n->sign.value_or('+') != '+')
+            if (auto const n = std::get_if<expr_t::numeric_constant_t>(&size->value); n and n->value.sign() == -1)
             {
                 std::ostringstream err;
-                pretty_print<properties_t>(err << "array size must be positive, not `", *n) << '`';
+                pretty_print<properties_t>(err << "array size cannot be negative, but it is `", *n) << '`';
                 return error_t::from_error(dep0::error_t(err.str(), loc), ctx, expected_type);
             }
             auto result = make_legal_expr(
@@ -566,8 +565,8 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, sort_
                         pretty_print(err << "type mismatch between initializer list and `", expected_type) << '`';
                         return error_t::from_error(dep0::error_t(err.str(), loc), ctx, expected_type);
                     }
-                    // sign was already checked for array_t; TODO we should really use some big-int type
-                    if (std::stoll(std::string(n->number.view())) != init_list.values.size())
+                    // sign was already checked for array_t
+                    if (n->value != init_list.values.size())
                     {
                         std::ostringstream err;
                         err << "initializer list has " << init_list.values.size() << " elements but was expecting ";

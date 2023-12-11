@@ -5,9 +5,11 @@ and after some time I started thinking that if I had to write a programming lang
 C++ it would certainly be a big project for me but, given enough time, I might be able to do it;
 but if I had to write a language like Idris I would not even know where to start.
 So I started studying Type Theory with the only intention to learn something.
-But now what was initially unimaginable became actually quite feasible.
+But then what was initially unimaginable became actually quite feasible.
 
-To explain why I started this project it might help to first show what dependent types are.
+DepC is therefore a challenge and an experiment: what if C/C++ had dependent types?
+
+It probably helps to also show what dependent types are.
 Some people are already familiar with dependent types but many aren't.
 A more detailed explanation is given in [01 - A Super Quick Primer on Type Theory](01_type_theory.md)
 but an even quicker intuition goes like this.

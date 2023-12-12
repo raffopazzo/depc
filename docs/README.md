@@ -2,6 +2,7 @@ Everybody loves good documentation, but good documentation is hard because hard 
 * the level of details of the documentation,
 * the time it takes to write it and
 * the time it takes for new changes to make it outdated.
+
 Therefore here in `docs/` I will only focus on fundamental concepts that are unlikely to change throughout the development of this project.
 Anything more detailed than that will be documented directly in code, so to minimise the chances of stale documentation.
 

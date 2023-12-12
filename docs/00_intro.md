@@ -40,7 +40,7 @@ and the equality operator would not even be defined, thereby lifting a runtime e
 A more sophisticated example of dependent types uses the so-called Curry-Howard isomorphism.
 Again, many people know about this but many don't. What it means is that if you have a powerful 
 enough programming language it can be used not only for ordinary computer programs but it can
-also encode logical statements and their proofs, including statements about the program itself.
+also encode logical statements and their proofs, including statements and proofs about the program itself.
 For example, if you have a function invocation `sort(xs)` that is supposed to sort the vector `xs`,
 you can write the dependent type`sorted_t(sort(xs))` that tells the compiler that the result of
 invoking `sort(xs)` is, in fact, a sorted vector; if it isn't it's a compile-time error.

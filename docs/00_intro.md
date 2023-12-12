@@ -28,3 +28,10 @@ hypothetically be some `std::const_iterator<xs>` and, similarly, `ys.end()` coul
 `std::const_iterator<ys>`. Now their types, being "templated" against `xs` and `ys`, are different
 and the equality operator would not even be defined, thereby lifting a runtime error at compile-time.
 
+A more sophisticated example of dependent types uses the so-called Curry-Howard isomorphism.
+Again, many people know about this but many don't. What it means is that if you have a powerful 
+enough programming language it can be used not only for ordinary computer programs but it can
+also encode logical statements and their proofs, including statements about the program itself.
+For example, if you have a function invocation `sort(xs)` that is supposed to sort the vector `xs`,
+you can write the dependent type`sorted(sort(xs))` that tells the compiler that the result of
+invoking `sort(xs)` is, in fact, a sorted vector; if it isn't it's a compile-time error.

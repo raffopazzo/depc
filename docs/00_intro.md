@@ -33,5 +33,5 @@ Again, many people know about this but many don't. What it means is that if you 
 enough programming language it can be used not only for ordinary computer programs but it can
 also encode logical statements and their proofs, including statements about the program itself.
 For example, if you have a function invocation `sort(xs)` that is supposed to sort the vector `xs`,
-you can write the dependent type`sorted(sort(xs))` that tells the compiler that the result of
+you can write the dependent type`sorted_t(sort(xs))` that tells the compiler that the result of
 invoking `sort(xs)` is, in fact, a sorted vector; if it isn't it's a compile-time error.

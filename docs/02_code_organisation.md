@@ -19,5 +19,13 @@ In particular:
   * `lib/99_testing/` contains general purpose testing facilities, among all
   [custom Boost.Testing predicates](https://beta.boost.org/doc/libs/1_82_0/libs/test/doc/html/boost_test/testing_tools/custom_predicates.html)
   for the templated AST.
-* `testfiles/` contains source code in DepC used for testing the compiler, again currently `dep0` but hopefully one day `depc` too. Within it, tests are organised in numbered sections, so that if people are working on different features at the same time they can each reserve a section for their feature and put the test files within that, so to minimise PR conflicts. Within each numbered section test files can be named pretty much at will but, unless there's a strong reason to diverge, the recommended approach is to have numbered test files per category among: `pass` (meaning this code should compile normally), `parser_error` (meaning that the compiler is supposed to detect a parsing error, please add a comment to highlight where the error is) and `typecheck_error` (meaning that the compiler should detect a typechecking error, again please add a comment to highlight where the error is). For instance `0000_basics/pass_000.depc` or `0006_kinds/parser_error_002.depc`.
+* `testfiles/` contains source code in DepC used for testing the compiler, again currently `dep0` but hopefully one day `depc` too.
+Within it, tests are organised in numbered sections, so that if people are working on different features at the same time they can each reserve a section for their feature and put the test files within that, so to minimise PR conflicts.
+Within each numbered section test files can be named pretty much at will but, unless there is a strong reason to diverge,
+the recommended approach is to have numbered test files per category among:
+  * `pass` meaning that this code should compile successfully;
+  * `parser_error` meaning that the compiler is supposed to detect a parsing error; please add a comment to highlight where the error is;
+  * `typecheck_error` meaning that the compiler should detect a typechecking error; again, please add a comment to highlight where the error is.
+  
+  For instance `0000_basics/pass_000.depc` or `0006_kinds/parser_error_002.depc`.
 * `tools/` contains a potentially assorted array of tools; currently only `devbox` which is a docker image with the toolchain for (hopefully) reproducible builds.

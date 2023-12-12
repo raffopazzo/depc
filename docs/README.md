@@ -7,4 +7,4 @@
 
 * [Type Theory and Formal Proof: An Introduction](https://amzn.eu/d/8dl6Ktx) this is **the most important** book; if you read nothing else at least try read the first 6 chapters of this.
 * [Types and Programming Languages](https://amzn.eu/d/iBVHn9a) is a famous textbook in this field and you might come across many papers and publications that reference it.
-* [Interactive Theorem Proving and Program Development: Coq’Art](https://amzn.eu/d/2syZqOi) is a bit of a more advanced reading; it covers advanced topics like the Calculus of Inductive Construction whilst also showing the famous theorem prover _Coq_. It is also referenced by many papers amd publications, including the above 2 books.
+* [Interactive Theorem Proving and Program Development: Coq’Art](https://amzn.eu/d/2syZqOi) is a bit of a more advanced reading; it covers advanced topics like the Calculus of Inductive Construction whilst also showing the famous theorem prover _Coq_. It is also referenced by many papers and publications, including the above 2 books.

@@ -1,4 +1,4 @@
-# Motivation
+# Motivation and Goal
 
 I started this project as a challenge. I discovered dependent types when learning Idris
 and after some time I started thinking that if I had to write a programming language like
@@ -9,8 +9,17 @@ But then what was initially unimaginable became actually quite feasible.
 
 DepC is therefore a challenge and an experiment: what if C/C++ had dependent types?
 
-It probably helps to also show what dependent types are.
+The goal of this project is a bit open-ended.
+It would obviously be great if I could get to a fully working,
+industry-ready programming language as efficient as C/C++ and as safe as Idris.
+But that's a big project and I don't know how far I can take it.
+I will try to get it as far as possible.
+If people start contributing it will be easier to get further.
+
+## What are Dependent Types?
+
 Some people are already familiar with dependent types but many aren't.
+So, it probably helps to also show what dependent types are.
 A more detailed explanation is given in [01 - A Super Quick Primer on Type Theory](01_type_theory.md)
 but an even quicker intuition goes like this.
 Take the C++ standard library function `std::find()`.

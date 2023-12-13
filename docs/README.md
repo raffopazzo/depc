@@ -12,7 +12,8 @@ Sections are numbered so that lexicographical order and dependency order match. 
 * [00 - Motivation and Goal](00_intro.md) covers why I started doing this and where I'm trying to go with it.
 * [01 - A Super Quick Primer on Type Theory](01_type_theory.md) summarises the primary concepts from Type Theory that play an important (or even fundamental) role in the development of this project. Some people are already familiar with these concepts and some aren't. For those who aren't this is hopefully enough to see where certain parts of the source code (eg alpha and beta equivalences) are coming from and to perhaps inspire them to pick up a proper book on Type Theory; I suggest to follow the list below. For those who are already familiar, it will only take a few minutes to go over it and it will probably help clarify the exact setting in which this language operates.
 * [02 - Code Organisation, Dep0 and DepC](02_code_organisation.md) explains how I am structuring the source tree. It's a very simple, non-mind-blowing read.
-* [03 - Dep0: AST and Pipeline](03_dep0.md) explains the fundamental concepts of the internal design of Dep0. As mentioned above, anything more detailed than this is hopefully documented directly in code. If not, feel free to raise a PR.
+* [03 - Dep0: AST, Pipeline and Performance](03_dep0.md) explains the fundamental concepts of the internal design of Dep0.
+As mentioned above, anything more detailed than this is hopefully documented directly in code. If not, feel free to raise a PR.
 
 ## Suggested Reading
 

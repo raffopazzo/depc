@@ -238,3 +238,60 @@ and there are also a couple of rules whose only role is to fix some technicaliti
 * Conv (the Conversion rule) is a bit of a technicality, but will become more important later;
   essentially it says that you might have to perform beta-reduction in the types, because a
   term of type `int` and a term of type `(lambda t:* . t)int` should be understood as the same type.
+
+## Dependent Types
+
+We start again from Simply-Typed Lambda Calculus and add "types depending on terms.
+Here we reintroduce Pi-types.
+
+In C++ you can do `std::array<int, 3>`.
+In some sense, this is already a type that depends on a term, `3` in this case.
+But you cannot generalize this to say `auto f(int n) -> std::array<int, n>`.
+
+With types depending on terms you can instead write such an `f`,
+for example `lambda n:int . array int n`. So what is its type?
+It takes an `int` and returns a type, so you could say its type is `int -> *`.
+But in this case, not only it returns a `*` but it also uses the value of `n`,
+to compute such type. So we have to reintroduce Pi-types.
+Its type is, in fact, `Pi n:int . array int n`.
+Note that now the body of the Pi-type contains a whole expression not just an arrow.
+
+The typing rule are very similar to the ones seen for kinds.
+The only differences are in Form, App and Abs where all arrows have been
+replaced by Pi-types. In fact, a Pi-type where the argument is not used
+in the body, can be written as `A -> B`.
+
+```
+Sort:
+   <empty context> |- * : []
+
+Var:
+   C |- A: s
+   ------------- if x not already defined in C (but you can drop this condition if you can deal with shadowing correctly)
+   C, x:A |- x:A
+
+Weak:
+   C |- A:B   and   C |- T:s
+   ------------------------- if x not already defined in C (but you can drop this condition if you can deal with shadowing correctly)
+   C, x:T |- A:B
+
+Form:
+   C |- A:*   and C, x:A |- B:s
+   ----------------------------
+   C |- Pi x:A . B : s
+
+App:
+   C |- M : (Pi x:A . B)   and   C |- N : A
+   ----------------------------------------
+   C |- M N : B[x:=N]
+
+Abs:
+   C, x: A |- M : B   and   C |- (Pi x:A . B) : s
+   ----------------------------------------------
+   C |- lambda x:A . M : (Pi x:A . B)
+
+Conv:
+   C |- A: B   and   C |- B':s
+   --------------------------- if B and B' are beta-equivalent
+   C |- A: B'
+```

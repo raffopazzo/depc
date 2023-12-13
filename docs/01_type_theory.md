@@ -310,3 +310,66 @@ Conv:
    ---------- if B and B' are beta-equivalent
    C |- A: B'
 ```
+
+## Everything Together
+
+The *Calculus of Construction* is the result of combining
+all these extension of Simply-Typed Lambda Calculus.
+Here you can have all comibations:
+types and terms depending on types and terms.
+
+Astonishingly, all it takes is a slight modification in the
+Form rule whereby the sort of the two premises can be chosen
+independently from one another, say `s1` and `s2`.
+
+```
+Sort:
+   <empty context> |- * : []
+
+Var:
+   C |- A: s
+   -------------
+   C, x:A |- x:A
+
+Weak:
+   C |- A:B
+   C |- T:s
+   -------------
+   C, x:T |- A:B
+
+Form:
+   C      |- A:s1
+   C, x:A |- B:s2
+   --------------------
+   C |- Pi x:A . B : s2
+
+App:
+   C |- M : (Pi x:A . B)
+   C |- N : A
+   ---------------------
+   C |- M N : B[x:=N]
+
+Abs:
+   C, x: A |- M : B
+   C       |- (Pi x:A . B) : s
+   ----------------------------------
+   C |- lambda x:A . M : (Pi x:A . B)
+
+Conv:
+   C |- A: B
+   C |- B':s
+   ---------- if B and B' are beta-equivalent
+   C |- A: B'
+```
+
+Type-assignment and Type-checking remain both decidable,
+so it is possible to construct a computer program to perform type-checking.
+Term-finding is, however, undecidable, so it is impossible to construct a
+program that will certainly find a term for any given type.
+Under the Curry-Howard isomorphism, this means that theorem-proving will
+always require human work. Computers can only assist in the task.
+
+Another fundamental difference between Simply-Typed Lambda Calculus, i.e. C,
+and Calculus of Construction, i.e. DepC, is that there is distinction between
+types and expressions. This is reflected in the AST where only the node for
+expressions exists and there is no node for types.

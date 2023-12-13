@@ -90,8 +90,9 @@ Var:
    C |- x:a
 
 App:
-   C |- M: a->b   and   C |- N:a
-   -----------------------------
+   C |- M: a->b
+   C |- N:a
+   ------------
    C |- M N: b
 
 Abs:
@@ -137,8 +138,9 @@ Var:
    C |- x:a
 
 App1 (aka 1st order application):
-   C |- M: a->b   and   C |- N:a
-   -----------------------------
+   C |- M: a->b
+   C |- N:a
+   ------------
    C |- M N: b
 
 Abs1 (aka 1st order abstraction):
@@ -147,8 +149,9 @@ Abs1 (aka 1st order abstraction):
    C |- lambda x:a . M : a -> b
 
 App2 (aka 2nd order application):
-   C |- M: (Pi a:* . A)   and   C |- B:*
-   -------------------------------------
+   C |- M: (Pi a:* . A)
+   C |- B:*
+   --------------------
    C |- M B : A[a:=B]
 
 Abs2 (akd 2nd order abstraction):
@@ -195,28 +198,33 @@ Var:
    C, x:A |- x:A
 
 Weak:
-   C |- A:B   and   C |- T:s
-   ------------------------- if x not already defined in C (but you can drop this condition if you can deal with shadowing correctly)
+   C |- A:B
+   C |- T:s
+   ------------- if x not already defined in C (but you can drop this condition if you can deal with shadowing correctly)
    C, x:T |- A:B
 
 Form:
-   C |- A:s   and   C |- B:s
-   -------------------------
+   C |- A:s
+   C |- B:s
+   ---------------
    C |- A -> B : s
 
 App:
-   C |- M : A -> B   and   C |- N : A
-   ----------------------------------
+   C |- M : A -> B
+   C |- N : A
+   ---------------
    C |- M N : B
 
 Abs:
-   C, x: A |- M : B   and   C |- A -> B : s
-   ----------------------------------------
+   C, x: A |- M : B
+   C       |- A -> B : s
+   ----------------------------
    C |- lambda x:A . M : A -> B
 
 Conv:
-   C |- A: B   and   C |- B':s
-   --------------------------- if B and B' are beta-equivalent
+   C |- A: B
+   C |- B':s
+   ---------- if B and B' are beta-equivalent
    C |- A: B'
 ```
 
@@ -273,27 +281,32 @@ Var:
    C, x:A |- x:A
 
 Weak:
-   C |- A:B   and   C |- T:s
-   -------------------------
+   C |- A:B
+   C |- T:s
+   -------------
    C, x:T |- A:B
 
 Form:
-   C |- A:*   and   C, x:A |- B:s
-   ------------------------------
+   C      |- A:*
+   C, x:A |- B:s
+   -------------------
    C |- Pi x:A . B : s
 
 App:
-   C |- M : (Pi x:A . B)   and   C |- N : A
-   ----------------------------------------
+   C |- M : (Pi x:A . B)
+   C |- N : A
+   ---------------------
    C |- M N : B[x:=N]
 
 Abs:
-   C, x: A |- M : B   and   C |- (Pi x:A . B) : s
-   ----------------------------------------------
+   C, x: A |- M : B
+   C       |- (Pi x:A . B) : s
+   ----------------------------------
    C |- lambda x:A . M : (Pi x:A . B)
 
 Conv:
-   C |- A: B   and   C |- B':s
-   --------------------------- if B and B' are beta-equivalent
+   C |- A: B
+   C |- B':s
+   ---------- if B and B' are beta-equivalent
    C |- A: B'
 ```

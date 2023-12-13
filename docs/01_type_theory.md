@@ -162,38 +162,28 @@ Abs2 (akd 2nd order abstraction):
 Here we start over from Simply-Typed Lambda Calculus and add "types depedening on types".
 Note that there are no Pi-types here, only arrows.
 
-Imagine something like `lambda a:* . a -> a`. This is similar to `Pi a:* . a -> a` but whilst `Pi` denotes a type, lambda denotes an expression.
-So this is an expression that takes a type and returns a type and is called a *type constructor*.
-So what is its type now? Similary to arrows types in Simply-Typed Lambda Calculus, its type is `* -> *`, since it takes a type and returns a type.
+Imagine something like `lambda a:* . a -> a`.
+This is similar to `Pi a:* . a -> a` but, whilst `Pi` denotes a type, lambda denotes an expression.
+So this is an expression that takes a type and returns a type. It is called a *type constructor*.
+So what is its type now? Similary to arrows in Simply-Typed Lambda Calculus,
+its type is `* -> *`, since it takes a type and returns a type.
 
-In C++ this is very similar to (but not exactly the same) `std::vector`.
-In fact, `vector` has type `* -> * -> *` (because it takes 2 template parameters, one for the element and one for the allocator),
-and you can "pass" it to a function `template <template <typename, typename> typename> int f();`, by calling `f<std::vector>()`.
+In C++ this is very similar to `std::vector`. In fact, `vector` has type `* -> * -> *`,
+because it takes 2 template parameters (one for the element and one for the allocator).
+You can also "pass" it to a function, say `template <template <typename, typename> typename> int f();`,
+by calling `f<std::vector>()`.
 
-So now, `int` is a type (i.e. `int : *`) and `vector : * -> * -> *`.
+So now, `int` is a type (i.e. `int : *`) and `vector : * -> * -> *` is called a kind.
 Note that there is no value "of type vector", i.e. there is no expression `M` such that `M: vector`.
-There are values of type `vector<int, allocator>` but not of type `vector` alone. Neither in C++ nor in Type Theory.
+There are values of type `vector<int, allocator>` but not of type `vector` alone.
+Neither in C++ nor in Type Theory.
 
-In the same way that we use `*` to identify any type, we can also use `[]` (called box) to identify `* : []`, `* -> * : []`, `* -> * -> *: []`, etc and
-these are called kinds. So, in some sense, "box is the type of kinds".
+In the same way that we use `*` to identify any type, we can also use `[]` to identify any kind,
+eg `* : []`, `* -> * : []`, `* -> * -> *: []`, etc.
+So, in some sense, "box is the type of kinds".
 
-We then use a meta-variable `s` to identify either a type or a kind and with it we can defining typing rules as follows.
-They are only slightly more complicated but there are a couple of rules whose only role is to fix some technicalities:
-* the Sort rule is the base case of the recursion: `*` is always a kind;
-* the Var rule is somewhat the same as before, except that now, in order to add a variable to a context,
-  you also have to make sure that its type is valid,
-  for example `vector<vector, allocator>` would not be a valid type;
-* the Weak rule is there to only fix a technicality;
-  as it stands, the Var rule can only be used if the variable was the last one declared;
-  but, clearly, adding more variables to the context does not affect previously declared variables;
-* the Form allows to construct arrows, either in types or in kinds, eg `int -> int` or `* -> *`;
-  note that neither `int -> *` nor `* -> int` are possible in this setting;
-* App should fairly intuitive, you can apply `int -> string` to an `int` to obtain a `string`,
-  or a `* -> *` to a `*` to obtain a `*`;
-* Abs should equally be fairly intuitive as it's how you introduce arrows;
-* Conv (the Conversion rule) is a bit of a technicality, but will become more important later;
-  essentially it says that you might have to perform beta-reduction in the types, because a
-  term of type `int` and a term of type `(lambda t:* . t)int` should be understood as the same type.
+We then use a meta-variable `s` to identify either a type or a kind and, with it,
+we can define the following typing rules.
 
 ```
 Sort:
@@ -229,3 +219,22 @@ Conv:
    --------------------------- if B and B' are beta-equivalent
    C |- A: B'
 ```
+
+They are only slightly more complicated than before,
+and there are also a couple of rules whose only role is to fix some technicalities:
+* Sort is the base case of the recursion: `*` is always a kind;
+* Var is somewhat the same as before, except that now, in order to add a variable to a context,
+  you also have to make sure that its type is valid;
+  for example, `vector<vector, allocator>` would not be a valid type;
+* Weak is there to only fix a technicality:
+  as it stands, the Var rule can only be used if the variable `x` was the last one declared;
+  but, clearly, adding more variables to the context does not affect previously declared variables;
+* Form allows to construct arrows, either in types or in kinds, eg `int -> int` or `* -> *`;
+  note that neither `int -> *` nor `* -> int` are possible in this setting;
+* App should be fairly intuitive:
+  you can apply `int -> string` to an `int` to obtain a `string`,
+  or a `* -> *` to a `*` to obtain a `*`;
+* Abs should equally be fairly intuitive: it's used to introduce arrows either `int -> int` or `*->*`;
+* Conv (the Conversion rule) is a bit of a technicality, but will become more important later;
+  essentially it says that you might have to perform beta-reduction in the types, because a
+  term of type `int` and a term of type `(lambda t:* . t)int` should be understood as the same type.

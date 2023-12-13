@@ -200,13 +200,13 @@ Weak:
    C, x:T |- A:B
 
 Form:
-   C |- A:s   and C |- B:s
-   -----------------------
+   C |- A:s   and   C |- B:s
+   -------------------------
    C |- A -> B : s
 
 App:
-   C |- M : A -> B   and C |- N : A
-   --------------------------------
+   C |- M : A -> B   and   C |- N : A
+   ----------------------------------
    C |- M N : B
 
 Abs:
@@ -251,12 +251,13 @@ But you cannot generalize this to say `auto f(int n) -> std::array<int, n>`.
 With types depending on terms you can instead write such an `f`,
 for example `lambda n:int . array int n`. So what is its type?
 It takes an `int` and returns a type, so you could say its type is `int -> *`.
-But in this case, not only it returns a `*` but it also uses the value of `n`,
-to compute such type. So we have to reintroduce Pi-types.
+But in this case, not only it returns a `*`,
+but it also uses the value of `n` to compute such type.
+So we have to reintroduce Pi-types.
 Its type is, in fact, `Pi n:int . array int n`.
 Note that now the body of the Pi-type contains a whole expression not just an arrow.
 
-The typing rule are very similar to the ones seen for kinds.
+The typing rules are very similar to the ones seen for kinds.
 The only differences are in the Form, App and Abs rules,
 where all arrows have been replaced by Pi-types.
 In fact, a Pi-type `Pi x:A . B` where `x` does not occur in `B`,
@@ -277,8 +278,8 @@ Weak:
    C, x:T |- A:B
 
 Form:
-   C |- A:*   and C, x:A |- B:s
-   ----------------------------
+   C |- A:*   and   C, x:A |- B:s
+   ------------------------------
    C |- Pi x:A . B : s
 
 App:

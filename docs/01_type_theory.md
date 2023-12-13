@@ -257,9 +257,10 @@ Its type is, in fact, `Pi n:int . array int n`.
 Note that now the body of the Pi-type contains a whole expression not just an arrow.
 
 The typing rule are very similar to the ones seen for kinds.
-The only differences are in Form, App and Abs where all arrows have been
-replaced by Pi-types. In fact, a Pi-type where the argument is not used
-in the body, can be written as `A -> B`.
+The only differences are in the Form, App and Abs rules,
+where all arrows have been replaced by Pi-types.
+In fact, a Pi-type `Pi x:A . B` where `x` does not occur in `B`,
+can be written as `A -> B`.
 
 ```
 Sort:
@@ -267,12 +268,12 @@ Sort:
 
 Var:
    C |- A: s
-   ------------- if x not already defined in C (but you can drop this condition if you can deal with shadowing correctly)
+   -------------
    C, x:A |- x:A
 
 Weak:
    C |- A:B   and   C |- T:s
-   ------------------------- if x not already defined in C (but you can drop this condition if you can deal with shadowing correctly)
+   -------------------------
    C, x:T |- A:B
 
 Form:

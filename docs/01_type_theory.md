@@ -4,15 +4,15 @@ The theory behind DepC is called Calculus of Construction and is part of the so-
 This is a generalization of the so-called Simply-Typed Lambda Calculus in which types and terms can both depend on types and terms.
 
 Here I will cover the very basics and very quickly, in particular:
-* Simply-Typed Lambda Calculus
-  * Alpha-Conversion and Alpha-Equivalence
-  * Beta-Reduction and Beta-Equivalence
-  * Strong Normalization Theorem
-  * Context and Typing rules
-* Polimorphic Functions
-* Kinds
-* Dependent Types
-* Everything together
+* [Simply-Typed Lambda Calculus](#simply-typed-lambda-calculus)
+  * [Alpha-Conversion and Alpha-Equivalence](#alpha-conversion-and-alpha-equivalence)
+  * [Substitution, Beta-Reduction and Beta-Equivalence](#substitution-beta-reduction-and-beta-equivalence)
+  * [Strong Normalization Theorem](#strong-normalization-theorem)
+  * [Context and Typing rules](#context-and-typing-rules)
+* [Polimorphic Functions](#polymorphic-functions)
+* [Kinds](#kinds)
+* [Dependent Types](#dependent-types)
+* [Everything Together](#everything-together)
 
 ## Simply-Typed Lambda Calculus
 
@@ -155,4 +155,77 @@ Abs2 (akd 2nd order abstraction):
    C, a:* |- M: A
    ---------------------------------
    C |- lambda a:* . M : (Pi a:*. A)
+```
+
+## Kinds
+
+Here we start over from Simply-Typed Lambda Calculus and add "types depedening on types".
+Note that there are no Pi-types here, only arrows.
+
+Imagine something like `lambda a:* . a -> a`. This is similar to `Pi a:* . a -> a` but whilst `Pi` denotes a type, lambda denotes an expression.
+So this is an expression that takes a type and returns a type and is called a *type constructor*.
+So what is its type now? Similary to arrows types in Simply-Typed Lambda Calculus, its type is `* -> *`, since it takes a type and returns a type.
+
+In C++ this is very similar to (but not exactly the same) `std::vector`.
+In fact, `vector` has type `* -> * -> *` (because it takes 2 template parameters, one for the element and one for the allocator),
+and you can "pass" it to a function `template <template <typename, typename> typename> int f();`, by calling `f<std::vector>()`.
+
+So now, `int` is a type (i.e. `int : *`) and `vector : * -> * -> *`.
+Note that there is no value "of type vector", i.e. there is no expression `M` such that `M: vector`.
+There are values of type `vector<int, allocator>` but not of type `vector` alone. Neither in C++ nor in Type Theory.
+
+In the same way that we use `*` to identify any type, we can also use `[]` (called box) to identify `* : []`, `* -> * : []`, `* -> * -> *: []`, etc and
+these are called kinds. So, in some sense, "box is the type of kinds".
+
+We then use a meta-variable `s` to identify either a type or a kind and with it we can defining typing rules as follows.
+They are only slightly more complicated but there are a couple of rules whose only role is to fix some technicalities:
+* the Sort rule is the base case of the recursion: `*` is always a kind;
+* the Var rule is somewhat the same as before, except that now, in order to add a variable to a context,
+  you also have to make sure that its type is valid,
+  for example `vector<vector, allocator>` would not be a valid type;
+* the Weak rule is there to only fix a technicality;
+  as it stands, the Var rule can only be used if the variable was the last one declared;
+  but, clearly, adding more variables to the context does not affect previously declared variables;
+* the Form allows to construct arrows, either in types or in kinds, eg `int -> int` or `* -> *`;
+  note that neither `int -> *` nor `* -> int` are possible in this setting;
+* App should fairly intuitive, you can apply `int -> string` to an `int` to obtain a `string`,
+  or a `* -> *` to a `*` to obtain a `*`;
+* Abs should equally be fairly intuitive as it's how you introduce arrows;
+* Conv (the Conversion rule) is a bit of a technicality, but will become more important later;
+  essentially it says that you might have to perform beta-reduction in the types, because a
+  term of type `int` and a term of type `(lambda t:* . t)int` should be understood as the same type.
+
+```
+Sort:
+   <empty context> |- * : []
+
+Var:
+   C |- A: s
+   ------------- if x not already defined in C (but you can drop this condition if you can deal with shadowing correctly)
+   C, x:A |- x:A
+
+Weak:
+   C |- A:B   and   C |- T:s
+   ------------------------- if x not already defined in C (but you can drop this condition if you can deal with shadowing correctly)
+   C, x:T |- A:B
+
+Form:
+   C |- A:s   and C |- B:s
+   -----------------------
+   C |- A -> B : s
+
+App:
+   C |- M : A -> B   and C |- N : A
+   --------------------------------
+   C |- M N : B
+
+Abs:
+   C, x: A |- M : B   and   C |- A -> B : s
+   ----------------------------------------
+   C |- lambda x:A . M : A -> B
+
+Conv:
+   C |- A: B   and   C |- B':s
+   --------------------------- if B and B' are beta-equivalent
+   C |- A: B'
 ```

@@ -11,7 +11,7 @@ In particular:
   * `lib/00_antlr/` contains the CMake targets to generate the C++ parser from the ANTLR4 grammars mentioned earlier.
   * `lib/00_core/` contains general purpose core functionality like mmap-ing a source file, error handling, etc.
   * `lib/01_ast/` contains the generic (i.e. templated) Abstract Syntax Tree and some functions that operate on it, eg beta-reduction or renaming.
-    More details can be found in [03 - Dep0: AST and Pipeline](03_dep0.md).
+    More details can be found in [03 - Dep0: AST, Pipeline and Performance](03_dep0.md).
   * `lib/02_parser/` contains the entry point of the parsing stage of the compiler pipeline.
   * `lib/03_typecheck/` contains the entry point of the typechecking stage.
   * `lib/04_transform/` contains the entry point of the transformation stage along with some transformations that can be applied on a legal AST (i.e. an AST that typechecks correctly)

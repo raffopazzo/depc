@@ -121,8 +121,8 @@ int take_n_sum(std::vector<int> const& xs, std::size_t const k)
 
 int pattern_matching(colour_t const c)
 {
-    // there's nothing wrong with nested ternary operator
-    // when you are essentially doing pattern matching;
+    // there's nothing wrong with nested ternary operator,
+    // if you are essentially doing pattern matching;
     // just don't over-do it and use your common sense
     using enum colour_t;
     return

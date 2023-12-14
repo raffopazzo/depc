@@ -77,7 +77,7 @@ Below some made-up code showing an example.
   if you can't find a way, try harder;
   if you still can't, then it's fine,
   as long as you don't just give up right away.
-  And if you found a very complicated way, don't.
+  And if you found a very complicated way, don't use it.
 * Comments: they are very welcome, except when silly;
   `int x = 0; // initialize x to 0` is definitey not welcome;
   comments should be used to explain surprising behaviour,

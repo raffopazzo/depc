@@ -54,3 +54,5 @@ Below some made-up code showing an example.
   because this makes your intentions more explicit,
   and it's also obvious that you are not skipping iterations,
   or otherwise messing with the index.
+* Functional vs imperative:
+  

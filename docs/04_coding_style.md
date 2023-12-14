@@ -88,37 +88,37 @@ Below some made-up code showing an example.
 
 struct object_t
 {
-  explicit object_t(int);
-  /*implicit*/ object_t(double);
-  object_t(int, int);
+    explicit object_t(int);
+    /*implicit*/ object_t(double);
+    object_t(int, int);
 };
 
 int take_n_sum(std::vector<int> const& xs, std::size_t const k)
 {
-  if (k > xs.size())
-    return -1;
-  return std::accumulate(xs.begin(), xs.begin() + k);
+    if (k > xs.size())
+        return -1;
+    return std::accumulate(xs.begin(), xs.begin() + k);
 }
 
 int zip_sum(std::vector<int> const& xs, std::vector<int> const& ys)
 {
-  auto const n = std::min(xs.size(), ys.size());
-  int sum = 0;
-  for (auto const i: std::views::iota(0ul, n))
-    sum += xs[i] + ys[i];
-  return sum;
+    auto const n = std::min(xs.size(), ys.size());
+    int sum = 0;
+    for (auto const i: std::views::iota(0ul, n))
+      sum += xs[i] + ys[i];
+    return sum;
 }
 
 std::vector<int> make_staircase(int const from, int const n)
 {
-  std::vector<int> result;
-  std::generate_n( // from, from, from+1, from+1, from+2, from+2, ...
-    std::back_inserter(result),
-    n,
-    [next=from, step=0] () mutable
-    {
-      return std::exchange(next, next + std::exchange(step, step == 1 ? 0 : 1));
-    });
-  return result;
+    std::vector<int> result;
+    std::generate_n( // from, from, from+1, from+1, from+2, from+2, ...
+      std::back_inserter(result),
+      n,
+      [next=from, step=0] () mutable
+      {
+        return std::exchange(next, next + std::exchange(step, step == 1 ? 0 : 1));
+      });
+    return result;
 }
 ```

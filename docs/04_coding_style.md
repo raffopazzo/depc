@@ -126,10 +126,10 @@ int pattern_matching(colour_t const c)
     // just don't over-do it and use your common sense
     using enum colour_t;
     return
-      c == red ? 1
-      : c == blue ? 10
-      : c == green ? 100
-      : -1;
+        c == red ? 1
+        : c == blue ? 10
+        : c == green ? 100
+        : -1;
 }
 
 int zip_sum(std::vector<int> const& xs, std::vector<int> const& ys)

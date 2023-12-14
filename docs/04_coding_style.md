@@ -30,8 +30,8 @@ Below some made-up code showing an example.
     eg antlr, in angle brackets;
   * then boost, again in angle brackets;
   * then standard C++ libraries;
-  * then standard libraries,
-    but only if a c++ version doesn't exist,
+  * then standard C libraries,
+    but only if a C++ version doesn't exist,
     i.e. prefer `<cmath>` over `<math.h>`.
 * East-Const: always `type_t const&`; never `const type_t&`;
 * Braces and single-statemnt bodies:

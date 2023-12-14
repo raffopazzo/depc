@@ -52,8 +52,8 @@ Below some made-up code showing an example.
   always mark single-argument constructors `explicit`,
   unless you actually intended to have implicit conversion,
   in which case write `/*implicit*/ object(arg)`
-* Always Auto Const:
-  always use `auto const` (or `type const`),
+* Always (Auto) Const:
+  always use `auto const` (or `my_type_t const`),
   including for function arguments,
   unless you actually intend to mutate things.
   This also applies to the index of `for` loops,
@@ -137,5 +137,18 @@ std::vector<int> make_staircase(int const from, int const n)
         return std::exchange(next, next + std::exchange(step, step == 1 ? 0 : 1));
       });
     return result;
+}
+
+int complicated_if()
+{
+    if (
+      ...this is a very long...
+      ...and complicated condition...
+      ...that cannot be broken up...
+      ...so use braces even for single-statement bodies...
+    )
+    {
+        return 0;
+    }
 }
 ```

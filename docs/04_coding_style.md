@@ -13,6 +13,10 @@ That being said, you can follow guidelines below.
 These are the guidelines for C++ code.
 Below some made-up code showing an example.
 
+* Maximum line length: 120;
+  if you go 1 or 2 characters over the line,
+  and splitting it up looks even worse,
+  then it's ok to breach, occasionally.
 * Header order:
   put `#include` in order of specificity,
   from more specific to more general,
@@ -65,6 +69,10 @@ Below some made-up code showing an example.
   if you can't find a way, try harder;
   if you still can't, then it's fine,
   as long as you don't just give up right away.
+* Comments: they are very welcome, except when silly;
+  `int x = 0; // initialize x to 0` is definitey not welcome;
+  comments should be used to explain surprising behaviour,
+  or to give more colour on why, what, who, etc.
 
 ```cpp
 #include "library_99/this/file.hpp"
@@ -109,6 +117,12 @@ int zip_sum(std::vector<int> const& xs, std::vector<int> const& ys)
     return sum;
 }
 
+// in this example `from` is marked `const`, even though
+// it is later assigned to `next` which is mutated;
+// so why not just leave `from` mutable?
+// In general you can, depending on your specific situation;
+// in this example it makes it clear that mutation
+// only occurs inside the genrator.
 std::vector<int> make_staircase(int const from, int const n)
 {
     std::vector<int> result;

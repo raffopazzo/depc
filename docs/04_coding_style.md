@@ -115,8 +115,8 @@ int take_n_sum(std::vector<int> const& xs, std::size_t const k)
     // an if-else where both bodies are single-statemnt,
     // is a very good candidate for a ternary operator,
     return k > xs.size()
-      ? -1
-      : std::accumulate(xs.begin(), xs.begin() + k, 0);
+        ? -1
+        : std::accumulate(xs.begin(), xs.begin() + k, 0);
 }
 
 int pattern_matching(colour_t const c)

@@ -35,6 +35,7 @@ Here's an overview of all the sections:
   explains the fundamental concepts of the internal design of Dep0.
   As mentioned above, anything more detailed than this is documented in code.
   If not, feel free to raise a PR.
+* [04 - Coding Style](04_coding_style.md) is self-explanatory.
 
 ## Suggested Reading
 

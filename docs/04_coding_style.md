@@ -149,27 +149,27 @@ int zip_sum(std::vector<int> const& xs, std::vector<int> const& ys)
 // so why not just leave `from` mutable?
 // In general you can, depending on your specific situation;
 // in this example it makes it clear that mutation
-// only occurs inside the genrator.
+// only occurs inside the generator.
 std::vector<int> make_staircase(int const from, int const n)
 {
     std::vector<int> result;
     std::generate_n( // from, from, from+1, from+1, from+2, from+2, ...
-      std::back_inserter(result),
-      n,
-      [next=from, step=0] () mutable
-      {
-        return std::exchange(next, next + std::exchange(step, step == 1 ? 0 : 1));
-      });
+        std::back_inserter(result),
+        n,
+        [next=from, step=0] () mutable
+        {
+            return std::exchange(next, next + std::exchange(step, step == 1 ? 0 : 1));
+        });
     return result;
 }
 
 int complicated_if()
 {
     if (
-      ...this is a very long...
-      ...and complicated condition...
-      ...that cannot be broken up...
-      ...so use braces even for single-statement bodies...
+        this is a very long...
+        and complicated condition...
+        that cannot be broken up...
+        so use braces even for single-statement bodies...
     )
     {
         return 0;

@@ -40,3 +40,17 @@ Below some made-up code showing an example.
   when constructing an object using its constructor,
   prefer `object(a,b,c)` over `object{a,b,c}`,
   because this makes it clear that a constructor exists.
+* Explicit constructors:
+  always mark single-argument constructors `explicit`,
+  unless you actually intended to have implicit conversion,
+  in which case write `/*implicit*/ object(arg)`
+* Always Auto Const:
+  always use `auto const` (or `type const`),
+  including for function arguments,
+  unless you actually intend to mutate things.
+  This also applies to the index of `for` loops,
+  in which case use `std::views::iota`,
+  i.e. `for (auto const i: std::views::iota(...))`,
+  because this makes your intentions more explicit,
+  and it's also obvious that you are not skipping iterations,
+  or otherwise messing with the index.

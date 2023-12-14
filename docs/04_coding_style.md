@@ -13,7 +13,10 @@ That being said, you can follow guidelines below.
 These are the guidelines for C++ code.
 Below some made-up code showing an example.
 
-* Maximum line length: 120;
+* Rule Number 1: adapt and be consistent to the current file,
+  even if that file is breaking all rules;
+  consistency within a file is more important.
+* Indentation: 4 spaces; maximum line length: 120;
   if you go 1 or 2 characters over the line,
   and splitting it up looks even worse,
   then it's ok to breach, occasionally.

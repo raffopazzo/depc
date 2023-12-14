@@ -62,6 +62,11 @@ Below some made-up code showing an example.
   because this makes your intentions more explicit,
   and it's also obvious that you are not skipping iterations,
   or otherwise messing with the index.
+* Use immediately-invoked-lambdas for complex initialization:
+  if the initialization of an object requires multiple statements,
+  but once initialization is finished you do not intend to modify
+  the object any further, consider using an immediately-invoked-lambda
+  so that the scope of mutability is clearly defined.
 * Functional vs imperative:
   do use functional style but don't go over-the-top;
   at the end of the day, this is C++ not Haskell;
@@ -168,5 +173,20 @@ int complicated_if()
     {
         return 0;
     }
+}
+
+object_t use_complicated_object(int const flavour)
+{
+    auto const obj = [&]
+    {
+        object_t obj;
+        obj.set_this();
+        obj.set_that();
+        if (flavour < 0)
+            obj.set_negative();
+        return obj;
+    }();
+    // from here onwards obj is no longer modified
+    ...
 }
 ```

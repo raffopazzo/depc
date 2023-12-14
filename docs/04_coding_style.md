@@ -106,9 +106,24 @@ struct object_t
 
 int take_n_sum(std::vector<int> const& xs, std::size_t const k)
 {
-    if (k > xs.size())
-        return -1;
-    return std::accumulate(xs.begin(), xs.begin() + k);
+    // an if-else where both bodies are single-statemnt,
+    // is a very good candidate for a ternary operator,
+    return k > xs.size()
+      ? -1
+      : std::accumulate(xs.begin(), xs.begin() + k, 0);
+}
+
+int pattern_matching(colour_t const c)
+{
+    // there's nothing wrong with nested ternary operator
+    // when you are essentially doing pattern matching;
+    // just don't over-do it and use your common sense
+    using enum colour_t;
+    return
+      c == red ? 1
+      : c == blue ? 10
+      : c == green ? 100
+      : -1;
 }
 
 int zip_sum(std::vector<int> const& xs, std::vector<int> const& ys)

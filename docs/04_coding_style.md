@@ -114,6 +114,9 @@ int take_n_sum(std::vector<int> const& xs, std::size_t const k)
 int zip_sum(std::vector<int> const& xs, std::vector<int> const& ys)
 {
     auto const n = std::min(xs.size(), ys.size());
+    // in this case, 3 lines of "imperative" code
+    // read a lot better than its functional equivalent;
+    // in Haskell it would read way better, but not in C++ 
     int sum = 0;
     for (auto const i: std::views::iota(0ul, n))
       sum += xs[i] + ys[i];

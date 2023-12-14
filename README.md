@@ -1,6 +1,8 @@
 # DepC
 
-Like C and C++ but with Dependent Types
+Like C and C++ but with Dependent Types.
+
+For more documentation, see [docs/](docs/README.md).
 
 ## Dep0
 

@@ -14,10 +14,48 @@ BOOST_AUTO_TEST_CASE(pass_000)
     {
         auto const& f = pass_result->func_defs[0ul];
         BOOST_TEST(f.name == "values");
+        BOOST_TEST(is_expr_of(f.properties.sort.get(), pi_of(std::tuple{}, array_of(is_i32, constant(3)))));
         BOOST_TEST(f.value.args.size() == 0ul);
         BOOST_TEST(is_array_of(f.value.ret_type.get(), is_i32, constant(3)));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
         BOOST_TEST(is_return_of(f.value.body.stmts[0ul], init_list_of(constant(1), constant(2), constant(3))));
+    }
+}
+
+BOOST_AUTO_TEST_CASE(pass_001)
+{
+    BOOST_TEST_REQUIRE(pass("0007_arrays/pass_001.depc"));
+    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 3ul);
+    {
+        auto const& f = pass_result->func_defs[0ul];
+        BOOST_TEST(f.name == "empty_of");
+        BOOST_TEST(
+            is_expr_of(
+                f.properties.sort.get(),
+                pi_of(std::tuple{arg_of(is_typename, "t")}, array_of(var("t"), constant(0)))));
+        BOOST_TEST_REQUIRE(f.value.args.size() == 1ul);
+        BOOST_TEST(is_arg(f.value.args[0], is_typename, "t"));
+        BOOST_TEST(is_array_of(f.value.ret_type.get(), var("t"), constant(0)));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], init_list_of()));
+    }
+    {
+        auto const& f = pass_result->func_defs[1ul];
+        BOOST_TEST(f.name == "empty_of_int");
+        BOOST_TEST(is_expr_of(f.properties.sort.get(), pi_of(std::tuple{}, array_of(is_i32, constant(0)))));
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_array_of(f.value.ret_type.get(), is_i32, constant(0)));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(var("empty_of"), is_i32)));
+    }
+    {
+        auto const& f = pass_result->func_defs[2ul];
+        BOOST_TEST(f.name == "empty_of_bool");
+        BOOST_TEST(is_expr_of(f.properties.sort.get(), pi_of(std::tuple{}, array_of(is_bool, constant(0)))));
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_array_of(f.value.ret_type.get(), is_bool, constant(0)));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(var("empty_of"), is_bool)));
     }
 }
 

@@ -528,13 +528,6 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, sort_
             auto size = check_expr(ctx, array.size.get(), derivation_rules::make_u64());
             if (not size)
                 return size;
-            // TODO perform beta-delta-normalization of size
-            if (auto const n = std::get_if<expr_t::numeric_constant_t>(&size->value); n and n->value.sign() == -1)
-            {
-                std::ostringstream err;
-                pretty_print<properties_t>(err << "array size cannot be negative, but it is `", *n) << '`';
-                return error_t::from_error(dep0::error_t(err.str(), loc), ctx, expected_type);
-            }
             auto result = make_legal_expr(
                 derivation_rules::make_typename(),
                 expr_t::array_t{std::move(*type), std::move(*size)});
@@ -564,7 +557,6 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, sort_
                         pretty_print(err << "type mismatch between initializer list and `", expected_type) << '`';
                         return error_t::from_error(dep0::error_t(err.str(), loc), ctx, expected_type);
                     }
-                    // sign was already checked for array_t
                     if (n->value != init_list.values.size())
                     {
                         std::ostringstream err;

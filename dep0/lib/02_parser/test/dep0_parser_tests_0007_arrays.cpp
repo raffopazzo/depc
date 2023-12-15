@@ -89,4 +89,19 @@ BOOST_AUTO_TEST_CASE(typecheck_error_000)
     }
 }
 
+BOOST_AUTO_TEST_CASE(typecheck_error_001)
+{
+    BOOST_TEST_REQUIRE(pass("0007_arrays/typecheck_error_001.depc"));
+    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 1ul);
+    {
+        auto const& f = pass_result->func_defs[0ul];
+        BOOST_TEST(f.name == "invalid_size_type");
+        BOOST_TEST_REQUIRE(f.value.args.size() == 2ul);
+        BOOST_TEST(is_arg(f.value.args[0], is_i32, "n"));
+        BOOST_TEST(is_arg(f.value.args[1], array_of(is_i32, var("n")), std::nullopt));
+        BOOST_TEST(is_unit(f.value.ret_type.get()));
+        BOOST_TEST(f.value.body.stmts.size() == 0ul);
+    }
+}
+
 BOOST_AUTO_TEST_SUITE_END()

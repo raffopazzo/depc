@@ -319,7 +319,7 @@ boost::test_tools::predicate_result is_init_list_of(ast::expr_t<P> const& expr, 
     auto constexpr N = sizeof...(ValuePredicates);
     if (init_list->values.size() != N)
         return failure("wrong number of initializer values: ", N, " != ", init_list->values.size());
-    if constexpr (sizeof...(ValuePredicates) > 0ul)
+    if constexpr (N > 0ul)
         return detail::check_all<0ul>(init_list->values, std::forward<ValuePredicates>(f_values)...);
     else
         return true;

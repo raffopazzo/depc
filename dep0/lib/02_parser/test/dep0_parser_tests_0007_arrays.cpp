@@ -52,6 +52,29 @@ BOOST_AUTO_TEST_CASE(pass_001)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_002)
+{
+    BOOST_TEST_REQUIRE(pass("0007_arrays/pass_002.depc"));
+    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 2ul);
+    {
+        auto const& f = pass_result->func_defs[0ul];
+        BOOST_TEST(f.name == "discard");
+        BOOST_TEST_REQUIRE(f.value.args.size() == 2ul);
+        BOOST_TEST(is_arg(f.value.args[0], is_u64, "n"));
+        BOOST_TEST(is_arg(f.value.args[1], array_of(is_i32, var("n")), std::nullopt));
+        BOOST_TEST(is_unit(f.value.ret_type.get()));
+        BOOST_TEST(f.value.body.stmts.size() == 0ul);
+    }
+    {
+        auto const& f = pass_result->func_defs[1ul];
+        BOOST_TEST(f.name == "nothing");
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_unit(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(var("discard"), constant(0), init_list_of())));
+    }
+}
+
 BOOST_AUTO_TEST_CASE(typecheck_error_000)
 {
     BOOST_TEST_REQUIRE(pass("0007_arrays/typecheck_error_000.depc"));

@@ -35,7 +35,6 @@ template <Properties P> bool beta_normalize(typename expr_t<P>::u32_t&);
 template <Properties P> bool beta_normalize(typename expr_t<P>::u64_t&);
 template <Properties P> bool beta_normalize(typename expr_t<P>::boolean_constant_t&);
 template <Properties P> bool beta_normalize(typename expr_t<P>::numeric_constant_t&);
-template <Properties P> bool beta_normalize(typename expr_t<P>::arith_expr_t&);
 template <Properties P> bool beta_normalize(typename expr_t<P>::var_t&);
 template <Properties P> bool beta_normalize(typename expr_t<P>::app_t&);
 template <Properties P> bool beta_normalize(typename expr_t<P>::abs_t&);
@@ -72,20 +71,6 @@ template <Properties P> bool beta_normalize(typename expr_t<P>::u32_t&) { return
 template <Properties P> bool beta_normalize(typename expr_t<P>::u64_t&) { return false; }
 template <Properties P> bool beta_normalize(typename expr_t<P>::boolean_constant_t&) { return false; }
 template <Properties P> bool beta_normalize(typename expr_t<P>::numeric_constant_t&) { return false; }
-
-template <Properties P>
-bool beta_normalize(typename expr_t<P>::arith_expr_t& x)
-{
-    // TODO constant folding?
-    return match(
-        x.value,
-        [&] (typename expr_t<P>::arith_expr_t::plus_t& x)
-        {
-            bool changed = beta_normalize(x.lhs.get());
-            changed |= beta_normalize(x.rhs.get());
-            return changed;
-        });
-}
 
 template <Properties P> bool beta_normalize(typename expr_t<P>::var_t&) { return false; }
 
@@ -169,6 +154,7 @@ bool beta_normalize(typename expr_t<P>::init_list_t& init_list)
 }
 
 } // namespace impl
+
 template <Properties P>
 bool beta_normalize(module_t<P>& m)
 {
@@ -281,6 +267,27 @@ bool beta_normalize(expr_t<P>& expr)
                                 impl::destructive_self_assign(expr, std::move(*ret->expr));
                             }
             return changed;
+        },
+        [&] (typename expr_t<P>::arith_expr_t& x)
+        {
+            return match(
+                x.value,
+                [&] (typename expr_t<P>::arith_expr_t::plus_t& x)
+                {
+                    bool changed = beta_normalize(x.lhs.get());
+                    changed |= beta_normalize(x.rhs.get());
+                    if (auto const n = std::get_if<typename expr_t<P>::numeric_constant_t>(&x.lhs.get().value))
+                        if (auto const m = std::get_if<typename expr_t<P>::numeric_constant_t>(&x.rhs.get().value))
+                        {
+                            changed = true;
+                            impl::destructive_self_assign(
+                                expr.value,
+                                typename expr_t<P>::value_t{
+                                    typename expr_t<P>::numeric_constant_t{n->value + m->value}
+                                });
+                        }
+                    return changed;
+                });
         },
         [&] (auto& x) { return impl::beta_normalize<P>(x); });
 }

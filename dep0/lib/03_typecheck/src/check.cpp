@@ -261,9 +261,8 @@ static expected<expr_t> check_numeric_expr(
         boost::multiprecision::cpp_int const& max_abs_value
     ) -> expected<expr_t>
     {
-        if (sign == ast::sign_t::unsigned_v and x.value.sign() == -1)
-            return error("invalid sign for numeric constant");
-        if (boost::multiprecision::abs(x.value) > max_abs_value)
+        using enum ast::sign_t;
+        if ((sign == unsigned_v and x.value.sign() == -1) or boost::multiprecision::abs(x.value) > max_abs_value)
         {
             std::ostringstream err;
             err << "numeric constant does not fit inside `" << type_name << '`';

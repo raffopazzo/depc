@@ -1,5 +1,7 @@
 #include "dep0/parser/parse.hpp"
 
+#include "private/parse_cpp_int.hpp"
+
 #include "dep0/antlr4/DepCLexer.h"
 #include "dep0/antlr4/DepCParser.h"
 #include "dep0/antlr4/DepCParserVisitor.h"
@@ -12,28 +14,6 @@
 
 #include <algorithm>
 #include <optional>
-#include <sstream>
-
-static boost::multiprecision::cpp_int parse_cpp_int(std::string_view txt)
-{
-    boost::multiprecision::cpp_int value;
-    while (txt.starts_with('0'))
-        txt.remove_prefix(1);
-    if (dep0::contains_digit_separator(txt))
-    {
-        auto s = std::istringstream(dep0::remove_digit_separator(txt));
-        s >> value;
-    }
-    else
-    {
-        // boost::iostreams would allow allocation-free parsing directly from the string_view,
-        // but bloody antlr4 undefines EOF...wtf; so we have to use std::istringstream until C++26
-        // which should allow to construct an istringstream from a string_view
-        auto s = std::istringstream(std::string(txt));
-        s >> value;
-    }
-    return value;
-}
 
 namespace dep0::parser {
 

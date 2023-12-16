@@ -13,7 +13,7 @@ namespace dep0::parser {
  * @remarks What we mean by 'allocation-free' is that this
  *          function will read characters from the string_view,
  *          as opposed to allocating from an istringstream.
- *          Allocation may still occur for cpp_int if the number
+ *          Allocation may still occur inside cpp_int if the number
  *          is too large. Also, if the input string contains
  *          digit separator, allocation might still be required.
  */

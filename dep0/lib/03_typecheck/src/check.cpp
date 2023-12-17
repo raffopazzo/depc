@@ -522,7 +522,10 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, sort_
         },
         [&] (parser::expr_t::array_t const& array) -> expected<expr_t>
         {
-            auto type = check_type(ctx, array.type.get());
+            // `type` must be of sort types; to allow kinds we first need to add cumulativity of types,
+            // i.e. we can have an array of ints, eg {1,2,3}, but not an array of types, eg {int, bool, bool};
+            // with cumulativity we can have both
+            auto type = check_expr(ctx, array.type.get(), derivation_rules::make_typename());
             if (not type)
                 return type;
             auto size = check_expr(ctx, array.size.get(), derivation_rules::make_u64());

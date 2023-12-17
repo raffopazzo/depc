@@ -264,6 +264,17 @@ struct parse_visitor_t : dep0::DepCParserVisitor
                     visitExpr(ctx->rhs)}}};
     }
 
+    virtual std::any visitSubscriptExpr(DepCParser::SubscriptExprContext* ctx) override
+    {
+        assert(ctx);
+        return expr_t{
+            get_loc(src, *ctx),
+            expr_t::subscript_t{
+                std::any_cast<expr_t>(visitExpr(ctx->expr(0ul))),
+                std::any_cast<expr_t>(visitExpr(ctx->expr(1ul)))
+            }};
+    }
+
     virtual std::any visitVarExpr(DepCParser::VarExprContext* ctx) override
     {
         assert(ctx);
@@ -350,6 +361,8 @@ struct parse_visitor_t : dep0::DepCParserVisitor
             return std::any_cast<expr_t>(visitBooleanExpr(p));
         if (auto const p = dynamic_cast<DepCParser::FuncCallExprContext*>(ctx))
             return std::any_cast<expr_t>(visitFuncCallExpr(p));
+        if (auto const p = dynamic_cast<DepCParser::SubscriptExprContext*>(ctx))
+            return std::any_cast<expr_t>(visitSubscriptExpr(p));
         if (auto const p = dynamic_cast<DepCParser::VarExprContext*>(ctx))
             return std::any_cast<expr_t>(visitVarExpr(p));
         if (auto const p = dynamic_cast<DepCParser::ArrayExprContext*>(ctx))

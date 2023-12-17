@@ -35,6 +35,7 @@ template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P
 template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::pi_t&);
 template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::array_t&);
 template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::init_list_t&);
+template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::subscript_t&);
 
 template <Properties P>
 bool delta_reduce(context_t<P> const& ctx, typename stmt_t<P>::if_else_t& if_)
@@ -139,6 +140,12 @@ bool delta_reduce(context_t<P> const& ctx, typename expr_t<P>::init_list_t& init
         if (delta_reduce(ctx, v))
             return true;
     return false;
+}
+
+template <Properties P>
+bool delta_reduce(context_t<P> const& ctx, typename expr_t<P>::subscript_t& subscript)
+{
+    return delta_reduce(ctx, subscript.array.get()) or delta_reduce(ctx, subscript.index.get());
 }
 
 } // namespace impl

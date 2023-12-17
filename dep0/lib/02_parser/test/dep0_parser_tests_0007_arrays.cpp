@@ -89,6 +89,39 @@ BOOST_AUTO_TEST_CASE(pass_003)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_004)
+{
+    BOOST_TEST_REQUIRE(pass("0007_arrays/pass_004.depc"));
+    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 3ul);
+    {
+        auto const& f = pass_result->func_defs[0ul];
+        BOOST_TEST(f.name == "first");
+        BOOST_TEST_REQUIRE(f.value.args.size() == 1ul);
+        BOOST_TEST(is_arg(f.value.args[0], array_of(is_i32, constant(3)), "xs"));
+        BOOST_TEST(is_i32(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], subscript_of(var("xs"), constant(0))));
+    }
+    {
+        auto const& f = pass_result->func_defs[1ul];
+        BOOST_TEST(f.name == "second");
+        BOOST_TEST_REQUIRE(f.value.args.size() == 1ul);
+        BOOST_TEST(is_arg(f.value.args[0], array_of(is_i32, constant(3)), "xs"));
+        BOOST_TEST(is_i32(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], subscript_of(var("xs"), constant(1))));
+    }
+    {
+        auto const& f = pass_result->func_defs[2ul];
+        BOOST_TEST(f.name == "third");
+        BOOST_TEST_REQUIRE(f.value.args.size() == 1ul);
+        BOOST_TEST(is_arg(f.value.args[0], array_of(is_i32, constant(3)), "xs"));
+        BOOST_TEST(is_i32(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], subscript_of(var("xs"), constant(2))));
+    }
+}
+
 BOOST_AUTO_TEST_CASE(typecheck_error_000)
 {
     BOOST_TEST_REQUIRE(pass("0007_arrays/typecheck_error_000.depc"));
@@ -115,6 +148,21 @@ BOOST_AUTO_TEST_CASE(typecheck_error_001)
         BOOST_TEST(is_arg(f.value.args[1], array_of(is_i32, var("n")), std::nullopt));
         BOOST_TEST(is_unit(f.value.ret_type.get()));
         BOOST_TEST(f.value.body.stmts.size() == 0ul);
+    }
+}
+
+BOOST_AUTO_TEST_CASE(typecheck_error_002)
+{
+    BOOST_TEST_REQUIRE(pass("0007_arrays/typecheck_error_002.depc"));
+    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 1ul);
+    {
+        auto const& f = pass_result->func_defs[0ul];
+        BOOST_TEST(f.name == "fourth");
+        BOOST_TEST_REQUIRE(f.value.args.size() == 1ul);
+        BOOST_TEST(is_arg(f.value.args[0], array_of(is_i32, constant(3)), "xs"));
+        BOOST_TEST(is_i32(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], subscript_of(var("xs"), constant(3))));
     }
 }
 

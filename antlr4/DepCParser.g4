@@ -68,6 +68,7 @@ expr: lhs=expr '+' rhs=expr # plusExpr
     | sign=('+' | '-')? value=INT # numericExpr
     | value=('true'|'false') # booleanExpr
     | funcCall # funcCallExpr
+    | expr '[' expr ']' # subscriptExpr
     | var=ID # varExpr
     | 'array_t' '(' expr ',' expr ')' # arrayExpr
     | type # typeExpr // in an expression `f(x)` x should be parsed as `var` so this rule must come after `var`

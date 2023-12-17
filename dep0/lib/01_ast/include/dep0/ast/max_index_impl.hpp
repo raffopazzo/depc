@@ -108,6 +108,10 @@ std::size_t max_index(expr_t<P> const& x)
                 {
                     return std::max(acc, max_index(v));
                 });
+        },
+        [&] (expr_t<P>::subscript_t const& x)
+        {
+            return std::max(max_index(x.array.get()), max_index(x.index.get()));
         });
 }
 

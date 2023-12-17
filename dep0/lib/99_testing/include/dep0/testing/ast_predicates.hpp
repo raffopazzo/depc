@@ -304,7 +304,7 @@ boost::test_tools::predicate_result is_array_of(ast::expr_t<P> const& type, F_ty
 template <ast::Properties P, Predicate<ast::expr_t<P>> F_type, Predicate<ast::expr_t<P>> F_size>
 constexpr auto array_of(F_type&& f_type, F_size&& f_size)
 {
-    return [f_type=std::forward<F_type>(f_type),f_size=std::forward<F_size>(f_size)] (ast::expr_t<P> const& x)
+    return [f_type=std::forward<F_type>(f_type), f_size=std::forward<F_size>(f_size)] (ast::expr_t<P> const& x)
     {
         return is_array_of(x, f_type, f_size);
     };
@@ -331,6 +331,28 @@ constexpr auto init_list_of(ValuePredicates&&... f_values)
     return [...f_values=std::forward<ValuePredicates>(f_values)] <ast::Properties P> (ast::expr_t<P> const& x)
     {
         return is_init_list_of(x, f_values...);
+    };
+}
+
+template <ast::Properties P, Predicate<ast::expr_t<P>> F_array, Predicate<ast::expr_t<P>> F_index>
+boost::test_tools::predicate_result is_subscript_of(ast::expr_t<P> const& expr, F_array&& f_array, F_index&& f_index)
+{
+    auto const subscript = std::get_if<typename ast::expr_t<P>::subscript_t>(&expr.value);
+    if (not subscript)
+        return failure("type is not subscript_t but ", pretty_name(expr.value));
+    if (auto const result = std::forward<F_array>(f_array)(subscript->array.get()); not result)
+        return failure("array predicate failed: ", result.message());
+    if (auto const result = std::forward<F_index>(f_index)(subscript->index.get()); not result)
+        return failure("index predicate failed: ", result.message());
+    return true;
+}
+
+template <ast::Properties P, Predicate<ast::expr_t<P>> F_array, Predicate<ast::expr_t<P>> F_index>
+constexpr auto subscript_of(F_array&& f_array, F_index&& f_index)
+{
+    return [f_array=std::forward<F_array>(f_array), f_index=std::forward<F_index>(f_index)] (ast::expr_t<P> const& x)
+    {
+        return is_subscript_of(x, f_array, f_index);
     };
 }
 

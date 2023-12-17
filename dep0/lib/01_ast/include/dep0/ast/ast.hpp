@@ -104,6 +104,11 @@ struct expr_t
     {
         std::vector<expr_t> values;
     };
+    struct subscript_t
+    {
+        rec_t array;
+        rec_t index;
+    };
 
     using value_t =
         std::variant<
@@ -111,7 +116,7 @@ struct expr_t
             bool_t, unit_t, i8_t, i16_t, i32_t, i64_t, u8_t, u16_t, u32_t, u64_t,
             boolean_constant_t, numeric_constant_t, arith_expr_t,
             var_t, app_t, abs_t, pi_t,
-            array_t, init_list_t
+            array_t, init_list_t, subscript_t
         >;
 
     properties_t properties;

@@ -41,6 +41,7 @@ template <Properties P> bool beta_normalize(typename expr_t<P>::abs_t&);
 template <Properties P> bool beta_normalize(typename expr_t<P>::pi_t&);
 template <Properties P> bool beta_normalize(typename expr_t<P>::array_t&);
 template <Properties P> bool beta_normalize(typename expr_t<P>::init_list_t&);
+template <Properties P> bool beta_normalize(typename expr_t<P>::subscript_t&);
 
 template <Properties P>
 bool beta_normalize(typename stmt_t<P>::if_else_t& if_)
@@ -150,6 +151,14 @@ bool beta_normalize(typename expr_t<P>::init_list_t& init_list)
     bool changed = false;
     for (auto& v: init_list.values)
         changed |= beta_normalize(v);
+    return changed;
+}
+
+template <Properties P>
+bool beta_normalize(typename expr_t<P>::subscript_t& subscript)
+{
+    bool changed = beta_normalize(subscript.array.get());
+    changed |= beta_normalize(subscript.index.get());
     return changed;
 }
 

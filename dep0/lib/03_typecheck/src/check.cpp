@@ -1,13 +1,14 @@
 #include "dep0/typecheck/check.hpp"
+#include "private/check.hpp"
+
+#include "private/beta_delta_equivalence.hpp"
+#include "private/derivation_rules.hpp"
+#include "private/returns_from_all_branches.hpp"
+#include "private/type_assign.hpp"
 
 #include "dep0/ast/beta_delta_reduction.hpp"
 #include "dep0/ast/pretty_print.hpp"
 #include "dep0/ast/substitute.hpp"
-
-#include "private/beta_delta_equivalence.hpp"
-#include "private/derivation_rules.hpp"
-#include "private/proof_state.hpp"
-#include "private/returns_from_all_branches.hpp"
 
 #include "dep0/fmap.hpp"
 #include "dep0/match.hpp"
@@ -20,26 +21,6 @@
 #include <sstream>
 
 namespace dep0::typecheck {
-
-// forward declarations
-static expected<expr_t> type_assign_app(context_t const&, parser::expr_t::app_t const&, source_loc_t const&);
-static expected<type_def_t> check_type_def(context_t&, parser::type_def_t const&);
-static expected<func_def_t> check_func_def(context_t&, parser::func_def_t const&);
-static expected<expr_t> check_type(context_t const&, parser::expr_t const&);
-static expected<body_t> check_body(proof_state_t&, parser::body_t const&);
-static expected<stmt_t> check_stmt(proof_state_t&, parser::stmt_t const&);
-static expected<expr_t> check_expr(context_t const&, parser::expr_t const&, sort_t const& expected_type);
-static expected<expr_t> check_abs(
-    context_t const&,
-    parser::expr_t::abs_t const&,
-    source_loc_t const&,
-    std::optional<source_text> const&);
-static expected<expr_t> check_numeric_expr(
-    context_t const&,
-    parser::expr_t::numeric_constant_t const&,
-    source_loc_t const&,
-    expr_t const& expected_type);
-static expected<expr_t> check_pi_type(context_t&, std::vector<parser::func_arg_t> const&, parser::expr_t const& ret_ty);
 
 expected<module_t> check(parser::module_t const& x) noexcept
 {
@@ -54,73 +35,7 @@ expected<module_t> check(parser::module_t const& x) noexcept
     return make_legal_module(std::move(*type_defs), std::move(*func_defs));
 }
 
-// implementations
-expected<expr_t> type_assign_app(context_t const& ctx, parser::expr_t::app_t const& app, source_loc_t const& loc)
-{
-    auto const error = [&] (std::string msg)
-    {
-        return error_t::from_error(dep0::error_t(std::move(msg), loc));
-    };
-    auto func = [&] () -> expected<expr_t>
-    {
-        auto const var = std::get_if<parser::expr_t::var_t>(&app.func.get().value);
-        if (not var)
-            // TODO support any `func` expr
-            return error("only invocation by function name is currently supported");
-        auto const v = ctx[expr_t::var_t{var->name}];
-        if (not v)
-            return error("function prototype not found");
-        return match(
-            v->value,
-            [&] (type_def_t const&) -> expected<expr_t>
-            {
-                return error("cannot invoke a typedef");
-            },
-            [&] (expr_t const& expr) -> expected<expr_t>
-            {
-                return make_legal_expr(expr.properties.sort.get(), expr_t::var_t{var->name});
-            });
-    }();
-    if (not func)
-        return std::move(func.error());
-    auto func_type = [&] () -> expected<expr_t::pi_t>
-    {
-        if (auto* const type = std::get_if<expr_t>(&func->properties.sort.get()))
-        {
-            ast::beta_delta_normalize(ctx.delta_reduction_context(), *type);
-            if (auto const pi = std::get_if<expr_t::pi_t>(&type->value))
-                return *pi;
-        }
-        std::ostringstream err;
-        pretty_print(err << "cannot invoke expression of type `", func->properties.sort.get()) << '`';
-        return error(err.str());
-    }();
-    if (not func_type)
-        return std::move(func_type.error());
-    if (func_type->args.size() != app.args.size())
-    {
-        std::ostringstream err;
-        err << "passed " << app.args.size() << " arguments but was expecting " << func_type->args.size();
-        return error(err.str());
-    }
-    std::vector<expr_t> args;
-    for (auto const i: std::views::iota(0ul, func_type->args.size()))
-    {
-        auto arg = check_expr(ctx, app.args[i], func_type->args[i].type);
-        if (not arg)
-            return std::move(arg.error());
-        if (func_type->args[i].var)
-            substitute<properties_t>(
-                *func_type->args[i].var,
-                *arg,
-                func_type->args.begin() + i + 1,
-                func_type->args.end(),
-                func_type->ret_type.get(),
-                nullptr);
-        args.push_back(std::move(*arg));
-    }
-    return make_legal_expr(std::move(func_type->ret_type.get()), expr_t::app_t{std::move(*func), std::move(args)});
-}
+// implementation of private functions
 
 expected<type_def_t> check_type_def(context_t& ctx, parser::type_def_t const& type_def)
 {
@@ -245,7 +160,7 @@ expected<stmt_t> check_stmt(proof_state_t& state, parser::stmt_t const& s)
         });
 }
 
-static expected<expr_t> check_numeric_expr(
+expected<expr_t> check_numeric_expr(
     context_t const& ctx,
     parser::expr_t::numeric_constant_t const& x,
     source_loc_t const& loc,
@@ -584,6 +499,14 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, sort_
                     pretty_print(err << "type mismatch between initializer list and `", kind_t{}) << '`';
                     return error_t::from_error(dep0::error_t(err.str(), loc), ctx, expected_type);
                 });
+        },
+        [&] (parser::expr_t::subscript_t const&) -> expected<expr_t>
+        {
+            auto result = type_assign(ctx, x);
+            if (result)
+                if (auto eq = is_beta_delta_equivalent(ctx, result->properties.sort.get(), expected_type); not eq)
+                    return type_error(result->properties.sort.get(), std::move(eq.error()));
+            return result;
         });
 }
 

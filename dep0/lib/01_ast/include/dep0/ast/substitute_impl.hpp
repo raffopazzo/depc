@@ -100,6 +100,11 @@ void substitute(typename expr_t<P>::var_t const& var, expr_t<P> const& expr, exp
         {
             for (auto& v: x.values)
                 substitute(var, expr, v);
+        },
+        [&] (typename expr_t<P>::subscript_t& x)
+        {
+            substitute(var, expr, x.array.get());
+            substitute(var, expr, x.index.get());
         });
 }
 

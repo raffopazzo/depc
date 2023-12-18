@@ -403,9 +403,8 @@ expected<expr_t> check_abs(
         if (auto ok = f_ctx.try_emplace(func_name, location, make_legal_expr(*func_type, func_name)); not ok)
             return error_t::from_error(std::move(ok.error()));
     }
-    auto const& pi_type = std::get<expr_t::pi_t>(func_type->value);
-    auto const& ret_type = pi_type.ret_type.get();
-    auto state = proof_state_t(f_ctx, ret_type);
+    auto [arg_types, ret_type] = std::get<expr_t::pi_t>(func_type->value);
+    auto state = proof_state_t(f_ctx, ret_type.get());
     auto body = check_body(state, f.body);
     if (not body)
         return std::move(body.error());
@@ -413,7 +412,7 @@ expected<expr_t> check_abs(
     // with the only exception of functions returning `unit_t` because the return statement is optional;
     if (not returns_from_all_branches(*body))
     {
-        if (not is_beta_delta_equivalent(f_ctx, ret_type, derivation_rules::make_unit()))
+        if (not is_beta_delta_equivalent(f_ctx, ret_type.get(), derivation_rules::make_unit()))
         {
             std::ostringstream err;
             if (name)
@@ -422,7 +421,13 @@ expected<expr_t> check_abs(
             return error_t::from_error(dep0::error_t(err.str(), location));
         }
     }
-    return make_legal_expr(*func_type, expr_t::abs_t{pi_type.args, ret_type, std::move(*body)});
+    return make_legal_expr(
+        std::move(*func_type),
+        expr_t::abs_t{
+            std::move(arg_types),
+            std::move(ret_type),
+            std::move(*body)
+        });
 }
 
 } // namespace dep0::typecheck

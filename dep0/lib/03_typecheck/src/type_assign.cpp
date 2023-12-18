@@ -1,7 +1,9 @@
 #include "private/type_assign.hpp"
 
+#include "private/beta_delta_equivalence.hpp"
 #include "private/check.hpp"
 #include "private/derivation_rules.hpp"
+#include "private/returns_from_all_branches.hpp"
 
 #include "dep0/ast/beta_delta_reduction.hpp"
 #include "dep0/ast/pretty_print.hpp"
@@ -148,7 +150,7 @@ expected<expr_t> type_assign(context_t const& ctx, parser::expr_t const& expr)
         },
         [&] (parser::expr_t::abs_t const& f) -> expected<expr_t>
         {
-            return check_abs(ctx, f, loc, std::nullopt); // TODO rename to `type_assign_abs`
+            return type_assign_abs(ctx, f, loc, std::nullopt);
         },
         [&] (parser::expr_t::pi_t const& pi) -> expected<expr_t>
         {
@@ -294,6 +296,51 @@ expected<expr_t> type_assign_app(context_t const& ctx, parser::expr_t::app_t con
         args.push_back(std::move(*arg));
     }
     return make_legal_expr(std::move(func_type->ret_type.get()), expr_t::app_t{std::move(*func), std::move(args)});
+}
+
+expected<expr_t> type_assign_abs(
+    context_t const& ctx,
+    parser::expr_t::abs_t const& f,
+    source_loc_t const& location,
+    std::optional<source_text> const& name)
+{
+    auto f_ctx = ctx.extend();
+    auto func_type = check_pi_type(f_ctx, f.args, f.ret_type.get());
+    if (not func_type)
+        return std::move(func_type.error());
+    // if a function has a name it can call itself recursively;
+    // to typecheck recursive functions we need to add them to the current function context before checking the body
+    if (name)
+    {
+        auto const func_name = expr_t::var_t{*name};
+        if (auto ok = f_ctx.try_emplace(func_name, location, make_legal_expr(*func_type, func_name)); not ok)
+            return error_t::from_error(std::move(ok.error()));
+    }
+    auto [arg_types, ret_type] = std::get<expr_t::pi_t>(func_type->value);
+    auto state = proof_state_t(f_ctx, ret_type.get());
+    auto body = check_body(state, f.body);
+    if (not body)
+        return std::move(body.error());
+    // so far so good, but we now need to make sure that all branches contain a return statement,
+    // with the only exception of functions returning `unit_t` because the return statement is optional;
+    if (not returns_from_all_branches(*body))
+    {
+        if (not is_beta_delta_equivalent(f_ctx, ret_type.get(), derivation_rules::make_unit()))
+        {
+            std::ostringstream err;
+            if (name)
+                err << "in function `" << *name << "` ";
+            err << "missing return statement";
+            return error_t::from_error(dep0::error_t(err.str(), location));
+        }
+    }
+    return make_legal_expr(
+        std::move(*func_type),
+        expr_t::abs_t{
+            std::move(arg_types),
+            std::move(ret_type),
+            std::move(*body)
+        });
 }
 
 } // namespace dep0::typecheck

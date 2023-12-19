@@ -168,7 +168,7 @@ expected<expr_t> type_assign(context_t const& ctx, parser::expr_t const& expr)
             // with cumulativity we can have both
             return make_legal_expr(
                 make_legal_expr(
-                    derivation_rules::make_typename(), // TODO need to add a test to make sure this is correct
+                    kind_t{}, // TODO need to add a test to make sure this is correct
                     expr_t::pi_t{
                         std::vector{
                             make_legal_func_arg(derivation_rules::make_typename()),

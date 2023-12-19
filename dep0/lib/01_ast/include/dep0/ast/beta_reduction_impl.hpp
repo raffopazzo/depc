@@ -138,11 +138,9 @@ bool beta_normalize(typename expr_t<P>::pi_t& pi)
 }
 
 template <Properties P>
-bool beta_normalize(typename expr_t<P>::array_t& array)
+bool beta_normalize(typename expr_t<P>::array_t&)
 {
-    bool changed = beta_normalize(array.type.get());
-    changed |= beta_normalize(array.size.get());
-    return changed;
+    return false;
 }
 
 template <Properties P>

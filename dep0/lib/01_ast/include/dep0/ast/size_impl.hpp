@@ -120,9 +120,9 @@ std::size_t size(expr_t<P> const& x)
         {
             return 1ul + impl::size<P>(x.args.begin(), x.args.end(), x.ret_type.get(), nullptr);
         },
-        [] (expr_t<P>::array_t const& x)
+        [] (expr_t<P>::array_t const&)
         {
-            return 1ul + std::max(size(x.type.get()), size(x.size.get()));
+            return 0ul;
         },
         [] (expr_t<P>::init_list_t const& x)
         {

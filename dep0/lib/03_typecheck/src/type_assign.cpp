@@ -157,20 +157,25 @@ expected<expr_t> type_assign(context_t const& ctx, parser::expr_t const& expr)
             auto pi_ctx = ctx.extend();
             return check_pi_type(pi_ctx, pi.args, pi.ret_type.get()); // TODO should this be renamed too?
         },
-        [&] (parser::expr_t::array_t const& array) -> expected<expr_t>
+        [&] (parser::expr_t::array_t const&) -> expected<expr_t>
         {
-            // `type` must be of sort types; to allow kinds we first need to add cumulativity of types,
-            // i.e. we can have an array of ints, eg {1,2,3}, but not an array of types, eg {int, bool, bool};
+            // the elemnt type of the array must be of sort types,
+            // i.e. a "function argument" of type `typename`;
+            // to have array of types (eg `{int, bool, bool}`),
+            // we fisrt need to add cumulativity of types;
+            // i.e. we can have an array of ints, eg {1,2,3},
+            // but not an array of types, eg {int, bool, bool};
             // with cumulativity we can have both
-            auto type = check_expr(ctx, array.type.get(), derivation_rules::make_typename());
-            if (not type)
-                return type;
-            auto size = check_expr(ctx, array.size.get(), derivation_rules::make_u64());
-            if (not size)
-                return size;
             return make_legal_expr(
-                derivation_rules::make_typename(),
-                expr_t::array_t{std::move(*type), std::move(*size)});
+                make_legal_expr(
+                    derivation_rules::make_typename(), // TODO need to add a test to make sure this is correct
+                    expr_t::pi_t{
+                        std::vector{
+                            make_legal_func_arg(derivation_rules::make_typename()),
+                            make_legal_func_arg(derivation_rules::make_u64())
+                        },
+                        derivation_rules::make_typename()}),
+                expr_t::array_t{});
         },
         [&] (parser::expr_t::init_list_t const& init_list) -> expected<expr_t>
         {
@@ -188,8 +193,8 @@ expected<expr_t> type_assign(context_t const& ctx, parser::expr_t const& expr)
                 [&] (expr_t& t) -> expected<expr_t>
                 {
                     ast::beta_delta_normalize(ctx.delta_reduction_context(), t);
-                    auto const array_type = std::get_if<expr_t::array_t>(&t.value);
-                    if (not array_type)
+                    auto const app = std::get_if<expr_t::app_t>(&t.value);
+                    if (not app or not std::holds_alternative<expr_t::array_t>(app->func.get().value))
                     {
                         std::ostringstream err;
                         pretty_print(err << "cannot index into non-array expression of type `", t) << '`';
@@ -200,11 +205,11 @@ expected<expr_t> type_assign(context_t const& ctx, parser::expr_t const& expr)
                         return std::move(index.error());
                     ast::beta_delta_normalize(ctx.delta_reduction_context(), *index);
                     if (auto const i = std::get_if<expr_t::numeric_constant_t>(&index->value))
-                        if (auto const n = std::get_if<expr_t::numeric_constant_t>(&array_type->size.get().value))
+                        if (auto const n = std::get_if<expr_t::numeric_constant_t>(&app->args.at(1ul).value))
                             if (i->value < n->value)
                             {
                                 // we're about to move from `array`, which holds the element type; so must take a copy
-                                auto element_type = array_type->type.get();
+                                auto element_type = app->args.at(0ul);
                                 return make_legal_expr(
                                     element_type,
                                     expr_t::subscript_t{std::move(*array), std::move(*index)});
@@ -219,7 +224,7 @@ expected<expr_t> type_assign(context_t const& ctx, parser::expr_t const& expr)
                     // TODO either index or size (or both) are run-time values; we need to add proof-search for `i < n`
                     std::ostringstream err;
                     pretty_print(err << "cannot verify that array index `", *index) << '`';
-                    pretty_print(err << " is within bounds `", array_type->size.get()) << '`';
+                    pretty_print(err << " is within bounds `", app->args.at(1ul)) << '`';
                     return error_t::from_error(dep0::error_t(err.str(), loc));
                 },
                 [&] (kind_t) -> expected<expr_t>
@@ -237,26 +242,7 @@ expected<expr_t> type_assign_app(context_t const& ctx, parser::expr_t::app_t con
     {
         return error_t::from_error(dep0::error_t(std::move(msg), loc));
     };
-    auto func = [&] () -> expected<expr_t>
-    {
-        auto const var = std::get_if<parser::expr_t::var_t>(&app.func.get().value);
-        if (not var)
-            // TODO support any `func` expr
-            return error("only invocation by function name is currently supported");
-        auto const v = ctx[expr_t::var_t{var->name}];
-        if (not v)
-            return error("function prototype not found");
-        return match(
-            v->value,
-            [&] (type_def_t const&) -> expected<expr_t>
-            {
-                return error("cannot invoke a typedef");
-            },
-            [&] (expr_t const& expr) -> expected<expr_t>
-            {
-                return make_legal_expr(expr.properties.sort.get(), expr_t::var_t{var->name});
-            });
-    }();
+    auto func = type_assign(ctx, app.func.get());
     if (not func)
         return std::move(func.error());
     auto func_type = [&] () -> expected<expr_t::pi_t>

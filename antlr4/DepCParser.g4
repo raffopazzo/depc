@@ -58,7 +58,7 @@ body: '{' stmt* '}';
 
 stmt: funcCallStmt | ifElse | returnStmt;
 
-funcCallStmt: funcCall ';';
+funcCallStmt: func=expr '(' (expr (',' expr)*)? ')' ';';
 ifElse: 'if' '(' cond=expr ')' true_branch=bodyOrStmt ('else' false_branch=bodyOrStmt)?;
 bodyOrStmt: body | stmt;
 returnStmt: 'return' expr? ';';
@@ -67,12 +67,10 @@ returnStmt: 'return' expr? ';';
 expr: lhs=expr '+' rhs=expr # plusExpr
     | sign=('+' | '-')? value=INT # numericExpr
     | value=('true'|'false') # booleanExpr
-    | funcCall # funcCallExpr
+    | func=expr '(' (expr (',' expr)*)? ')' # funcCallExpr
     | expr '[' expr ']' # subscriptExpr
+    | 'array_t' # arrayExpr
     | var=ID # varExpr
-    | 'array_t' '(' expr ',' expr ')' # arrayExpr
     | type # typeExpr // in an expression `f(x)` x should be parsed as `var` so this rule must come after `var`
     | '{' (expr (',' expr)*)? '}' # initListExpr
     ;
-
-funcCall: name=ID '(' (expr (',' expr)*)? ')';

@@ -95,11 +95,7 @@ struct expr_t
         std::vector<func_arg_t<P>> args;
         rec_t ret_type;
     };
-    struct array_t
-    {
-        rec_t type;
-        rec_t size;
-    };
+    struct array_t {};
     struct init_list_t
     {
         std::vector<expr_t> values;

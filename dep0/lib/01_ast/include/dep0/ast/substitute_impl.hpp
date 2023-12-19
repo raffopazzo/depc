@@ -91,10 +91,8 @@ void substitute(typename expr_t<P>::var_t const& var, expr_t<P> const& expr, exp
         {
             substitute<P>(var, expr, x.args.begin(), x.args.end(), x.ret_type.get(), nullptr);
         },
-        [&] (typename expr_t<P>::array_t& x)
+        [&] (typename expr_t<P>::array_t&)
         {
-            substitute(var, expr, x.type.get());
-            substitute(var, expr, x.size.get());
         },
         [&] (typename expr_t<P>::init_list_t& x)
         {

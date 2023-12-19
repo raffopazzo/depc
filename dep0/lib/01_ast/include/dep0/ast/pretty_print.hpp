@@ -368,11 +368,9 @@ std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::pi_t const& x, 
 }
 
 template <Properties P>
-std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::array_t const& x, std::size_t const indent)
+std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::array_t const&, std::size_t)
 {
-    pretty_print(os << "array_t(", x.type.get(), indent);
-    pretty_print(os << ", ", x.size.get(), indent) << ')';
-    return os;
+    return os << "array_t";
 }
 
 template <Properties P>

@@ -128,9 +128,9 @@ bool delta_reduce(context_t<P> const& ctx, typename expr_t<P>::pi_t& pi)
 }
 
 template <Properties P>
-bool delta_reduce(context_t<P> const& ctx, typename expr_t<P>::array_t& array)
+bool delta_reduce(context_t<P> const&, typename expr_t<P>::array_t&)
 {
-    return delta_reduce(ctx, array.type.get()) or delta_reduce(ctx, array.size.get());
+    return false;
 }
 
 template <Properties P>

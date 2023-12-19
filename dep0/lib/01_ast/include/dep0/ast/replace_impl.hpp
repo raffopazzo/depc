@@ -88,10 +88,8 @@ void replace(typename expr_t<P>::var_t const& from, typename expr_t<P>::var_t co
         {
             replace<P>(from, to, pi.args.begin(), pi.args.end(), pi.ret_type.get(), nullptr);
         },
-        [&] (typename expr_t<P>::array_t& array)
+        [&] (typename expr_t<P>::array_t&)
         {
-            replace(from, to, array.type.get());
-            replace(from, to, array.size.get());
         },
         [&] (typename expr_t<P>::init_list_t& init_list)
         {

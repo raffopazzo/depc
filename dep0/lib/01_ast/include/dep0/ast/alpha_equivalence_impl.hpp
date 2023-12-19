@@ -125,12 +125,9 @@ struct alpha_equivalence_visitor
         return is_alpha_equivalent_impl<P>(x.args, x.ret_type.get(), nullptr, y.args, y.ret_type.get(), nullptr);
     }
 
-    result_t operator()(typename expr_t<P>::array_t& x, typename expr_t<P>::array_t& y) const
+    result_t operator()(typename expr_t<P>::array_t&, typename expr_t<P>::array_t&) const
     {
-        auto eq = is_alpha_equivalent_impl(x.type.get(), y.type.get());
-        if (eq)
-            eq = is_alpha_equivalent_impl(x.size.get(), y.size.get());
-        return eq;
+        return std::true_type{};
     }
 
     result_t operator()(typename expr_t<P>::init_list_t& x, typename expr_t<P>::init_list_t& y) const

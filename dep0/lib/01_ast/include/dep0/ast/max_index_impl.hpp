@@ -95,9 +95,9 @@ std::size_t max_index(expr_t<P> const& x)
         {
             return max_index<P>(x.args.begin(), x.args.end(), x.ret_type.get(), nullptr);
         },
-        [&] (expr_t<P>::array_t const& x)
+        [&] (expr_t<P>::array_t const&)
         {
-            return std::max(max_index(x.type.get()), max_index(x.size.get()));
+            return 0ul;
         },
         [&] (expr_t<P>::init_list_t const& x)
         {

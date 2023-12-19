@@ -163,10 +163,8 @@ std::optional<expr_t> rewrite(expr_t const& from, expr_t const& to, expr_t const
             {
                 rewrite(from, to, x.args, x.ret_type.get(), nullptr, old.properties, result);
             },
-            [&] (expr_t::array_t const& x)
+            [&] (expr_t::array_t const&)
             {
-                rewrite(from, to, x.type.get());
-                rewrite(from, to, x.size.get());
             },
             [&] (expr_t::init_list_t const& x)
             {

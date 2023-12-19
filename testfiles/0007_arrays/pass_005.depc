@@ -1,0 +1,4 @@
+auto f() -> (typename, u64_t) -> typename
+{
+    return array_t;
+}

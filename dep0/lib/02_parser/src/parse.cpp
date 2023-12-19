@@ -212,8 +212,19 @@ struct parse_visitor_t : dep0::DepCParserVisitor
     virtual std::any visitFuncCallStmt(DepCParser::FuncCallStmtContext* ctx) override
     {
         assert(ctx);
-        assert(ctx->funcCall());
-        return stmt_t{get_loc(src, *ctx), std::any_cast<expr_t::app_t>(visitFuncCall(ctx->funcCall()))};
+        assert(ctx->func);
+        // func and args are all expressions,
+        // so ANTLR4 puts them all in `expr()`,
+        // but we know the first is func
+        auto const exprs = ctx->expr();
+        assert(exprs.size() > 0ul);
+        return stmt_t{
+            get_loc(src, *ctx),
+            expr_t::app_t{
+                std::any_cast<expr_t>(visitExpr(ctx->func)),
+                fmap<DepCParser::ExprContext*>(
+                    std::next(exprs.begin()), exprs.end(),
+                    [this] (DepCParser::ExprContext* ctx) { return visitExpr(ctx); })}};
     }
 
     virtual std::any visitIfElse(DepCParser::IfElseContext* ctx) override
@@ -285,13 +296,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
     virtual std::any visitArrayExpr(DepCParser::ArrayExprContext* ctx) override
     {
         assert(ctx);
-        return expr_t{
-            get_loc(src, *ctx),
-            expr_t::array_t{
-                std::any_cast<expr_t>(visitExpr(ctx->expr(0ul))),
-                std::any_cast<expr_t>(visitExpr(ctx->expr(1ul)))
-            }
-        };
+        return expr_t{get_loc(src, *ctx), expr_t::array_t{}};
     }
 
     virtual std::any visitTypeExpr(DepCParser::TypeExprContext* ctx) override
@@ -335,19 +340,19 @@ struct parse_visitor_t : dep0::DepCParserVisitor
     virtual std::any visitFuncCallExpr(DepCParser::FuncCallExprContext* ctx) override
     {
         assert(ctx);
-        assert(ctx->funcCall());
-        return expr_t{get_loc(src, *ctx), std::any_cast<expr_t::app_t>(visitFuncCall(ctx->funcCall()))};
-    }
-
-    virtual std::any visitFuncCall(DepCParser::FuncCallContext* ctx) override
-    {
-        assert(ctx);
-        assert(ctx->name);
-        return expr_t::app_t{
-            expr_t{
-                get_loc(src, *ctx),
-                expr_t::var_t{get_text(src, *ctx->name)}},
-            fmap(ctx->expr(), [this] (auto* ctx) { return visitExpr(ctx); })};
+        assert(ctx->func);
+        // func and args are all expressions,
+        // so ANTLR4 puts them all in `expr()`,
+        // but we know the first is func
+        auto const exprs = ctx->expr();
+        assert(exprs.size() > 0ul);
+        return expr_t{
+            get_loc(src, *ctx),
+            expr_t::app_t{
+                std::any_cast<expr_t>(visitExpr(ctx->func)),
+                fmap<DepCParser::ExprContext*>(
+                    std::next(exprs.begin()), exprs.end(),
+                    [this] (DepCParser::ExprContext* ctx) { return visitExpr(ctx); })}};
     }
 
     expr_t visitExpr(DepCParser::ExprContext* ctx)
@@ -363,10 +368,10 @@ struct parse_visitor_t : dep0::DepCParserVisitor
             return std::any_cast<expr_t>(visitFuncCallExpr(p));
         if (auto const p = dynamic_cast<DepCParser::SubscriptExprContext*>(ctx))
             return std::any_cast<expr_t>(visitSubscriptExpr(p));
-        if (auto const p = dynamic_cast<DepCParser::VarExprContext*>(ctx))
-            return std::any_cast<expr_t>(visitVarExpr(p));
         if (auto const p = dynamic_cast<DepCParser::ArrayExprContext*>(ctx))
             return std::any_cast<expr_t>(visitArrayExpr(p));
+        if (auto const p = dynamic_cast<DepCParser::VarExprContext*>(ctx))
+            return std::any_cast<expr_t>(visitVarExpr(p));
         if (auto const p = dynamic_cast<DepCParser::TypeExprContext*>(ctx))
             return std::any_cast<expr_t>(visitTypeExpr(p));
         if (auto const p = dynamic_cast<DepCParser::InitListExprContext*>(ctx))

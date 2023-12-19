@@ -168,6 +168,40 @@ BOOST_AUTO_TEST_CASE(pass_005)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_006)
+{
+    BOOST_TEST_REQUIRE(pass("0007_arrays/pass_006.depc"));
+    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 2ul);
+    {
+        auto const& f = pass_result->func_defs[0ul];
+        BOOST_TEST(f.name == "sum");
+        BOOST_TEST(
+            is_expr_of(
+                f.properties.sort.get(),
+                pi_of(std::tuple{arg_of(array_of(is_i32, constant(3)), "xs")}, is_i32)));
+        BOOST_TEST_REQUIRE(f.value.args.size() == 1ul);
+        BOOST_TEST(is_arg(f.value.args[0], array_of(is_i32, constant(3)), "xs"));
+        BOOST_TEST(is_i32(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        auto const xs_0 = subscript_of(var("xs"), constant(0));
+        auto const xs_1 = subscript_of(var("xs"), constant(1));
+        auto const xs_2 = subscript_of(var("xs"), constant(2));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], plus(plus(xs_0, xs_1), xs_2)));
+    }
+    {
+        auto const& f = pass_result->func_defs[1ul];
+        BOOST_TEST(f.name == "fifteen");
+        BOOST_TEST(is_expr_of(f.properties.sort.get(), pi_of(std::tuple{}, is_i32)));
+        BOOST_TEST_REQUIRE(f.value.args.size() == 0ul);
+        BOOST_TEST(is_i32(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        auto const three = constant(3);
+        auto const five = constant(5);
+        auto const seven = constant(7);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(var("sum"), init_list_of(three, five, seven))));
+    }
+}
+
 BOOST_AUTO_TEST_CASE(typecheck_error_000) { BOOST_TEST_REQUIRE(fail("0007_arrays/typecheck_error_000.depc")); }
 BOOST_AUTO_TEST_CASE(typecheck_error_001) { BOOST_TEST_REQUIRE(fail("0007_arrays/typecheck_error_001.depc")); }
 BOOST_AUTO_TEST_CASE(typecheck_error_002) { BOOST_TEST_REQUIRE(fail("0007_arrays/typecheck_error_002.depc")); }

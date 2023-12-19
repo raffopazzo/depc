@@ -64,11 +64,11 @@ bodyOrStmt: body | stmt;
 returnStmt: 'return' expr? ';';
 
 // Expressions
-expr: lhs=expr '+' rhs=expr # plusExpr
+expr: expr '[' expr ']' # subscriptExpr
+    | lhs=expr '+' rhs=expr # plusExpr
     | sign=('+' | '-')? value=INT # numericExpr
     | value=('true'|'false') # booleanExpr
     | func=expr '(' (expr (',' expr)*)? ')' # funcCallExpr
-    | expr '[' expr ']' # subscriptExpr
     | 'array_t' # arrayExpr
     | var=ID # varExpr
     | type # typeExpr // in an expression `f(x)` x should be parsed as `var` so this rule must come after `var`

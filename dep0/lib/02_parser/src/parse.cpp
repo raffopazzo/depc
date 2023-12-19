@@ -358,6 +358,11 @@ struct parse_visitor_t : dep0::DepCParserVisitor
     expr_t visitExpr(DepCParser::ExprContext* ctx)
     {
         assert(ctx);
+        // All these `if` statements should probably be ordered by likelihood,
+        // but we don't currently know what's the likelihood of each, for a typical program.
+        // So for now use the same order as they are listed in `DepCParser.g4`, for readability.
+        if (auto const p = dynamic_cast<DepCParser::SubscriptExprContext*>(ctx))
+            return std::any_cast<expr_t>(visitSubscriptExpr(p));
         if (auto const p = dynamic_cast<DepCParser::PlusExprContext*>(ctx))
             return std::any_cast<expr_t>(visitPlusExpr(p));
         if (auto const p = dynamic_cast<DepCParser::NumericExprContext*>(ctx))
@@ -366,8 +371,6 @@ struct parse_visitor_t : dep0::DepCParserVisitor
             return std::any_cast<expr_t>(visitBooleanExpr(p));
         if (auto const p = dynamic_cast<DepCParser::FuncCallExprContext*>(ctx))
             return std::any_cast<expr_t>(visitFuncCallExpr(p));
-        if (auto const p = dynamic_cast<DepCParser::SubscriptExprContext*>(ctx))
-            return std::any_cast<expr_t>(visitSubscriptExpr(p));
         if (auto const p = dynamic_cast<DepCParser::ArrayExprContext*>(ctx))
             return std::any_cast<expr_t>(visitArrayExpr(p));
         if (auto const p = dynamic_cast<DepCParser::VarExprContext*>(ctx))

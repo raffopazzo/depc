@@ -41,7 +41,6 @@ template <Properties P> bool beta_normalize(typename expr_t<P>::abs_t&);
 template <Properties P> bool beta_normalize(typename expr_t<P>::pi_t&);
 template <Properties P> bool beta_normalize(typename expr_t<P>::array_t&);
 template <Properties P> bool beta_normalize(typename expr_t<P>::init_list_t&);
-template <Properties P> bool beta_normalize(typename expr_t<P>::subscript_t&);
 
 template <Properties P>
 bool beta_normalize(typename stmt_t<P>::if_else_t& if_)
@@ -149,14 +148,6 @@ bool beta_normalize(typename expr_t<P>::init_list_t& init_list)
     bool changed = false;
     for (auto& v: init_list.values)
         changed |= beta_normalize(v);
-    return changed;
-}
-
-template <Properties P>
-bool beta_normalize(typename expr_t<P>::subscript_t& subscript)
-{
-    bool changed = beta_normalize(subscript.array.get());
-    changed |= beta_normalize(subscript.index.get());
     return changed;
 }
 
@@ -295,6 +286,20 @@ bool beta_normalize(expr_t<P>& expr)
                         }
                     return changed;
                 });
+        },
+        [&] (typename expr_t<P>::subscript_t& subscript)
+        {
+            bool changed = beta_normalize(subscript.array.get());
+            changed |= beta_normalize(subscript.index.get());
+            if (auto const init_list = std::get_if<typename expr_t<P>::init_list_t>(&subscript.array.get().value))
+                if (auto const i = std::get_if<typename expr_t<P>::numeric_constant_t>(&subscript.index.get().value))
+                    if (i->value <= std::numeric_limits<std::size_t>::max())
+                    {
+                        changed = true;
+                        auto const i_ = i->value.template convert_to<std::size_t>();
+                        impl::destructive_self_assign(expr, std::move(init_list->values[i_]));
+                    }
+            return changed;
         },
         [&] (auto& x) { return impl::beta_normalize<P>(x); });
 }

@@ -16,7 +16,50 @@
 
 namespace dep0::llvmgen {
 
-// Same as `llvm::FunctionCallee` but the latter has a broken API that doesn't allow access to the fields via `const&`.
+static typecheck::expr_t const& get_element_type(typecheck::expr_t const& array_like_expr)
+{
+    auto const type = std::get_if<typecheck::expr_t>(&array_like_expr.properties.sort.get());
+    assert(type and "array-like expression must have sort type");
+    // TODO ast::beta_delta_normalize(delta_reduction_context..., *t);
+    auto const app = std::get_if<typecheck::expr_t::app_t>(&type->value);
+    assert(
+        app and std::holds_alternative<typecheck::expr_t::array_t>(app->func.get().value)
+        and "must be an application of array_t");
+    return app->args[0ul];
+}
+
+namespace needs_alloca_result
+{
+    struct doesnt_need_t{};
+    struct array_t
+    {
+        typecheck::expr_t const& type;
+        typecheck::expr_t const& size;
+    };
+};
+using needs_alloca_result_t =
+    std::variant<
+        needs_alloca_result::doesnt_need_t,
+        needs_alloca_result::array_t>;
+
+static needs_alloca_result_t needs_alloca(typecheck::expr_t const& type)
+{
+    if (auto const app = std::get_if<typecheck::expr_t::app_t>(&type.value))
+        if (std::holds_alternative<typecheck::expr_t::array_t>(app->func.get().value))
+            return needs_alloca_result::array_t{app->args[0ul], app->args[1ul]};
+    return needs_alloca_result::doesnt_need_t{};
+}
+
+static bool does_need_alloca(typecheck::expr_t const& type)
+{
+    return not std::holds_alternative<needs_alloca_result::doesnt_need_t>(needs_alloca(type));
+}
+
+/**
+ * Same as `llvm::FunctionCallee`, but the latter has a
+ * broken API that doesn't allow access to the fields via
+ * const-ref.
+ */
 struct llvm_func_t
 {
     llvm::FunctionType* type;
@@ -157,18 +200,36 @@ static void gen_stmt(
     typecheck::stmt_t const&,
     llvm::Function*);
 static llvm::Type* gen_type(global_context_t&, local_context_t const&, typecheck::expr_t const&);
-static llvm::Value* gen_val(global_context_t&, local_context_t const&, llvm::IRBuilder<>& , typecheck::expr_t const&);
+static llvm::Value* gen_alloca(
+    global_context_t&,
+    local_context_t const&,
+    llvm::IRBuilder<>&,
+    typecheck::expr_t const&,
+    llvm::Value* const size);
+static llvm::Value* gen_alloca_if_needed(
+    global_context_t&,
+    local_context_t const&,
+    llvm::IRBuilder<>&,
+    typecheck::expr_t const&);
+static llvm::Value* gen_val(
+    global_context_t&,
+    local_context_t const&,
+    llvm::IRBuilder<>&,
+    typecheck::expr_t const&,
+    llvm::Value* dest);
 static llvm::CallInst* gen_func_call(
     global_context_t&,
     local_context_t const&,
     llvm::IRBuilder<>&,
-    typecheck::expr_t::app_t const&);
+    typecheck::expr_t::app_t const&,
+    llvm::Value* dest);
 static llvm::CallInst* gen_func_call(
     global_context_t&,
     local_context_t const&,
     llvm::IRBuilder<>&,
     llvm_func_t const&,
-    std::vector<typecheck::expr_t> const&);
+    std::vector<typecheck::expr_t> const&,
+    llvm::Value* dest);
 static llvm::FunctionType* gen_func_type(global_context_t&, local_context_t const&, llvm_func_proto_t const&);
 static void gen_func_attributes(local_context_t const&, llvm_func_proto_t const&, llvm::Function*);
 static void gen_func_args(local_context_t&, llvm_func_proto_t const&, llvm::Function*);
@@ -218,9 +279,19 @@ bool is_first_order_type(typecheck::expr_t const& type)
         [] (typecheck::expr_t::numeric_constant_t const&) { return false; },
         [] (typecheck::expr_t::arith_expr_t const&) { return false; },
         [] (typecheck::expr_t::var_t const&) { return true; }, // caller must call only if expr is a type
-        [] (typecheck::expr_t::app_t const&) { return false; },
+        [] (typecheck::expr_t::app_t const& x)
+        {
+            // `array_t(type, size)` is a 1st order type if `type` is of 1st order,
+            // regardless of how complex the size expression is;
+            // whatever the size, it will always reduce to just a pointer anyway;
+            return std::holds_alternative<typecheck::expr_t::array_t>(x.func.get().value)
+                and is_first_order_type(x.args[0ul]);
+        },
         [] (typecheck::expr_t::abs_t const&) { return false; },
-        [] (typecheck::expr_t::pi_t const &t) { return is_first_order_function_type(t.args, t.ret_type.get()); });
+        [] (typecheck::expr_t::pi_t const& t) { return is_first_order_function_type(t.args, t.ret_type.get()); },
+        [] (typecheck::expr_t::array_t const&) { return false; }, // `array_t` on its own is not a type at all
+        [] (typecheck::expr_t::init_list_t const&) { return false; },
+        [] (typecheck::expr_t::subscript_t const&) { return false; });
 }
 
 expected<unique_ref<llvm::Module>> gen(
@@ -326,10 +397,13 @@ llvm::Type* gen_type(global_context_t& global, local_context_t const& local, typ
                         });
                 });
         },
-        [&] (typecheck::expr_t::app_t const&) -> llvm::Type*
+        [&] (typecheck::expr_t::app_t const& x) -> llvm::Type*
         {
-            assert(false and "cannot generate a type for a function application");
-            __builtin_unreachable();
+            assert(
+                std::holds_alternative<typecheck::expr_t::array_t>(x.func.get().value)
+                and "can only generate a type for applications of array_t");
+            assert(is_first_order_type(x.args[0ul]) and "can only generate a type for arrays of 1st order types");
+            return gen_type(global, local, x.args[0ul])->getPointerTo();
         },
         [&] (typecheck::expr_t::abs_t const&) -> llvm::Type*
         {
@@ -341,6 +415,21 @@ llvm::Type* gen_type(global_context_t& global, local_context_t const& local, typ
             auto proto = llvm_func_proto_t::from_pi(x);
             assert(proto and "can only generate an llvm type for 1st order function types");
             return gen_func_type(global, local, *proto)->getPointerTo();
+        },
+        [&] (typecheck::expr_t::array_t const&) -> llvm::Type*
+        {
+            assert(false and "cannot generate a type for an array_t expression");
+            __builtin_unreachable();
+        },
+        [&] (typecheck::expr_t::init_list_t const&) -> llvm::Type*
+        {
+            assert(false and "cannot generate a type for an initializer list");
+            __builtin_unreachable();
+        },
+        [&] (typecheck::expr_t::subscript_t const&) -> llvm::Type*
+        {
+            assert(false and "cannot generate a type for subscript expression");
+            __builtin_unreachable();
         });
 }
 
@@ -391,7 +480,10 @@ llvm::Attribute::AttrKind get_sign_ext_attribute(local_context_t const& local, t
         },
         [] (typecheck::expr_t::app_t const&) { return llvm::Attribute::None; },
         [] (typecheck::expr_t::abs_t const&) { return llvm::Attribute::None; },
-        [] (typecheck::expr_t::pi_t const&) { return llvm::Attribute::None; });
+        [] (typecheck::expr_t::pi_t const&) { return llvm::Attribute::None; },
+        [] (typecheck::expr_t::array_t const&) { return llvm::Attribute::None; },
+        [] (typecheck::expr_t::init_list_t const&) { return llvm::Attribute::None; },
+        [] (typecheck::expr_t::subscript_t const&) { return llvm::Attribute::None; });
 }
 
 llvm::FunctionType* gen_func_type(
@@ -400,10 +492,19 @@ llvm::FunctionType* gen_func_type(
     llvm_func_proto_t const& proto)
 {
     bool constexpr is_var_arg = false;
-    return llvm::FunctionType::get(
-        gen_type(global, local, proto.ret_type()),
-        fmap(proto.args(), [&] (auto const& arg) { return gen_type(global, local, arg.type); }),
-        is_var_arg);
+    auto ret_type = gen_type(global, local, proto.ret_type());
+    auto arg_types = fmap(proto.args(), [&] (auto const& arg) { return gen_type(global, local, arg.type); });
+    match(
+        needs_alloca(proto.ret_type()),
+        [] (needs_alloca_result::doesnt_need_t) {},
+        [&] (needs_alloca_result::array_t const& array)
+        {
+             // For arrays `gen_type` already returns a pointer,
+             // so no need to do `ret_type->getPointerTo()`.
+            arg_types.push_back(ret_type);
+            ret_type = llvm::Type::getVoidTy(global.llvm_ctx);
+        });
+    return llvm::FunctionType::get(ret_type, std::move(arg_types), is_var_arg);
 }
 
 void gen_func_args(local_context_t& local, llvm_func_proto_t const& proto, llvm::Function* const llvm_f)
@@ -431,6 +532,8 @@ void gen_func_args(local_context_t& local, llvm_func_proto_t const& proto, llvm:
             assert(inserted);
         }
     }
+    if (does_need_alloca(proto.ret_type()))
+        llvm_f->getArg(proto.args().size())->addAttr(llvm::Attribute::StructRet);
 }
 
 void gen_func_attributes(local_context_t const& local, llvm_func_proto_t const& proto, llvm::Function* const llvm_f)
@@ -538,11 +641,17 @@ void gen_stmt(
         stmt.value,
         [&] (typecheck::expr_t::app_t const& x)
         {
-            gen_func_call(global, local, builder, x);
+            // might need to emit an alloca for the return value, even though it will be discarded
+            auto const func_type = std::get_if<typecheck::expr_t>(&x.func.get().properties.sort.get());
+            assert(func_type and "functions must be of sort type");
+            auto const pi_type = std::get_if<typecheck::expr_t::pi_t>(&func_type->value);
+            assert(pi_type and "functions must be pi-types");
+            auto const dest = gen_alloca_if_needed(global, local, builder, pi_type->ret_type.get());
+            gen_func_call(global, local, builder, x, dest);
         },
         [&] (typecheck::stmt_t::if_else_t const& x)
         {
-            auto const cond = gen_val(global, local, builder, x.cond);
+            auto const cond = gen_val(global, local, builder, x.cond, nullptr);
             auto const then = gen_body(global, local, x.true_branch, "then", llvm_f);
             std::ranges::copy(then.open_blocks, std::back_inserter(snipppet.open_blocks));
             if (x.false_branch)
@@ -561,9 +670,45 @@ void gen_stmt(
         [&] (typecheck::stmt_t::return_t const& x)
         {
             if (x.expr)
-                builder.CreateRet(gen_val(global, local, builder, *x.expr));
+            {
+                auto const dest =
+                    llvm_f->arg_empty() ? nullptr
+                    : not llvm_f->hasParamAttribute(llvm_f->arg_size() - 1ul, llvm::Attribute::StructRet) ? nullptr
+                    : llvm_f->getArg(llvm_f->arg_size() - 1ul);
+                auto const ret_val = gen_val(global, local, builder, *x.expr, dest);
+                if (dest)
+                    builder.CreateRetVoid();
+                else
+                    builder.CreateRet(ret_val);
+            }
             else
                 builder.CreateRetVoid();
+        });
+}
+
+llvm::Value* gen_alloca(
+    global_context_t& global,
+    local_context_t const& local,
+    llvm::IRBuilder<>& builder,
+    typecheck::expr_t const& type,
+    llvm::Value* const size)
+{
+    return builder.CreateAlloca(gen_type(global, local, type), size);
+}
+
+llvm::Value* gen_alloca_if_needed(
+    global_context_t& global,
+    local_context_t const& local,
+    llvm::IRBuilder<>& builder,
+    typecheck::expr_t const& type)
+{
+    return match(
+        needs_alloca(type),
+        [] (needs_alloca_result::doesnt_need_t) -> llvm::Value* { return nullptr; },
+        [&] (needs_alloca_result::array_t const& array) -> llvm::Value*
+        {
+            auto const size = gen_val(global, local, builder, array.size, nullptr);
+            return gen_alloca(global, local, builder, array.type, size);
         });
 }
 
@@ -571,8 +716,18 @@ llvm::Value* gen_val(
     global_context_t& global,
     local_context_t const& local,
     llvm::IRBuilder<>& builder,
-    typecheck::expr_t const& expr)
+    typecheck::expr_t const& expr,
+    llvm::Value* const dest)
 {
+    auto const storeOrReturn = [&builder, &dest] (llvm::Value* const value)
+    {
+        if (dest)
+        {
+            builder.CreateStore(value, dest);
+            return dest;
+        }
+        return value;
+    };
     return match(
         expr.value,
         [] (typecheck::expr_t::typename_t const&) -> llvm::Value*
@@ -632,7 +787,7 @@ llvm::Value* gen_val(
         },
         [&] (typecheck::expr_t::boolean_constant_t const& x) -> llvm::Value*
         {
-            return llvm::ConstantInt::getBool(global.llvm_ctx, x.value);
+            return storeOrReturn(llvm::ConstantInt::getBool(global.llvm_ctx, x.value));
         },
         [&] (typecheck::expr_t::numeric_constant_t const& x) -> llvm::Value*
         {
@@ -642,25 +797,26 @@ llvm::Value* gen_val(
             auto const& type = std::get<typecheck::expr_t>(expr.properties.sort.get());
             auto const llvm_type = cast<llvm::IntegerType>(gen_type(global, local, type));
             assert(llvm_type);
-            return llvm::ConstantInt::get(llvm_type, x.value.str(), 10);
+            return storeOrReturn(llvm::ConstantInt::get(llvm_type, x.value.str(), 10));
         },
         [&] (typecheck::expr_t::arith_expr_t const& x) -> llvm::Value*
         {
-            return match(
+            return storeOrReturn(match(
                 x.value,
                 [&] (typecheck::expr_t::arith_expr_t::plus_t const& x) -> llvm::Value*
                 {
                     // TODO add NUW/NSW but probably depends on decision whether typechecking `plus_t` requires proofs?
-                    return builder.CreateAdd(
-                        gen_val(global, local, builder, x.lhs.get()),
-                        gen_val(global, local, builder, x.rhs.get()));
-                });
+                    // use temporaries to make sure that LHS comes before RHS in the emitted IR
+                    auto const lhs = gen_val(global, local, builder, x.lhs.get(), nullptr);
+                    auto const rhs = gen_val(global, local, builder, x.rhs.get(), nullptr);
+                    return builder.CreateAdd(lhs, rhs);
+                }));
         },
         [&] (typecheck::expr_t::var_t const& var) -> llvm::Value*
         {
             auto const val = local[var];
             assert(val and "unknown variable");
-            return match(
+            return storeOrReturn(match(
                 *val,
                 [] (llvm::Value* const p) { return p; },
                 [] (llvm_func_t const& c) { return c.func; },
@@ -668,12 +824,12 @@ llvm::Value* gen_val(
                 {
                     assert(false and "found a typedef but was expecting a value");
                     __builtin_unreachable();
-                });
+                }));
         },
         [&] (typecheck::expr_t::app_t const& x) -> llvm::Value*
         {
             // TODO could perhaps generate a snippet for immediately invoked lambdas
-            return gen_func_call(global, local, builder, x);
+            return storeOrReturn(gen_func_call(global, local, builder, x, dest));
         },
         [&] (typecheck::expr_t::abs_t const&) -> llvm::Value*
         {
@@ -684,6 +840,34 @@ llvm::Value* gen_val(
         {
             assert(false and "cannot generate a value for a pi-type");
             __builtin_unreachable();
+        },
+        [&] (typecheck::expr_t::array_t const&) -> llvm::Value*
+        {
+            assert(false and "cannot generate a value for an array_t expression");
+            __builtin_unreachable();
+        },
+        [&] (typecheck::expr_t::init_list_t const& x) -> llvm::Value*
+        {
+            auto const int32 = llvm::Type::getInt32Ty(global.llvm_ctx); // TODO we use u64_t to typecheck arrays
+            auto const size = llvm::ConstantInt::get(int32, x.values.size());
+            auto const dest2 = dest ? dest : gen_alloca(global, local, builder, get_element_type(expr), size);
+            auto const ty = dest2->getType()->getPointerElementType();
+            for (auto const i: std::views::iota(0ul, x.values.size()))
+            {
+                auto const p = builder.CreateGEP(ty, dest2, llvm::ConstantInt::get(int32, i));
+                gen_val(global, local, builder, x.values[i], p);
+            }
+            return dest2;
+        },
+        [&] (typecheck::expr_t::subscript_t const& subscript) -> llvm::Value*
+        {
+            auto const ty = gen_type(global, local, get_element_type(subscript.array.get()));
+            auto const p =
+                builder.CreateGEP(
+                    ty,
+                    gen_val(global, local, builder, subscript.array.get(), nullptr),
+                    gen_val(global, local, builder, subscript.index.get(), nullptr));
+            return storeOrReturn(builder.CreateLoad(ty, p));
         });
 }
 
@@ -691,7 +875,8 @@ llvm::CallInst* gen_func_call(
     global_context_t& global,
     local_context_t const& local,
     llvm::IRBuilder<>& builder,
-    typecheck::expr_t::app_t const& app)
+    typecheck::expr_t::app_t const& app,
+    llvm::Value* const dest)
 {
     auto const func =
         match(
@@ -729,7 +914,7 @@ llvm::CallInst* gen_func_call(
                 __builtin_unreachable();
             });
     // this could be a direct call to a global function, or an indirect call via a function pointer
-    return gen_func_call(global, local, builder, func, app.args);
+    return gen_func_call(global, local, builder, func, app.args, dest);
 }
 
 llvm::CallInst* gen_func_call(
@@ -737,7 +922,8 @@ llvm::CallInst* gen_func_call(
     local_context_t const& local,
     llvm::IRBuilder<>& builder,
     llvm_func_t const& callee,
-    std::vector<typecheck::expr_t> const& args)
+    std::vector<typecheck::expr_t> const& args,
+    llvm::Value* const dest)
 {
     assert(
         std::ranges::all_of(
@@ -750,14 +936,14 @@ llvm::CallInst* gen_func_call(
                     [] (typecheck::kind_t) { return false; });
             })
         and "can only generate function call for 1st order applications");
-    auto const call =
-        builder.CreateCall(
-            callee.type,
-            callee.func,
-            fmap(args, [&] (typecheck::expr_t const& arg)
-            {
-                return gen_val(global, local, builder, arg);
-            }));
+    auto llvm_args =
+        fmap(args, [&] (typecheck::expr_t const& arg)
+        {
+            return gen_val(global, local, builder, arg, nullptr);
+        });
+    if (dest)
+        llvm_args.push_back(dest);
+    auto const call = builder.CreateCall(callee.type, callee.func, std::move(llvm_args));
     for (auto const i: std::views::iota(0ul, args.size()))
     {
         auto const& arg_type = std::get<typecheck::expr_t>(args[i].properties.sort.get());

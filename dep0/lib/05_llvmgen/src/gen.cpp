@@ -560,10 +560,11 @@ void gen_stmt(
         },
         [&] (typecheck::stmt_t::return_t const& x)
         {
-            if (x.expr)
-                builder.CreateRet(gen_val(global, local, builder, *x.expr));
-            else
+            auto const ret_val = x.expr ? gen_val(global, local, builder, *x.expr) : nullptr;
+            if (llvm_f->getReturnType()->isVoidTy())
                 builder.CreateRetVoid();
+            else
+                builder.CreateRet(ret_val);
         });
 }
 

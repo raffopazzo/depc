@@ -1,0 +1,7 @@
+unit_t unit() { }
+
+unit_t f1(unit_t) { }
+unit_t g1() { return f1(unit()); }
+
+unit_t f2(unit_t x) { return x; }
+unit_t g2() { return f2(unit()); }

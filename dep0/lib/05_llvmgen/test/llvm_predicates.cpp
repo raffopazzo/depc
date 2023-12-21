@@ -2,6 +2,15 @@
 
 namespace dep0::llvmgen::testing {
 
+boost::test_tools::predicate_result has_void_return_type(llvm::Function const& f)
+{
+    if (not f.getReturnType()->isIntegerTy(8))
+        return dep0::testing::failure("void return type should be mapped to i8");
+    if (f.getAttributes().hasAttributes(llvm::AttributeList::ReturnIndex))
+        return dep0::testing::failure("function returning void should have no return attributes");
+    return true;
+}
+
 boost::test_tools::predicate_result is_i32_type(llvm::Type const& type)
 {
     if (not type.isIntegerTy(32))
@@ -84,8 +93,15 @@ boost::test_tools::predicate_result is_return_of_void(llvm::Instruction const* c
     auto const ret = dyn_cast<llvm::ReturnInst>(instr);
     if (not ret)
         return dep0::testing::failure("not a return instruction");
-    if (ret->getReturnValue())
-        return dep0::testing::failure("return instruction has a value but should be void");
+    if (not ret->getReturnValue())
+        return dep0::testing::failure("return instruction has no value");
+    if (not ret->getReturnValue()->getType()->isIntegerTy(8))
+        return dep0::testing::failure("return value should be an i8");
+    auto const val = dyn_cast<llvm::ConstantInt>(ret->getReturnValue());
+    if (not val)
+        return dep0::testing::failure("return value should be a constant int");
+    if (not val->isZero())
+        return dep0::testing::failure("return value should be the constant 0");
     return true;
 }
 

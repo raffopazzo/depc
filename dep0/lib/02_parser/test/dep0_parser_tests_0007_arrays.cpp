@@ -165,6 +165,28 @@ BOOST_AUTO_TEST_CASE(pass_006)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_007)
+{
+    BOOST_TEST_REQUIRE(pass("0007_arrays/pass_007.depc"));
+    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 2ul);
+    {
+        auto const& f = pass_result->func_defs[0ul];
+        BOOST_TEST(f.name == "unit");
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_unit(f.value.ret_type.get()));
+        BOOST_TEST(f.value.body.stmts.size() == 0ul);
+    }
+    {
+        auto const& f = pass_result->func_defs[1ul];
+        BOOST_TEST(f.name == "three_units");
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_array_of(f.value.ret_type.get(), is_unit, constant(3)));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        auto const unit = app_of(var("unit"));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], init_list_of(unit, unit, unit)));
+    }
+}
+
 BOOST_AUTO_TEST_CASE(typecheck_error_000)
 {
     BOOST_TEST_REQUIRE(pass("0007_arrays/typecheck_error_000.depc"));

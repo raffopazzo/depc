@@ -223,19 +223,11 @@ static llvm::Value* gen_val(
     llvm::IRBuilder<>&,
     typecheck::expr_t const&,
     llvm::Value* dest);
-static llvm::CallInst* gen_func_call(
+static llvm::Value* gen_func_call(
     global_context_t&,
     local_context_t const&,
     llvm::IRBuilder<>&,
-    typecheck::expr_t::app_t const&,
-    llvm::Value* dest);
-static llvm::CallInst* gen_func_call(
-    global_context_t&,
-    local_context_t const&,
-    llvm::IRBuilder<>&,
-    llvm_func_t const&,
-    std::vector<typecheck::expr_t> const&,
-    llvm::Value* dest);
+    typecheck::expr_t::app_t const&);
 static llvm::FunctionType* gen_func_type(global_context_t&, local_context_t const&, llvm_func_proto_t const&);
 static void gen_func_attributes(local_context_t const&, llvm_func_proto_t const&, llvm::Function*);
 static void gen_func_args(local_context_t&, llvm_func_proto_t const&, llvm::Function*);
@@ -681,13 +673,7 @@ void gen_stmt(
         stmt.value,
         [&] (typecheck::expr_t::app_t const& x)
         {
-            // might need to emit an alloca for the return value, even though it will be discarded
-            auto const func_type = std::get_if<typecheck::expr_t>(&x.func.get().properties.sort.get());
-            assert(func_type and "functions must be of sort type");
-            auto const pi_type = std::get_if<typecheck::expr_t::pi_t>(&func_type->value);
-            assert(pi_type and "functions must be pi-types");
-            auto const dest = gen_alloca_if_needed(global, local, builder, pi_type->ret_type.get());
-            gen_func_call(global, local, builder, x, dest);
+            gen_func_call(global, local, builder, x);
         },
         [&] (typecheck::stmt_t::if_else_t const& x)
         {
@@ -867,7 +853,7 @@ llvm::Value* gen_val(
         [&] (typecheck::expr_t::app_t const& x) -> llvm::Value*
         {
             // TODO could perhaps generate a snippet for immediately invoked lambdas
-            return storeOrReturn(gen_func_call(global, local, builder, x, dest));
+            return storeOrReturn(gen_func_call(global, local, builder, x));
         },
         [&] (typecheck::expr_t::abs_t const&) -> llvm::Value*
         {
@@ -909,13 +895,29 @@ llvm::Value* gen_val(
         });
 }
 
-llvm::CallInst* gen_func_call(
+llvm::Value* gen_func_call(
     global_context_t& global,
     local_context_t const& local,
     llvm::IRBuilder<>& builder,
-    typecheck::expr_t::app_t const& app,
-    llvm::Value* const dest)
+    typecheck::expr_t::app_t const& app)
 {
+    assert(
+        std::ranges::all_of(
+            app.args,
+            [] (typecheck::expr_t const& x)
+            {
+                return match(
+                    x.properties.sort.get(),
+                    [] (typecheck::expr_t const& type) { return is_first_order_type(type); },
+                    [] (typecheck::kind_t) { return false; });
+            })
+        and "can only generate function call for 1st order applications");
+    // might need to emit an alloca
+    auto const func_type = std::get_if<typecheck::expr_t>(&app.func.get().properties.sort.get());
+    assert(func_type and "functions must be of sort type");
+    auto const pi_type = std::get_if<typecheck::expr_t::pi_t>(&func_type->value);
+    assert(pi_type and "functions must be pi-types");
+    auto const dest = gen_alloca_if_needed(global, local, builder, pi_type->ret_type.get());
     auto const func =
         match(
             app.func.get().value,
@@ -951,44 +953,22 @@ llvm::CallInst* gen_func_call(
                 assert(false and "unexpected invocable expression");
                 __builtin_unreachable();
             });
-    // this could be a direct call to a global function, or an indirect call via a function pointer
-    return gen_func_call(global, local, builder, func, app.args, dest);
-}
-
-llvm::CallInst* gen_func_call(
-    global_context_t& global,
-    local_context_t const& local,
-    llvm::IRBuilder<>& builder,
-    llvm_func_t const& callee,
-    std::vector<typecheck::expr_t> const& args,
-    llvm::Value* const dest)
-{
-    assert(
-        std::ranges::all_of(
-            args,
-            [] (typecheck::expr_t const& x)
-            {
-                return match(
-                    x.properties.sort.get(),
-                    [] (typecheck::expr_t const& type) { return is_first_order_type(type); },
-                    [] (typecheck::kind_t) { return false; });
-            })
-        and "can only generate function call for 1st order applications");
     auto llvm_args =
-        fmap(args, [&] (typecheck::expr_t const& arg)
+        fmap(app.args, [&] (typecheck::expr_t const& arg)
         {
             return gen_val(global, local, builder, arg, nullptr);
         });
     if (dest)
         llvm_args.push_back(dest);
-    auto const call = builder.CreateCall(callee.type, callee.func, std::move(llvm_args));
-    for (auto const i: std::views::iota(0ul, args.size()))
+    // this could be a direct call to a global function, or an indirect call via a function pointer
+    auto const call = builder.CreateCall(func.type, func.func, std::move(llvm_args));
+    for (auto const i: std::views::iota(0ul, app.args.size()))
     {
-        auto const& arg_type = std::get<typecheck::expr_t>(args[i].properties.sort.get());
+        auto const& arg_type = std::get<typecheck::expr_t>(app.args[i].properties.sort.get());
         if (auto const attr = get_sign_ext_attribute(local, arg_type); attr != llvm::Attribute::None)
             call->addParamAttr(i, attr);
     }
-    return call;
+    return dest ? dest : call;
 }
 
 }

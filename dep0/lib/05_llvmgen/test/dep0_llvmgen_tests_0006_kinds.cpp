@@ -234,8 +234,7 @@ BOOST_AUTO_TEST_CASE(pass_006)
     {
         auto const f = pass_result.value()->getFunction("f");
         BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(f->getReturnType()->isVoidTy());
-        BOOST_TEST(not f->getAttributes().hasAttributes(llvm::AttributeList::ReturnIndex));
+        BOOST_TEST(has_void_return_type(*f));
         BOOST_TEST_REQUIRE(f->getEntryBlock().size() == 1ul);
         BOOST_TEST(f->arg_size() == 0ul);
         BOOST_TEST(is_return_of_void(f->getEntryBlock().getTerminator()));
@@ -243,8 +242,7 @@ BOOST_AUTO_TEST_CASE(pass_006)
     {
         auto const f = pass_result.value()->getFunction("g");
         BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(f->getReturnType()->isVoidTy());
-        BOOST_TEST(not f->getAttributes().hasAttributes(llvm::AttributeList::ReturnIndex));
+        BOOST_TEST(has_void_return_type(*f));
         BOOST_TEST_REQUIRE(f->getEntryBlock().size() == 1ul);
         BOOST_TEST(f->arg_size() == 0ul);
         BOOST_TEST(is_return_of_void(f->getEntryBlock().getTerminator()));

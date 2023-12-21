@@ -16,6 +16,12 @@
 
 namespace dep0::llvmgen {
 
+static bool has_unit_type(typecheck::expr_t const& expr)
+{
+    auto const type = std::get_if<typecheck::expr_t>(&expr.properties.sort.get());
+    return type and std::holds_alternative<typecheck::expr_t::unit_t>(type->value);
+}
+
 static typecheck::expr_t const& get_element_type(typecheck::expr_t const& array_like_expr)
 {
     auto const type = std::get_if<typecheck::expr_t>(&array_like_expr.properties.sort.get());
@@ -338,9 +344,40 @@ llvm::Type* gen_type(global_context_t& global, local_context_t const& local, typ
             __builtin_unreachable();
         },
         [&] (typecheck::expr_t::bool_t const&) -> llvm::Type* { return llvm::Type::getInt1Ty(global.llvm_ctx); },
-        // this may or may not be fine depending on how LLVM defines `void` (i.e. what properties it has)
-        // for instance, what does it mean to have an array of `void` types in LLVM?
-        [&] (typecheck::expr_t::unit_t const&) -> llvm::Type* { return llvm::Type::getVoidTy(global.llvm_ctx); },
+        [&] (typecheck::expr_t::unit_t const&) -> llvm::Type*
+        {
+            // This is worth an explanation, as there were some thoughts put behind this decision.
+            // In C/C++ `void` is flawed:
+            //  1. when used as return type for a function, it behaves as the unit type;
+            //  2. otherwise it behaves as the bottom type (eg function argument or member-field/array-element type).
+            // The LLVM IR also has a type `void`, with this same semantics/flaws.
+            // So one might think that mapping `unit_t` to LLVM `void` is sensible, for (1);
+            // but we would then have to deal with (2).
+            // When you try to deal with (2), you open up a Pandora's box;
+            // for example, what about arguments of type `unit_t`?
+            // We could decide to add "clever" logic to skip them,
+            // after all clang seems to do that for empty structs in C++;
+            // that would be feasible, but also complicated (and fiddly more than "clever").
+            // What about arrays? Do they have 0 size?
+            // Perhaps you can do so, but LLVM IR doesn't allow `void*` anyway.
+            // A different alternative is to just make `unit_t` 1 byte, always.
+            // This decision massively simplifies the logic of emitting LLVM IR,
+            // but there is an obvious drawback:
+            // a function with return type `unit_t` will now waste a register.
+            // Whilst this would be problematic for an efficient executable program,
+            // there are 2 important considersations:
+            //  1. first of all, the optimizer might realize that the register is not really being used
+            //     and could decide to use it for something else;
+            //     also, someone interested in performace should maybe consider making their function bodies
+            //     visible for inlining, a lot of computations might get performed at compile-time via beta-reduction;
+            //  2. traditionally, return type `void` suggests that this is a function whose only purpose is
+            //     to have side-effects; but even the most effectful function, say `memset()`, would be better if
+            //     it returned the pointer to the end of the region.
+            // So, overall, we should regard the idea of making `unit_t` an LLVM type with 0 size as
+            // a potential optimization opportunity, rather than a fundamental fact of emitting LLVM IR.
+            // So, for now, we prefer to make the codegen logic simpler and deal with this optimization later.
+            return llvm::Type::getInt8Ty(global.llvm_ctx);
+        },
         [&] (typecheck::expr_t::i8_t const&) -> llvm::Type* { return llvm::Type::getInt8Ty(global.llvm_ctx); },
         [&] (typecheck::expr_t::i16_t const&) -> llvm::Type* { return llvm::Type::getInt16Ty(global.llvm_ctx); },
         [&] (typecheck::expr_t::i32_t const&) -> llvm::Type* { return llvm::Type::getInt32Ty(global.llvm_ctx); },
@@ -553,7 +590,9 @@ void gen_func_body(
     if (snippet.open_blocks.size() and std::holds_alternative<typecheck::expr_t::unit_t>(proto.ret_type().value))
     {
         auto builder = llvm::IRBuilder<>(global.llvm_ctx);
-        snippet.seal_open_blocks(builder, [] (auto& builder) { builder.CreateRetVoid(); });
+        // Having open blocks means that the function has no return statement,
+        // this implies its return type is `unit_t`, so just return `i18 0`.
+        snippet.seal_open_blocks(builder, [zero=builder.getInt8(0)] (auto& builder) { builder.CreateRet(zero); });
     }
 }
 
@@ -669,20 +708,15 @@ void gen_stmt(
         },
         [&] (typecheck::stmt_t::return_t const& x)
         {
-            if (x.expr)
-            {
-                auto const dest =
-                    llvm_f->arg_empty() ? nullptr
-                    : not llvm_f->hasParamAttribute(llvm_f->arg_size() - 1ul, llvm::Attribute::StructRet) ? nullptr
-                    : llvm_f->getArg(llvm_f->arg_size() - 1ul);
-                auto const ret_val = gen_val(global, local, builder, *x.expr, dest);
-                if (dest)
-                    builder.CreateRetVoid();
-                else
-                    builder.CreateRet(ret_val);
-            }
-            else
-                builder.CreateRetVoid();
+            auto const dest =
+                llvm_f->arg_empty() ? nullptr
+                : not llvm_f->hasParamAttribute(llvm_f->arg_size() - 1ul, llvm::Attribute::StructRet) ? nullptr
+                : llvm_f->getArg(llvm_f->arg_size() - 1ul);
+            // if the return expression has type unit_t,
+            // always generate a value, because it might be a function call with side effects,
+            // but then just return the constant 0, there is no need to complicate the CFG for that;
+            auto const ret_val = x.expr ? gen_val(global, local, builder, *x.expr, dest) : nullptr;
+            builder.CreateRet(ret_val and not has_unit_type(*x.expr) ? ret_val : builder.getInt8(0));
         });
 }
 

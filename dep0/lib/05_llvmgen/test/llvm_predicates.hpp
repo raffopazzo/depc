@@ -15,6 +15,8 @@
 namespace dep0::llvmgen::testing {
 
 // type predicates
+boost::test_tools::predicate_result has_void_return_type(llvm::Function const&);
+
 boost::test_tools::predicate_result is_bool(llvm::Argument const*, std::optional<std::string_view>);
 boost::test_tools::predicate_result is_i32(llvm::Argument const*, std::optional<std::string_view>);
 boost::test_tools::predicate_result is_u32(llvm::Argument const*, std::optional<std::string_view>);

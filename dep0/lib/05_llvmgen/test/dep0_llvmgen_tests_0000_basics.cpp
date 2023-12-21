@@ -2,6 +2,9 @@
 #include <boost/test/included/unit_test.hpp>
 
 #include "llvmgen_tests_fixture.hpp"
+#include "llvm_predicates.hpp"
+
+using namespace dep0::llvmgen::testing;
 
 BOOST_FIXTURE_TEST_SUITE(dep0_llvmgen_tests_0000_basics, LLVMGenTestsFixture)
 
@@ -19,6 +22,21 @@ BOOST_AUTO_TEST_CASE(pass_010) { BOOST_TEST(pass("0000_basics/pass_010.depc")); 
 BOOST_AUTO_TEST_CASE(pass_011) { BOOST_TEST(pass("0000_basics/pass_011.depc")); }
 BOOST_AUTO_TEST_CASE(pass_012) { BOOST_TEST(pass("0000_basics/pass_012.depc")); }
 BOOST_AUTO_TEST_CASE(pass_013) { BOOST_TEST(pass("0000_basics/pass_013.depc")); }
+
+BOOST_AUTO_TEST_CASE(pass_014)
+{
+    BOOST_TEST_REQUIRE(pass("0000_basics/pass_014.depc"));
+    {
+        auto const f = pass_result.value()->getFunction("unit");
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(is_return_of_void(f->getEntryBlock().getTerminator()));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("f");
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(is_return_of_void(f->getEntryBlock().getTerminator()));
+    }
+}
 
 // BOOST_AUTO_TEST_CASE(typecheck_error_000) doesn't type check
 // BOOST_AUTO_TEST_CASE(typecheck_error_001) doesn't type check

@@ -2,6 +2,7 @@
 
 #include "dep0/error.hpp"
 
+#include <ranges>
 #include <type_traits>
 #include <vector>
 
@@ -14,6 +15,20 @@ auto fmap(std::vector<T> const& xs, F&& f)
     std::vector<std::invoke_result_t<F, typename std::vector<T>::value_type>> result;
     result.reserve(xs.size());
     for (auto const& x: xs)
+        result.push_back(f(x));
+    return result;
+}
+
+template <typename T, typename F>
+auto fmap(
+    typename std::vector<T>::const_iterator const begin,
+    typename std::vector<T>::const_iterator const end,
+    F&& f)
+-> std::vector<std::invoke_result_t<F, typename std::vector<T>::value_type>>
+{
+    std::vector<std::invoke_result_t<F, typename std::vector<T>::value_type>> result;
+    result.reserve(std::distance(begin, end));
+    for (auto const& x: std::ranges::subrange(begin, end))
         result.push_back(f(x));
     return result;
 }

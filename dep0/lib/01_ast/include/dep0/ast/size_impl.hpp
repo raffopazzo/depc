@@ -119,6 +119,24 @@ std::size_t size(expr_t<P> const& x)
         [] (expr_t<P>::pi_t const& x)
         {
             return 1ul + impl::size<P>(x.args.begin(), x.args.end(), x.ret_type.get(), nullptr);
+        },
+        [] (expr_t<P>::array_t const&)
+        {
+            return 0ul;
+        },
+        [] (expr_t<P>::init_list_t const& x)
+        {
+            return 1ul + std::accumulate(
+                x.values.begin(), x.values.end(),
+                0ul,
+                [] (std::size_t const acc, expr_t<P> const& v)
+                {
+                    return std::max(acc, size(v));
+                });
+        },
+        [] (expr_t<P>::subscript_t const& x)
+        {
+            return 1ul + std::max(size(x.array.get()), size(x.index.get()));
         });
 }
 

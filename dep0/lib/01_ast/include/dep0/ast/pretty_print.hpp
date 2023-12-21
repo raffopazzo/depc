@@ -97,6 +97,15 @@ template <Properties P>
 std::ostream& pretty_print(std::ostream&, typename expr_t<P>::pi_t const&, std::size_t indent = 0ul);
 
 template <Properties P>
+std::ostream& pretty_print(std::ostream&, typename expr_t<P>::array_t const&, std::size_t indent = 0ul);
+
+template <Properties P>
+std::ostream& pretty_print(std::ostream&, typename expr_t<P>::init_list_t const&, std::size_t indent = 0ul);
+
+template <Properties P>
+std::ostream& pretty_print(std::ostream&, typename expr_t<P>::subscript_t const&, std::size_t indent = 0ul);
+
+template <Properties P>
 std::ostream& pretty_print(
     std::ostream&,
     typename std::vector<func_arg_t<P>>::const_iterator begin,
@@ -356,6 +365,29 @@ template <Properties P>
 std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::pi_t const& x, std::size_t const indent)
 {
     return pretty_print(os, x.args.begin(), x.args.end(), x.ret_type.get(), indent);
+}
+
+template <Properties P>
+std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::array_t const&, std::size_t)
+{
+    return os << "array_t";
+}
+
+template <Properties P>
+std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::init_list_t const& x, std::size_t const indent)
+{
+    os << '{';
+    for (bool first = true; auto const& v: x.values)
+        pretty_print(std::exchange(first, false) ? os : os << ", ", v, indent);
+    return os << '}';
+}
+
+template <Properties P>
+std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::subscript_t const& x, std::size_t const indent)
+{
+    pretty_print(os, x.array.get(), indent) << '[';
+    pretty_print(os, x.index.get(), indent) << ']';
+    return os;
 }
 
 template <Properties P>

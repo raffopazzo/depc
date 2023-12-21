@@ -1,0 +1,14 @@
+auto empty_of(typename t) -> array_t(t, 0)
+{
+    return {};
+}
+
+auto empty_of_int() -> array_t(i32_t, 0)
+{
+    return empty_of(i32_t);
+}
+
+auto empty_of_bool() -> array_t(bool, 0)
+{
+    return empty_of(bool);
+}

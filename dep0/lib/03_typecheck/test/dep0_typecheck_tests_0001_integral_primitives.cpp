@@ -137,7 +137,7 @@ BOOST_AUTO_TEST_CASE(typecheck_error_124) { BOOST_TEST(fail("0001_integral_primi
 BOOST_AUTO_TEST_CASE(typecheck_error_125)
 {
     BOOST_TEST_REQUIRE(fail("0001_integral_primitives/typecheck_error_125.depc"));
-    BOOST_TEST(fail_result->error == "invalid sign for numeric constant");
+    BOOST_TEST(fail_result->error == "numeric constant does not fit inside `u64_t`");
     BOOST_TEST(fail_result->location.has_value());
     BOOST_TEST_REQUIRE(fail_result->context.has_value());
     std::ostringstream tgt;

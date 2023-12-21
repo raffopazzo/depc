@@ -1,0 +1,8 @@
+unit_t discard(u64_t n, array_t(i32_t, n))
+{
+}
+
+unit_t nothing()
+{
+    return discard(0, {});
+}

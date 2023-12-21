@@ -376,6 +376,7 @@ llvm::Type* gen_type(global_context_t& global, local_context_t const& local, typ
             // So, overall, we should regard the idea of making `unit_t` an LLVM type with 0 size as
             // a potential optimization opportunity, rather than a fundamental fact of emitting LLVM IR.
             // So, for now, we prefer to make the codegen logic simpler and deal with this optimization later.
+            // The only time we use LLVM `void` is when a function returns a complex type via a StructRet argument.
             return llvm::Type::getInt8Ty(global.llvm_ctx);
         },
         [&] (typecheck::expr_t::i8_t const&) -> llvm::Type* { return llvm::Type::getInt8Ty(global.llvm_ctx); },
@@ -716,7 +717,10 @@ void gen_stmt(
             // always generate a value, because it might be a function call with side effects,
             // but then just return the constant 0, there is no need to complicate the CFG for that;
             auto const ret_val = x.expr ? gen_val(global, local, builder, *x.expr, dest) : nullptr;
-            builder.CreateRet(ret_val and not has_unit_type(*x.expr) ? ret_val : builder.getInt8(0));
+            if (dest)
+                builder.CreateRetVoid();
+            else
+                builder.CreateRet(ret_val and not has_unit_type(*x.expr) ? ret_val : builder.getInt8(0));
         });
 }
 

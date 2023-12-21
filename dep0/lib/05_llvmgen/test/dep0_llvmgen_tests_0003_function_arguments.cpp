@@ -60,6 +60,48 @@ BOOST_AUTO_TEST_CASE(pass_003)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_004)
+{
+    BOOST_TEST_REQUIRE(pass("0003_function_arguments/pass_004.depc"));
+    {
+        auto const f = pass_result.value()->getFunction("unit");
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(has_void_return_type(*f));
+        BOOST_TEST(f->arg_size() == 0ul);
+        BOOST_TEST(is_return_of_void(f->getEntryBlock().getTerminator()));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("f1");
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(has_void_return_type(*f));
+        BOOST_TEST_REQUIRE(f->arg_size() == 1ul);
+        BOOST_TEST(f->getArg(0ul)->getType()->isIntegerTy(8ul));
+        BOOST_TEST(is_return_of_void(f->getEntryBlock().getTerminator()));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("g1");
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(has_void_return_type(*f));
+        BOOST_TEST(f->arg_size() == 0ul);
+        BOOST_TEST(is_return_of_void(f->getEntryBlock().getTerminator()));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("f2");
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(has_void_return_type(*f));
+        BOOST_TEST_REQUIRE(f->arg_size() == 1ul);
+        BOOST_TEST(f->getArg(0ul)->getType()->isIntegerTy(8ul));
+        BOOST_TEST(is_return_of_void(f->getEntryBlock().getTerminator()));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("g2");
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(has_void_return_type(*f));
+        BOOST_TEST(f->arg_size() == 0ul);
+        BOOST_TEST(is_return_of_void(f->getEntryBlock().getTerminator()));
+    }
+}
+
 // BOOST_AUTO_TEST_CASE(typecheck_error_000)
 // BOOST_AUTO_TEST_CASE(typecheck_error_001)
 

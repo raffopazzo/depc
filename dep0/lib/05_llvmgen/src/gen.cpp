@@ -293,7 +293,7 @@ llvm::Type* gen_type(global_context_t& global, local_context_t const& local, typ
             // This decision massively simplifies the logic of emitting LLVM IR,
             // but there is an obvious drawback:
             // a function with return type `unit_t` will now waste a register.
-            // Whilst this would be problmatic for an efficient executable program,
+            // Whilst this would be problematic for an efficient executable program,
             // there are 2 important considersations:
             //  1. first of all, the optimizer might realize that the register is not really being used
             //     and could decide to use it for something else;

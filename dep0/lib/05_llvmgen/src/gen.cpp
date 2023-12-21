@@ -301,7 +301,7 @@ llvm::Type* gen_type(global_context_t& global, local_context_t const& local, typ
             //     visible for inlining, a lot of computations might get performed at compile-time via beta-reduction;
             //  2. traditionally, return type `void` suggests that this is a function whose only purpose is
             //     to have side-effects; but even the most effectful function, say `memset()`, would be better if
-            //     it returned something; in this example, the pointer to the end of the region.
+            //     it returned the pointer to the end of the region.
             // So, overall, we should regard the idea of making `unit_t` an LLVM type with 0 size as
             // a potential optimization opportunity, rather than a fundamental fact of emitting LLVM IR.
             // So, for now, we prefer to make the codegen logic simpler and deal with this optimization later.

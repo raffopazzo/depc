@@ -1,0 +1,13 @@
+i32_t one() { return 1; }
+i32_t two() { return 2; }
+i32_t three() { return one() + two(); }
+i32_t four() { return three() + 1; }
+i32_t five() { return 2 + three(); }
+i32_t six() { return +3 + three(); }
+i32_t nine() { return 1 + six() + 2; }
+i32_t eight() { return -1 + nine(); }
+i32_t seven() { return eight() + -1; }
+i32_t ten() { return seven() + +3; }
+i32_t zero_a() { return -1 + one() + one() + -1; }
+i32_t zero_b() { return one() + -1 + one() + -1; }
+i32_t zero_c() { return one() + one() + -1 + -1; }

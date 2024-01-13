@@ -25,15 +25,16 @@ boost::test_tools::predicate_result check_name(typename ast::expr_t<P>::var_t co
     return true;
 }
 
-template <std::size_t I, typename T, typename F, typename... Predicates>
-boost::test_tools::predicate_result check_all(std::vector<T> const& v, F&& f, Predicates&&...fs)
+template <typename T, Predicate<T>... Fs>
+boost::test_tools::predicate_result check_all(std::vector<T> const& v, Fs&&... fs)
 {
-    if (auto const result = std::forward<F>(f)(v.at(I)); not result)
-        return failure("predicate at index ", I, ": ", result.message());
-    if constexpr (sizeof...(Predicates) > 0ul)
-        return check_all<I+1>(v, std::forward<Predicates>(fs)...);
-    else
-        return true;
+    auto constexpr N = sizeof...(Fs);
+    if (v.size() != N)
+        return failure("wrong number of predicates for vector: ", N, " != ", v.size());
+    auto result = boost::test_tools::predicate_result(true);
+    auto it = v.begin();
+    ([&] { if (result) result = std::forward<Fs>(fs)(*it++); }(), ...);
+    return result;
 }
 
 } // namespace detail
@@ -229,7 +230,7 @@ inline auto var(std::string const& name)
     };
 }
 
-template <ast::Properties P, Predicate<ast::expr_t<P>> F, typename... ArgPredicates>
+template <ast::Properties P, Predicate<ast::expr_t<P>> F, Predicate<ast::expr_t<P>>... ArgPredicates>
 boost::test_tools::predicate_result is_app_of(ast::expr_t<P> const& expr, F&& f_func, ArgPredicates&&... f_args)
 {
     auto const app = std::get_if<typename ast::expr_t<P>::app_t>(&expr.value);
@@ -240,12 +241,12 @@ boost::test_tools::predicate_result is_app_of(ast::expr_t<P> const& expr, F&& f_
     if (app->args.size() != sizeof...(ArgPredicates))
         return failure("wrong number of arguments ", app->args.size(), " != ", sizeof...(ArgPredicates));
     if constexpr (sizeof...(ArgPredicates) > 0ul)
-        return detail::check_all<0ul>(app->args, std::forward<ArgPredicates>(f_args)...);
+        return detail::check_all(app->args, std::forward<ArgPredicates>(f_args)...);
     else
         return true;
 }
 
-template <ast::Properties P, Predicate<ast::expr_t<P>> F, typename... ArgPredicates>
+template <ast::Properties P, Predicate<ast::expr_t<P>> F, Predicate<ast::expr_t<P>>... ArgPredicates>
 constexpr auto app_of(F&& f_func, ArgPredicates&&... f_args)
 {
     return [f_func=std::forward<F>(f_func), ...f_args=std::forward<ArgPredicates>(f_args)] (ast::expr_t<P> const& x)
@@ -254,7 +255,7 @@ constexpr auto app_of(F&& f_func, ArgPredicates&&... f_args)
     };
 }
 
-template <ast::Properties P, typename... ArgPredicates, Predicate<typename ast::expr_t<P>> F>
+template <ast::Properties P, Predicate<ast::func_arg_t<P>>... ArgPredicates, Predicate<ast::expr_t<P>> F>
 boost::test_tools::predicate_result
 is_pi_of(ast::expr_t<P> const& type, std::tuple<ArgPredicates...> const& f_args, F&& f_ret_type)
 {
@@ -279,7 +280,7 @@ is_pi_of(ast::expr_t<P> const& type, std::tuple<ArgPredicates...> const& f_args,
     return result;
 }
 
-template <ast::Properties P, Predicate<ast::expr_t<P>> F, typename... ArgPredicates>
+template <ast::Properties P, Predicate<ast::expr_t<P>> F, Predicate<ast::func_arg_t<P>>... ArgPredicates>
 constexpr auto pi_of(std::tuple<ArgPredicates...> args, F&& ret_type)
 {
     return [args=std::move(args), ret_type=std::forward<F>(ret_type)] (ast::expr_t<P> const& x)
@@ -324,7 +325,7 @@ constexpr auto array_of(F_type&& f_type, F_size&& f_size)
     };
 }
 
-template <ast::Properties P, typename... ValuePredicates>
+template <ast::Properties P, Predicate<ast::expr_t<P>>... ValuePredicates>
 boost::test_tools::predicate_result is_init_list_of(ast::expr_t<P> const& expr, ValuePredicates&&... f_values)
 {
     auto const init_list = std::get_if<typename ast::expr_t<P>::init_list_t>(&expr.value);
@@ -334,15 +335,15 @@ boost::test_tools::predicate_result is_init_list_of(ast::expr_t<P> const& expr, 
     if (init_list->values.size() != N)
         return failure("wrong number of initializer values: ", N, " != ", init_list->values.size());
     if constexpr (N > 0ul)
-        return detail::check_all<0ul>(init_list->values, std::forward<ValuePredicates>(f_values)...);
+        return detail::check_all(init_list->values, std::forward<ValuePredicates>(f_values)...);
     else
         return true;
 }
 
-template <typename... ValuePredicates>
+template <ast::Properties P, Predicate<ast::expr_t<P>>... ValuePredicates>
 constexpr auto init_list_of(ValuePredicates&&... f_values)
 {
-    return [...f_values=std::forward<ValuePredicates>(f_values)] <ast::Properties P> (ast::expr_t<P> const& x)
+    return [...f_values=std::forward<ValuePredicates>(f_values)] (ast::expr_t<P> const& x)
     {
         return is_init_list_of(x, f_values...);
     };
@@ -390,7 +391,7 @@ boost::test_tools::predicate_result is_arg(
 
 inline auto typename_(std::optional<std::string> name = std::nullopt)
 {
-    return [name=std::move(name)] <ast::Properties P> (typename ast::func_arg_t<P> const& x)
+    return [name=std::move(name)] <ast::Properties P> (ast::func_arg_t<P> const& x)
     {
         return is_arg(x, is_typename, name);
     };
@@ -407,7 +408,7 @@ inline auto arg_of(F&& f, std::optional<std::string> name = std::nullopt)
 
 // stmt_t
 
-template <ast::Properties P, Predicate<ast::expr_t<P>> F, typename... ArgPredicates>
+template <ast::Properties P, Predicate<ast::expr_t<P>> F, Predicate<ast::expr_t<P>>... ArgPredicates>
 boost::test_tools::predicate_result is_func_call_of(ast::stmt_t<P> const& stmt, F&& f_func, ArgPredicates&&... f_args)
 {
     auto const app = std::get_if<typename ast::expr_t<P>::app_t>(&stmt.value);
@@ -418,7 +419,7 @@ boost::test_tools::predicate_result is_func_call_of(ast::stmt_t<P> const& stmt, 
     if (app->args.size() != sizeof...(ArgPredicates))
         return failure("wrong number of arguments ", app->args.size(), " != ", sizeof...(ArgPredicates));
     if constexpr (sizeof...(ArgPredicates) > 0ul)
-        return detail::check_all<0ul>(app->args, std::forward<ArgPredicates>(f_args)...);
+        return detail::check_all(app->args, std::forward<ArgPredicates>(f_args)...);
     else
         return true;
 }

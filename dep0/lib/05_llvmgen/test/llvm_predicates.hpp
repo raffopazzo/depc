@@ -131,26 +131,6 @@ auto exactly(T const* const p)
             return true;
     };
 }
-template <
-    dep0::testing::Predicate<llvm::Type> F_type,
-    dep0::testing::Predicate<llvm::Value> F_ptr,
-    dep0::testing::Predicate<llvm::Value> F_idx>
-boost::test_tools::predicate_result is_gep(llvm::Instruction const* v, F_type&& f_type, F_ptr&& f_ptr, F_idx&& f_idx)
-{
-    using namespace dep0::testing;
-    if (llvm::GetElementPtrInst::getPointerOperandIndex() != 0)
-        return failure("LLVM changed the operand index from 0 to ", llvm::GetElementPtrInst::getPointerOperandIndex());
-    auto const gep = llvm::dyn_cast<llvm::GetElementPtrInst>(v);
-    if (not gep)
-        return failure("instruction is not getelementptr");
-    if (auto const result = std::forward<F_type>(f_type)(*gep->getSourceElementType()); not result)
-        return failure("GEP source element type predicate failed: ", result.message());
-    if (auto const result = std::forward<F_ptr>(f_ptr)(*gep->getPointerOperand()); not result)
-        return failure("GEP operand predicate failed: ", result.message());
-    if (auto const result = std::forward<F_idx>(f_idx)(*gep->getOperand(1)); not result)
-        return failure("GEP index predicate failed: ", result.message());
-    return true;
-}
 
 boost::test_tools::predicate_result is_return_of_void(llvm::Instruction const*);
 boost::test_tools::predicate_result is_return_of(llvm::Instruction const*, std::string_view);
@@ -167,21 +147,6 @@ boost::test_tools::predicate_result is_return_of(llvm::Instruction const* const 
     if (not ret->getReturnValue())
         return dep0::testing::failure("return instruction has no value");
     return std::forward<F>(f)(*ret->getReturnValue());
-}
-
-template <
-    dep0::testing::Predicate<llvm::Value> F_val,
-    dep0::testing::Predicate<llvm::Value> F_ptr>
-boost::test_tools::predicate_result is_store(llvm::Instruction const* v, F_val&& f_val, F_ptr&& f_ptr)
-{
-    auto const store = llvm::dyn_cast<llvm::StoreInst>(v);
-    if (not store)
-        return dep0::testing::failure("instruction is not store");
-    if (auto const result = std::forward<F_val>(f_val)(*store->getValueOperand()); not result)
-        return dep0::testing::failure("store value operand predicate failed: ", result.message());
-    if (auto const result = std::forward<F_ptr>(f_ptr)(*store->getPointerOperand()); not result)
-        return dep0::testing::failure("store pointer operand predicate failed: ", result.message());
-    return true;
 }
 
 boost::test_tools::predicate_result is_signed_constant(llvm::Value const&, long long);

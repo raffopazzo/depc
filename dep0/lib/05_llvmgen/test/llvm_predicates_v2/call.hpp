@@ -19,9 +19,9 @@ struct call_arg_t
 };
 
 template <Predicate<llvm::Value> F>
-call_arg_t<F> call_arg(F&& f, std::vector<llvm::Attribute::AttrKind> attributes = {})
+call_arg_t<std::remove_cvref_t<F>> call_arg(F&& f, std::vector<llvm::Attribute::AttrKind> attributes = {})
 {
-    return call_arg_t<F>{std::forward<F>(f), std::move(attributes)};
+    return {std::forward<F>(f), std::move(attributes)};
 }
 
 namespace impl {

@@ -350,7 +350,6 @@ std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::app_t const& x,
     return os;
 }
 
-
 template <Properties P>
 std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::abs_t const& x, std::size_t const indent)
 {

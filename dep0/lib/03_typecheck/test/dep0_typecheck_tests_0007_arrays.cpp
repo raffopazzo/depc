@@ -226,6 +226,65 @@ BOOST_AUTO_TEST_CASE(pass_007)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_008)
+{
+    BOOST_TEST_REQUIRE(pass("0007_arrays/pass_008.depc"));
+    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 3ul);
+    {
+        auto const& f = pass_result->func_defs[0ul];
+        BOOST_TEST(f.name == "matrix");
+        BOOST_TEST(
+            is_expr_of(
+                f.properties.sort.get(),
+                pi_of(
+                    std::tuple{arg_of(is_u64, "cols"), arg_of(is_u64, "rows")},
+                    is_typename)));
+        BOOST_TEST(f.value.args.size() == 2ul);
+        BOOST_TEST(is_arg(f.value.args[0ul], is_u64, "cols"));
+        BOOST_TEST(is_arg(f.value.args[1ul], is_u64, "rows"));
+        BOOST_TEST(is_typename(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], array_of(array_of(is_i32, var("cols")), var("rows"))));
+    }
+    {
+        auto const& f = pass_result->func_defs[1ul];
+        BOOST_TEST(f.name == "f");
+        BOOST_TEST(
+            is_expr_of(
+                f.properties.sort.get(),
+                pi_of(std::tuple{}, app_of(var("matrix"), constant(3), constant(2)))));
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_app_of(f.value.ret_type.get(), var("matrix"), constant(3), constant(2)));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(
+            is_return_of(
+                f.value.body.stmts[0ul],
+                init_list_of(
+                    init_list_of(constant(1), constant(2), constant(3)),
+                    init_list_of(constant(4), constant(5), constant(6)))));
+    }
+    {
+        auto const& f = pass_result->func_defs[2ul];
+        BOOST_TEST(f.name == "g");
+        BOOST_TEST(
+            is_expr_of(
+                f.properties.sort.get(),
+                pi_of(
+                    std::tuple{arg_of(app_of(var("matrix"), constant(3), constant(2)), "m")},
+                    is_i32)));
+        BOOST_TEST(f.value.args.size() == 1ul);
+        BOOST_TEST(is_arg(f.value.args[0ul], app_of(var("matrix"), constant(3), constant(2)), "m"));
+        BOOST_TEST(is_i32(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(
+            is_return_of(
+                f.value.body.stmts[0ul],
+                plus(
+                    subscript_of(subscript_of(var("m"), constant(0)), constant(1)),
+                    subscript_of(subscript_of(var("m"), constant(1)), constant(2)))));
+    }
+}
+
 BOOST_AUTO_TEST_CASE(typecheck_error_000) { BOOST_TEST_REQUIRE(fail("0007_arrays/typecheck_error_000.depc")); }
 BOOST_AUTO_TEST_CASE(typecheck_error_001) { BOOST_TEST_REQUIRE(fail("0007_arrays/typecheck_error_001.depc")); }
 BOOST_AUTO_TEST_CASE(typecheck_error_002) { BOOST_TEST_REQUIRE(fail("0007_arrays/typecheck_error_002.depc")); }

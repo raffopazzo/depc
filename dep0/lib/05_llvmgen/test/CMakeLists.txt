@@ -5,7 +5,36 @@ add_library(dep0_llvmgen_tests_fixture
     llvmgen_tests_fixture.cpp
     llvm_predicates.hpp
     llvm_predicates.cpp
+    llvm_predicates_v2/add.hpp
+    llvm_predicates_v2/add.cpp
+    llvm_predicates_v2/align.hpp
+    llvm_predicates_v2/align.cpp
+    llvm_predicates_v2/alloca.hpp
+    llvm_predicates_v2/alloca.cpp
+    llvm_predicates_v2/argument.hpp
+    llvm_predicates_v2/argument.cpp
+    llvm_predicates_v2/call.hpp
+    llvm_predicates_v2/call.cpp
+    llvm_predicates_v2/constants.hpp
+    llvm_predicates_v2/constants.cpp
+    llvm_predicates_v2/function.hpp
+    llvm_predicates_v2/function.cpp
+    llvm_predicates_v2/gep.hpp
+    llvm_predicates_v2/gep.cpp
+    llvm_predicates_v2/load.hpp
+    llvm_predicates_v2/load.cpp
+    llvm_predicates_v2/predicate.hpp
+    llvm_predicates_v2/predicate.cpp
+    llvm_predicates_v2/return.hpp
+    llvm_predicates_v2/return.cpp
+    llvm_predicates_v2/store.hpp
+    llvm_predicates_v2/store.cpp
+    llvm_predicates_v2/types.hpp
+    llvm_predicates_v2/types.cpp
+    llvm_predicates_v2.hpp
+    llvm_predicates_v2.cpp
     )
+target_include_directories(dep0_llvmgen_tests_fixture PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(dep0_llvmgen_tests_fixture
   PUBLIC
     DepC::Dep0::Parser

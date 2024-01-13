@@ -48,6 +48,77 @@ BOOST_AUTO_TEST_CASE(pass_003)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_004)
+{
+    apply_beta_delta_normalization = true;
+    BOOST_TEST_REQUIRE(pass("0004_plus_expr/pass_004.depc"));
+    {
+        auto const f = pass_result.value()->getFunction("one");
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), signed_constant(1)));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("two");
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), signed_constant(2)));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("three");
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), signed_constant(3)));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("four");
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), signed_constant(4)));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("five");
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), signed_constant(5)));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("six");
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), signed_constant(6)));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("seven");
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), signed_constant(7)));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("eight");
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), signed_constant(8)));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("nine");
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), signed_constant(9)));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("ten");
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), signed_constant(10)));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("zero_a");
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), signed_constant(0)));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("zero_b");
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), signed_constant(0)));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("zero_c");
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), signed_constant(0)));
+    }
+}
+
 // BOOST_AUTO_TEST_CASE(typecheck_error_000)
 
 BOOST_AUTO_TEST_SUITE_END()

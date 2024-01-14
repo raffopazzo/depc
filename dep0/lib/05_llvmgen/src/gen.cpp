@@ -56,7 +56,7 @@ static array_properties_t get_array_properties(typecheck::expr_t const& type)
 
 namespace needs_alloca_result
 {
-    struct doesnt_need_t{};
+    struct no_t{};
     struct array_t
     {
         typecheck::expr_t const& type;
@@ -65,7 +65,7 @@ namespace needs_alloca_result
 };
 using needs_alloca_result_t =
     std::variant<
-        needs_alloca_result::doesnt_need_t,
+        needs_alloca_result::no_t,
         needs_alloca_result::array_t>;
 
 static needs_alloca_result_t needs_alloca(typecheck::expr_t const& type)
@@ -73,18 +73,18 @@ static needs_alloca_result_t needs_alloca(typecheck::expr_t const& type)
     if (auto const app = std::get_if<typecheck::expr_t::app_t>(&type.value))
         if (std::holds_alternative<typecheck::expr_t::array_t>(app->func.get().value))
             return needs_alloca_result::array_t{app->args[0ul], app->args[1ul]};
-    return needs_alloca_result::doesnt_need_t{};
+    return needs_alloca_result::no_t{};
 }
 
-static bool does_need_alloca(typecheck::expr_t const& type)
+static bool is_alloca_needed(typecheck::expr_t const& type)
 {
-    return not std::holds_alternative<needs_alloca_result::doesnt_need_t>(needs_alloca(type));
+    return not std::holds_alternative<needs_alloca_result::no_t>(needs_alloca(type));
 }
 
 /**
- * Same as `llvm::FunctionCallee`, but the latter has a
- * broken API that doesn't allow access to the fields via
- * const-ref.
+ * Like `llvm::FunctionCallee`, it represents a callable function together with its type.
+ * But unlike it, this allows access to the two fields via const-ref.
+ * If upstream fixes their API, we can remove this and use theirs instead.
  */
 struct llvm_func_t
 {
@@ -317,7 +317,7 @@ bool is_first_order_type(typecheck::expr_t const& type)
         },
         [] (typecheck::expr_t::abs_t const&) { return false; },
         [] (typecheck::expr_t::pi_t const& t) { return is_first_order_function_type(t.args, t.ret_type.get()); },
-        [] (typecheck::expr_t::array_t const&) { return false; }, // `array_t` on its own is not a type at all
+        [] (typecheck::expr_t::array_t const&) { return false; }, // `array_t` on its own is a term, not a type
         [] (typecheck::expr_t::init_list_t const&) { return false; },
         [] (typecheck::expr_t::subscript_t const&) { return false; });
 }
@@ -398,7 +398,7 @@ llvm::Type* gen_type(global_context_t& global, local_context_t const& local, typ
             // So, overall, we should regard the idea of making `unit_t` an LLVM type with 0 size as
             // a potential optimization opportunity, rather than a fundamental fact of emitting LLVM IR.
             // So, for now, we prefer to make the codegen logic simpler and deal with this optimization later.
-            // The only time we use LLVM `void` is when a function returns a complex type via a StructRet argument.
+            // The only time we use LLVM `void` is when a function returns an object via a StructRet argument.
             return llvm::Type::getInt8Ty(global.llvm_ctx);
         },
         [&] (typecheck::expr_t::i8_t const&) -> llvm::Type* { return llvm::Type::getInt8Ty(global.llvm_ctx); },
@@ -553,7 +553,7 @@ llvm::FunctionType* gen_func_type(
     auto arg_types = fmap(proto.args(), [&] (auto const& arg) { return gen_type(global, local, arg.type); });
     match(
         needs_alloca(proto.ret_type()),
-        [] (needs_alloca_result::doesnt_need_t) {},
+        [] (needs_alloca_result::no_t) {},
         [&] (needs_alloca_result::array_t const& array)
         {
              // For arrays `gen_type` already returns a pointer,
@@ -572,7 +572,7 @@ void gen_func_args(local_context_t& local, llvm_func_proto_t const& proto, llvm:
         auto const& [arg_type, arg_var] = std::tie(proto.arg(i).type, proto.arg(i).var);
         if (auto const attr = get_sign_ext_attribute(local, arg_type); attr != llvm::Attribute::None)
             llvm_arg->addAttr(attr);
-        if (does_need_alloca(arg_type))
+        if (is_alloca_needed(arg_type))
             llvm_arg->addAttr(llvm::Attribute::NonNull);
         if (arg_var)
         {
@@ -591,7 +591,7 @@ void gen_func_args(local_context_t& local, llvm_func_proto_t const& proto, llvm:
             assert(inserted);
         }
     }
-    if (does_need_alloca(proto.ret_type()))
+    if (is_alloca_needed(proto.ret_type()))
     {
         auto const ret_arg = llvm_f->getArg(proto.args().size());
         ret_arg->addAttr(llvm::Attribute::StructRet);
@@ -728,10 +728,8 @@ void gen_stmt(
         },
         [&] (typecheck::stmt_t::return_t const& x)
         {
-            auto const dest =
-                llvm_f->arg_empty() ? nullptr
-                : not llvm_f->hasParamAttribute(llvm_f->arg_size() - 1ul, llvm::Attribute::StructRet) ? nullptr
-                : llvm_f->getArg(llvm_f->arg_size() - 1ul);
+            auto const last = llvm_f->arg_empty() ? nullptr : llvm_f->getArg(llvm_f->arg_size() - 1ul);
+            auto const dest = last and last->hasAttribute(llvm::Attribute::StructRet) ? last : nullptr;
             // if the return expression has type unit_t,
             // always generate a value, because it might be a function call with side effects,
             // but then just return the constant 0, there is no need to complicate the CFG for that;
@@ -761,7 +759,7 @@ llvm::Value* gen_alloca_if_needed(
 {
     return match(
         needs_alloca(type),
-        [] (needs_alloca_result::doesnt_need_t) -> llvm::Value* { return nullptr; },
+        [] (needs_alloca_result::no_t) -> llvm::Value* { return nullptr; },
         [&] (needs_alloca_result::array_t const& array) -> llvm::Value*
         {
             auto const size = gen_val(global, local, builder, array.size, nullptr);

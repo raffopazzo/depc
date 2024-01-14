@@ -428,6 +428,80 @@ BOOST_AUTO_TEST_CASE(pass_009)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_010)
+{
+    apply_beta_delta_normalization = false;
+    BOOST_TEST_REQUIRE(pass("0007_arrays/pass_010.depc"));
+    {
+        auto const f = pass_result.value()->getFunction("values");
+        BOOST_TEST_REQUIRE(
+            is_function_of(
+                f,
+                std::tuple{
+                    arg_of(pointer_to(is_i32), std::nullopt, {llvm::Attribute::NonNull, llvm::Attribute::StructRet})
+                },
+                is_void));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        auto const& bb = f->getEntryBlock();
+        BOOST_TEST_REQUIRE(bb.size() == 7ul);
+        auto it = bb.begin();
+        auto const& gep1 = *it++;
+        auto const& store1 = *it++;
+        auto const& gep2 = *it++;
+        auto const& store2 = *it++;
+        auto const& gep3 = *it++;
+        auto const& store3 = *it++;
+        auto const& ret = *it++;
+        auto const ret_arg = f->getArg(0ul);
+        BOOST_TEST(is_gep_of(gep1, is_i32, exactly(ret_arg), constant(0)));
+        BOOST_TEST(is_gep_of(gep2, is_i32, exactly(ret_arg), constant(1)));
+        BOOST_TEST(is_gep_of(gep3, is_i32, exactly(ret_arg), constant(2)));
+        BOOST_TEST(is_store_of(store1, is_i32, constant(1), exactly(&gep1), align_of(4)));
+        BOOST_TEST(is_store_of(store2, is_i32, constant(2), exactly(&gep2), align_of(4)));
+        BOOST_TEST(is_store_of(store3, is_i32, constant(3), exactly(&gep3), align_of(4)));
+        BOOST_TEST(is_return_of_void(ret));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("six");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        auto const& bb = f->getEntryBlock();
+        BOOST_TEST_REQUIRE(bb.size() == 15ul);
+        auto it = bb.begin();
+        auto const& alloca1 = *it++;
+        auto const& call1 = *it++;
+        auto const& gep1 = *it++;
+        auto const& load1 = *it++;
+        auto const& alloca2 = *it++;
+        auto const& call2 = *it++;
+        auto const& gep2 = *it++;
+        auto const& load2 = *it++;
+        auto const& add1 = *it++;
+        auto const& alloca3 = *it++;
+        auto const& call3 = *it++;
+        auto const& gep3 = *it++;
+        auto const& load3 = *it++;
+        auto const& add2 = *it++;
+        auto const& ret = *it++;
+        auto const values = exactly(pass_result.value()->getFunction("values"));
+        BOOST_TEST(is_alloca(alloca1, is_i32, constant(3), align_of(4)));
+        BOOST_TEST(is_alloca(alloca2, is_i32, constant(3), align_of(4)));
+        BOOST_TEST(is_alloca(alloca3, is_i32, constant(3), align_of(4)));
+        BOOST_TEST(is_direct_call(call1, values, call_arg(exactly(&alloca1))));
+        BOOST_TEST(is_direct_call(call2, values, call_arg(exactly(&alloca2))));
+        BOOST_TEST(is_direct_call(call3, values, call_arg(exactly(&alloca3))));
+        BOOST_TEST(is_gep_of(gep1, is_i32, exactly(&alloca1), constant(0)));
+        BOOST_TEST(is_gep_of(gep2, is_i32, exactly(&alloca2), constant(1)));
+        BOOST_TEST(is_gep_of(gep3, is_i32, exactly(&alloca3), constant(2)));
+        BOOST_TEST(is_load_of(load1, is_i32, exactly(&gep1), align_of(4)));
+        BOOST_TEST(is_load_of(load2, is_i32, exactly(&gep2), align_of(4)));
+        BOOST_TEST(is_load_of(load3, is_i32, exactly(&gep3), align_of(4)));
+        BOOST_TEST(is_add_of(add1, exactly(&load1), exactly(&load2)));
+        BOOST_TEST(is_add_of(add2, exactly(&add1), exactly(&load3)));
+        BOOST_TEST(is_return_of(ret, exactly(&add2)));
+    }
+}
+
 // BOOST_AUTO_TEST_CASE(typecheck_error_000)
 // BOOST_AUTO_TEST_CASE(typecheck_error_001)
 // BOOST_AUTO_TEST_CASE(typecheck_error_002)

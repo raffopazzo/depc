@@ -283,6 +283,38 @@ BOOST_AUTO_TEST_CASE(pass_009)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_010)
+{
+    BOOST_TEST_REQUIRE(pass("0007_arrays/pass_010.depc"));
+    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 2ul);
+    {
+        auto const& f = pass_result->func_defs[0ul];
+        BOOST_TEST(f.name == "values");
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_array_of(f.value.ret_type.get(), is_i32, constant(3)));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(
+            is_return_of(
+                f.value.body.stmts[0ul],
+                init_list_of(constant(1), constant(2), constant(3))));
+    }
+    {
+        auto const& f = pass_result->func_defs[1ul];
+        BOOST_TEST(f.name == "six");
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_i32(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(
+            is_return_of(
+                f.value.body.stmts[0ul],
+                plus(
+                    plus(
+                        subscript_of(app_of(var("values")), constant(0)),
+                        subscript_of(app_of(var("values")), constant(1))),
+                    subscript_of(app_of(var("values")), constant(2)))));
+    }
+}
+
 BOOST_AUTO_TEST_CASE(typecheck_error_000)
 {
     BOOST_TEST_REQUIRE(pass("0007_arrays/typecheck_error_000.depc"));

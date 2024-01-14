@@ -20,7 +20,7 @@ boost::test_tools::predicate_result
     using namespace dep0::testing;
     auto const load = llvm::dyn_cast<llvm::LoadInst>(&x);
     if (not load)
-        return failure("instruction is not load");
+        return failure("instruction is not load but: ", x.getOpcodeName());
     if (auto const result = std::forward<F_type>(f_type)(*load->getType()); not result)
         return failure("load type predicate failed: ", result.message());
     if (auto const result = std::forward<F_ptr>(f_ptr)(*load->getPointerOperand()); not result)
@@ -45,7 +45,7 @@ boost::test_tools::predicate_result
 {
     auto const inst = llvm::dyn_cast<llvm::Instruction>(&x);
     if (not inst)
-        return dep0::testing::failure("value is not an instruction");
+        return dep0::testing::failure("value is not an instruction but: ValueID=", x.getValueID());
     return is_load_of(*inst, std::forward<F_type>(f_type), std::forward<F_ptr>(f_ptr), std::forward<F_align>(f_align));
 }
 

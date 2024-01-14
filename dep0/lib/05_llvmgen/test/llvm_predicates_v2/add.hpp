@@ -19,7 +19,7 @@ boost::test_tools::predicate_result is_add_of(llvm::Instruction const& x, F1&& f
 {
     auto const op = llvm::dyn_cast<llvm::BinaryOperator>(&x);
     if (not op)
-        return dep0::testing::failure("instruction is not a binary operator");
+        return dep0::testing::failure("instruction is not a binary operator but: ", x.getOpcodeName());
     if (op->getOpcode() != llvm::Instruction::BinaryOps::Add)
         return dep0::testing::failure(
             "binary operator is not Add: ",
@@ -48,7 +48,7 @@ boost::test_tools::predicate_result is_add_of(llvm::Value const& x, F1&& f1, F2&
 {
     auto const p = llvm::dyn_cast<llvm::Instruction>(&x);
     if (not p)
-        return dep0::testing::failure("value is not an instruction");
+        return dep0::testing::failure("value is not an instruction but: ValueID=", x.getValueID());
     return is_add_of(*p, std::forward<F1>(f1), std::forward<F2>(f2));
 }
 

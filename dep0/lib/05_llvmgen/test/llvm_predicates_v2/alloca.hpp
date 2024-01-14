@@ -23,7 +23,7 @@ boost::test_tools::predicate_result
     using namespace dep0::testing;
     auto const alloca = llvm::dyn_cast<llvm::AllocaInst>(&x);
     if (not alloca)
-        return failure("instruction is not alloca");
+        return failure("instruction is not alloca but: ", x.getOpcodeName());
     if (auto const result = std::forward<F_type>(f_type)(*alloca->getAllocatedType()); not result)
         return failure("alloca type predicate failed: ", result.message());
     if (auto const result = std::forward<F_size>(f_size)(*alloca->getArraySize()); not result)
@@ -48,7 +48,7 @@ boost::test_tools::predicate_result
 {
     auto const i = llvm::dyn_cast<llvm::Instruction>(&x);
     if (not i)
-        return dep0::testing::failure("value is not an instruction");
+        return dep0::testing::failure("value is not an instruction but: ValueID=", x.getValueID());
     return is_alloca(*i, std::forward<F_type>(f_type), std::forward<F_size>(f_size), std::forward<F_align>(f_align));
 }
 

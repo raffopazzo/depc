@@ -6,7 +6,7 @@ boost::test_tools::predicate_result is_return_of_void(llvm::Instruction const& x
 {
     auto const ret = dyn_cast<llvm::ReturnInst>(&x);
     if (not ret)
-        return dep0::testing::failure("instruction is not return");
+        return dep0::testing::failure("instruction is not return but: ", x.getOpcodeName());
     if (ret->getNumOperands() != 0)
         return dep0::testing::failure("return instruction has a value but it should be void");
     return true;
@@ -22,7 +22,7 @@ boost::test_tools::predicate_result is_return_of_void(llvm::Value const& x)
 {
     auto const instr = dyn_cast<llvm::Instruction>(&x);
     if (not instr)
-        return dep0::testing::failure("value is not an instruction");
+        return dep0::testing::failure("value is not an instruction but: ValueID=", x.getValueID());
     return is_return_of_void(*instr);
 }
 

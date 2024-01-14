@@ -32,7 +32,7 @@ boost::test_tools::predicate_result is_direct_call(llvm::Instruction const& x, F
     using namespace dep0::testing;
     auto const call = llvm::dyn_cast<llvm::CallInst>(&x);
     if (not call)
-        return failure("instruction is not a call");
+        return failure("instruction is not a call but: ", x.getOpcodeName());
     if (call->isIndirectCall())
         return failure("call is indirect but should be direct");
     auto constexpr N = sizeof...(Args);
@@ -90,7 +90,7 @@ boost::test_tools::predicate_result is_direct_call(llvm::Value const& x, F&& f, 
 {
     auto const i = llvm::dyn_cast<llvm::Instruction>(&x);
     if (not i)
-        return dep0::testing::failure("value is not an instruction");
+        return dep0::testing::failure("value is not an instruction but: ValueID=", x.getValueID());
     return is_direct_call(*i, std::forward<F>(f), std::move(args)...);
 }
 

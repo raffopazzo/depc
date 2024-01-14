@@ -12,7 +12,7 @@ boost::test_tools::predicate_result is_constant(llvm::Value const& x, int const 
 {
     auto const c = dyn_cast<llvm::ConstantInt>(&x);
     if (not c)
-        return failure("value is not a constant");
+        return failure("value is not a constant but: ValueID=", x.getValueID());
     if (auto const value = c->getSExtValue(); value != v)
         return failure(value, " != ", v);
     return true;
@@ -29,7 +29,7 @@ boost::test_tools::predicate_result is_constant(llvm::Value const& x, std::size_
 {
     auto const c = dyn_cast<llvm::ConstantInt>(&x);
     if (not c)
-        return failure("value is not a constant");
+        return failure("value is not a constant but: ValueID=", x.getValueID());
     if (auto const value = c->getZExtValue(); value != v)
         return failure(value, " != ", v);
     return true;

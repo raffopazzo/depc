@@ -25,7 +25,7 @@ boost::test_tools::predicate_result
     using namespace dep0::testing;
     auto const store = llvm::dyn_cast<llvm::StoreInst>(&x);
     if (not store)
-        return failure("instruction is not store");
+        return failure("instruction is not store but: ", x.getOpcodeName());
     if (auto const result = std::forward<F_type>(f_type)(*store->getValueOperand()->getType()); not result)
         return failure("store value operand type predicate failed: ", result.message());
     if (auto const result = std::forward<F_val>(f_val)(*store->getValueOperand()); not result)
@@ -65,7 +65,7 @@ boost::test_tools::predicate_result
 {
     auto const instr = llvm::dyn_cast<llvm::Instruction>(&x);
     if (not instr)
-        return dep0::testing::failure("value is not an instruction");
+        return dep0::testing::failure("value is not an instruction but: ValueID=", x.getValueID());
     return is_store_of(
         *instr,
         std::forward<F_type>(f_type),

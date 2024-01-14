@@ -19,7 +19,7 @@ boost::test_tools::predicate_result is_return_of(llvm::Instruction const& x, F&&
 {
     auto const ret = llvm::dyn_cast<llvm::ReturnInst>(&x);
     if (not ret)
-        return dep0::testing::failure("instruction is not return");
+        return dep0::testing::failure("instruction is not return but: ", x.getOpcodeName());
     auto const v = ret->getReturnValue();
     if (not v)
         return dep0::testing::failure("return instruction has no return value");
@@ -41,7 +41,7 @@ boost::test_tools::predicate_result is_return_of(llvm::Value const& x, F&& f)
 {
     auto const inst = llvm::dyn_cast<llvm::Instruction>(&x);
     if (not inst)
-        return dep0::testing::failure("value is not an instruction");
+        return dep0::testing::failure("value is not an instruction but: ValueID=", x.getValueID());
     return is_return_of(*inst, std::forward<F>(f));
 }
 

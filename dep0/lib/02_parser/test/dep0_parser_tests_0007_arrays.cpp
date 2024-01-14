@@ -230,6 +230,59 @@ BOOST_AUTO_TEST_CASE(pass_008)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_009)
+{
+    BOOST_TEST_REQUIRE(pass("0007_arrays/pass_009.depc"));
+    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 3ul);
+    {
+        auto const& f = pass_result->func_defs[0ul];
+        BOOST_TEST(f.name == "sum");
+        BOOST_TEST_REQUIRE(f.value.args.size() == 1ul);
+        BOOST_TEST(is_arg(f.value.args[0ul], array_of(is_i32, constant(3)), "xs"));
+        BOOST_TEST(is_i32(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(
+            is_return_of(
+                f.value.body.stmts[0ul],
+                plus(
+                    plus(
+                        subscript_of(var("xs"), constant(0)),
+                        subscript_of(var("xs"), constant(1))),
+                    subscript_of(var("xs"), constant(2)))));
+    }
+    {
+        auto const& f = pass_result->func_defs[1ul];
+        BOOST_TEST(f.name == "f");
+        BOOST_TEST_REQUIRE(f.value.args.size() == 1ul);
+        BOOST_TEST(is_arg(f.value.args[0ul], array_of(array_of(is_i32, constant(3)), constant(4)), "m"));
+        BOOST_TEST(is_i32(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(
+            is_return_of(
+                f.value.body.stmts[0ul],
+                app_of(var("sum"), subscript_of(var("m"), constant(2)))));
+    }
+    {
+        auto const& f = pass_result->func_defs[2ul];
+        BOOST_TEST(f.name == "g");
+        BOOST_TEST_REQUIRE(f.value.args.size() == 1ul);
+        BOOST_TEST(is_arg(f.value.args[0ul], array_of(array_of(is_i32, constant(3)), constant(4)), "m"));
+        BOOST_TEST(is_i32(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        dep0::ast::pretty_print(std::cout, f.value.body.stmts[0ul]);
+        BOOST_TEST(
+            is_return_of(
+                f.value.body.stmts[0ul],
+                plus(
+                    plus(
+                        plus(
+                            app_of(var("sum"), subscript_of(var("m"), constant(0))),
+                            app_of(var("sum"), subscript_of(var("m"), constant(1)))),
+                        app_of(var("sum"), subscript_of(var("m"), constant(2)))),
+                    app_of(var("sum"), subscript_of(var("m"), constant(3))))));
+    }
+}
+
 BOOST_AUTO_TEST_CASE(typecheck_error_000)
 {
     BOOST_TEST_REQUIRE(pass("0007_arrays/typecheck_error_000.depc"));

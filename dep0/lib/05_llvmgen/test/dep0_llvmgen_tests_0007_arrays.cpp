@@ -364,6 +364,70 @@ BOOST_AUTO_TEST_CASE(pass_008)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_009)
+{
+    apply_beta_delta_normalization = false;
+    BOOST_TEST_REQUIRE(pass("0007_arrays/pass_009.depc"));
+    {
+        auto const f = pass_result.value()->getFunction("sum");
+        BOOST_TEST_REQUIRE(
+            is_function_of(
+                f,
+                std::tuple{arg_of(pointer_to(is_i32), "xs", {llvm::Attribute::NonNull})},
+                is_i32));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        auto const xs = exactly(f->getArg(0ul));
+        auto const& bb = f->getEntryBlock();
+        BOOST_TEST(
+            is_return_of(
+                bb.getTerminator(),
+                add_of(
+                    add_of(
+                        load_of(is_i32, gep_of(is_i32, xs, constant(0)), align_of(4)),
+                        load_of(is_i32, gep_of(is_i32, xs, constant(1)), align_of(4))),
+                    load_of(is_i32, gep_of(is_i32, xs, constant(2)), align_of(4)))));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("f");
+        BOOST_TEST_REQUIRE(
+            is_function_of(
+                f,
+                std::tuple{arg_of(pointer_to(is_i32), "m", {llvm::Attribute::NonNull})},
+                is_i32));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        auto const& bb = f->getEntryBlock();
+        auto const m = exactly(f->getArg(0ul));
+        BOOST_TEST(
+            is_return_of(
+                bb.getTerminator(),
+                direct_call_of(
+                    exactly(pass_result.value()->getFunction("sum")),
+                    call_arg(gep_of(is_i32, m, constant(6))))));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("g");
+        BOOST_TEST_REQUIRE(
+            is_function_of(
+                f,
+                std::tuple{arg_of(pointer_to(is_i32), "m", {llvm::Attribute::NonNull})},
+                is_i32));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        auto const m = exactly(f->getArg(0ul));
+        auto const sum = exactly(pass_result.value()->getFunction("sum"));
+        auto const& bb = f->getEntryBlock();
+        BOOST_TEST(
+            is_return_of(
+                bb.getTerminator(),
+                add_of(
+                    add_of(
+                        add_of(
+                            direct_call_of(sum, call_arg(gep_of(is_i32, m, constant(0)))),
+                            direct_call_of(sum, call_arg(gep_of(is_i32, m, constant(3))))),
+                        direct_call_of(sum, call_arg(gep_of(is_i32, m, constant(6))))),
+                    direct_call_of(sum, call_arg(gep_of(is_i32, m, constant(9)))))));
+    }
+}
+
 // BOOST_AUTO_TEST_CASE(typecheck_error_000)
 // BOOST_AUTO_TEST_CASE(typecheck_error_001)
 // BOOST_AUTO_TEST_CASE(typecheck_error_002)

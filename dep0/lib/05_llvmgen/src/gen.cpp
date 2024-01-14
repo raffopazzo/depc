@@ -28,7 +28,13 @@ struct array_properties_t
     std::vector<typecheck::expr_t const*> dimensions;
 };
 
-static typecheck::expr_t::app_t const* get_if_app_of_array(typecheck::expr_t const& type)
+static bool is_array(typecheck::expr_t const& type)
+{
+    auto const app = std::get_if<typecheck::expr_t::app_t>(&type.value);
+    return app and std::holds_alternative<typecheck::expr_t::array_t>(app->func.get().value);
+}
+
+static typecheck::expr_t::app_t const* get_if_array(typecheck::expr_t const& type)
 {
     auto const app = std::get_if<typecheck::expr_t::app_t>(&type.value);
     return app and std::holds_alternative<typecheck::expr_t::array_t>(app->func.get().value) ? app : nullptr;
@@ -36,11 +42,11 @@ static typecheck::expr_t::app_t const* get_if_app_of_array(typecheck::expr_t con
 
 static array_properties_t get_array_properties(typecheck::expr_t const& type)
 {
-    auto curr = get_if_app_of_array(type);
+    auto curr = get_if_array(type);
     assert(curr and "type must be an array");
     std::vector<typecheck::expr_t const*> dimensions;
     dimensions.push_back(&curr->args[1ul]);
-    while (auto const next = get_if_app_of_array(curr->args[0ul]))
+    while (auto const next = get_if_array(curr->args[0ul]))
     {
         dimensions.push_back(&next->args[1ul]);
         curr = next;
@@ -231,11 +237,16 @@ static llvm::Value* gen_alloca_if_needed(
     local_context_t const&,
     llvm::IRBuilder<>&,
     typecheck::expr_t const&);
-static llvm::Value* gen_ptr(
+static llvm::Value* gen_array_total_size(
     global_context_t&,
     local_context_t const&,
     llvm::IRBuilder<>&,
-    typecheck::expr_t const&);
+    array_properties_t const&);
+static llvm::Value* gen_stride_size_if_needed(
+    global_context_t&,
+    local_context_t const&,
+    llvm::IRBuilder<>&,
+    array_properties_t const&);
 static llvm::Value* gen_val(
     global_context_t&,
     local_context_t const&,
@@ -758,143 +769,38 @@ llvm::Value* gen_alloca_if_needed(
         });
 }
 
-llvm::Value* gen_ptr(
+llvm::Value* gen_array_total_size(
     global_context_t& global,
     local_context_t const& local,
     llvm::IRBuilder<>& builder,
-    typecheck::expr_t const& expr)
+    array_properties_t const& properties)
 {
-    return match(
-        expr.value,
-        [] (typecheck::expr_t::typename_t const&) -> llvm::Value*
+    assert(properties.dimensions.size() > 0ul);
+    return std::accumulate(
+        std::next(properties.dimensions.begin()), properties.dimensions.end(),
+        gen_val(global, local, builder, *properties.dimensions[0ul], nullptr),
+        [&] (llvm::Value* const acc, typecheck::expr_t const* size)
         {
-            assert(false and "cannot generate a pointer for a typename");
-            __builtin_unreachable();
-        },
-        [] (typecheck::expr_t::bool_t const&) -> llvm::Value*
-        {
-            assert(false and "cannot generate a pointer for bool_t");
-            __builtin_unreachable();
-        },
-        [] (typecheck::expr_t::unit_t const&) -> llvm::Value*
-        {
-            assert(false and "cannot generate a pointer for unit_t");
-            __builtin_unreachable();
-        },
-        [] (typecheck::expr_t::i8_t const&) -> llvm::Value*
-        {
-            assert(false and "cannot generate a pointer for i8_t");
-            __builtin_unreachable();
-        },
-        [] (typecheck::expr_t::i16_t const&) -> llvm::Value*
-        {
-            assert(false and "cannot generate a pointer for i16_t");
-            __builtin_unreachable();
-        },
-        [] (typecheck::expr_t::i32_t const&) -> llvm::Value*
-        {
-            assert(false and "cannot generate a pointer for i32_t");
-            __builtin_unreachable();
-        },
-        [] (typecheck::expr_t::i64_t const&) -> llvm::Value*
-        {
-            assert(false and "cannot generate a pointer for i64_t");
-            __builtin_unreachable();
-        },
-        [] (typecheck::expr_t::u8_t const&) -> llvm::Value*
-        {
-            assert(false and "cannot generate a pointer for u8_t");
-            __builtin_unreachable();
-        },
-        [] (typecheck::expr_t::u16_t const&) -> llvm::Value*
-        {
-            assert(false and "cannot generate a pointer for u16_t");
-            __builtin_unreachable();
-        },
-        [] (typecheck::expr_t::u32_t const&) -> llvm::Value*
-        {
-            assert(false and "cannot generate a pointer for u32_t");
-            __builtin_unreachable();
-        },
-        [] (typecheck::expr_t::u64_t const&) -> llvm::Value*
-        {
-            assert(false and "cannot generate a pointer for u64_t");
-            __builtin_unreachable();
-        },
-        [&] (typecheck::expr_t::boolean_constant_t const& x) -> llvm::Value*
-        {
-            assert(false and "cannot generate a pointer for boolean constant");
-            __builtin_unreachable();
-        },
-        [&] (typecheck::expr_t::numeric_constant_t const& x) -> llvm::Value*
-        {
-            assert(false and "cannot generate a pointer for numeric constant");
-            __builtin_unreachable();
-        },
-        [&] (typecheck::expr_t::arith_expr_t const& x) -> llvm::Value*
-        {
-            assert(false and "cannot generate a pointer for arithmetic expression");
-            __builtin_unreachable();
-        },
-        [&] (typecheck::expr_t::var_t const& var) -> llvm::Value*
-        {
-            auto const val = local[var];
-            assert(val and "unknown variable");
-            return match(
-                *val,
-                [] (llvm::Value* const p) { return p; },
-                [] (llvm_func_t const& c) { return c.func; }, // TODO can generate pointer for this?
-                [] (typecheck::type_def_t const&) -> llvm::Value*
-                {
-                    assert(false and "cannot generate a pointer for a typedef");
-                    __builtin_unreachable();
-                });
-        },
-        [&] (typecheck::expr_t::app_t const& x) -> llvm::Value*
-        {
-            // TODO could perhaps generate a snippet for immediately invoked lambdas
-            return gen_func_call(global, local, builder, x); // TODO and for this?
-        },
-        [&] (typecheck::expr_t::abs_t const&) -> llvm::Value*
-        {
-            assert(false and "Generation of abstraction expression not yet implemented");
-            __builtin_unreachable();
-        },
-        [&] (typecheck::expr_t::pi_t const&) -> llvm::Value*
-        {
-            assert(false and "cannot generate a pointer for a pi-type");
-            __builtin_unreachable();
-        },
-        [&] (typecheck::expr_t::array_t const&) -> llvm::Value*
-        {
-            assert(false and "cannot generate a pointer for an array_t expression");
-            __builtin_unreachable();
-        },
-        [&] (typecheck::expr_t::init_list_t const& x) -> llvm::Value*
-        {
-            assert(false and "cannot generate a pointer for an initializer list");
-            __builtin_unreachable();
-        },
-        [&] (typecheck::expr_t::subscript_t const& subscript) -> llvm::Value*
-        {
-            auto const& array = subscript.array.get();
-            auto const& properties = get_array_properties(std::get<typecheck::expr_t>(array.properties.sort.get()));
-            auto const stride_size =
-                properties.dimensions.size() > 1ul
-                ? std::accumulate(
-                    std::next(properties.dimensions.begin(), 2ul), properties.dimensions.end(),
-                    gen_val(global, local, builder, *properties.dimensions[1ul], nullptr),
-                    [&] (llvm::Value* const acc, typecheck::expr_t const* size)
-                    {
-                        return builder.CreateMul(acc, gen_val(global, local, builder, *size, nullptr));
-                    })
-                : nullptr;
-            auto const type = gen_type(global, local, properties.element_type);
-            auto const base = gen_ptr(global, local, builder, subscript.array.get());
-            auto const index = gen_val(global, local, builder, subscript.index.get(), nullptr);
-            auto const offset = stride_size ? builder.CreateMul(stride_size, index) : index;
-            return builder.CreateGEP(type, base, offset);
+            return builder.CreateMul(acc, gen_val(global, local, builder, *size, nullptr));
         });
+}
+
+llvm::Value* gen_stride_size_if_needed(
+    global_context_t& global,
+    local_context_t const& local,
+    llvm::IRBuilder<>& builder,
+    array_properties_t const& properties)
+{
+    return
+        properties.dimensions.size() > 1ul
+        ? std::accumulate(
+            std::next(properties.dimensions.begin(), 2ul), properties.dimensions.end(),
+            gen_val(global, local, builder, *properties.dimensions[1ul], nullptr),
+            [&] (llvm::Value* const acc, typecheck::expr_t const* size)
+            {
+                return builder.CreateMul(acc, gen_val(global, local, builder, *size, nullptr));
+            })
+        : nullptr;
 }
 
 llvm::Value* gen_val(
@@ -1036,34 +942,17 @@ llvm::Value* gen_val(
             auto const properties = get_array_properties(std::get<typecheck::expr_t>(expr.properties.sort.get()));
             auto const dest2 = dest ? dest : [&]
             {
-                assert(properties.dimensions.size() > 0ul);
-                auto const total_size =
-                    std::accumulate(
-                        std::next(properties.dimensions.begin()), properties.dimensions.end(),
-                        gen_val(global, local, builder, *properties.dimensions[0ul], nullptr),
-                        [&] (llvm::Value* const acc, typecheck::expr_t const* size)
-                        {
-                            return builder.CreateMul(acc, gen_val(global, local, builder, *size, nullptr));
-                        });
+                auto const total_size = gen_array_total_size(global, local, builder, properties);
                 return gen_alloca(global, local, builder, properties.element_type, total_size);
             }();
-            auto const ty = dest2->getType()->getPointerElementType();
-            auto const stride_size =
-                properties.dimensions.size() > 1ul
-                ? std::accumulate(
-                    std::next(properties.dimensions.begin(), 2ul), properties.dimensions.end(),
-                    gen_val(global, local, builder, *properties.dimensions[1ul], nullptr),
-                    [&] (llvm::Value* const acc, typecheck::expr_t const* size)
-                    {
-                        return builder.CreateMul(acc, gen_val(global, local, builder, *size, nullptr));
-                    })
-                : nullptr;
+            auto const type = dest2->getType()->getPointerElementType();
+            auto const stride_size = gen_stride_size_if_needed(global, local, builder, properties);
             auto const int32 = llvm::Type::getInt32Ty(global.llvm_ctx); // TODO we use u64_t to typecheck arrays
             for (auto const i: std::views::iota(0ul, x.values.size()))
             {
                 auto const index = llvm::ConstantInt::get(int32, i);
                 auto const offset = stride_size ? builder.CreateMul(stride_size, index) : index;
-                auto const p = builder.CreateGEP(ty, dest2, offset);
+                auto const p = builder.CreateGEP(type, dest2, offset);
                 gen_val(global, local, builder, x.values[i], p);
             }
             return dest2;
@@ -1072,9 +961,16 @@ llvm::Value* gen_val(
         {
             auto const& array = subscript.array.get();
             auto const properties = get_array_properties(std::get<typecheck::expr_t>(array.properties.sort.get()));
-            auto const ty = gen_type(global, local, properties.element_type);
-            auto const p = gen_ptr(global, local, builder, expr);
-            return storeOrReturn(builder.CreateLoad(ty, p));
+            auto const stride_size = gen_stride_size_if_needed(global, local, builder, properties);
+            auto const type = gen_type(global, local, properties.element_type);
+            auto const base = gen_val(global, local, builder, subscript.array.get(), nullptr);
+            auto const index = gen_val(global, local, builder, subscript.index.get(), nullptr);
+            auto const offset = stride_size ? builder.CreateMul(stride_size, index) : index;
+            auto const ptr = builder.CreateGEP(type, base, offset);
+            return storeOrReturn(
+                is_array(std::get<typecheck::expr_t>(expr.properties.sort.get()))
+                    ? ptr
+                    : builder.CreateLoad(type, ptr));
         });
 }
 

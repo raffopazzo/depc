@@ -7,6 +7,7 @@
 #include "llvm_predicates_v2/call.hpp"
 #include "llvm_predicates_v2/constants.hpp"
 #include "llvm_predicates_v2/function.hpp"
+#include "llvm_predicates_v2/function_type.hpp"
 #include "llvm_predicates_v2/gep.hpp"
 #include "llvm_predicates_v2/load.hpp"
 #include "llvm_predicates_v2/return.hpp"

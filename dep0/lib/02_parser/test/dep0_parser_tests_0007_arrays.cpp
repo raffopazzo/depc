@@ -315,6 +315,76 @@ BOOST_AUTO_TEST_CASE(pass_010)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_011)
+{
+    BOOST_TEST_REQUIRE(pass("0007_arrays/pass_011.depc"));
+    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 5ul);
+    {
+        auto const& f = pass_result->func_defs[0ul];
+        BOOST_TEST(f.name == "transform_add");
+        BOOST_TEST_REQUIRE(f.value.args.size() == 2ul);
+        BOOST_TEST(is_arg(f.value.args[0ul], array_of(is_i32, constant(3)), "xs"));
+        BOOST_TEST(is_arg(f.value.args[1ul], array_of(pi_of(std::tuple{arg_of(is_i32)}, is_i32), constant(3)), "fs"));
+        BOOST_TEST(is_i32(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(
+            is_return_of(
+                f.value.body.stmts[0ul],
+                plus(
+                    plus(
+                        app_of(
+                            subscript_of(var("fs"), constant(0)),
+                            subscript_of(var("xs"), constant(0))),
+                        app_of(
+                            subscript_of(var("fs"), constant(1)),
+                            subscript_of(var("xs"), constant(1)))),
+                    app_of(
+                        subscript_of(var("fs"), constant(2)),
+                        subscript_of(var("xs"), constant(2))))));
+    }
+    {
+        auto const& f = pass_result->func_defs[1ul];
+        BOOST_TEST(f.name == "identity");
+        BOOST_TEST_REQUIRE(f.value.args.size() == 1ul);
+        BOOST_TEST(is_arg(f.value.args[0ul], is_i32, "x"));
+        BOOST_TEST(is_i32(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], var("x")));
+    }
+    {
+        auto const& f = pass_result->func_defs[2ul];
+        BOOST_TEST(f.name == "plus_one");
+        BOOST_TEST_REQUIRE(f.value.args.size() == 1ul);
+        BOOST_TEST(is_arg(f.value.args[0ul], is_i32, "x"));
+        BOOST_TEST(is_i32(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], plus(var("x"), constant(1))));
+    }
+    {
+        auto const& f = pass_result->func_defs[3ul];
+        BOOST_TEST(f.name == "plus_two");
+        BOOST_TEST_REQUIRE(f.value.args.size() == 1ul);
+        BOOST_TEST(is_arg(f.value.args[0ul], is_i32, "x"));
+        BOOST_TEST(is_i32(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], plus(var("x"), constant(2))));
+    }
+    {
+        auto const& f = pass_result->func_defs[4ul];
+        BOOST_TEST(f.name == "eighteen");
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_i32(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(
+            is_return_of(
+                f.value.body.stmts[0ul],
+                app_of(
+                    var("transform_add"),
+                    init_list_of(constant(3), constant(5), constant(7)),
+                    init_list_of(var("identity"), var("plus_one"), var("plus_two")))));
+    }
+}
+
 BOOST_AUTO_TEST_CASE(typecheck_error_000)
 {
     BOOST_TEST_REQUIRE(pass("0007_arrays/typecheck_error_000.depc"));

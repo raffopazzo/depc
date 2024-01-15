@@ -19,6 +19,8 @@ add_library(dep0_llvmgen_tests_fixture
     llvm_predicates_v2/constants.cpp
     llvm_predicates_v2/function.hpp
     llvm_predicates_v2/function.cpp
+    llvm_predicates_v2/function_type.hpp
+    llvm_predicates_v2/function_type.cpp
     llvm_predicates_v2/gep.hpp
     llvm_predicates_v2/gep.cpp
     llvm_predicates_v2/load.hpp
@@ -29,6 +31,8 @@ add_library(dep0_llvmgen_tests_fixture
     llvm_predicates_v2/return.cpp
     llvm_predicates_v2/store.hpp
     llvm_predicates_v2/store.cpp
+    llvm_predicates_v2/to_string.hpp
+    llvm_predicates_v2/to_string.cpp
     llvm_predicates_v2/types.hpp
     llvm_predicates_v2/types.cpp
     llvm_predicates_v2.hpp

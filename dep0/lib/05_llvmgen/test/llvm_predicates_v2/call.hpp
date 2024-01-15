@@ -1,6 +1,7 @@
 #pragma once
 
 #include "llvm_predicates_v2/predicate.hpp"
+#include "llvm_predicates_v2/to_string.hpp"
 
 #include "dep0/testing/failure.hpp"
 
@@ -26,18 +27,29 @@ call_arg_t<std::remove_cvref_t<F>> call_arg(F&& f, std::vector<llvm::Attribute::
 
 namespace impl {
 
+enum class call_style_t { direct, indirect };
+
 template <Predicate<llvm::Value> F, Predicate<llvm::Value>... Args>
-boost::test_tools::predicate_result is_direct_call(llvm::Instruction const& x, F&& f, call_arg_t<Args>... args)
+boost::test_tools::predicate_result
+    is_call(call_style_t const style, llvm::Instruction const& x, F&& f, call_arg_t<Args>... args)
 {
     using namespace dep0::testing;
     auto const call = llvm::dyn_cast<llvm::CallInst>(&x);
     if (not call)
-        return failure("instruction is not a call but: ", x.getOpcodeName());
-    if (call->isIndirectCall())
-        return failure("call is indirect but should be direct");
+        return failure("instruction is not a call but: ", to_string(x));
     auto constexpr N = sizeof...(Args);
     if (auto const n_arg = call->getNumArgOperands(); n_arg != N)
         return failure("wrong number of call arguments: ", N, " != ", n_arg);
+    if (style == call_style_t::indirect)
+    {
+        if (not call->isIndirectCall())
+            return failure("call should be indirect but is direct");
+    }
+    else
+        if (call->isIndirectCall())
+            return failure("call is indirect but should be direct");
+    if (auto const result = std::forward<F>(f)(*call->getCalledOperand()); not result)
+        return failure("called operand predicated failed: ", result.message());
     auto result = boost::test_tools::predicate_result(true);
     int next = 0;
     ([&]
@@ -78,28 +90,31 @@ boost::test_tools::predicate_result is_direct_call(llvm::Instruction const& x, F
 }
 
 template <Predicate<llvm::Value> F, Predicate<llvm::Value>... Args>
-boost::test_tools::predicate_result is_direct_call(llvm::Instruction const* const p, F&& f, call_arg_t<Args>... args)
+boost::test_tools::predicate_result
+    is_call(call_style_t const style, llvm::Instruction const* const p, F&& f, call_arg_t<Args>... args)
 {
     if (not p)
         return dep0::testing::failure("instruction is null");
-    return is_direct_call(*p, std::forward<F>(f), std::move(args)...);
+    return is_call(style, *p, std::forward<F>(f), std::move(args)...);
 }
 
 template <Predicate<llvm::Value> F, Predicate<llvm::Value>... Args>
-boost::test_tools::predicate_result is_direct_call(llvm::Value const& x, F&& f, call_arg_t<Args>... args)
+boost::test_tools::predicate_result
+    is_call(call_style_t const style, llvm::Value const& x, F&& f, call_arg_t<Args>... args)
 {
     auto const i = llvm::dyn_cast<llvm::Instruction>(&x);
     if (not i)
         return dep0::testing::failure("value is not an instruction but: ValueID=", x.getValueID());
-    return is_direct_call(*i, std::forward<F>(f), std::move(args)...);
+    return is_call(style, *i, std::forward<F>(f), std::move(args)...);
 }
 
 template <Predicate<llvm::Value> F, Predicate<llvm::Value>... Args>
-boost::test_tools::predicate_result is_direct_call(llvm::Value const* const p, F&& f, call_arg_t<Args>... args)
+boost::test_tools::predicate_result
+    is_call(call_style_t const style, llvm::Value const* const p, F&& f, call_arg_t<Args>... args)
 {
     if (not p)
         return dep0::testing::failure("value is null");
-    return is_direct_call(*p, std::forward<F>(f), std::move(args)...);
+    return is_call(style, *p, std::forward<F>(f), std::move(args)...);
 }
 
 } // namespace impl
@@ -108,22 +123,22 @@ inline constexpr auto is_direct_call = boost::hana::overload(
     [] <Predicate<llvm::Value> F, Predicate<llvm::Value>... Args>
     (llvm::Instruction const& x, F&& f, call_arg_t<Args>... args)
     {
-        return impl::is_direct_call(x, std::forward<F>(f), std::move(args)...);
+        return impl::is_call(impl::call_style_t::direct, x, std::forward<F>(f), std::move(args)...);
     },
     [] <Predicate<llvm::Value> F, Predicate<llvm::Value>... Args>
     (llvm::Instruction const* const p, F&& f, call_arg_t<Args>... args)
     {
-        return impl::is_direct_call(p, std::forward<F>(f), std::move(args)...);
+        return impl::is_call(impl::call_style_t::direct, p, std::forward<F>(f), std::move(args)...);
     },
     [] <Predicate<llvm::Value> F, Predicate<llvm::Value>... Args>
     (llvm::Value const& x, F&& f, call_arg_t<Args>... args)
     {
-        return impl::is_direct_call(x, std::forward<F>(f), std::move(args)...);
+        return impl::is_call(impl::call_style_t::direct, x, std::forward<F>(f), std::move(args)...);
     },
     [] <Predicate<llvm::Value> F, Predicate<llvm::Value>... Args>
     (llvm::Value const* const p, F&& f, call_arg_t<Args>... args)
     {
-        return impl::is_direct_call(p, std::forward<F>(f), std::move(args)...);
+        return impl::is_call(impl::call_style_t::direct, p, std::forward<F>(f), std::move(args)...);
     }
 );
 
@@ -149,6 +164,60 @@ auto direct_call_of(F&& f, call_arg_t<Args>... args)
         {
             return std::apply(
                 is_direct_call,
+                [&] <std::size_t... Is> (std::index_sequence<Is...>)
+                {
+                    return std::forward_as_tuple(x, f, std::get<Is>(args)...);
+                }(std::make_index_sequence<sizeof...(Args)>{}));
+        }
+    };
+    return predicate_t{std::forward<F>(f), std::move(args)...};
+}
+
+inline constexpr auto is_indirect_call = boost::hana::overload(
+    [] <Predicate<llvm::Value> F, Predicate<llvm::Value>... Args>
+    (llvm::Instruction const& x, F&& f, call_arg_t<Args>... args)
+    {
+        return impl::is_call(impl::call_style_t::indirect, x, std::forward<F>(f), std::move(args)...);
+    },
+    [] <Predicate<llvm::Value> F, Predicate<llvm::Value>... Args>
+    (llvm::Instruction const* const p, F&& f, call_arg_t<Args>... args)
+    {
+        return impl::is_call(impl::call_style_t::indirect, p, std::forward<F>(f), std::move(args)...);
+    },
+    [] <Predicate<llvm::Value> F, Predicate<llvm::Value>... Args>
+    (llvm::Value const& x, F&& f, call_arg_t<Args>... args)
+    {
+        return impl::is_call(impl::call_style_t::indirect, x, std::forward<F>(f), std::move(args)...);
+    },
+    [] <Predicate<llvm::Value> F, Predicate<llvm::Value>... Args>
+    (llvm::Value const* const p, F&& f, call_arg_t<Args>... args)
+    {
+        return impl::is_call(impl::call_style_t::indirect, p, std::forward<F>(f), std::move(args)...);
+    }
+);
+
+template <Predicate<llvm::Value> F, Predicate<llvm::Value>... Args>
+auto indirect_call_of(F&& f, call_arg_t<Args>... args)
+{
+    struct predicate_t
+    {
+        std::remove_cvref_t<F> f;
+        std::tuple<call_arg_t<Args>...> args;
+
+        boost::test_tools::predicate_result operator()(llvm::Instruction const& x) const
+        {
+            return std::apply(
+                is_indirect_call,
+                [&] <std::size_t... Is> (std::index_sequence<Is...>)
+                {
+                    return std::forward_as_tuple(x, f, std::get<Is>(args)...);
+                }(std::make_index_sequence<sizeof...(Args)>{}));
+        }
+
+        boost::test_tools::predicate_result operator()(llvm::Value const& x) const
+        {
+            return std::apply(
+                is_indirect_call,
                 [&] <std::size_t... Is> (std::index_sequence<Is...>)
                 {
                     return std::forward_as_tuple(x, f, std::get<Is>(args)...);

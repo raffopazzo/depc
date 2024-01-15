@@ -1,0 +1,18 @@
+i32_t transform_add(
+    array_t(i32_t, 3) xs,
+    array_t((i32_t) -> i32_t, 3) fs
+)
+{
+    return fs[0](xs[0]) + fs[1](xs[1]) + fs[2](xs[2]);
+}
+
+i32_t identity(i32_t x) { return x; }
+i32_t plus_one(i32_t x) { return x + 1; }
+i32_t plus_two(i32_t x) { return x + 2; }
+
+i32_t eighteen()
+{
+    return transform_add(
+        {3,5,7},
+        {identity, plus_one, plus_two});
+}

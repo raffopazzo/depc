@@ -31,7 +31,7 @@ boost::test_tools::predicate_result is_pointer_to(llvm::Type const& x, F&& f)
     using namespace dep0::testing;
     if (not x.isPointerTy())
         return failure("type is not a pointer");
-    if (auto const result = std::forward<F>(f)(x.getPointerElementType()); not result)
+    if (auto const result = std::forward<F>(f)(*x.getPointerElementType()); not result)
         return failure("predicate failed for pointer element type: ", result.message());
     return true;
 }

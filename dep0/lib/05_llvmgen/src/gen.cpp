@@ -995,41 +995,23 @@ llvm::Value* gen_func_call(
     auto const pi_type = std::get_if<typecheck::expr_t::pi_t>(&func_type->value);
     assert(pi_type and "functions must be pi-types");
     auto const dest = gen_alloca_if_needed(global, local, builder, pi_type->ret_type.get());
-    auto const func =
-        match(
-            app.func.get().value,
-            [&] (typecheck::expr_t::var_t const& var)
-            {
-                auto const val = local[var];
-                assert(val and "unknown function call");
-                return match(
-                    *val,
-                    [] (llvm::Value*) -> llvm_func_t
-                    {
-                        assert(false and "found a value but was expecting a function");
-                        __builtin_unreachable();
-                    },
-                    [] (llvm_func_t const& func) -> llvm_func_t
-                    {
-                        return func;
-                    },
-                    [] (typecheck::type_def_t const&) -> llvm_func_t
-                    {
-                        assert(false and "found a typedef but was expecting a function");
-                        __builtin_unreachable();
-                    });
-            },
-            [&] (typecheck::expr_t::abs_t const& abs) -> llvm_func_t
-            {
-                auto proto = llvm_func_proto_t::from_abs(abs);
-                assert(proto and "can only invoke a 1st order function type");
-                return gen_func(global, local, *proto, abs);
-            },
-            [] (auto const&) -> llvm_func_t
-            {
-                assert(false and "unexpected invocable expression");
-                __builtin_unreachable();
-            });
+    auto const func = [&]
+    {
+        if (auto const abs = std::get_if<typecheck::expr_t::abs_t>(&app.func.get().value))
+        {
+            auto proto = llvm_func_proto_t::from_abs(*abs);
+            assert(proto and "can only invoke a 1st order function type");
+            return gen_func(global, local, *proto, *abs);
+        }
+        else
+        {
+            auto const proto = llvm_func_proto_t::from_pi(*pi_type);
+            assert(proto and "can only invoke 1st order function types");
+            return llvm_func_t{
+                gen_func_type(global, local, *proto),
+                gen_val(global, local, builder, app.func.get(), nullptr)};
+        }
+    }();
     auto llvm_args =
         fmap(app.args, [&] (typecheck::expr_t const& arg)
         {

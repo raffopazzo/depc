@@ -502,6 +502,116 @@ BOOST_AUTO_TEST_CASE(pass_010)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_011)
+{
+    apply_beta_delta_normalization = false;
+    BOOST_TEST_REQUIRE(pass("0007_arrays/pass_011.depc"));
+    {
+        auto const f = pass_result.value()->getFunction("transform_add");
+        auto const fn_ptr = fnptr_type(std::tuple{is_i32}, is_i32);
+        BOOST_TEST_REQUIRE(
+            is_function_of(
+                f,
+                std::tuple{
+                    arg_of(pointer_to(is_i32), "xs", {llvm::Attribute::NonNull}),
+                    arg_of(pointer_to(fn_ptr), "fs", {llvm::Attribute::NonNull})},
+                is_i32));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        auto const xs = exactly(f->getArg(0ul));
+        auto const fs = exactly(f->getArg(1ul));
+        auto const sext = std::vector{llvm::Attribute::SExt};
+        BOOST_TEST(
+            is_return_of(
+                f->getEntryBlock().getTerminator(),
+                add_of(
+                    add_of(
+                        indirect_call_of(
+                            load_of(fn_ptr, gep_of(fn_ptr, fs, constant(0)), align_of(8)),
+                            call_arg(load_of(is_i32, gep_of(is_i32, xs, constant(0)), align_of(4)), sext)),
+                        indirect_call_of(
+                            load_of(fn_ptr, gep_of(fn_ptr, fs, constant(1)), align_of(8)),
+                            call_arg(load_of(is_i32, gep_of(is_i32, xs, constant(1)), align_of(4)), sext))),
+                    indirect_call_of(
+                        load_of(fn_ptr, gep_of(fn_ptr, fs, constant(2)), align_of(8)),
+                        call_arg(load_of(is_i32, gep_of(is_i32, xs, constant(2)), align_of(4)), sext)))));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("identity");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(is_i32, "x", {llvm::Attribute::SExt})}, is_i32));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), exactly(f->getArg(0ul))));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("plus_one");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(is_i32, "x", {llvm::Attribute::SExt})}, is_i32));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), add_of(exactly(f->getArg(0ul)), constant(1))));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("plus_two");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(is_i32, "x", {llvm::Attribute::SExt})}, is_i32));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), add_of(exactly(f->getArg(0ul)), constant(2))));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("eighteen");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        auto const& bb = f->getEntryBlock();
+        BOOST_TEST_REQUIRE(bb.size() == 16ul);
+        auto it = bb.begin();
+        auto const& alloca_xs = *it++;
+        auto const& gep_xs_0 = *it++;
+        auto const& store_xs_0 = *it++;
+        auto const& gep_xs_1 = *it++;
+        auto const& store_xs_1 = *it++;
+        auto const& gep_xs_2 = *it++;
+        auto const& store_xs_2 = *it++;
+        auto const& alloca_fs = *it++;
+        auto const& gep_fs_0 = *it++;
+        auto const& store_fs_0 = *it++;
+        auto const& gep_fs_1 = *it++;
+        auto const& store_fs_1 = *it++;
+        auto const& gep_fs_2 = *it++;
+        auto const& store_fs_2 = *it++;
+        auto const& call = *it++;
+        auto const& ret = *it++;
+        auto const fn_ptr = fnptr_type(std::tuple{is_i32}, is_i32);
+        BOOST_TEST(is_alloca(alloca_xs, is_i32, constant(3), align_of(4)));
+        BOOST_TEST(is_alloca(alloca_fs, fn_ptr, constant(3), align_of(8)));
+        BOOST_TEST(is_gep_of(gep_xs_0, is_i32, exactly(&alloca_xs), constant(0)));
+        BOOST_TEST(is_gep_of(gep_xs_1, is_i32, exactly(&alloca_xs), constant(1)));
+        BOOST_TEST(is_gep_of(gep_xs_2, is_i32, exactly(&alloca_xs), constant(2)));
+        BOOST_TEST(is_gep_of(gep_fs_0, fn_ptr, exactly(&alloca_fs), constant(0)));
+        BOOST_TEST(is_gep_of(gep_fs_1, fn_ptr, exactly(&alloca_fs), constant(1)));
+        BOOST_TEST(is_gep_of(gep_fs_2, fn_ptr, exactly(&alloca_fs), constant(2)));
+        BOOST_TEST(is_store_of(store_xs_0, is_i32, constant(3), exactly(&gep_xs_0), align_of(4)));
+        BOOST_TEST(is_store_of(store_xs_1, is_i32, constant(5), exactly(&gep_xs_1), align_of(4)));
+        BOOST_TEST(is_store_of(store_xs_2, is_i32, constant(7), exactly(&gep_xs_2), align_of(4)));
+        auto const identity = exactly(pass_result.value()->getFunction("identity"));
+        auto const plus_one = exactly(pass_result.value()->getFunction("plus_one"));
+        auto const plus_two = exactly(pass_result.value()->getFunction("plus_two"));
+        auto const transform_add = exactly(pass_result.value()->getFunction("transform_add"));
+        BOOST_TEST(is_store_of(store_fs_0, fn_ptr, identity, exactly(&gep_fs_0), align_of(8)));
+        BOOST_TEST(is_store_of(store_fs_1, fn_ptr, plus_one, exactly(&gep_fs_1), align_of(8)));
+        BOOST_TEST(is_store_of(store_fs_2, fn_ptr, plus_two, exactly(&gep_fs_2), align_of(8)));
+        BOOST_TEST(is_direct_call(call, transform_add, call_arg(exactly(&alloca_xs)), call_arg(exactly(&alloca_fs))));
+        BOOST_TEST(is_return_of(ret, exactly(&call)));
+    }
+}
+
+BOOST_AUTO_TEST_CASE(pass_011_normalized)
+{
+    apply_beta_delta_normalization = true;
+    BOOST_TEST_REQUIRE(pass("0007_arrays/pass_011.depc"));
+    {
+        auto const f = pass_result.value()->getFunction("eighteen");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(18)));
+    }
+}
+
 // BOOST_AUTO_TEST_CASE(typecheck_error_000)
 // BOOST_AUTO_TEST_CASE(typecheck_error_001)
 // BOOST_AUTO_TEST_CASE(typecheck_error_002)

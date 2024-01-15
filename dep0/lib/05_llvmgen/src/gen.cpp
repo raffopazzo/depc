@@ -62,7 +62,7 @@ namespace needs_alloca_result
         typecheck::expr_t const& type;
         typecheck::expr_t const& size;
     };
-};
+}
 using needs_alloca_result_t =
     std::variant<
         needs_alloca_result::no_t,

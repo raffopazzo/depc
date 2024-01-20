@@ -1,0 +1,15 @@
+auto signed_or_unsigned(bool signed) -> typename
+{
+    if (signed) return i32_t;
+    else return u32_t;
+}
+
+auto first(bool signed, array_t(signed_or_unsigned(signed), 3) xs) -> signed_or_unsigned(signed)
+{
+    return xs[0];
+}
+
+u32_t error()
+{
+    return first(false, {-1, 2, 3}); // typecheck error: -1 does not fit in u32_t
+}

@@ -739,8 +739,21 @@ BOOST_AUTO_TEST_CASE(pass_012)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_013)
+{
+    apply_beta_delta_normalization = true;
+    BOOST_TEST_REQUIRE(pass("0007_arrays/pass_013.depc"));
+    {
+        auto const f = pass_result.value()->getFunction("minus_one");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(-1)));
+    }
+}
+
 // BOOST_AUTO_TEST_CASE(typecheck_error_000)
 // BOOST_AUTO_TEST_CASE(typecheck_error_001)
 // BOOST_AUTO_TEST_CASE(typecheck_error_002)
+// BOOST_AUTO_TEST_CASE(typecheck_error_003)
 
 BOOST_AUTO_TEST_SUITE_END()

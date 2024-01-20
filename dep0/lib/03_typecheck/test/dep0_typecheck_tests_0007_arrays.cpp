@@ -342,7 +342,6 @@ BOOST_AUTO_TEST_CASE(pass_009)
         BOOST_TEST(is_arg(f.value.args[0ul], array_of(array_of(is_i32, constant(3)), constant(4)), "m"));
         BOOST_TEST(is_i32(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        dep0::ast::pretty_print(std::cout, f.value.body.stmts[0ul]);
         BOOST_TEST(
             is_return_of(
                 f.value.body.stmts[0ul],
@@ -556,8 +555,69 @@ BOOST_AUTO_TEST_CASE(pass_012)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_013)
+{
+    BOOST_TEST_REQUIRE(pass("0007_arrays/pass_013.depc"));
+    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 3ul);
+    {
+        auto const& f = pass_result->func_defs[0ul];
+        BOOST_TEST(f.name == "signed_or_unsigned");
+        BOOST_TEST(is_expr_of(f.properties.sort.get(), pi_of(std::tuple{arg_of(is_bool, "signed")}, is_typename)));
+        BOOST_TEST_REQUIRE(f.value.args.size() == 1ul);
+        BOOST_TEST(is_arg(f.value.args[0ul], is_bool, "signed"));
+        BOOST_TEST(is_typename(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(
+            is_if_else(
+                f.value.body.stmts[0ul],
+                var("signed"),
+                std::tuple{return_of(is_i32)},
+                std::tuple{return_of(is_u32)}));
+    }
+    {
+        auto const& f = pass_result->func_defs[1ul];
+        BOOST_TEST(f.name == "first");
+        BOOST_TEST(
+            is_expr_of(
+                f.properties.sort.get(),
+                pi_of(
+                    std::tuple{
+                        arg_of(is_bool, "signed"),
+                        arg_of(array_of(app_of(var("signed_or_unsigned"), var("signed")), constant(3)), "xs")},
+                    app_of(var("signed_or_unsigned"), var("signed")))));
+        BOOST_TEST_REQUIRE(f.value.args.size() == 2ul);
+        BOOST_TEST(is_arg(f.value.args[0ul], is_bool, "signed"));
+        BOOST_TEST(
+            is_arg(
+                f.value.args[1ul],
+                array_of(
+                    app_of(var("signed_or_unsigned"), var("signed")),
+                    constant(3)),
+                "xs"));
+        BOOST_TEST(is_app_of(f.value.ret_type.get(), var("signed_or_unsigned"), var("signed")));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], subscript_of(var("xs"), constant(0))));
+    }
+    {
+        auto const& f = pass_result->func_defs[2ul];
+        BOOST_TEST(f.name == "minus_one");
+        BOOST_TEST(is_expr_of(f.properties.sort.get(), pi_of(std::tuple{}, is_i32)));
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_i32(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(
+            is_return_of(
+                f.value.body.stmts[0ul],
+                app_of(
+                    var("first"),
+                    constant(true),
+                    init_list_of(constant(-1), constant(-2), constant(-3)))));
+    }
+}
+
 BOOST_AUTO_TEST_CASE(typecheck_error_000) { BOOST_TEST_REQUIRE(fail("0007_arrays/typecheck_error_000.depc")); }
 BOOST_AUTO_TEST_CASE(typecheck_error_001) { BOOST_TEST_REQUIRE(fail("0007_arrays/typecheck_error_001.depc")); }
 BOOST_AUTO_TEST_CASE(typecheck_error_002) { BOOST_TEST_REQUIRE(fail("0007_arrays/typecheck_error_002.depc")); }
+BOOST_AUTO_TEST_CASE(typecheck_error_003) { BOOST_TEST_REQUIRE(fail("0007_arrays/typecheck_error_003.depc")); }
 
 BOOST_AUTO_TEST_SUITE_END()

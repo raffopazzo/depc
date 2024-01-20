@@ -731,7 +731,35 @@ void gen_stmt(
         },
         [&] (typecheck::stmt_t::if_else_t const& x)
         {
+            // if both branches are present and contain a single return statement (with an expression),
+            // we can emit a `select `instruction instead;
+            auto const is_single_return_expr = [] (typecheck::body_t const& body)
+            {
+                if (body.stmts.size() != 1ul)
+                    return false;
+                auto const ret = std::get_if<typecheck::stmt_t::return_t>(&body.stmts[0].value);
+                return ret and ret->expr.has_value();
+            };
             auto const cond = gen_val(global, local, builder, x.cond, nullptr);
+            if (x.false_branch and is_single_return_expr(x.true_branch) and is_single_return_expr(*x.false_branch))
+            {
+                auto const& ret1 = std::get<typecheck::stmt_t::return_t>(x.true_branch.stmts[0].value);
+                auto const& ret2 = std::get<typecheck::stmt_t::return_t>(x.false_branch->stmts[0].value);
+                auto const ret_val =
+                    builder.CreateSelect(
+                        cond,
+                        gen_val(global, local, builder, *ret1.expr, nullptr),
+                        gen_val(global, local, builder, *ret2.expr, nullptr));
+                if (inlined_result)
+                {
+                    // TODO shall we still store if the return value was an array?
+                    builder.CreateStore(ret_val, inlined_result);
+                    snipppet.open_blocks.push_back(builder.GetInsertBlock());
+                }
+                else
+                    builder.CreateRet(ret_val);
+                return;
+            }
             auto const then = gen_body(global, local, x.true_branch, "then", llvm_f, inlined_result);
             std::ranges::copy(then.open_blocks, std::back_inserter(snipppet.open_blocks));
             if (x.false_branch)

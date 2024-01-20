@@ -13,7 +13,13 @@
 
 namespace dep0::llvmgen {
 
-expected<unique_ref<llvm::Module>>
-gen(llvm::LLVMContext&, std::string_view module_name, typecheck::module_t const&) noexcept;
+enum class verify_t { yes, no };
+
+expected<unique_ref<llvm::Module>> gen(
+    llvm::LLVMContext&,
+    std::string_view module_name,
+    typecheck::module_t const& m,
+    verify_t = verify_t::yes
+) noexcept;
 
 }

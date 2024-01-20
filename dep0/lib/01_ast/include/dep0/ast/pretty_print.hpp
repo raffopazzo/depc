@@ -182,6 +182,64 @@ std::ostream& pretty_print(std::ostream& os, func_arg_t<P> const& x, std::size_t
 }
 
 template <Properties P>
+std::ostream& pretty_print(std::ostream& os, body_t<P> const& x, std::size_t const indent)
+{
+    if (x.stmts.empty())
+        return os << "{ }";
+    os << '{';
+    for (auto const& s: x.stmts)
+        pretty_print(new_line(os, indent + 1ul), s, indent + 1ul);
+    new_line(os, indent) << '}';
+    return os;
+}
+
+template <Properties P>
+std::ostream& pretty_print(std::ostream& os, stmt_t<P> const& x, std::size_t const indent)
+{
+    match(x.value, [&] (auto const& x) { pretty_print<P>(os, x, indent); });
+    if (std::holds_alternative<typename expr_t<P>::app_t>(x.value))
+        os << ';';
+    return os;
+}
+
+template <Properties P>
+std::ostream& pretty_print(std::ostream& os, typename stmt_t<P>::if_else_t const& x, std::size_t const indent)
+{
+    auto const print_stmt_or_body = [&] (body_t<P> const& body)
+    {
+        if (body.stmts.size() == 1ul and not std::holds_alternative<typename stmt_t<P>::if_else_t>(body.stmts[0].value))
+            pretty_print(new_line(os, indent + 1ul), body.stmts[0], indent + 1ul);
+        else
+            pretty_print(new_line(os, indent + 1ul), body, indent + 1ul);
+    };
+    pretty_print(os << "if (", x.cond, indent + 1ul) << ')';
+    print_stmt_or_body(x.true_branch);
+    if (x.false_branch)
+    {
+        new_line(os, indent) << "else";
+        print_stmt_or_body(*x.false_branch);
+    }
+    return os;
+}
+
+template <Properties P>
+std::ostream& pretty_print(std::ostream& os, typename stmt_t<P>::return_t const& x, std::size_t const indent)
+{
+    if (x.expr)
+        pretty_print(os << "return ", *x.expr, indent + 1ul) << ';';
+    else
+        os << "return;";
+    return os;
+}
+
+template <Properties P>
+std::ostream& pretty_print(std::ostream& os, expr_t<P> const& x, std::size_t const indent)
+{
+    match(x.value, [&] (auto const& x) { pretty_print<P>(os, x, indent); });
+    return os;
+}
+
+template <Properties P>
 std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::typename_t const&, std::size_t)
 {
     return os << "typename";
@@ -245,64 +303,6 @@ template <Properties P>
 std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::u64_t const&, std::size_t)
 {
     return os << "u64_t";
-}
-
-template <Properties P>
-std::ostream& pretty_print(std::ostream& os, body_t<P> const& x, std::size_t const indent)
-{
-    if (x.stmts.empty())
-        return os << "{ }";
-    os << '{';
-    for (auto const& s: x.stmts)
-        pretty_print(new_line(os, indent + 1ul), s, indent + 1ul);
-    new_line(os, indent) << '}';
-    return os;
-}
-
-template <Properties P>
-std::ostream& pretty_print(std::ostream& os, stmt_t<P> const& x, std::size_t const indent)
-{
-    match(x.value, [&] (auto const& x) { pretty_print<P>(os, x, indent); });
-    if (std::holds_alternative<typename expr_t<P>::app_t>(x.value))
-        os << ';';
-    return os;
-}
-
-template <Properties P>
-std::ostream& pretty_print(std::ostream& os, typename stmt_t<P>::if_else_t const& x, std::size_t const indent)
-{
-    auto const print_stmt_or_body = [&] (body_t<P> const& body)
-    {
-        if (body.stmts.size() == 1ul and not std::holds_alternative<typename stmt_t<P>::if_else_t>(body.stmts[0].value))
-            pretty_print(new_line(os, indent + 1ul), body.stmts[0]);
-        else
-            pretty_print(new_line(os, indent + 1ul), body);
-    };
-    pretty_print(os << "if (", x.cond, indent + 1ul) << ')';
-    print_stmt_or_body(x.true_branch);
-    if (x.false_branch)
-    {
-        new_line(os, indent) << "else";
-        print_stmt_or_body(*x.false_branch);
-    }
-    return os;
-}
-
-template <Properties P>
-std::ostream& pretty_print(std::ostream& os, typename stmt_t<P>::return_t const& x, std::size_t const indent)
-{
-    if (x.expr)
-        pretty_print(os << "return ", *x.expr, indent + 1ul) << ';';
-    else
-        os << "return;";
-    return os;
-}
-
-template <Properties P>
-std::ostream& pretty_print(std::ostream& os, expr_t<P> const& x, std::size_t const indent)
-{
-    match(x.value, [&] (auto const& x) { pretty_print<P>(os, x, indent); });
-    return os;
 }
 
 template <Properties P>

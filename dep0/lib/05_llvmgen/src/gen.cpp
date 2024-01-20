@@ -322,11 +322,9 @@ bool is_first_order_type(typecheck::expr_t const& type)
         [] (typecheck::expr_t::subscript_t const&) { return false; });
 }
 
-expected<unique_ref<llvm::Module>> gen(
-    llvm::LLVMContext& llvm_ctx,
-    std::string_view const name,
-    typecheck::module_t const& m
-) noexcept
+expected<unique_ref<llvm::Module>>
+    gen(llvm::LLVMContext& llvm_ctx, std::string_view const name, typecheck::module_t const& m, verify_t verify)
+    noexcept
 {
     auto llvm_module = make_ref<llvm::Module>(name, llvm_ctx);
     global_context_t global(llvm_module.get());
@@ -350,7 +348,7 @@ expected<unique_ref<llvm::Module>> gen(
 
     std::string err;
     llvm::raw_string_ostream ostream(err);
-    return llvm::verifyModule(llvm_module.get(), &ostream) // yes true means false...
+    return verify == verify_t::yes and llvm::verifyModule(llvm_module.get(), &ostream) // yes true means false...
         ? expected<unique_ref<llvm::Module>>{error_t{err}}
         : expected<unique_ref<llvm::Module>>{std::in_place, std::move(llvm_module)};
 }

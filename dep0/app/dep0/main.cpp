@@ -1,4 +1,5 @@
 #include "dep0/mmap.hpp"
+#include "dep0/ast/pretty_print.hpp"
 #include "dep0/parser/parse.hpp"
 #include "dep0/typecheck/check.hpp"
 #include "dep0/transform/run.hpp"
@@ -18,35 +19,55 @@
 #include <llvm/Support/WithColor.h>
 #include <llvm/Target/TargetMachine.h>
 
+#include <iostream>
+
 static llvm::codegen::RegisterCodeGenFlags WTF;
 
 int main(int argc, char** argv)
 {
-    auto emit_llvm =
-        llvm::cl::opt<bool>(
+    namespace cl = llvm::cl;
+    auto const emit_llvm =
+        cl::opt<bool>(
             "emit-llvm",
-            llvm::cl::desc("Emit IR code instead of assembler"),
-            llvm::cl::init(false));
-    auto input_files =
-        llvm::cl::list<std::string>(
-            llvm::cl::Positional,
-            llvm::cl::desc("<input-files>"));
-    auto mtriple =
-        llvm::cl::opt<std::string>(
+            cl::desc("Emit IR code instead of assembler"),
+            cl::init(false));
+    auto const input_files =
+        cl::list<std::string>(
+            cl::Positional,
+            cl::desc("<input-files>"));
+    auto const mtriple =
+        cl::opt<std::string>(
             "mtriple",
-            llvm::cl::desc("Override target triple for module"));
+            cl::desc("Override target triple for module"));
+    auto const print_ast =
+        cl::opt<bool>(
+            "print-ast",
+            cl::desc("Print the AST before the codegen stage"),
+            cl::init(false));
+    auto const skip_transformations =
+        cl::opt<bool>(
+            "skip-transformations",
+            cl::desc("Skip the transformations pipeline stage"),
+            cl::init(false));
     auto typecheck_only =
-        llvm::cl::opt<bool>(
-            "t",
-            llvm::cl::desc("Stop after typechecking; don't emit any asm/obj code"),
-            llvm::cl::init(false));
+        cl::opt<bool>(
+            "typecheck-only",
+            cl::desc("Stop after typechecking; don't emit any asm/obj code"),
+            cl::init(false));
+    auto const alias_t = cl::alias("t", cl::desc("alias for --typecheck-only"), cl::aliasopt(typecheck_only));
+    auto unverified =
+        cl::opt<bool>(
+            "unverified",
+            cl::desc("Emit unverivied LLVM IR; only useful when debugging the llvmgen module"),
+            cl::init(false));
+    auto const alias_u = cl::alias("u", cl::desc("alias for --unverified"), cl::aliasopt(unverified));
 
     llvm::InitLLVM LLVM(argc, argv);
     llvm::InitializeAllTargets();
     llvm::InitializeAllTargetMCs();
     llvm::InitializeAllAsmPrinters();
     llvm::InitializeAllAsmParsers();
-    llvm::cl::ParseCommandLineOptions(argc, argv, "dep0 - DepC Bootstrapping Compiler");
+    cl::ParseCommandLineOptions(argc, argv, "dep0 - DepC Bootstrapping Compiler");
 
     std::string err;
     auto target_triple =
@@ -84,7 +105,7 @@ int main(int argc, char** argv)
         : ".o";
     for (auto const& f: input_files)
     {
-        auto parsed_module = dep0::parser::parse(f);
+        auto const parsed_module = dep0::parser::parse(f);
         if (not parsed_module)
         {
             std::ostringstream str;
@@ -105,18 +126,28 @@ int main(int argc, char** argv)
             llvm::WithColor::note(llvm::outs(), f) << "typechecks correctly" << '\n';
             continue;
         }
-        auto transform_result =
-            dep0::transform::run(
-                *typechecked_module,
-                dep0::transform::beta_delta_normalization_t{}
-            );
-        if (not transform_result)
+        if (not skip_transformations)
         {
-            std::ostringstream str;
-            dep0::pretty_print(str, transform_result.error());
-            llvm::WithColor::error(llvm::errs(), f) << "transformation error: " << str.str() << '\n';
+            auto const transform_result =
+                dep0::transform::run(
+                    *typechecked_module,
+                    dep0::transform::beta_delta_normalization_t{}
+                );
+            if (not transform_result)
+            {
+                std::ostringstream str;
+                dep0::pretty_print(str, transform_result.error());
+                llvm::WithColor::error(llvm::errs(), f) << "transformation error: " << str.str() << '\n';
+            }
         }
-        auto llvm_module = dep0::llvmgen::gen(llvm_context, f, *typechecked_module);
+        if (print_ast)
+            dep0::ast::pretty_print(std::cout, *typechecked_module) << std::endl;
+        auto llvm_module =
+            dep0::llvmgen::gen(
+                llvm_context,
+                f,
+                *typechecked_module,
+                unverified ? dep0::llvmgen::verify_t::no : dep0::llvmgen::verify_t::yes);
         if (not llvm_module)
         {
             std::ostringstream str;

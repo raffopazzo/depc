@@ -4,6 +4,7 @@
 #include "llvm_predicates_v2/align.hpp"
 #include "llvm_predicates_v2/alloca.hpp"
 #include "llvm_predicates_v2/argument.hpp"
+#include "llvm_predicates_v2/branch.hpp"
 #include "llvm_predicates_v2/call.hpp"
 #include "llvm_predicates_v2/constants.hpp"
 #include "llvm_predicates_v2/function.hpp"

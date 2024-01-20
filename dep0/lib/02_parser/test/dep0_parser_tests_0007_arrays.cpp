@@ -385,6 +385,70 @@ BOOST_AUTO_TEST_CASE(pass_011)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_012)
+{
+    BOOST_TEST_REQUIRE(pass("0007_arrays/pass_012.depc"));
+    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 5ul);
+    {
+        auto const& f = pass_result->func_defs[0ul];
+        BOOST_TEST(f.name == "f");
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_i32(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], constant(0)));
+    }
+    {
+        auto const& f = pass_result->func_defs[1ul];
+        BOOST_TEST(f.name == "g");
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_i32(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], constant(1)));
+    }
+    {
+        auto const& f = pass_result->func_defs[2ul];
+        BOOST_TEST(f.name == "negate");
+        BOOST_TEST_REQUIRE(f.value.args.size() == 1ul);
+        BOOST_TEST(is_arg(f.value.args[0ul], is_bool, "x"));
+        BOOST_TEST(is_bool(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(
+            is_if_else(
+                f.value.body.stmts[0ul],
+                var("x"),
+                std::tuple{return_of(constant(false))},
+                std::tuple{return_of(constant(true))}));
+    }
+    {
+        auto const& f = pass_result->func_defs[3ul];
+        BOOST_TEST(f.name == "select");
+        BOOST_TEST_REQUIRE(f.value.args.size() == 1ul);
+        BOOST_TEST(is_arg(f.value.args[0ul], is_bool, "which"));
+        BOOST_TEST(is_pi_of(f.value.ret_type.get(), std::tuple{}, is_i32));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(
+            is_if_else(
+                f.value.body.stmts[0ul],
+                var("which"),
+                std::tuple{return_of(var("f"))},
+                std::tuple{return_of(var("g"))}));
+    }
+    {
+        auto const& f = pass_result->func_defs[4ul];
+        BOOST_TEST(f.name == "choose");
+        BOOST_TEST_REQUIRE(f.value.args.size() == 1ul);
+        BOOST_TEST(is_arg(f.value.args[0ul], is_bool, "which"));
+        BOOST_TEST(is_array_of(f.value.ret_type.get(), pi_of(std::tuple{}, is_i32), constant(2)));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(
+            is_return_of(
+                f.value.body.stmts[0ul],
+                init_list_of(
+                    app_of(var("select"), var("which")),
+                    app_of(var("select"), app_of(var("negate"), var("which"))))));
+    }
+}
+
 BOOST_AUTO_TEST_CASE(typecheck_error_000)
 {
     BOOST_TEST_REQUIRE(pass("0007_arrays/typecheck_error_000.depc"));

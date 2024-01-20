@@ -200,7 +200,7 @@ public:
 
 // all gen functions must be forward-declared here
 
-static llvm_func_t gen_func(
+static llvm::Value* gen_func(
     global_context_t&,
     local_context_t const&,
     llvm_func_proto_t const&,
@@ -217,14 +217,16 @@ static snippet_t gen_body(
     local_context_t const&,
     typecheck::body_t const&,
     std::string_view,
-    llvm::Function*);
+    llvm::Function*,
+    llvm::Value* inlined_result);
 static void gen_stmt(
     global_context_t&,
     local_context_t const&,
     snippet_t&,
     llvm::IRBuilder<>&,
     typecheck::stmt_t const&,
-    llvm::Function*);
+    llvm::Function*,
+    llvm::Value* inlined_result);
 static llvm::Type* gen_type(global_context_t&, local_context_t const&, typecheck::expr_t const&);
 static llvm::Value* gen_alloca(
     global_context_t&,
@@ -270,6 +272,25 @@ static void gen_func_body(
 
 static bool is_first_order_function_type(std::vector<typecheck::func_arg_t> const&, typecheck::expr_t const& ret_type);
 static bool is_first_order_type(typecheck::expr_t const&);
+
+/**
+ * Move the given instruction to the entry block of the given function.
+ * If the instruction is already in its entry block, this function does nothing.
+ *
+ * @param i The instruction to move.
+ * @param f The function containing the entry block where the instruction is going to be moved.
+ */
+static void move_to_entry_block(llvm::Instruction* const i, llvm::Function* const f)
+{
+    auto& bb = f->getEntryBlock();
+    if (&bb == i->getParent())
+        // already in entry block
+        return;
+    if (auto const t = f->getEntryBlock().getTerminator())
+        i->moveBefore(t);
+    else
+        i->moveAfter(&bb.back());
+}
 
 std::optional<llvm_func_proto_t> llvm_func_proto_t::from_pi(typecheck::expr_t::pi_t const& x)
 {
@@ -610,7 +631,7 @@ void gen_func_body(
     typecheck::body_t const& body,
     llvm::Function* const llvm_f)
 {
-    auto snippet = gen_body(global, local, body, "entry", llvm_f);
+    auto snippet = gen_body(global, local, body, "entry", llvm_f, nullptr);
     if (snippet.open_blocks.size() and std::holds_alternative<typecheck::expr_t::unit_t>(proto.ret_type().value))
     {
         auto builder = llvm::IRBuilder<>(global.llvm_ctx);
@@ -620,7 +641,7 @@ void gen_func_body(
     }
 }
 
-llvm_func_t gen_func(
+llvm::Value* gen_func(
     global_context_t& global,
     local_context_t const& local,
     llvm_func_proto_t const& proto,
@@ -637,7 +658,7 @@ llvm_func_t gen_func(
     gen_func_args(f_ctx, proto, llvm_f);
     gen_func_attributes(f_ctx, proto, llvm_f);
     gen_func_body(global, f_ctx, proto, f.body, llvm_f);
-    return llvm_func_t(llvm_f);
+    return llvm_f;
 }
 
 void gen_func(
@@ -667,7 +688,8 @@ snippet_t gen_body(
     local_context_t const& local,
     typecheck::body_t const& body,
     std::string_view const entry_block_name,
-    llvm::Function* const llvm_f)
+    llvm::Function* const llvm_f,
+    llvm::Value* const inlined_result)
 {
     snippet_t snippet;
     auto builder = llvm::IRBuilder<>(global.llvm_ctx);
@@ -677,7 +699,7 @@ snippet_t gen_body(
         snippet.open_blocks.push_back(snippet.entry_block);
     else
     {
-        gen_stmt(global, local, snippet, builder, *it, llvm_f);
+        gen_stmt(global, local, snippet, builder, *it, llvm_f, inlined_result);
         while (++it != body.stmts.end())
         {
             if (snippet.open_blocks.size())
@@ -686,7 +708,7 @@ snippet_t gen_body(
                 snippet.seal_open_blocks(builder, [next] (auto& builder) { builder.CreateBr(next); });
                 builder.SetInsertPoint(next);
             }
-            gen_stmt(global, local, snippet, builder, *it, llvm_f);
+            gen_stmt(global, local, snippet, builder, *it, llvm_f, inlined_result);
         }
     }
     return snippet;
@@ -698,7 +720,8 @@ void gen_stmt(
     snippet_t& snipppet,
     llvm::IRBuilder<>& builder,
     typecheck::stmt_t const& stmt,
-    llvm::Function* const llvm_f)
+    llvm::Function* const llvm_f,
+    llvm::Value* const inlined_result)
 {
     match(
         stmt.value,
@@ -709,11 +732,11 @@ void gen_stmt(
         [&] (typecheck::stmt_t::if_else_t const& x)
         {
             auto const cond = gen_val(global, local, builder, x.cond, nullptr);
-            auto const then = gen_body(global, local, x.true_branch, "then", llvm_f);
+            auto const then = gen_body(global, local, x.true_branch, "then", llvm_f, inlined_result);
             std::ranges::copy(then.open_blocks, std::back_inserter(snipppet.open_blocks));
             if (x.false_branch)
             {
-                auto const else_ = gen_body(global, local, *x.false_branch, "else", llvm_f);
+                auto const else_ = gen_body(global, local, *x.false_branch, "else", llvm_f, inlined_result);
                 std::ranges::copy(else_.open_blocks, std::back_inserter(snipppet.open_blocks));
                 builder.CreateCondBr(cond, then.entry_block, else_.entry_block);
             }
@@ -726,16 +749,30 @@ void gen_stmt(
         },
         [&] (typecheck::stmt_t::return_t const& x)
         {
+            if (not x.expr)
+            {
+                // only unit_t can be missing a return expr
+                builder.CreateRet(builder.getInt8(0));
+                return;
+            }
+            if (inlined_result)
+            {
+                gen_val(global, local, builder, *x.expr, inlined_result);
+                snipppet.open_blocks.push_back(builder.GetInsertBlock());
+                return;
+            }
             auto const last = llvm_f->arg_empty() ? nullptr : llvm_f->getArg(llvm_f->arg_size() - 1ul);
             auto const dest = last and last->hasAttribute(llvm::Attribute::StructRet) ? last : nullptr;
-            // if the return expression has type unit_t,
-            // always generate a value, because it might be a function call with side effects,
-            // but then just return the constant 0, there is no need to complicate the CFG for that;
-            auto const ret_val = x.expr ? gen_val(global, local, builder, *x.expr, dest) : nullptr;
+            // always generate a value, even for expressio of type unit_t,
+            // because it might be a function call with side effects;
+            // and, if it is, just return 0, without complicating the CFG
+            auto const ret_val = gen_val(global, local, builder, *x.expr, dest);
             if (dest)
                 builder.CreateRetVoid();
+            else if (has_unit_type(*x.expr))
+                builder.CreateRet(builder.getInt8(0));
             else
-                builder.CreateRet(ret_val and not has_unit_type(*x.expr) ? ret_val : builder.getInt8(0));
+                builder.CreateRet(ret_val);
         });
 }
 
@@ -915,13 +952,46 @@ llvm::Value* gen_val(
         },
         [&] (typecheck::expr_t::app_t const& x) -> llvm::Value*
         {
-            // TODO could perhaps generate a snippet for immediately invoked lambdas
+            if (auto const abs = std::get_if<typecheck::expr_t::abs_t>(&x.func.get().value))
+                if (x.args.empty())
+                {
+                    // found an immediately-invoked-lambda: inline it!
+                    auto const current_func = builder.GetInsertBlock()->getParent();
+                    auto const gen_inlined_body = [&] (llvm::Value* const inlined_result)
+                    {
+                        auto snippet = gen_body(global, local, abs->body, "inlined", current_func, inlined_result);
+                        builder.CreateBr(snippet.entry_block);
+                        auto const next_block = llvm::BasicBlock::Create(global.llvm_ctx, "cont", current_func);
+                        snippet.seal_open_blocks(
+                            builder,
+                            [&] (llvm::IRBuilder<>& builder)
+                            {
+                                builder.CreateBr(next_block);
+                            });
+                        builder.SetInsertPoint(next_block);
+                    };
+                    if (dest)
+                    {
+                        gen_inlined_body(dest);
+                        return dest;
+                    }
+                    else
+                    {
+                        auto const inlined_type = gen_type(global, local, abs->ret_type.get());
+                        auto const inlined_result = builder.CreateAlloca(inlined_type, builder.getInt32(1));
+                        move_to_entry_block(llvm::dyn_cast<llvm::Instruction>(inlined_result), current_func);
+                        gen_inlined_body(inlined_result);
+                        // TODO should add a test with arrays to check if we have to load there too
+                        return builder.CreateLoad(inlined_type, inlined_result);
+                    }
+                }
             return storeOrReturn(gen_func_call(global, local, builder, x));
         },
-        [&] (typecheck::expr_t::abs_t const&) -> llvm::Value*
+        [&] (typecheck::expr_t::abs_t const& abs) -> llvm::Value*
         {
-            assert(false and "Generation of abstraction expression not yet implemented");
-            __builtin_unreachable();
+            auto const proto = llvm_func_proto_t::from_abs(abs);
+            assert(proto and "can only invoke a 1st order function type");
+            return storeOrReturn(gen_func(global, local, *proto, abs));
         },
         [&] (typecheck::expr_t::pi_t const&) -> llvm::Value*
         {
@@ -987,38 +1057,28 @@ llvm::Value* gen_func_call(
                     [] (typecheck::kind_t) { return false; });
             })
         and "can only generate function call for 1st order applications");
-    // might need to emit an alloca
-    auto const func_type = std::get_if<typecheck::expr_t>(&app.func.get().properties.sort.get());
-    assert(func_type and "functions must be of sort type");
-    auto const pi_type = std::get_if<typecheck::expr_t::pi_t>(&func_type->value);
-    assert(pi_type and "functions must be pi-types");
-    auto const dest = gen_alloca_if_needed(global, local, builder, pi_type->ret_type.get());
-    auto const func = [&]
+    auto const proto = [&] () -> llvm_func_proto_t
     {
-        if (auto const abs = std::get_if<typecheck::expr_t::abs_t>(&app.func.get().value))
-        {
-            auto proto = llvm_func_proto_t::from_abs(*abs);
-            assert(proto and "can only invoke a 1st order function type");
-            return gen_func(global, local, *proto, *abs);
-        }
-        else
-        {
-            auto const proto = llvm_func_proto_t::from_pi(*pi_type);
-            assert(proto and "can only invoke 1st order function types");
-            return llvm_func_t{
-                gen_func_type(global, local, *proto),
-                gen_val(global, local, builder, app.func.get(), nullptr)};
-        }
+        auto const func_type = std::get_if<typecheck::expr_t>(&app.func.get().properties.sort.get());
+        assert(func_type and "functions must be of sort type");
+        auto const pi_type = std::get_if<typecheck::expr_t::pi_t>(&func_type->value);
+        assert(pi_type and "functions must be pi-types");
+        auto proto = llvm_func_proto_t::from_pi(*pi_type);
+        assert(proto and "can only generate a function call for 1st order function type");
+        return std::move(proto.value());
     }();
+    auto const llvm_func_type = gen_func_type(global, local, proto);
+    auto const llvm_func = gen_val(global, local, builder, app.func.get(), nullptr);
     auto llvm_args =
         fmap(app.args, [&] (typecheck::expr_t const& arg)
         {
             return gen_val(global, local, builder, arg, nullptr);
         });
+    auto const dest = gen_alloca_if_needed(global, local, builder, proto.ret_type());
     if (dest)
         llvm_args.push_back(dest);
     // this could be a direct call to a global function, or an indirect call via a function pointer
-    auto const call = builder.CreateCall(func.type, func.func, std::move(llvm_args));
+    auto const call = builder.CreateCall(llvm_func_type, llvm_func, std::move(llvm_args));
     for (auto const i: std::views::iota(0ul, app.args.size()))
     {
         auto const& arg_type = std::get<typecheck::expr_t>(app.args[i].properties.sort.get());

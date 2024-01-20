@@ -81,8 +81,22 @@ template <Properties P>
 bool delta_reduce(context_t<P> const&, typename expr_t<P>::numeric_constant_t&) { return false; }
 
 template <Properties P>
+bool delta_reduce(context_t<P> const&, typename expr_t<P>::var_t&)
+{
+    // We only want to perform a "simplied" one-step delta-reduction,
+    // so ignore variable experssions that appear on their own.
+    return false;
+}
+
+template <Properties P>
 bool delta_reduce(context_t<P> const& ctx, typename expr_t<P>::app_t& app)
 {
+    if (auto const var = std::get_if<typename expr_t<P>::var_t>(&app.func.get().value))
+        if (auto const abs = std::get_if<typename expr_t<P>::abs_t>(ctx[*var]))
+        {
+            app.func.get().value = *abs;
+            return true;
+        }
     if (delta_reduce(ctx, app.func.get()))
         return true;
     for (auto& arg: app.args)
@@ -174,19 +188,7 @@ bool delta_reduce(delta_reduction::context_t<P> const& ctx, stmt_t<P>& stmt)
 template <Properties P>
 bool delta_reduce(delta_reduction::context_t<P> const& ctx, expr_t<P>& expr)
 {
-    return match(
-        expr.value,
-        [&] (typename expr_t<P>::var_t& var)
-        {
-            if (auto const val = ctx[var])
-                if (auto const abs = std::get_if<typename expr_t<P>::abs_t>(val))
-                {
-                    expr.value = *abs;
-                    return true;
-                }
-            return false;
-        },
-        [&] (auto& x) { return impl::delta_reduce<P>(ctx, x); });
+    return match(expr.value, [&] (auto& x) { return impl::delta_reduce<P>(ctx, x); });
 }
 
 } // namespace dep0::ast

@@ -13,6 +13,8 @@ add_library(dep0_llvmgen_tests_fixture
     llvm_predicates_v2/alloca.cpp
     llvm_predicates_v2/argument.hpp
     llvm_predicates_v2/argument.cpp
+    llvm_predicates_v2/branch.hpp
+    llvm_predicates_v2/branch.cpp
     llvm_predicates_v2/call.hpp
     llvm_predicates_v2/call.cpp
     llvm_predicates_v2/constants.hpp

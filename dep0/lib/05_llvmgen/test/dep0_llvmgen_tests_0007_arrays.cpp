@@ -612,6 +612,179 @@ BOOST_AUTO_TEST_CASE(pass_011_normalized)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_012)
+{
+    apply_beta_delta_normalization = true;
+    BOOST_TEST_REQUIRE(pass("0007_arrays/pass_012.depc"));
+    {
+        auto const f = pass_result.value()->getFunction("f");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(0)));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("g");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(1)));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("negate");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(is_i1, "x")}, is_i1));
+        BOOST_TEST_REQUIRE(f->size() == 3ul);
+        auto it = f->begin();
+        auto const& entry = *it++;
+        auto const& then_ = *it++;
+        auto const& else_ = *it++;
+        BOOST_TEST(is_branch_of(entry.getTerminator(), exactly(f->getArg(0ul)), exactly(&then_), exactly(&else_)));
+        BOOST_TEST(is_return_of(then_.getTerminator(), constant(false)));
+        BOOST_TEST(is_return_of(else_.getTerminator(), constant(true)));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("select");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(is_i1, "which")}, fnptr_type(std::tuple{}, is_i32)));
+        BOOST_TEST_REQUIRE(f->size() == 3ul);
+        auto it = f->begin();
+        auto const& entry = *it++;
+        auto const& then_ = *it++;
+        auto const& else_ = *it++;
+        BOOST_TEST(is_branch_of(entry.getTerminator(), exactly(f->getArg(0ul)), exactly(&then_), exactly(&else_)));
+        BOOST_TEST(is_return_of(then_.getTerminator(), exactly(pass_result.value()->getFunction("f"))));
+        BOOST_TEST(is_return_of(else_.getTerminator(), exactly(pass_result.value()->getFunction("g"))));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("choose");
+        auto const fn_ptr = fnptr_type(std::tuple{}, is_i32);
+        BOOST_TEST_REQUIRE(
+            is_function_of(
+                f,
+                std::tuple{
+                    arg_of(is_i1, "which"),
+                    arg_of(pointer_to(fn_ptr), std::nullopt, {llvm::Attribute::NonNull, llvm::Attribute::StructRet})},
+                is_void));
+        BOOST_TEST_REQUIRE(f->size() == 13ul);
+        auto it = f->begin();
+        auto const& entry = *it++;
+        auto const& inlined = *it++;
+        auto const& then_ = *it++;
+        auto const& else_ = *it++;
+        auto const& cont = *it++;
+        auto const& inlined1 = *it++;
+        auto const& inlined2 = *it++;
+        auto const& then3 = *it++;
+        auto const& else4 = *it++;
+        auto const& cont5 = *it++;
+        auto const& then6 = *it++;
+        auto const& else7 = *it++;
+        auto const& cont8 = *it++;
+        auto const which = exactly(f->getArg(0ul));
+        auto const ret_arg = exactly(f->getArg(1ul));
+        auto entry_it = entry.begin();
+        auto const& gep0 = *entry_it++;
+        auto const& temp_bool = *entry_it++;
+        {
+            BOOST_TEST_REQUIRE(entry.size() == 3ul);
+            BOOST_TEST(is_gep_of(gep0, fn_ptr, ret_arg, constant(0)));
+            BOOST_TEST(is_alloca(temp_bool, is_i1, constant(1), align_of(1)));
+            BOOST_TEST(is_unconditional_branch_to(entry.getTerminator(), exactly(&inlined)));
+        }
+        {
+            BOOST_TEST_REQUIRE(inlined.size() == 1ul);
+            auto it = inlined.begin();
+            BOOST_TEST_REQUIRE(is_branch_of(*it++, which, exactly(&then_), exactly(&else_)));
+        }
+        {
+            BOOST_TEST_REQUIRE(then_.size() == 2ul);
+            auto it = then_.begin();
+            BOOST_TEST(
+                is_store_of(
+                    *it++,
+                    fn_ptr,
+                    exactly(pass_result.value()->getFunction("f")),
+                    exactly(&gep0),
+                    align_of(8)));
+            BOOST_TEST(is_unconditional_branch_to(*it++, exactly(&cont)));
+        }
+        {
+            BOOST_TEST_REQUIRE(else_.size() == 2ul);
+            auto it = else_.begin();
+            BOOST_TEST(
+                is_store_of(
+                    *it++,
+                    fn_ptr,
+                    exactly(pass_result.value()->getFunction("g")),
+                    exactly(&gep0),
+                    align_of(8)));
+            BOOST_TEST(is_unconditional_branch_to(*it++, exactly(&cont)));
+        }
+        auto cont_it = cont.begin();
+        auto const& gep1 = *cont_it++;
+        {
+            BOOST_TEST_REQUIRE(cont.size() == 2ul);
+            BOOST_TEST(is_gep_of(gep1, fn_ptr, ret_arg, constant(1)));
+            BOOST_TEST(is_unconditional_branch_to(cont.getTerminator(), exactly(&inlined1)));
+        }
+        {
+            BOOST_TEST_REQUIRE(inlined1.size() == 1ul);
+            auto it = inlined1.begin();
+            BOOST_TEST(is_unconditional_branch_to(*it++, exactly(&inlined2)));
+        }
+        {
+            BOOST_TEST_REQUIRE(inlined2.size() == 1ul);
+            auto it = inlined2.begin();
+            BOOST_TEST(is_branch_of(*it++, which, exactly(&then3), exactly(&else4)));
+        }
+        {
+            BOOST_TEST_REQUIRE(then3.size() == 2ul);
+            auto it = then3.begin();
+            BOOST_TEST(is_store_of(*it++, is_i1, constant(false), exactly(&temp_bool), align_of(1)));
+            BOOST_TEST(is_unconditional_branch_to(*it++, exactly(&cont5)));
+        }
+        {
+            BOOST_TEST_REQUIRE(else4.size() == 2ul);
+            auto it = else4.begin();
+            BOOST_TEST(is_store_of(*it++, is_i1, constant(true), exactly(&temp_bool), align_of(1)));
+            BOOST_TEST(is_unconditional_branch_to(*it++, exactly(&cont5)));
+        }
+        {
+            BOOST_TEST_REQUIRE(cont5.size() == 2ul);
+            auto it = cont5.begin();
+            auto const& bool_val = *it++;
+            BOOST_TEST(is_load_of(bool_val, is_i1, exactly(&temp_bool), align_of(1)));
+            BOOST_TEST_REQUIRE(is_branch_of(*it++, exactly(&bool_val), exactly(&then6), exactly(&else7)));
+        }
+        {
+            BOOST_TEST_REQUIRE(then6.size() == 2ul);
+            auto it = then6.begin();
+            BOOST_TEST(
+                is_store_of(
+                    *it++,
+                    fn_ptr,
+                    exactly(pass_result.value()->getFunction("f")),
+                    exactly(&gep1),
+                    align_of(8)));
+            BOOST_TEST(is_unconditional_branch_to(*it++, exactly(&cont8)));
+        }
+        {
+            BOOST_TEST_REQUIRE(else7.size() == 2ul);
+            auto it = else7.begin();
+            BOOST_TEST(
+                is_store_of(
+                    *it++,
+                    fn_ptr,
+                    exactly(pass_result.value()->getFunction("g")),
+                    exactly(&gep1),
+                    align_of(8)));
+            BOOST_TEST(is_unconditional_branch_to(*it++, exactly(&cont8)));
+        }
+        {
+            BOOST_TEST_REQUIRE(cont8.size() == 1ul);
+            auto it = cont8.begin();
+            BOOST_TEST(is_return_of_void(*it++));
+        }
+    }
+}
+
 // BOOST_AUTO_TEST_CASE(typecheck_error_000)
 // BOOST_AUTO_TEST_CASE(typecheck_error_001)
 // BOOST_AUTO_TEST_CASE(typecheck_error_002)

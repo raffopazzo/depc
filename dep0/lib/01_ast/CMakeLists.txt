@@ -13,6 +13,7 @@ add_library(dep0_ast_lib
     include/dep0/ast/occurs_in.hpp
     include/dep0/ast/occurs_in_impl.hpp
     include/dep0/ast/pretty_print.hpp
+    include/dep0/ast/pretty_print_impl.hpp
     include/dep0/ast/rename.hpp
     include/dep0/ast/rename_impl.hpp
     include/dep0/ast/replace.hpp

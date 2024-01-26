@@ -17,12 +17,17 @@ struct call_arg_t
 {
     F predicate;
     std::vector<llvm::Attribute::AttrKind> attributes;
+    llvm::MaybeAlign alignment;
 };
 
 template <Predicate<llvm::Value> F>
-call_arg_t<std::remove_cvref_t<F>> call_arg(F&& f, std::vector<llvm::Attribute::AttrKind> attributes = {})
+call_arg_t<std::remove_cvref_t<F>>
+    call_arg(
+        F&& f,
+        std::vector<llvm::Attribute::AttrKind> attributes = {},
+        llvm::MaybeAlign alignment = {})
 {
-    return {std::forward<F>(f), std::move(attributes)};
+    return {std::forward<F>(f), std::move(attributes), std::move(alignment)};
 }
 
 namespace impl {
@@ -65,25 +70,42 @@ boost::test_tools::predicate_result
             }
             if (auto const tmp = args.predicate(*arg); not tmp)
             {
-                result = failure("call argument predicate at index ", i, " failed: ", tmp.message());
+                result = failure("call argument ", i, " predicate failed: ", tmp.message());
                 return;
             }
-            auto const& actual_attributes = call->getAttributes().getParamAttributes(i);
-            if (args.attributes.size() != actual_attributes.getNumAttributes())
+            auto const& actual_attrs = call->getAttributes().getParamAttributes(i);
+            if (args.attributes.size() != actual_attrs.getNumAttributes())
             {
                 result = failure(
-                    "wrong number of call argument attributes at index ", i, ": ",
-                    args.attributes.size(), " != ", actual_attributes.getNumAttributes());
+                    "call argument ", i, " has wrong number of attributes: ",
+                    args.attributes.size(), " != ", actual_attrs.getNumAttributes());
                 return;
             }
             for (auto const& attr: args.attributes)
-                if (not actual_attributes.hasAttribute(attr))
+            {
+                if (not actual_attrs.hasAttribute(attr))
                 {
                     result = failure(
-                        "call argument attribute not set at index ", i, ": ",
+                        "call argument ", i, " does not have attribute ",
                         llvm::Attribute::getNameFromAttrKind(attr).str());
                     return;
                 }
+                if (auto const& align = actual_attrs.getAlignment(); align.hasValue() xor args.alignment.hasValue())
+                {
+                    if (args.alignment)
+                        result = failure("call argument ", i, " does not have alignment ");
+                    else
+                        result = failure("call argument ", i, " has alignment but it should not");
+                    return;
+                }
+                else if (args.alignment and args.alignment.getValue() != align.getValue())
+                {
+                    result = failure(
+                        "call argument ", i, " has wrong alignment: ",
+                        args.alignment.getValue().value(), " != ", align.getValue().value());
+                    return;
+                }
+            }
         }
     }(), ...);
     return result;

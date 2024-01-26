@@ -615,6 +615,157 @@ BOOST_AUTO_TEST_CASE(pass_013)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_014)
+{
+    BOOST_TEST_REQUIRE(pass("0007_arrays/pass_014.depc"));
+    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 5ul);
+    {
+        auto const& f = pass_result->func_defs[0ul];
+        BOOST_TEST(f.name == "zeros");
+        BOOST_TEST(is_expr_of(f.properties.sort.get(), pi_of(std::tuple{}, array_of(is_i32, constant(3)))));
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_array_of(f.value.ret_type.get(), is_i32, constant(3)));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(
+            is_return_of(
+                f.value.body.stmts[0ul],
+                init_list_of(constant(0), constant(0), constant(0))));
+    }
+    {
+        auto const& f = pass_result->func_defs[1ul];
+        BOOST_TEST(f.name == "passthrough");
+        BOOST_TEST(is_expr_of(f.properties.sort.get(), pi_of(std::tuple{}, array_of(is_i32, constant(3)))));
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_array_of(f.value.ret_type.get(), is_i32, constant(3)));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(var("zeros"))));
+    }
+    {
+        auto const& f = pass_result->func_defs[2ul];
+        BOOST_TEST(f.name == "values");
+        BOOST_TEST(
+            is_expr_of(
+                f.properties.sort.get(),
+                pi_of(
+                    std::tuple{arg_of(is_bool, "which")},
+                    array_of(is_i32, constant(3)))));
+        BOOST_TEST_REQUIRE(f.value.args.size() == 1ul);
+        BOOST_TEST(is_arg(f.value.args[0ul], is_bool, "which"));
+        BOOST_TEST(is_array_of(f.value.ret_type.get(), is_i32, constant(3)));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(
+            is_if_else(
+                f.value.body.stmts[0ul],
+                var("which"),
+                std::tuple{return_of(app_of(var("zeros")))},
+                std::tuple{return_of(init_list_of(constant(1), constant(2), constant(3)))}));
+    }
+    {
+        auto const& f = pass_result->func_defs[3ul];
+        BOOST_TEST(f.name == "select");
+        BOOST_TEST(
+            is_expr_of(
+                f.properties.sort.get(),
+                pi_of(
+                    std::tuple{
+                        arg_of(is_bool, "which"),
+                        arg_of(array_of(is_i32, constant(3)), "xs")},
+                    array_of(is_i32, constant(3)))));
+        BOOST_TEST_REQUIRE(f.value.args.size() == 2ul);
+        BOOST_TEST(is_arg(f.value.args[0ul], is_bool, "which"));
+        BOOST_TEST(is_arg(f.value.args[1ul], array_of(is_i32, constant(3)), "xs"));
+        BOOST_TEST(is_array_of(f.value.ret_type.get(), is_i32, constant(3)));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(
+            is_if_else(
+                f.value.body.stmts[0ul],
+                var("which"),
+                std::tuple{return_of(app_of(var("zeros")))},
+                std::tuple{return_of(var("xs"))}));
+    }
+    {
+        auto const& f = pass_result->func_defs[4ul];
+        BOOST_TEST(f.name == "xs_or_ys");
+        BOOST_TEST(
+            is_expr_of(
+                f.properties.sort.get(),
+                pi_of(
+                    std::tuple{
+                        arg_of(is_bool, "which"),
+                        arg_of(array_of(is_i32, constant(3)), "xs"),
+                        arg_of(array_of(is_i32, constant(3)), "ys")},
+                    array_of(is_i32, constant(3)))));
+        BOOST_TEST_REQUIRE(f.value.args.size() == 3ul);
+        BOOST_TEST(is_arg(f.value.args[0ul], is_bool, "which"));
+        BOOST_TEST(is_arg(f.value.args[1ul], array_of(is_i32, constant(3)), "xs"));
+        BOOST_TEST(is_arg(f.value.args[2ul], array_of(is_i32, constant(3)), "ys"));
+        BOOST_TEST(is_array_of(f.value.ret_type.get(), is_i32, constant(3)));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(
+            is_if_else(
+                f.value.body.stmts[0ul],
+                var("which"),
+                std::tuple{return_of(var("xs"))},
+                std::tuple{return_of(var("ys"))}));
+    }
+}
+
+BOOST_AUTO_TEST_CASE(pass_015)
+{
+    BOOST_TEST_REQUIRE(pass("0007_arrays/pass_015.depc"));
+    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 2ul);
+    {
+        auto const& f = pass_result->func_defs[0ul];
+        BOOST_TEST(f.name == "xs_or_ys");
+        BOOST_TEST(
+            is_expr_of(
+                f.properties.sort.get(),
+                pi_of(
+                    std::tuple{
+                        arg_of(is_bool, "which"),
+                        arg_of(is_u64, "n"),
+                        arg_of(array_of(is_i32, var("n")), "xs"),
+                        arg_of(array_of(is_i32, var("n")), "ys")},
+                    array_of(is_i32, var("n")))));
+        BOOST_TEST_REQUIRE(f.value.args.size() == 4ul);
+        BOOST_TEST(is_arg(f.value.args[0ul], is_bool, "which"));
+        BOOST_TEST(is_arg(f.value.args[1ul], is_u64, "n"));
+        BOOST_TEST(is_arg(f.value.args[2ul], array_of(is_i32, var("n")), "xs"));
+        BOOST_TEST(is_arg(f.value.args[3ul], array_of(is_i32, var("n")), "ys"));
+        BOOST_TEST(is_array_of(f.value.ret_type.get(), is_i32, var("n")));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(
+            is_if_else(
+                f.value.body.stmts[0ul],
+                var("which"),
+                std::tuple{return_of(var("xs"))},
+                std::tuple{return_of(var("ys"))}));
+    }
+    {
+        auto const& f = pass_result->func_defs[1ul];
+        BOOST_TEST(f.name == "xs_or_ys_2");
+        BOOST_TEST(
+            is_expr_of(
+                f.properties.sort.get(),
+                pi_of(
+                    std::tuple{
+                        arg_of(is_bool, "which"),
+                        arg_of(array_of(is_i32, constant(2)), "xs"),
+                        arg_of(array_of(is_i32, constant(2)), "ys")},
+                    array_of(is_i32, constant(2)))));
+        BOOST_TEST_REQUIRE(f.value.args.size() == 3ul);
+        BOOST_TEST(is_arg(f.value.args[0ul], is_bool, "which"));
+        BOOST_TEST(is_arg(f.value.args[1ul], array_of(is_i32, constant(2)), "xs"));
+        BOOST_TEST(is_arg(f.value.args[2ul], array_of(is_i32, constant(2)), "ys"));
+        BOOST_TEST(is_array_of(f.value.ret_type.get(), is_i32, constant(2)));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(
+            is_return_of(
+                f.value.body.stmts[0ul],
+                app_of(var("xs_or_ys"), var("which"), constant(2), var("xs"), var("ys"))));
+    }
+}
+
 BOOST_AUTO_TEST_CASE(typecheck_error_000) { BOOST_TEST_REQUIRE(fail("0007_arrays/typecheck_error_000.depc")); }
 BOOST_AUTO_TEST_CASE(typecheck_error_001) { BOOST_TEST_REQUIRE(fail("0007_arrays/typecheck_error_001.depc")); }
 BOOST_AUTO_TEST_CASE(typecheck_error_002) { BOOST_TEST_REQUIRE(fail("0007_arrays/typecheck_error_002.depc")); }

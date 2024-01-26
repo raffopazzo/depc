@@ -40,10 +40,11 @@ static typecheck::expr_t::app_t const* get_if_array(typecheck::expr_t const& typ
     return app and std::holds_alternative<typecheck::expr_t::array_t>(app->func.get().value) ? app : nullptr;
 }
 
-static array_properties_t get_array_properties(typecheck::expr_t const& type)
+static std::optional<array_properties_t> get_properties_if_array(typecheck::expr_t const& type)
 {
     auto curr = get_if_array(type);
-    assert(curr and "type must be an array");
+    if (not curr)
+        return std::nullopt;
     std::vector<typecheck::expr_t const*> dimensions;
     dimensions.push_back(&curr->args[1ul]);
     while (auto const next = get_if_array(curr->args[0ul]))
@@ -52,6 +53,13 @@ static array_properties_t get_array_properties(typecheck::expr_t const& type)
         curr = next;
     }
     return array_properties_t{curr->args[0ul], std::move(dimensions)};
+}
+
+static array_properties_t get_array_properties(typecheck::expr_t const& type)
+{
+    auto properties = get_properties_if_array(type);
+    assert(properties.has_value() and "type must be an array");
+    return std::move(*properties);
 }
 
 namespace needs_alloca_result
@@ -259,7 +267,8 @@ static llvm::Value* gen_func_call(
     global_context_t&,
     local_context_t const&,
     llvm::IRBuilder<>&,
-    typecheck::expr_t::app_t const&);
+    typecheck::expr_t::app_t const&,
+    llvm::Value* dest);
 static llvm::FunctionType* gen_func_type(global_context_t&, local_context_t const&, llvm_func_proto_t const&);
 static void gen_func_attributes(local_context_t const&, llvm_func_proto_t const&, llvm::Function*);
 static void gen_func_args(local_context_t&, llvm_func_proto_t const&, llvm::Function*);
@@ -366,7 +375,6 @@ expected<unique_ref<llvm::Module>>
         if (auto proto = llvm_func_proto_t::from_abs(def.value))
             gen_func(global, local, def.name, *proto, def.value);
     }
-
     std::string err;
     llvm::raw_string_ostream ostream(err);
     return verify == verify_t::yes and llvm::verifyModule(llvm_module.get(), &ostream) // yes true means false...
@@ -509,10 +517,10 @@ llvm::Type* gen_type(global_context_t& global, local_context_t const& local, typ
         });
 }
 
-llvm::Attribute::AttrKind get_sign_ext_attribute(local_context_t const& local, typecheck::expr_t const& x)
+llvm::Attribute::AttrKind get_sign_ext_attribute(local_context_t const& local, typecheck::expr_t const& type)
 {
     return match(
-        x.value,
+        type.value,
         [] (typecheck::expr_t::typename_t const&) { return llvm::Attribute::None; },
         [] (typecheck::expr_t::bool_t const&) { return llvm::Attribute::None; },
         [] (typecheck::expr_t::unit_t const&) { return llvm::Attribute::None; },
@@ -569,7 +577,7 @@ llvm::FunctionType* gen_func_type(
 {
     bool constexpr is_var_arg = false;
     auto ret_type = gen_type(global, local, proto.ret_type());
-    auto arg_types = fmap(proto.args(), [&] (auto const& arg) { return gen_type(global, local, arg.type); });
+    std::vector<llvm::Type*> arg_types;
     match(
         needs_alloca(proto.ret_type()),
         [] (needs_alloca_result::no_t) {},
@@ -580,41 +588,47 @@ llvm::FunctionType* gen_func_type(
             arg_types.push_back(ret_type);
             ret_type = llvm::Type::getVoidTy(global.llvm_ctx);
         });
+    arg_types.reserve(arg_types.size() + proto.args().size());
+    for (typecheck::func_arg_t const& arg: proto.args())
+        arg_types.push_back(gen_type(global, local, arg.type));
     return llvm::FunctionType::get(ret_type, std::move(arg_types), is_var_arg);
 }
 
 void gen_func_args(local_context_t& local, llvm_func_proto_t const& proto, llvm::Function* const llvm_f)
 {
-    for (auto const i: std::views::iota(0ul, proto.args().size()))
+    auto llvm_arg_it = llvm_f->arg_begin();
+    if (is_alloca_needed(proto.ret_type()))
     {
-        auto const llvm_arg = llvm_f->getArg(i);
-        auto const& [arg_type, arg_var] = std::tie(proto.arg(i).type, proto.arg(i).var);
-        if (auto const attr = get_sign_ext_attribute(local, arg_type); attr != llvm::Attribute::None)
+        assert(llvm_f->arg_size() == proto.args().size() + 1ul and "function with sret must have 1 more argument");
+        llvm_arg_it->addAttr(llvm::Attribute::StructRet);
+        llvm_arg_it->addAttr(llvm::Attribute::NonNull);
+        ++llvm_arg_it;
+    }
+    else
+        assert(llvm_f->arg_size() == proto.args().size() and "function and prototype must have same arguments");
+    for (auto const& arg: proto.args())
+    {
+        auto const& llvm_arg = llvm_arg_it++;
+        if (auto const attr = get_sign_ext_attribute(local, arg.type); attr != llvm::Attribute::None)
             llvm_arg->addAttr(attr);
-        if (is_alloca_needed(arg_type))
+        if (is_alloca_needed(arg.type))
             llvm_arg->addAttr(llvm::Attribute::NonNull);
-        if (arg_var)
+        if (arg.var)
         {
-            if (arg_var->idx == 0ul)
-                llvm_arg->setName(arg_var->name.view());
+            if (arg.var->idx == 0ul)
+                llvm_arg->setName(arg.var->name.view());
             bool inserted = false;
-            if (std::holds_alternative<typecheck::expr_t::pi_t>(arg_type.value))
+            if (std::holds_alternative<typecheck::expr_t::pi_t>(arg.type.value))
             {
                 assert(llvm_arg->getType()->isPointerTy());
                 auto const function_type = cast<llvm::FunctionType>(llvm_arg->getType()->getPointerElementType());
                 assert(function_type);
-                inserted = local.try_emplace(*arg_var, llvm_func_t(function_type, llvm_arg)).second;
+                inserted = local.try_emplace(*arg.var, llvm_func_t(function_type, llvm_arg)).second;
             }
             else
-                inserted = local.try_emplace(*arg_var, llvm_arg).second;
+                inserted = local.try_emplace(*arg.var, llvm_arg).second;
             assert(inserted);
         }
-    }
-    if (is_alloca_needed(proto.ret_type()))
-    {
-        auto const ret_arg = llvm_f->getArg(proto.args().size());
-        ret_arg->addAttr(llvm::Attribute::StructRet);
-        ret_arg->addAttr(llvm::Attribute::NonNull);
     }
 }
 
@@ -727,39 +741,11 @@ void gen_stmt(
         stmt.value,
         [&] (typecheck::expr_t::app_t const& x)
         {
-            gen_func_call(global, local, builder, x);
+            gen_func_call(global, local, builder, x, nullptr);
         },
         [&] (typecheck::stmt_t::if_else_t const& x)
         {
-            // if both branches are present and contain a single return statement (with an expression),
-            // we can emit a `select `instruction instead;
-            auto const is_single_return_expr = [] (typecheck::body_t const& body)
-            {
-                if (body.stmts.size() != 1ul)
-                    return false;
-                auto const ret = std::get_if<typecheck::stmt_t::return_t>(&body.stmts[0].value);
-                return ret and ret->expr.has_value();
-            };
             auto const cond = gen_val(global, local, builder, x.cond, nullptr);
-            if (x.false_branch and is_single_return_expr(x.true_branch) and is_single_return_expr(*x.false_branch))
-            {
-                auto const& ret1 = std::get<typecheck::stmt_t::return_t>(x.true_branch.stmts[0].value);
-                auto const& ret2 = std::get<typecheck::stmt_t::return_t>(x.false_branch->stmts[0].value);
-                auto const ret_val =
-                    builder.CreateSelect(
-                        cond,
-                        gen_val(global, local, builder, *ret1.expr, nullptr),
-                        gen_val(global, local, builder, *ret2.expr, nullptr));
-                if (inlined_result)
-                {
-                    // TODO shall we still store if the return value was an array?
-                    builder.CreateStore(ret_val, inlined_result);
-                    snipppet.open_blocks.push_back(builder.GetInsertBlock());
-                }
-                else
-                    builder.CreateRet(ret_val);
-                return;
-            }
             auto const then = gen_body(global, local, x.true_branch, "then", llvm_f, inlined_result);
             std::ranges::copy(then.open_blocks, std::back_inserter(snipppet.open_blocks));
             if (x.false_branch)
@@ -789,9 +775,9 @@ void gen_stmt(
                 snipppet.open_blocks.push_back(builder.GetInsertBlock());
                 return;
             }
-            auto const last = llvm_f->arg_empty() ? nullptr : llvm_f->getArg(llvm_f->arg_size() - 1ul);
-            auto const dest = last and last->hasAttribute(llvm::Attribute::StructRet) ? last : nullptr;
-            // always generate a value, even for expressio of type unit_t,
+            auto const arg0 = llvm_f->arg_empty() ? nullptr : llvm_f->getArg(0ul);
+            auto const dest = arg0 and arg0->hasAttribute(llvm::Attribute::StructRet) ? arg0 : nullptr;
+            // always generate a value, even for expressions of type unit_t,
             // because it might be a function call with side effects;
             // and, if it is, just return 0, without complicating the CFG
             auto const ret_val = gen_val(global, local, builder, *x.expr, dest);
@@ -871,14 +857,24 @@ llvm::Value* gen_val(
     typecheck::expr_t const& expr,
     llvm::Value* const dest)
 {
-    auto const storeOrReturn = [&builder, &dest] (llvm::Value* const value)
+    auto const storeOrReturn = [&] (llvm::Value* const value)
     {
-        if (dest)
+        if (not dest)
+            return value;
+        if (auto const pty = get_properties_if_array(std::get<typecheck::expr_t>(expr.properties.sort.get())))
         {
-            builder.CreateStore(value, dest);
-            return dest;
+            assert(dest->getType()->isPointerTy() and "memcpy destination must be a pointer");
+            auto const& data_layout = global.llvm_module.getDataLayout();
+            auto const ptr_element_type = dest->getType()->getPointerElementType();
+            auto const align = data_layout.getPrefTypeAlign(ptr_element_type);
+            auto const bytes = data_layout.getTypeAllocSize(ptr_element_type);
+            auto const size = gen_array_total_size(global, local, builder, *pty);
+            auto const total_bytes = builder.CreateMul(size, builder.getInt64(bytes.getFixedSize()));
+            builder.CreateMemCpy(dest, align, value, align, total_bytes);
         }
-        return value;
+        else
+            builder.CreateStore(value, dest);
+        return dest;
     };
     return match(
         expr.value,
@@ -1013,7 +1009,7 @@ llvm::Value* gen_val(
                         return builder.CreateLoad(inlined_type, inlined_result);
                     }
                 }
-            return storeOrReturn(gen_func_call(global, local, builder, x));
+            return gen_func_call(global, local, builder, x, dest);
         },
         [&] (typecheck::expr_t::abs_t const& abs) -> llvm::Value*
         {
@@ -1072,7 +1068,8 @@ llvm::Value* gen_func_call(
     global_context_t& global,
     local_context_t const& local,
     llvm::IRBuilder<>& builder,
-    typecheck::expr_t::app_t const& app)
+    typecheck::expr_t::app_t const& app,
+    llvm::Value* const dest)
 {
     assert(
         std::ranges::all_of(
@@ -1097,23 +1094,38 @@ llvm::Value* gen_func_call(
     }();
     auto const llvm_func_type = gen_func_type(global, local, proto);
     auto const llvm_func = gen_val(global, local, builder, app.func.get(), nullptr);
-    auto llvm_args =
-        fmap(app.args, [&] (typecheck::expr_t const& arg)
-        {
-            return gen_val(global, local, builder, arg, nullptr);
-        });
-    auto const dest = gen_alloca_if_needed(global, local, builder, proto.ret_type());
-    if (dest)
-        llvm_args.push_back(dest);
-    // this could be a direct call to a global function, or an indirect call via a function pointer
-    auto const call = builder.CreateCall(llvm_func_type, llvm_func, std::move(llvm_args));
-    for (auto const i: std::views::iota(0ul, app.args.size()))
+    std::vector<llvm::Value*> llvm_args; // modifiable before generating the call
+    auto const has_ret_arg = is_alloca_needed(proto.ret_type());
+    auto const gen_call = [&, arg_offset = has_ret_arg ? 1ul : 0ul]
     {
-        auto const& arg_type = std::get<typecheck::expr_t>(app.args[i].properties.sort.get());
-        if (auto const attr = get_sign_ext_attribute(local, arg_type); attr != llvm::Attribute::None)
-            call->addParamAttr(i, attr);
+        llvm_args.reserve(llvm_args.size() + app.args.size());
+        for (typecheck::expr_t const& arg: app.args)
+            llvm_args.push_back(gen_val(global, local, builder, arg, nullptr));
+        // this could be a direct call to a global function, or an indirect call via a function pointer
+        auto const call = builder.CreateCall(llvm_func_type, llvm_func, std::move(llvm_args));
+        for (auto const i: std::views::iota(0ul, app.args.size()))
+        {
+            auto const& arg_type = std::get<typecheck::expr_t>(app.args[i].properties.sort.get());
+            if (auto const attr = get_sign_ext_attribute(local, arg_type); attr != llvm::Attribute::None)
+                call->addParamAttr(i + arg_offset, attr);
+        }
+        return call;
+    };
+    if (has_ret_arg)
+    {
+        auto const dest2 = dest ? dest : gen_alloca_if_needed(global, local, builder, proto.ret_type());
+        assert(dest2 and "function call needs an alloca for the return value but does not have one");
+        llvm_args.push_back(dest2);
+        gen_call();
+        return dest2;
     }
-    return dest ? dest : call;
+    else if (dest)
+    {
+        builder.CreateStore(gen_call(), dest);
+        return dest;
+    }
+    else
+        return gen_call();
 }
 
 } // namespace dep0::llvmgen

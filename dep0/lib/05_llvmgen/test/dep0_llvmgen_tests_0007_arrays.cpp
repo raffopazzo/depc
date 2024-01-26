@@ -628,26 +628,31 @@ BOOST_AUTO_TEST_CASE(pass_012)
         BOOST_TEST_REQUIRE(f->size() == 1ul);
         BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(1)));
     }
+    auto const exactly_f = exactly(pass_result.value()->getFunction("f"));
+    auto const exactly_g = exactly(pass_result.value()->getFunction("g"));
     {
         auto const f = pass_result.value()->getFunction("negate");
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(is_i1, "x")}, is_i1));
-        BOOST_TEST_REQUIRE(f->size() == 1ul);
-        BOOST_TEST(
-            is_return_of(
-                f->getEntryBlock().getTerminator(),
-                select_of(exactly(f->getArg(0ul)), constant(false), constant(true))));
+        BOOST_TEST_REQUIRE(f->size() == 3ul);
+        auto it = f->begin();
+        auto const& entry = *it++;
+        auto const& then = *it++;
+        auto const& else_ = *it++;
+        BOOST_TEST(is_branch_of(entry.getTerminator(), exactly(f->getArg(0ul)), exactly(&then), exactly(&else_)));
+        BOOST_TEST(is_return_of(then.getTerminator(), constant(false)));
+        BOOST_TEST(is_return_of(else_.getTerminator(), constant(true)));
     }
     {
         auto const f = pass_result.value()->getFunction("select");
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(is_i1, "which")}, fnptr_type(std::tuple{}, is_i32)));
-        BOOST_TEST_REQUIRE(f->size() == 1ul);
-        BOOST_TEST(
-            is_return_of(
-                f->getEntryBlock().getTerminator(),
-                select_of(
-                    exactly(f->getArg(0ul)),
-                    exactly(pass_result.value()->getFunction("f")),
-                    exactly(pass_result.value()->getFunction("g")))));
+        BOOST_TEST_REQUIRE(f->size() == 3ul);
+        auto it = f->begin();
+        auto const& entry = *it++;
+        auto const& then = *it++;
+        auto const& else_ = *it++;
+        BOOST_TEST(is_branch_of(entry.getTerminator(), exactly(f->getArg(0ul)), exactly(&then), exactly(&else_)));
+        BOOST_TEST(is_return_of(then.getTerminator(), exactly_f));
+        BOOST_TEST(is_return_of(else_.getTerminator(), exactly_g));
     }
     {
         auto const f = pass_result.value()->getFunction("choose");
@@ -656,22 +661,26 @@ BOOST_AUTO_TEST_CASE(pass_012)
             is_function_of(
                 f,
                 std::tuple{
-                    arg_of(is_i1, "which"),
-                    arg_of(pointer_to(fn_ptr), std::nullopt, {llvm::Attribute::NonNull, llvm::Attribute::StructRet})},
+                    arg_of(pointer_to(fn_ptr), std::nullopt, {llvm::Attribute::NonNull, llvm::Attribute::StructRet}),
+                    arg_of(is_i1, "which")},
                 is_void));
-        BOOST_TEST_REQUIRE(f->size() == 7ul);
+        BOOST_TEST_REQUIRE(f->size() == 13ul);
         auto it = f->begin();
         auto const& entry = *it++;
-        auto const& inlined = *it++;
-        auto const& cont = *it++;
+        auto const& inlined0 = *it++;
+        auto const& then0 = *it++;
+        auto const& else0 = *it++;
+        auto const& cont0 = *it++;
         auto const& inlined1 = *it++;
         auto const& inlined2 = *it++;
-        auto const& cont3 = *it++;
-        auto const& cont4 = *it++;
-        auto const which = exactly(f->getArg(0ul));
-        auto const ret_arg = exactly(f->getArg(1ul));
-        auto const exactly_f = exactly(pass_result.value()->getFunction("f"));
-        auto const exactly_g = exactly(pass_result.value()->getFunction("g"));
+        auto const& then3 = *it++;
+        auto const& else4 = *it++;
+        auto const& cont5 = *it++;
+        auto const& then6 = *it++;
+        auto const& else7 = *it++;
+        auto const& cont8 = *it++;
+        auto const ret_arg = exactly(f->getArg(0ul));
+        auto const which = exactly(f->getArg(1ul));
         auto const& [gep0, temp_bool] = [&]
         {
             BOOST_TEST_REQUIRE(entry.size() == 3ul);
@@ -681,60 +690,66 @@ BOOST_AUTO_TEST_CASE(pass_012)
             auto const& br = *it++;
             BOOST_TEST(is_gep_of(gep0, fn_ptr, ret_arg, constant(0)));
             BOOST_TEST(is_alloca(temp_bool, is_i1, constant(1), align_of(1)));
-            BOOST_TEST(is_unconditional_branch_to(br, exactly(&inlined)));
+            BOOST_TEST(is_unconditional_branch_to(br, exactly(&inlined0)));
             return std::forward_as_tuple(gep0, temp_bool);
         }();
         {
-            BOOST_TEST_REQUIRE(inlined.size() == 3ul);
-            auto it = inlined.begin();
-            auto const& select = *it++;
-            auto const& store = *it++;
-            auto const& br = *it++;
-            BOOST_TEST(is_select_of(select, which, exactly_f, exactly_g));
-            BOOST_TEST(is_store_of(store, fn_ptr, exactly(&select), exactly(&gep0), align_of(8)));
-            BOOST_TEST(is_unconditional_branch_to(br, exactly(&cont)));
+            BOOST_TEST_REQUIRE(inlined0.size() == 1ul);
+            BOOST_TEST(is_branch_of(inlined0.getTerminator(), which, exactly(&then0), exactly(&else0)));
+        }
+        {
+            BOOST_TEST_REQUIRE(then0.size() == 2ul);
+            BOOST_TEST(is_store_of(then0.front(), fn_ptr, exactly_f, exactly(&gep0), align_of(8)));
+            BOOST_TEST(is_unconditional_branch_to(then0.getTerminator(), exactly(&cont0)));
+        }
+        {
+            BOOST_TEST_REQUIRE(else0.size() == 2ul);
+            BOOST_TEST(is_store_of(else0.front(), fn_ptr, exactly_g, exactly(&gep0), align_of(8)));
+            BOOST_TEST(is_unconditional_branch_to(else0.getTerminator(), exactly(&cont0)));
         }
         auto const& gep1 = [&] () -> auto const&
         {
-            BOOST_TEST_REQUIRE(cont.size() == 2ul);
-            auto it = cont.begin();
-            auto const& gep1 = *it++;
-            auto const& ret = *it++;
-            BOOST_TEST(is_gep_of(gep1, fn_ptr, ret_arg, constant(1)));
-            BOOST_TEST(is_unconditional_branch_to(ret, exactly(&inlined1)));
-            return gep1;
+            BOOST_TEST_REQUIRE(cont0.size() == 2ul);
+            BOOST_TEST(is_gep_of(cont0.front(), fn_ptr, ret_arg, constant(1)));
+            BOOST_TEST(is_unconditional_branch_to(cont0.getTerminator(), exactly(&inlined1)));
+            return cont0.front();
         }();
         {
             BOOST_TEST_REQUIRE(inlined1.size() == 1ul);
-            auto it = inlined1.begin();
-            BOOST_TEST(is_unconditional_branch_to(*it++, exactly(&inlined2)));
+            BOOST_TEST(is_unconditional_branch_to(inlined1.getTerminator(), exactly(&inlined2)));
         }
         {
-            BOOST_TEST_REQUIRE(inlined2.size() == 3ul);
-            auto it = inlined2.begin();
-            auto const& select = *it++;
-            auto const& store = *it++;
-            auto const& br = *it++;
-            BOOST_TEST(is_select_of(select, which, constant(false), constant(true)));
-            BOOST_TEST(is_store_of(store, is_i1, exactly(&select), exactly(&temp_bool), align_of(1)));
-            BOOST_TEST(is_unconditional_branch_to(br, exactly(&cont3)));
+            BOOST_TEST_REQUIRE(inlined2.size() == 1ul);
+            BOOST_TEST(is_branch_of(inlined2.getTerminator(), which, exactly(&then3), exactly(&else4)));
         }
         {
-            BOOST_TEST_REQUIRE(cont3.size() == 4ul);
-            auto it = cont3.begin();
-            auto const& bool_val = *it++;
-            auto const& select = *it++;
-            auto const& store = *it++;
-            auto const& br = *it++;
-            BOOST_TEST(is_load_of(bool_val, is_i1, exactly(&temp_bool), align_of(1)));
-            BOOST_TEST(is_select_of(select, exactly(&bool_val), exactly_f, exactly_g));
-            BOOST_TEST(is_store_of(store, fn_ptr, exactly(&select), exactly(&gep1), align_of(8)));
-            BOOST_TEST(is_unconditional_branch_to(br, exactly(&cont4)));
+            BOOST_TEST_REQUIRE(then3.size() == 2ul);
+            BOOST_TEST(is_store_of(then3.front(), is_i1, constant(false), exactly(&temp_bool), align_of(1)));
+            BOOST_TEST(is_unconditional_branch_to(then3.getTerminator(), exactly(&cont5)));
         }
         {
-            BOOST_TEST_REQUIRE(cont4.size() == 1ul);
-            auto it = cont4.begin();
-            BOOST_TEST(is_return_of_void(*it++));
+            BOOST_TEST_REQUIRE(else4.size() == 2ul);
+            BOOST_TEST(is_store_of(else4.front(), is_i1, constant(true), exactly(&temp_bool), align_of(1)));
+            BOOST_TEST(is_unconditional_branch_to(else4.getTerminator(), exactly(&cont5)));
+        }
+        {
+            BOOST_TEST_REQUIRE(cont5.size() == 2ul);
+            BOOST_TEST(is_load_of(cont5.front(), is_i1, exactly(&temp_bool), align_of(1)));
+            BOOST_TEST(is_branch_of(cont5.getTerminator(), exactly(&cont5.front()), exactly(&then6), exactly(&else7)));
+        }
+        {
+            BOOST_TEST_REQUIRE(then6.size() == 2ul);
+            BOOST_TEST(is_store_of(then6.front(), fn_ptr, exactly_f, exactly(&gep1), align_of(8)));
+            BOOST_TEST(is_unconditional_branch_to(then6.getTerminator(), exactly(&cont8)));
+        }
+        {
+            BOOST_TEST_REQUIRE(else7.size() == 2ul);
+            BOOST_TEST(is_store_of(else7.front(), fn_ptr, exactly_g, exactly(&gep1), align_of(8)));
+            BOOST_TEST(is_unconditional_branch_to(else7.getTerminator(), exactly(&cont8)));
+        }
+        {
+            BOOST_TEST_REQUIRE(cont8.size() == 1ul);
+            BOOST_TEST(is_return_of_void(cont8.getTerminator()));
         }
     }
 }
@@ -748,6 +763,307 @@ BOOST_AUTO_TEST_CASE(pass_013)
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
         BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(-1)));
+    }
+}
+
+BOOST_AUTO_TEST_CASE(pass_014)
+{
+    apply_beta_delta_normalization = false;
+    BOOST_TEST_REQUIRE(pass("0007_arrays/pass_014.depc"));
+    {
+        auto const f = pass_result.value()->getFunction("zeros");
+        BOOST_TEST_REQUIRE(
+            is_function_of(
+                f,
+                std::tuple{
+                    arg_of(pointer_to(is_i32), std::nullopt, {llvm::Attribute::NonNull, llvm::Attribute::StructRet})
+                },
+                is_void));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        auto const& bb = f->getEntryBlock();
+        BOOST_TEST_REQUIRE(bb.size() == 7ul);
+        auto it = bb.begin();
+        auto const& gep1 = *it++;
+        auto const& store1 = *it++;
+        auto const& gep2 = *it++;
+        auto const& store2 = *it++;
+        auto const& gep3 = *it++;
+        auto const& store3 = *it++;
+        auto const& ret = *it++;
+        auto const ret_arg = f->getArg(0ul);
+        BOOST_TEST(is_gep_of(gep1, is_i32, exactly(ret_arg), constant(0)));
+        BOOST_TEST(is_gep_of(gep2, is_i32, exactly(ret_arg), constant(1)));
+        BOOST_TEST(is_gep_of(gep3, is_i32, exactly(ret_arg), constant(2)));
+        BOOST_TEST(is_store_of(store1, is_i32, constant(0), exactly(&gep1), align_of(4)));
+        BOOST_TEST(is_store_of(store2, is_i32, constant(0), exactly(&gep2), align_of(4)));
+        BOOST_TEST(is_store_of(store3, is_i32, constant(0), exactly(&gep3), align_of(4)));
+        BOOST_TEST(is_return_of_void(ret));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("passthrough");
+        BOOST_TEST_REQUIRE(
+            is_function_of(
+                f,
+                std::tuple{
+                    arg_of(pointer_to(is_i32), std::nullopt, {llvm::Attribute::NonNull, llvm::Attribute::StructRet})},
+                is_void));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        auto const& bb = f->getEntryBlock();
+        BOOST_TEST_REQUIRE(bb.size() == 2ul);
+        BOOST_TEST(
+            is_direct_call(
+                bb.front(),
+                exactly(pass_result.value()->getFunction("zeros")),
+                call_arg(exactly(f->getArg(0ul)))));
+        BOOST_TEST(is_return_of_void(bb.getTerminator()));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("values");
+        BOOST_TEST_REQUIRE(
+            is_function_of(
+                f,
+                std::tuple{
+                    arg_of(pointer_to(is_i32), std::nullopt, {llvm::Attribute::NonNull, llvm::Attribute::StructRet}),
+                    arg_of(is_i1, "which")},
+                is_void));
+        BOOST_TEST_REQUIRE(f->size() == 3ul);
+        auto it = f->begin();
+        auto const& entry = *it++;
+        auto const& then = *it++;
+        auto const& else_ = *it++;
+        {
+            BOOST_TEST_REQUIRE(entry.size() == 1ul);
+            BOOST_TEST(is_branch_of(entry.getTerminator(), exactly(f->getArg(1ul)), exactly(&then), exactly(&else_)));
+        }
+        {
+            BOOST_TEST_REQUIRE(then.size() == 2ul);
+            BOOST_TEST(
+                is_direct_call(
+                    then.front(),
+                    exactly(pass_result.value()->getFunction("zeros")),
+                    call_arg(exactly(f->getArg(0ul)))));
+            BOOST_TEST(is_return_of_void(then.getTerminator()));
+        }
+        {
+            BOOST_TEST_REQUIRE(else_.size() == 7ul);
+            auto it = else_.begin();
+            auto const& gep1 = *it++;
+            auto const& store1 = *it++;
+            auto const& gep2 = *it++;
+            auto const& store2 = *it++;
+            auto const& gep3 = *it++;
+            auto const& store3 = *it++;
+            auto const& ret = *it++;
+            auto const ret_arg = f->getArg(0ul);
+            BOOST_TEST(is_gep_of(gep1, is_i32, exactly(ret_arg), constant(0)));
+            BOOST_TEST(is_gep_of(gep2, is_i32, exactly(ret_arg), constant(1)));
+            BOOST_TEST(is_gep_of(gep3, is_i32, exactly(ret_arg), constant(2)));
+            BOOST_TEST(is_store_of(store1, is_i32, constant(1), exactly(&gep1), align_of(4)));
+            BOOST_TEST(is_store_of(store2, is_i32, constant(2), exactly(&gep2), align_of(4)));
+            BOOST_TEST(is_store_of(store3, is_i32, constant(3), exactly(&gep3), align_of(4)));
+            BOOST_TEST(is_return_of_void(ret));
+        }
+    }
+    {
+        auto const f = pass_result.value()->getFunction("select");
+        BOOST_TEST_REQUIRE(
+            is_function_of(
+                f,
+                std::tuple{
+                    arg_of(pointer_to(is_i32), std::nullopt, {llvm::Attribute::NonNull, llvm::Attribute::StructRet}),
+                    arg_of(is_i1, "which"),
+                    arg_of(pointer_to(is_i32), "xs", {llvm::Attribute::NonNull})},
+                is_void));
+        BOOST_TEST_REQUIRE(f->size() == 3ul);
+        auto it = f->begin();
+        auto const& entry = *it++;
+        auto const& then = *it++;
+        auto const& else_ = *it++;
+        {
+            BOOST_TEST_REQUIRE(entry.size() == 1ul);
+            BOOST_TEST(is_branch_of(entry.getTerminator(), exactly(f->getArg(1ul)), exactly(&then), exactly(&else_)));
+        }
+        {
+            BOOST_TEST_REQUIRE(then.size() == 2ul);
+            BOOST_TEST(
+                is_direct_call(
+                    then.front(),
+                    exactly(pass_result.value()->getFunction("zeros")),
+                    call_arg(exactly(f->getArg(0ul)))));
+            BOOST_TEST(is_return_of_void(then.getTerminator()));
+        }
+        {
+            BOOST_TEST_REQUIRE(else_.size() == 4ul);
+            auto it = else_.begin();
+            auto const& dst = *it++;
+            auto const& src = *it++;
+            auto const& memcpy = *it++;
+            auto const& ret = *it++;
+            BOOST_TEST(is_bitcast_of(dst, exactly(f->getArg(0ul)), pointer_to(is_i32), pointer_to(is_i8)));
+            BOOST_TEST(is_bitcast_of(src, exactly(f->getArg(2ul)), pointer_to(is_i32), pointer_to(is_i8)));
+            BOOST_TEST(
+                is_direct_call(
+                    memcpy,
+                    exactly(pass_result.value()->getFunction(llvm_memcpy_name)),
+                    call_arg(exactly(&dst), {llvm::Attribute::Alignment}, llvm::Align(4)),
+                    call_arg(exactly(&src), {llvm::Attribute::Alignment}, llvm::Align(4)),
+                    call_arg(constant(12)),
+                    call_arg(constant(false))));
+            BOOST_TEST(is_return_of_void(ret));
+        }
+    }
+    {
+        auto const f = pass_result.value()->getFunction("xs_or_ys");
+        BOOST_TEST_REQUIRE(
+            is_function_of(
+                f,
+                std::tuple{
+                    arg_of(pointer_to(is_i32), std::nullopt, {llvm::Attribute::NonNull, llvm::Attribute::StructRet}),
+                    arg_of(is_i1, "which"),
+                    arg_of(pointer_to(is_i32), "xs", {llvm::Attribute::NonNull}),
+                    arg_of(pointer_to(is_i32), "ys", {llvm::Attribute::NonNull})},
+                is_void));
+        BOOST_TEST_REQUIRE(f->size() == 3ul);
+        auto it = f->begin();
+        auto const& entry = *it++;
+        auto const& then = *it++;
+        auto const& else_ = *it++;
+        {
+            BOOST_TEST_REQUIRE(entry.size() == 1ul);
+            BOOST_TEST(is_branch_of(entry.getTerminator(), exactly(f->getArg(1ul)), exactly(&then), exactly(&else_)));
+        }
+        {
+            BOOST_TEST_REQUIRE(then.size() == 4ul);
+            auto it = then.begin();
+            auto const& dst = *it++;
+            auto const& src = *it++;
+            auto const& memcpy = *it++;
+            auto const& ret = *it++;
+            BOOST_TEST(is_bitcast_of(dst, exactly(f->getArg(0ul)), pointer_to(is_i32), pointer_to(is_i8)));
+            BOOST_TEST(is_bitcast_of(src, exactly(f->getArg(2ul)), pointer_to(is_i32), pointer_to(is_i8)));
+            BOOST_TEST(
+                is_direct_call(
+                    memcpy,
+                    exactly(pass_result.value()->getFunction(llvm_memcpy_name)),
+                    call_arg(exactly(&dst), {llvm::Attribute::Alignment}, llvm::Align(4)),
+                    call_arg(exactly(&src), {llvm::Attribute::Alignment}, llvm::Align(4)),
+                    call_arg(constant(12)),
+                    call_arg(constant(false))));
+            BOOST_TEST(is_return_of_void(ret));
+        }
+        {
+            BOOST_TEST_REQUIRE(else_.size() == 4ul);
+            auto it = else_.begin();
+            auto const& dst = *it++;
+            auto const& src = *it++;
+            auto const& memcpy = *it++;
+            auto const& ret = *it++;
+            BOOST_TEST(is_bitcast_of(dst, exactly(f->getArg(0ul)), pointer_to(is_i32), pointer_to(is_i8)));
+            BOOST_TEST(is_bitcast_of(src, exactly(f->getArg(3ul)), pointer_to(is_i32), pointer_to(is_i8)));
+            BOOST_TEST(
+                is_direct_call(
+                    memcpy,
+                    exactly(pass_result.value()->getFunction(llvm_memcpy_name)),
+                    call_arg(exactly(&dst), {llvm::Attribute::Alignment}, llvm::Align(4)),
+                    call_arg(exactly(&src), {llvm::Attribute::Alignment}, llvm::Align(4)),
+                    call_arg(constant(12)),
+                    call_arg(constant(false))));
+            BOOST_TEST(is_return_of_void(ret));
+        }
+    }
+}
+
+BOOST_AUTO_TEST_CASE(pass_015)
+{
+    apply_beta_delta_normalization = false;
+    BOOST_TEST_REQUIRE(pass("0007_arrays/pass_015.depc"));
+    {
+        auto const f = pass_result.value()->getFunction("xs_or_ys");
+        BOOST_TEST_REQUIRE(
+            is_function_of(
+                f,
+                std::tuple{
+                    arg_of(pointer_to(is_i32), std::nullopt, {llvm::Attribute::NonNull, llvm::Attribute::StructRet}),
+                    arg_of(is_i1, "which"),
+                    arg_of(is_i64, "n", {llvm::Attribute::ZExt}),
+                    arg_of(pointer_to(is_i32), "xs", {llvm::Attribute::NonNull}),
+                    arg_of(pointer_to(is_i32), "ys", {llvm::Attribute::NonNull})},
+                is_void));
+        BOOST_TEST_REQUIRE(f->size() == 3ul);
+        auto it = f->begin();
+        auto const& entry = *it++;
+        auto const& then = *it++;
+        auto const& else_ = *it++;
+        {
+            BOOST_TEST_REQUIRE(entry.size() == 1ul);
+            BOOST_TEST(is_branch_of(entry.getTerminator(), exactly(f->getArg(1ul)), exactly(&then), exactly(&else_)));
+        }
+        {
+            BOOST_TEST_REQUIRE(then.size() == 5ul);
+            auto it = then.begin();
+            auto const& mul = *it++;
+            auto const& dst = *it++;
+            auto const& src = *it++;
+            auto const& memcpy = *it++;
+            auto const& ret = *it++;
+            BOOST_TEST(is_mul_of(mul, exactly(f->getArg(2ul)), constant(4)));
+            BOOST_TEST(is_bitcast_of(dst, exactly(f->getArg(0ul)), pointer_to(is_i32), pointer_to(is_i8)));
+            BOOST_TEST(is_bitcast_of(src, exactly(f->getArg(3ul)), pointer_to(is_i32), pointer_to(is_i8)));
+            BOOST_TEST(
+                is_direct_call(
+                    memcpy,
+                    exactly(pass_result.value()->getFunction(llvm_memcpy_name)),
+                    call_arg(exactly(&dst), {llvm::Attribute::Alignment}, llvm::Align(4)),
+                    call_arg(exactly(&src), {llvm::Attribute::Alignment}, llvm::Align(4)),
+                    call_arg(exactly(&mul)),
+                    call_arg(constant(false))));
+            BOOST_TEST(is_return_of_void(ret));
+        }
+        {
+            BOOST_TEST_REQUIRE(else_.size() == 5ul);
+            auto it = else_.begin();
+            auto const& mul = *it++;
+            auto const& dst = *it++;
+            auto const& src = *it++;
+            auto const& memcpy = *it++;
+            auto const& ret = *it++;
+            BOOST_TEST(is_mul_of(mul, exactly(f->getArg(2ul)), constant(4)));
+            BOOST_TEST(is_bitcast_of(dst, exactly(f->getArg(0ul)), pointer_to(is_i32), pointer_to(is_i8)));
+            BOOST_TEST(is_bitcast_of(src, exactly(f->getArg(4ul)), pointer_to(is_i32), pointer_to(is_i8)));
+            BOOST_TEST(
+                is_direct_call(
+                    memcpy,
+                    exactly(pass_result.value()->getFunction(llvm_memcpy_name)),
+                    call_arg(exactly(&dst), {llvm::Attribute::Alignment}, llvm::Align(4)),
+                    call_arg(exactly(&src), {llvm::Attribute::Alignment}, llvm::Align(4)),
+                    call_arg(exactly(&mul)),
+                    call_arg(constant(false))));
+            BOOST_TEST(is_return_of_void(ret));
+        }
+    }
+    {
+        auto const f = pass_result.value()->getFunction("xs_or_ys_2");
+        BOOST_TEST_REQUIRE(
+            is_function_of(
+                f,
+                std::tuple{
+                    arg_of(pointer_to(is_i32), std::nullopt, {llvm::Attribute::NonNull, llvm::Attribute::StructRet}),
+                    arg_of(is_i1, "which"),
+                    arg_of(pointer_to(is_i32), "xs", {llvm::Attribute::NonNull}),
+                    arg_of(pointer_to(is_i32), "ys", {llvm::Attribute::NonNull})},
+                is_void));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        auto const& bb = f->getEntryBlock();
+        BOOST_TEST(
+            is_direct_call(
+                bb.front(),
+                exactly(pass_result.value()->getFunction("xs_or_ys")),
+                call_arg(exactly(f->getArg(0ul))),
+                call_arg(exactly(f->getArg(1ul))),
+                call_arg(constant(2), {llvm::Attribute::ZExt}),
+                call_arg(exactly(f->getArg(2ul))),
+                call_arg(exactly(f->getArg(3ul)))));
+        BOOST_TEST(is_return_of_void(bb.getTerminator()));
     }
 }
 

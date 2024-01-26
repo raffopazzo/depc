@@ -3,7 +3,6 @@
 
 #include "llvmgen_tests_fixture.hpp"
 #include "llvm_predicates.hpp"
-#include "llvm_predicates_v2.hpp"
 
 using namespace dep0::llvmgen::testing;
 
@@ -64,13 +63,16 @@ BOOST_AUTO_TEST_CASE(pass_003)
         BOOST_TEST(f->getReturnType()->isIntegerTy(1ul));
         BOOST_TEST_REQUIRE(f->arg_size() == 1ul);
         BOOST_TEST(is_bool(f->getArg(0ul), "x"));
-        BOOST_TEST(
-            v2::is_return_of(
-                f->getEntryBlock().getTerminator(),
-                v2::select_of(
-                    v2::exactly(f->getArg(0ul)),
-                    v2::constant(false),
-                    v2::constant(true))));
+        BOOST_TEST_REQUIRE(f->size() == 3ul);
+        BOOST_TEST_REQUIRE(f->getEntryBlock().size() == 1ul);
+        BOOST_TEST(is_branch_of(f->getEntryBlock().getTerminator(), [&] (llvm::BranchInst const& br)
+        {
+            BOOST_TEST_REQUIRE(br.isConditional());
+            BOOST_TEST(br.getCondition() == f->getArg(0ul));
+            BOOST_TEST(is_return_of(br.getSuccessor(0)->getTerminator(), unsigned_constant(0)));
+            BOOST_TEST(is_return_of(br.getSuccessor(1)->getTerminator(), unsigned_constant(1)));
+            return boost::test_tools::predicate_result(true);
+        }));
     }
     {
         auto const f = pass_result.value()->getFunction("plus_1");
@@ -132,13 +134,16 @@ BOOST_AUTO_TEST_CASE(pass_004)
         BOOST_TEST(f->getReturnType()->isIntegerTy(1ul));
         BOOST_TEST_REQUIRE(f->arg_size() == 1ul);
         BOOST_TEST(is_bool(f->getArg(0ul), "x"));
-        BOOST_TEST(
-            v2::is_return_of(
-                f->getEntryBlock().getTerminator(),
-                v2::select_of(
-                    v2::exactly(f->getArg(0ul)),
-                    v2::constant(false),
-                    v2::constant(true))));
+        BOOST_TEST_REQUIRE(f->size() == 3ul);
+        BOOST_TEST_REQUIRE(f->getEntryBlock().size() == 1ul);
+        BOOST_TEST(is_branch_of(f->getEntryBlock().getTerminator(), [&] (llvm::BranchInst const& br)
+        {
+            BOOST_TEST_REQUIRE(br.isConditional());
+            BOOST_TEST(br.getCondition() == f->getArg(0ul));
+            BOOST_TEST(is_return_of(br.getSuccessor(0)->getTerminator(), unsigned_constant(0)));
+            BOOST_TEST(is_return_of(br.getSuccessor(1)->getTerminator(), unsigned_constant(1)));
+            return boost::test_tools::predicate_result(true);
+        }));
     }
     {
         auto const f = pass_result.value()->getFunction("to_bool");

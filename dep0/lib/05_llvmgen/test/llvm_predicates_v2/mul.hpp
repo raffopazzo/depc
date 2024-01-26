@@ -16,19 +16,19 @@ namespace dep0::llvmgen::testing::v2 {
 namespace impl {
 
 template <Predicate<llvm::Value> F1, Predicate<llvm::Value> F2>
-boost::test_tools::predicate_result is_add_of(llvm::Instruction const& x, F1&& f1, F2&& f2)
+boost::test_tools::predicate_result is_mul_of(llvm::Instruction const& x, F1&& f1, F2&& f2)
 {
     auto const op = llvm::dyn_cast<llvm::BinaryOperator>(&x);
     if (not op)
         return dep0::testing::failure("instruction is not a binary operator but: ", x.getOpcodeName());
-    if (op->getOpcode() != llvm::Instruction::BinaryOps::Add)
+    if (op->getOpcode() != llvm::Instruction::BinaryOps::Mul)
         return dep0::testing::failure(
-            "binary operator is not Add: ",
-            static_cast<int>(llvm::Instruction::BinaryOps::Add),
+            "binary operator is not Mul: ",
+            static_cast<int>(llvm::Instruction::BinaryOps::Mul),
             " != ",
             static_cast<int>(op->getOpcode()));
     if (op->getNumOperands() != 2)
-        return dep0::testing::failure("add does not have 2 operands but ", op->getNumOperands());
+        return dep0::testing::failure("mul does not have 2 operands but ", op->getNumOperands());
     if (auto const result = std::forward<F1>(f1)(*op->getOperand(0)); not result)
         return dep0::testing::failure("predicate has failed for 1st operand: ", result.message());
     if (auto const result = std::forward<F2>(f2)(*op->getOperand(1)); not result)
@@ -37,57 +37,57 @@ boost::test_tools::predicate_result is_add_of(llvm::Instruction const& x, F1&& f
 }
 
 template <Predicate<llvm::Value> F1, Predicate<llvm::Value> F2>
-boost::test_tools::predicate_result is_add_of(llvm::Instruction const* const p, F1&& f1, F2&& f2)
+boost::test_tools::predicate_result is_mul_of(llvm::Instruction const* const p, F1&& f1, F2&& f2)
 {
     if (not p)
         return dep0::testing::failure("instruction is null");
-    return is_add_of(*p, std::forward<F1>(f1), std::forward<F2>(f2));
+    return is_mul_of(*p, std::forward<F1>(f1), std::forward<F2>(f2));
 }
 
 template <Predicate<llvm::Value> F1, Predicate<llvm::Value> F2>
-boost::test_tools::predicate_result is_add_of(llvm::Value const& x, F1&& f1, F2&& f2)
+boost::test_tools::predicate_result is_mul_of(llvm::Value const& x, F1&& f1, F2&& f2)
 {
     auto const p = llvm::dyn_cast<llvm::Instruction>(&x);
     if (not p)
         return dep0::testing::failure("value is not an instruction but: ", to_string(x));
-    return is_add_of(*p, std::forward<F1>(f1), std::forward<F2>(f2));
+    return is_mul_of(*p, std::forward<F1>(f1), std::forward<F2>(f2));
 }
 
 template <Predicate<llvm::Value> F1, Predicate<llvm::Value> F2>
-boost::test_tools::predicate_result is_add_of(llvm::Value const* const p, F1&& f1, F2&& f2)
+boost::test_tools::predicate_result is_mul_of(llvm::Value const* const p, F1&& f1, F2&& f2)
 {
     if (not p)
         return dep0::testing::failure("value is null");
-    return is_add_of(*p, std::forward<F1>(f1), std::forward<F2>(f2));
+    return is_mul_of(*p, std::forward<F1>(f1), std::forward<F2>(f2));
 }
 
 } // namespace impl
 
-inline constexpr auto is_add_of = boost::hana::overload(
+inline constexpr auto is_mul_of = boost::hana::overload(
     [] <Predicate<llvm::Value> F1, Predicate<llvm::Value> F2>
     (llvm::Instruction const& x, F1&& f1, F2&& f2)
     {
-        return impl::is_add_of(x, std::forward<F1>(f1), std::forward<F2>(f2));
+        return impl::is_mul_of(x, std::forward<F1>(f1), std::forward<F2>(f2));
     },
     [] <Predicate<llvm::Value> F1, Predicate<llvm::Value> F2>
     (llvm::Instruction const* const p, F1&& f1, F2&& f2)
     {
-        return impl::is_add_of(p, std::forward<F1>(f1), std::forward<F2>(f2));
+        return impl::is_mul_of(p, std::forward<F1>(f1), std::forward<F2>(f2));
     },
     [] <Predicate<llvm::Value> F1, Predicate<llvm::Value> F2>
     (llvm::Value const& x, F1&& f1, F2&& f2)
     {
-        return impl::is_add_of(x, std::forward<F1>(f1), std::forward<F2>(f2));
+        return impl::is_mul_of(x, std::forward<F1>(f1), std::forward<F2>(f2));
     },
     [] <Predicate<llvm::Value> F1, Predicate<llvm::Value> F2>
     (llvm::Value const* const p, F1&& f1, F2&& f2)
     {
-        return impl::is_add_of(p, std::forward<F1>(f1), std::forward<F2>(f2));
+        return impl::is_mul_of(p, std::forward<F1>(f1), std::forward<F2>(f2));
     }
 );
 
 template <Predicate<llvm::Value> F1, Predicate<llvm::Value> F2>
-auto add_of(F1&& f1, F2&& f2)
+auto mul_of(F1&& f1, F2&& f2)
 {
     struct predicate_t
     {
@@ -96,12 +96,12 @@ auto add_of(F1&& f1, F2&& f2)
 
         boost::test_tools::predicate_result operator()(llvm::Instruction const& x) const
         {
-            return impl::is_add_of(x, f1, f2);
+            return impl::is_mul_of(x, f1, f2);
         }
 
         boost::test_tools::predicate_result operator()(llvm::Value const& x) const
         {
-            return impl::is_add_of(x, f1, f2);
+            return impl::is_mul_of(x, f1, f2);
         }
     };
     return predicate_t{std::forward<F1>(f1), std::forward<F2>(f2)};

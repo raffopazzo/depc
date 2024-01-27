@@ -126,7 +126,7 @@ boost::test_tools::predicate_result
 {
     auto const i = llvm::dyn_cast<llvm::Instruction>(&x);
     if (not i)
-        return dep0::testing::failure("value is not an instruction but: ValueID=", x.getValueID());
+        return dep0::testing::failure("value is not an instruction but: ", to_string(x));
     return is_call(style, *i, std::forward<F>(f), std::move(args)...);
 }
 

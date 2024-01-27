@@ -22,7 +22,7 @@ boost::test_tools::predicate_result is_return_of_void(llvm::Value const& x)
 {
     auto const instr = dyn_cast<llvm::Instruction>(&x);
     if (not instr)
-        return dep0::testing::failure("value is not an instruction but: ValueID=", x.getValueID());
+        return dep0::testing::failure("value is not an instruction but: ", to_string(x));
     return is_return_of_void(*instr);
 }
 

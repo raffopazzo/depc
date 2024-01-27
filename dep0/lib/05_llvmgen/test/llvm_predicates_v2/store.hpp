@@ -1,6 +1,7 @@
 #pragma once
 
 #include "llvm_predicates_v2/predicate.hpp"
+#include "llvm_predicates_v2/to_string.hpp"
 
 #include "dep0/testing/failure.hpp"
 
@@ -65,7 +66,7 @@ boost::test_tools::predicate_result
 {
     auto const instr = llvm::dyn_cast<llvm::Instruction>(&x);
     if (not instr)
-        return dep0::testing::failure("value is not an instruction but: ValueID=", x.getValueID());
+        return dep0::testing::failure("value is not an instruction but: ", to_string(x));
     return is_store_of(
         *instr,
         std::forward<F_type>(f_type),

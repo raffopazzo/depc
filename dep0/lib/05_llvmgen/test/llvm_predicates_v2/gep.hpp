@@ -1,6 +1,7 @@
 #pragma once
 
 #include "llvm_predicates_v2/predicate.hpp"
+#include "llvm_predicates_v2/to_string.hpp"
 
 #include "dep0/testing/failure.hpp"
 
@@ -45,7 +46,7 @@ boost::test_tools::predicate_result is_gep_of(llvm::Value const& x, F_type&& f_t
 {
     auto const instr = llvm::dyn_cast<llvm::Instruction>(&x);
     if (not instr)
-        return dep0::testing::failure("value is not instruction but: ValueID=", x.getValueID());
+        return dep0::testing::failure("value is not instruction but: ", to_string(x));
     return is_gep_of(*instr, std::forward<F_type>(f_type), std::forward<F_ptr>(f_ptr), std::forward<F_idx>(f_idx));
 }
 

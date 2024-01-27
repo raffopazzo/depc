@@ -36,28 +36,28 @@ namespace delta_reduction {
 /**
  * Performs a "simplified" one-step delta-reduction inside a function definition, @see delta_reduction.hpp.
  *
- * @return True if one step of delta-reduction was preformed, false otherwise.
+ * @return True if one step of delta-reduction was performed, false otherwise.
  */
 template <Properties P> bool delta_reduce(delta_reduction::context_t<P> const&, func_def_t<P>&);
 
 /**
  * Performs a "simplified" one-step delta-reduction inside a body, @see delta_reduction.hpp.
  *
- * @return True if one step of delta-reduction was preformed, false otherwise.
+ * @return True if one step of delta-reduction was performed, false otherwise.
  */
 template <Properties P> bool delta_reduce(delta_reduction::context_t<P> const&, body_t<P>&);
 
 /**
  * Performs a "simplified" one-step delta-reduction inside a statement, @see delta_reduction.hpp.
  *
- * @return True if one step of delta-reduction was preformed, false otherwise.
+ * @return True if one step of delta-reduction was performed, false otherwise.
  */
 template <Properties P> bool delta_reduce(delta_reduction::context_t<P> const&, stmt_t<P>&);
 
 /**
  * Performs a "simplified" one-step delta-reduction inside an expression, @see delta_reduction.hpp.
  *
- * @return True if one step of delta-reduction was preformed, false otherwise.
+ * @return True if one step of delta-reduction was performed, false otherwise.
  */
 template <Properties P> bool delta_reduce(delta_reduction::context_t<P> const&, expr_t<P>&);
 

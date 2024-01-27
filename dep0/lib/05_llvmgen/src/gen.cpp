@@ -236,13 +236,13 @@ static void gen_stmt(
     llvm::Function*,
     llvm::Value* inlined_result);
 static llvm::Type* gen_type(global_context_t&, local_context_t const&, typecheck::expr_t const&);
-static llvm::Value* gen_alloca(
+static llvm::Instruction* gen_alloca(
     global_context_t&,
     local_context_t const&,
     llvm::IRBuilder<>&,
     typecheck::expr_t const&,
     llvm::Value* const size);
-static llvm::Value* gen_alloca_if_needed(
+static llvm::Instruction* gen_alloca_if_needed(
     global_context_t&,
     local_context_t const&,
     llvm::IRBuilder<>&,
@@ -790,7 +790,7 @@ void gen_stmt(
         });
 }
 
-llvm::Value* gen_alloca(
+llvm::Instruction* gen_alloca(
     global_context_t& global,
     local_context_t const& local,
     llvm::IRBuilder<>& builder,
@@ -800,7 +800,7 @@ llvm::Value* gen_alloca(
     return builder.CreateAlloca(gen_type(global, local, type), size);
 }
 
-llvm::Value* gen_alloca_if_needed(
+llvm::Instruction* gen_alloca_if_needed(
     global_context_t& global,
     local_context_t const& local,
     llvm::IRBuilder<>& builder,
@@ -808,8 +808,8 @@ llvm::Value* gen_alloca_if_needed(
 {
     return match(
         needs_alloca(type),
-        [] (needs_alloca_result::no_t) -> llvm::Value* { return nullptr; },
-        [&] (needs_alloca_result::array_t const& array) -> llvm::Value*
+        [] (needs_alloca_result::no_t) -> llvm::Instruction* { return nullptr; },
+        [&] (needs_alloca_result::array_t const& array) -> llvm::Instruction*
         {
             auto const size = gen_val(global, local, builder, array.size, nullptr);
             return gen_alloca(global, local, builder, array.type, size);
@@ -994,18 +994,21 @@ llvm::Value* gen_val(
                             });
                         builder.SetInsertPoint(next_block);
                     };
-                    if (dest)
+                    auto const dest2 = dest ? dest : gen_alloca_if_needed(global, local, builder, abs->ret_type.get());
+                    // Note, if we generated an alloca here,
+                    // there is no need to move it to the entry block,
+                    // because mem2reg will not be able to optimize it.
+                    if (dest2)
                     {
-                        gen_inlined_body(dest);
-                        return dest;
+                        gen_inlined_body(dest2);
+                        return dest2;
                     }
                     else
                     {
                         auto const inlined_type = gen_type(global, local, abs->ret_type.get());
                         auto const inlined_result = builder.CreateAlloca(inlined_type, builder.getInt32(1));
-                        move_to_entry_block(llvm::dyn_cast<llvm::Instruction>(inlined_result), current_func);
+                        move_to_entry_block(inlined_result, current_func);
                         gen_inlined_body(inlined_result);
-                        // TODO should add a test with arrays to check if we have to load there too
                         return builder.CreateLoad(inlined_type, inlined_result);
                     }
                 }

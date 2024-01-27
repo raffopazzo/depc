@@ -1,11 +1,3 @@
-#pragma once
-
-#include "dep0/ast/ast.hpp"
-
-#include <ostream>
-
-namespace dep0::ast {
-
 /**
  * @file pretty_print.hpp
  * @brief A family of functions to print the AST in a fairly human-readable format.
@@ -14,6 +6,14 @@ namespace dep0::ast {
  * if a new line is needed, it will write the new line character and the correct number of indentation spaces.
  * In this way, each call will move the character stream to the "correct" starting position for the next call.
  */
+
+#pragma once
+
+#include "dep0/ast/ast.hpp"
+
+#include <ostream>
+
+namespace dep0::ast {
 
 template <Properties P>
 std::ostream& pretty_print(std::ostream&, module_t<P> const&, std::size_t indent = 0ul);

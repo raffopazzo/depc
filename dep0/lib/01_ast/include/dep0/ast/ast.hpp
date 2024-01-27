@@ -120,6 +120,13 @@ struct expr_t
 };
 
 template <Properties P>
+typename expr_t<P>::app_t const* get_if_app_of_array(expr_t<P> const& x)
+{
+    auto const app = std::get_if<typename expr_t<P>::app_t>(&x.value);
+    return app and std::holds_alternative<typename expr_t<P>::array_t>(app->func.get().value) ? app : nullptr;
+}
+
+template <Properties P>
 struct func_arg_t
 {
     using properties_t = typename P::func_arg_properties_type;

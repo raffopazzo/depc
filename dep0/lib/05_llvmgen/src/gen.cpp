@@ -35,20 +35,14 @@ static bool is_array(typecheck::expr_t const& type)
     return app and std::holds_alternative<typecheck::expr_t::array_t>(app->func.get().value);
 }
 
-static typecheck::expr_t::app_t const* get_if_array(typecheck::expr_t const& type)
-{
-    auto const app = std::get_if<typecheck::expr_t::app_t>(&type.value);
-    return app and std::holds_alternative<typecheck::expr_t::array_t>(app->func.get().value) ? app : nullptr;
-}
-
 static std::optional<array_properties_t> get_properties_if_array(typecheck::expr_t const& type)
 {
-    auto curr = get_if_array(type);
+    auto curr = get_if_app_of_array(type);
     if (not curr)
         return std::nullopt;
     std::vector<typecheck::expr_t const*> dimensions;
     dimensions.push_back(&curr->args[1ul]);
-    while (auto const next = get_if_array(curr->args[0ul]))
+    while (auto const next = get_if_app_of_array(curr->args[0ul]))
     {
         dimensions.push_back(&next->args[1ul]);
         curr = next;
@@ -79,9 +73,8 @@ using needs_alloca_result_t =
 
 static needs_alloca_result_t needs_alloca(typecheck::expr_t const& type)
 {
-    if (auto const app = std::get_if<typecheck::expr_t::app_t>(&type.value))
-        if (std::holds_alternative<typecheck::expr_t::array_t>(app->func.get().value))
-            return needs_alloca_result::array_t{app->args[0ul], app->args[1ul]};
+    if (auto const app = get_if_app_of_array(type))
+        return needs_alloca_result::array_t{app->args[0ul], app->args[1ul]};
     return needs_alloca_result::no_t{};
 }
 

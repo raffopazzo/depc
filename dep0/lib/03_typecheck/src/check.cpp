@@ -296,8 +296,8 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, sort_
                 [&] (expr_t expected_type) -> expected<expr_t>
                 {
                     beta_delta_normalize(ctx.delta_reduction_context(), expected_type);
-                    auto const app = std::get_if<expr_t::app_t>(&expected_type.value);
-                    if (not app or not std::holds_alternative<expr_t::array_t>(app->func.get().value))
+                    auto const app = get_if_app_of_array(expected_type);
+                    if (not app)
                     {
                         std::ostringstream err;
                         pretty_print(err << "type mismatch between initializer list and `", expected_type) << '`';

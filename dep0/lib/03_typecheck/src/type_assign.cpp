@@ -191,8 +191,8 @@ expected<expr_t> type_assign(context_t const& ctx, parser::expr_t const& expr)
                 [&] (expr_t& t) -> expected<expr_t>
                 {
                     ast::beta_delta_normalize(ctx.delta_reduction_context(), t);
-                    auto const app = std::get_if<expr_t::app_t>(&t.value);
-                    if (not app or not std::holds_alternative<expr_t::array_t>(app->func.get().value))
+                    auto const app = get_if_app_of_array(t);
+                    if (not app)
                     {
                         std::ostringstream err;
                         pretty_print(err << "cannot index into non-array expression of type `", t) << '`';

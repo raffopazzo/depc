@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "proof_state.hpp" // also in `private/`
+#include "private/proof_state.hpp"
 
 #include "dep0/typecheck/context.hpp"
 #include "dep0/typecheck/error.hpp"

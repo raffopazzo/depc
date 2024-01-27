@@ -10,6 +10,13 @@ namespace dep0::ast {
 
 namespace detail {
 
+/**
+ * @defgroup needs_new_line
+ * @brief A family of functions to test whether a call to `pretty_print` would print a new line.
+ *
+ * For a correct result, the implementation of each function must mimic `pretty_print`.
+ * @{
+ */
 template <Properties P> bool needs_new_line(body_t<P> const&);
 template <Properties P> bool needs_new_line(func_arg_t<P> const&);
 template <Properties P> bool needs_new_line(expr_t<P> const&);
@@ -34,13 +41,11 @@ template <Properties P> bool needs_new_line(typename expr_t<P>::pi_t const&);
 template <Properties P> bool needs_new_line(typename expr_t<P>::array_t const&);
 template <Properties P> bool needs_new_line(typename expr_t<P>::init_list_t const&);
 template <Properties P> bool needs_new_line(typename expr_t<P>::subscript_t const&);
+/** @} */
 
-inline std::ostream& new_line(std::ostream& os, std::size_t indent)
+inline std::ostream& new_line(std::ostream& os, std::size_t const indent)
 {
-    os << std::endl;
-    while (indent--)
-        os << "    ";
-    return os;
+    return os << std::endl << std::string(indent * 4ul, ' ');
 }
 
 } // namespace detail

@@ -14,4 +14,5 @@ target_link_libraries(dep0_llvmgen_lib
   PUBLIC
     DepC::Dep0::Parser
     DepC::Dep0::TypeCheck
-    LLVM::LLVMCore)
+    LLVM::LLVMCore
+    LLVM::LLVMTransformUtils)

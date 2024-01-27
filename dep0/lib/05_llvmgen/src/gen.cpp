@@ -7,6 +7,7 @@
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Verifier.h>
+#include <llvm/Transforms/Utils/BasicBlockUtils.h>
 
 #include <boost/range/adaptor/indexed.hpp>
 
@@ -985,6 +986,8 @@ llvm::Value* gen_val(
                     {
                         auto snippet = gen_body(global, local, abs->body, "inlined", current_func, inlined_result);
                         builder.CreateBr(snippet.entry_block);
+                        bool const merged = llvm::MergeBlockIntoPredecessor(snippet.entry_block);
+                        assert(merged and "llvm could not merge inlined entry block");
                         auto const next_block = llvm::BasicBlock::Create(global.llvm_ctx, "cont", current_func);
                         snippet.seal_open_blocks(
                             builder,

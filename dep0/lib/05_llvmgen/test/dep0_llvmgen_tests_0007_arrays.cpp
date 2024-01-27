@@ -660,20 +660,17 @@ BOOST_AUTO_TEST_CASE(pass_012)
                     arg_of(is_i1, "which")},
                 is_void));
         auto const blks = get_blocks(*f);
-        BOOST_TEST_REQUIRE(blks.size() == 13ul);
+        BOOST_TEST_REQUIRE(blks.size() == 10ul);
         auto const entry = blks[0];
-        auto const inld0 = blks[1];
-        auto const then0 = blks[2];
-        auto const else0 = blks[3];
-        auto const cont0 = blks[4];
-        auto const inld1 = blks[5];
-        auto const inld2 = blks[6];
-        auto const then3 = blks[7];
-        auto const else4 = blks[8];
-        auto const cont5 = blks[9];
-        auto const then6 = blks[10];
-        auto const else7 = blks[11];
-        auto const cont8 = blks[12];
+        auto const then0 = blks[1];
+        auto const else0 = blks[2];
+        auto const cont0 = blks[3];
+        auto const then2 = blks[4];
+        auto const else3 = blks[5];
+        auto const cont4 = blks[6];
+        auto const then5 = blks[7];
+        auto const else6 = blks[8];
+        auto const cont7 = blks[9];
         auto const ret_arg = exactly(f->getArg(0ul));
         auto const which = exactly(f->getArg(1ul));
         auto const [gep0, temp_bool] = [&]
@@ -685,13 +682,9 @@ BOOST_AUTO_TEST_CASE(pass_012)
             auto const br = inst[2];
             BOOST_TEST(is_gep_of(gep0, fn_ptr, ret_arg, constant(0)));
             BOOST_TEST(is_alloca(temp_bool, is_i1, constant(1), align_of(1)));
-            BOOST_TEST(is_unconditional_branch_to(br, exactly(inld0)));
+            BOOST_TEST(is_branch_of(br, which, exactly(then0), exactly(else0)));
             return std::tuple{gep0, temp_bool};
         }();
-        {
-            BOOST_TEST_REQUIRE(inld0->size() == 1ul);
-            BOOST_TEST(is_branch_of(inld0->getTerminator(), which, exactly(then0), exactly(else0)));
-        }
         {
             auto const inst = get_instructions(*then0);
             BOOST_TEST_REQUIRE(inst.size() == 2ul);
@@ -709,50 +702,42 @@ BOOST_AUTO_TEST_CASE(pass_012)
             auto const inst = get_instructions(*cont0);
             BOOST_TEST_REQUIRE(inst.size() == 2ul);
             BOOST_TEST(is_gep_of(inst[0], fn_ptr, ret_arg, constant(1)));
-            BOOST_TEST(is_unconditional_branch_to(inst[1], exactly(inld1)));
+            BOOST_TEST(is_branch_of(inst[1], which, exactly(then2), exactly(else3)));
             return inst[0];
         }();
         {
-            BOOST_TEST_REQUIRE(inld1->size() == 1ul);
-            BOOST_TEST(is_unconditional_branch_to(inld1->getTerminator(), exactly(inld2)));
-        }
-        {
-            BOOST_TEST_REQUIRE(inld2->size() == 1ul);
-            BOOST_TEST(is_branch_of(inld2->getTerminator(), which, exactly(then3), exactly(else4)));
-        }
-        {
-            auto const inst = get_instructions(*then3);
+            auto const inst = get_instructions(*then2);
             BOOST_TEST_REQUIRE(inst.size() == 2ul);
             BOOST_TEST(is_store_of(inst[0], is_i1, constant(false), exactly(temp_bool), align_of(1)));
-            BOOST_TEST(is_unconditional_branch_to(inst[1], exactly(cont5)));
+            BOOST_TEST(is_unconditional_branch_to(inst[1], exactly(cont4)));
         }
         {
-            auto const inst = get_instructions(*else4);
+            auto const inst = get_instructions(*else3);
             BOOST_TEST_REQUIRE(inst.size() == 2ul);
             BOOST_TEST(is_store_of(inst[0], is_i1, constant(true), exactly(temp_bool), align_of(1)));
-            BOOST_TEST(is_unconditional_branch_to(inst[1], exactly(cont5)));
+            BOOST_TEST(is_unconditional_branch_to(inst[1], exactly(cont4)));
         }
         {
-            auto const inst = get_instructions(*cont5);
+            auto const inst = get_instructions(*cont4);
             BOOST_TEST_REQUIRE(inst.size() == 2ul);
             BOOST_TEST(is_load_of(inst[0], is_i1, exactly(temp_bool), align_of(1)));
-            BOOST_TEST(is_branch_of(inst[1], exactly(inst[0]), exactly(then6), exactly(else7)));
+            BOOST_TEST(is_branch_of(inst[1], exactly(inst[0]), exactly(then5), exactly(else6)));
         }
         {
-            auto const inst = get_instructions(*then6);
+            auto const inst = get_instructions(*then5);
             BOOST_TEST_REQUIRE(inst.size() == 2ul);
             BOOST_TEST(is_store_of(inst[0], fn_ptr, exactly_f, exactly(gep1), align_of(8)));
-            BOOST_TEST(is_unconditional_branch_to(inst[1], exactly(cont8)));
+            BOOST_TEST(is_unconditional_branch_to(inst[1], exactly(cont7)));
         }
         {
-            auto const inst = get_instructions(*else7);
+            auto const inst = get_instructions(*else6);
             BOOST_TEST_REQUIRE(inst.size() == 2ul);
             BOOST_TEST(is_store_of(inst[0], fn_ptr, exactly_g, exactly(gep1), align_of(8)));
-            BOOST_TEST(is_unconditional_branch_to(inst[1], exactly(cont8)));
+            BOOST_TEST(is_unconditional_branch_to(inst[1], exactly(cont7)));
         }
         {
-            BOOST_TEST_REQUIRE(cont8->size() == 1ul);
-            BOOST_TEST(is_return_of_void(cont8->getTerminator()));
+            BOOST_TEST_REQUIRE(cont7->size() == 1ul);
+            BOOST_TEST(is_return_of_void(cont7->getTerminator()));
         }
     }
 }
@@ -1245,24 +1230,19 @@ BOOST_AUTO_TEST_CASE(pass_016_with_normalization)
         auto const f = pass_result.value()->getFunction("two_or_three");
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(is_i1, "start_from_zero")}, is_i32));
         auto const blks = get_blocks(*f);
-        BOOST_TEST_REQUIRE(blks.size() == 5ul);
+        BOOST_TEST_REQUIRE(blks.size() == 4ul);
         auto const entry = blks[0];
-        auto const inlin = blks[1];
-        auto const then0 = blks[2];
-        auto const else0 = blks[3];
-        auto const cont0 = blks[4];
+        auto const then0 = blks[1];
+        auto const else0 = blks[2];
+        auto const cont0 = blks[3];
         auto const alloca = [&]
         {
             auto const inst = get_instructions(*entry);
             BOOST_TEST_REQUIRE(inst.size() == 2ul);
             BOOST_TEST(is_alloca(inst[0], is_i32, constant(3), align_of(4)));
-            BOOST_TEST(is_unconditional_branch_to(inst[1], exactly(inlin)));
+            BOOST_TEST(is_branch_of(inst[1], exactly(f->getArg(0ul)), exactly(then0), exactly(else0)));
             return inst[0];
         }();
-        {
-            BOOST_TEST_REQUIRE(inlin->size() == 1ul);
-            BOOST_TEST(is_branch_of(inlin->getTerminator(), exactly(f->getArg(0ul)), exactly(then0), exactly(else0)));
-        }
         {
             auto const inst = get_instructions(*then0);
             BOOST_TEST_REQUIRE(inst.size() == 7ul);

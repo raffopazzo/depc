@@ -10,16 +10,15 @@ namespace dep0::typecheck {
 /**
  * Assign a type to the given expression in the given context.
  * 
- * Currently, not all expressions can be assigned a type;
- * in particular numerical expressions and initializer lists;
- * because their type is either context-dependent or bound by a target type.
+ * Not all expressions can be assigned a type when taken in isolation;
+ * for example numerical expressions and initializer lists.
  * 
  * @return The new expression with its type assigned in the properties field.
  */
 expected<expr_t> type_assign(context_t const&, parser::expr_t const&);
 
 /**
- * Assign a type to a function application.
+ * Assign a type to a function application in the given context.
  * 
  * @param loc The location in the source file where the expression was found.
  *            If type-assignment fails, it will be copied in the error message.
@@ -29,7 +28,7 @@ expected<expr_t> type_assign(context_t const&, parser::expr_t const&);
 expected<expr_t> type_assign_app(context_t const&, parser::expr_t::app_t const&, source_loc_t const& loc);
 
 /**
- * Assign a type to an abstraction.
+ * Assign a type to an abstraction in the given context.
  *
  * @param loc   The location in the source file where the expression was found.
  *              If type-assignment fails, it will be copied in the error message.

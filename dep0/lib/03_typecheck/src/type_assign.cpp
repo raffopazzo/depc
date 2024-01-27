@@ -230,7 +230,7 @@ expected<expr_t> type_assign(context_t const& ctx, parser::expr_t const& expr)
                 [&] (kind_t) -> expected<expr_t>
                 {
                     std::ostringstream err;
-                    pretty_print(err << "type mismatch between subscript operator and `", kind_t{}) << '`';
+                    pretty_print(err << "cannot index into expression of sort `", kind_t{}) << '`';
                     return error_t::from_error(dep0::error_t(err.str(), loc));
                 });
         });

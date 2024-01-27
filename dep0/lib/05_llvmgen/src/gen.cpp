@@ -168,8 +168,6 @@ struct snippet_t
     llvm::BasicBlock* entry_block;
     std::vector<llvm::BasicBlock*> open_blocks;
 
-    // TODO if required could also add last insert point in case we want to append to where we left off
-
     template <typename F>
     void seal_open_blocks(llvm::IRBuilder<>& builder, F&& f)
     {

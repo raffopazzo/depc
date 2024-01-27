@@ -6,9 +6,14 @@
 
 namespace dep0::ast {
 
-// The general rule across all `pretty_print` functions is that they start writing from the current stream position;
-// if they need to go to a new line, they write the new line character and the correct number of indentation spaces,
-// thereby moving the stream to the "correct" position for the next call to `pretty_print()`.
+/**
+ * @file pretty_print.hpp
+ * @brief A family of functions to print the AST in a fairly human-readable format.
+ *
+ * Each `pretty_print` function will start writing from the current stream position;
+ * if a new line is needed, it will write the new line character and the correct number of indentation spaces.
+ * In this way, each call will move the character stream to the "correct" starting position for the next call.
+ */
 
 template <Properties P>
 std::ostream& pretty_print(std::ostream&, module_t<P> const&, std::size_t indent = 0ul);

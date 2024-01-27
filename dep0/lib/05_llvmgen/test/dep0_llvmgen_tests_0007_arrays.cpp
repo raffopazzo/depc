@@ -1286,6 +1286,143 @@ BOOST_AUTO_TEST_CASE(pass_016_with_normalization)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_017)
+{
+    apply_beta_delta_normalization = false;
+    BOOST_TEST_REQUIRE(pass("0007_arrays/pass_017.depc"));
+    auto const memcpy_fn = pass_result.value()->getFunction(llvm_memcpy_name);
+    BOOST_TEST_REQUIRE(memcpy_fn);
+    {
+        auto const f = pass_result.value()->getFunction("f");
+        BOOST_TEST_REQUIRE(
+            is_function_of(f, std::tuple{arg_of(pointer_to(is_i32), "xs", {llvm::Attribute::NonNull})}, is_i32));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        auto const inst = get_instructions(f->getEntryBlock());
+        BOOST_TEST_REQUIRE(inst.size() == 11ul);
+        auto const alloca      = inst[0];
+        auto const gep_tmp_0   = inst[1];
+        auto const gep_xs_1    = inst[2];
+        auto const load_xs_1   = inst[3];
+        auto const store_tmp_0 = inst[4];
+        auto const gep_tmp_1   = inst[5];
+        auto const gep_xs_0    = inst[6];
+        auto const load_xs_0   = inst[7];
+        auto const store_tmp_1 = inst[8];
+        auto const call        = inst[9];
+        auto const ret         = inst[10];
+        auto const xs = f->getArg(0ul);
+        BOOST_TEST(is_alloca(alloca, is_i32, constant(2), align_of(4)));
+        BOOST_TEST(is_gep_of(gep_xs_0, is_i32, exactly(xs), constant(0)));
+        BOOST_TEST(is_gep_of(gep_xs_1, is_i32, exactly(xs), constant(1)));
+        BOOST_TEST(is_gep_of(gep_tmp_0, is_i32, exactly(alloca), constant(0)));
+        BOOST_TEST(is_gep_of(gep_tmp_1, is_i32, exactly(alloca), constant(1)));
+        BOOST_TEST(is_load_of(load_xs_0, is_i32, exactly(gep_xs_0), align_of(4)));
+        BOOST_TEST(is_load_of(load_xs_1, is_i32, exactly(gep_xs_1), align_of(4)));
+        BOOST_TEST(is_store_of(store_tmp_0, is_i32, exactly(load_xs_1), exactly(gep_tmp_0), align_of(4)));
+        BOOST_TEST(is_store_of(store_tmp_1, is_i32, exactly(load_xs_0), exactly(gep_tmp_1), align_of(4)));
+        BOOST_TEST(is_direct_call(call, exactly(f), call_arg(exactly(alloca))));
+        BOOST_TEST(is_return_of(ret, exactly(call)));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("g");
+        BOOST_TEST_REQUIRE(
+            is_function_of(f, std::tuple{arg_of(pointer_to(is_i32), "xs", {llvm::Attribute::NonNull})}, is_i32));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        auto const inst = get_instructions(f->getEntryBlock());
+        BOOST_TEST_REQUIRE(inst.size() == 13ul);
+        auto const alloca      = inst[0];
+        auto const gep_tmp_0   = inst[1];
+        auto const gep_xs_1    = inst[2];
+        auto const dst_tmp_0   = inst[3];
+        auto const src_xs_1    = inst[4];
+        auto const memcpy_0    = inst[5];
+        auto const gep_tmp_1   = inst[6];
+        auto const gep_xs_0    = inst[7];
+        auto const dst_tmp_1   = inst[8];
+        auto const src_xs_0    = inst[9];
+        auto const memcpy_1    = inst[10];
+        auto const call        = inst[11];
+        auto const ret         = inst[12];
+        auto const xs = f->getArg(0ul);
+        BOOST_TEST(is_alloca(alloca, is_i32, constant(4), align_of(4)));
+        BOOST_TEST(is_gep_of(gep_xs_0, is_i32, exactly(xs), constant(0)));
+        BOOST_TEST(is_gep_of(gep_xs_1, is_i32, exactly(xs), constant(2)));
+        BOOST_TEST(is_gep_of(gep_tmp_0, is_i32, exactly(alloca), constant(0)));
+        BOOST_TEST(is_gep_of(gep_tmp_1, is_i32, exactly(alloca), constant(2)));
+        BOOST_TEST(is_bitcast_of(dst_tmp_0, exactly(gep_tmp_0), pointer_to(is_i32), pointer_to(is_i8)));
+        BOOST_TEST(is_bitcast_of(dst_tmp_1, exactly(gep_tmp_1), pointer_to(is_i32), pointer_to(is_i8)));
+        BOOST_TEST(is_bitcast_of(src_xs_0, exactly(gep_xs_0), pointer_to(is_i32), pointer_to(is_i8)));
+        BOOST_TEST(is_bitcast_of(src_xs_1, exactly(gep_xs_1), pointer_to(is_i32), pointer_to(is_i8)));
+        BOOST_TEST(
+            is_direct_call(
+                memcpy_0,
+                exactly(memcpy_fn),
+                call_arg(exactly(dst_tmp_0), {llvm::Attribute::Alignment}, llvm::Align(4)),
+                call_arg(exactly(src_xs_1), {llvm::Attribute::Alignment}, llvm::Align(4)),
+                call_arg(constant(8)),
+                call_arg(constant(false))));
+        BOOST_TEST(
+            is_direct_call(
+                memcpy_1,
+                exactly(memcpy_fn),
+                call_arg(exactly(dst_tmp_1), {llvm::Attribute::Alignment}, llvm::Align(4)),
+                call_arg(exactly(src_xs_0), {llvm::Attribute::Alignment}, llvm::Align(4)),
+                call_arg(constant(8)),
+                call_arg(constant(false))));
+        BOOST_TEST(is_direct_call(call, exactly(f), call_arg(exactly(alloca))));
+        BOOST_TEST(is_return_of(ret, exactly(call)));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("h");
+        BOOST_TEST_REQUIRE(
+            is_function_of(f, std::tuple{arg_of(pointer_to(is_i32), "xs", {llvm::Attribute::NonNull})}, is_i32));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        auto const inst = get_instructions(f->getEntryBlock());
+        BOOST_TEST_REQUIRE(inst.size() == 13ul);
+        auto const alloca      = inst[0];
+        auto const gep_tmp_0   = inst[1];
+        auto const gep_xs_1    = inst[2];
+        auto const dst_tmp_0   = inst[3];
+        auto const src_xs_1    = inst[4];
+        auto const memcpy_0    = inst[5];
+        auto const gep_tmp_1   = inst[6];
+        auto const gep_xs_0    = inst[7];
+        auto const dst_tmp_1   = inst[8];
+        auto const src_xs_0    = inst[9];
+        auto const memcpy_1    = inst[10];
+        auto const call        = inst[11];
+        auto const ret         = inst[12];
+        auto const xs = f->getArg(0ul);
+        BOOST_TEST(is_alloca(alloca, is_i32, constant(8), align_of(4)));
+        BOOST_TEST(is_gep_of(gep_xs_0, is_i32, exactly(xs), constant(0)));
+        BOOST_TEST(is_gep_of(gep_xs_1, is_i32, exactly(xs), constant(4)));
+        BOOST_TEST(is_gep_of(gep_tmp_0, is_i32, exactly(alloca), constant(0)));
+        BOOST_TEST(is_gep_of(gep_tmp_1, is_i32, exactly(alloca), constant(4)));
+        BOOST_TEST(is_bitcast_of(dst_tmp_0, exactly(gep_tmp_0), pointer_to(is_i32), pointer_to(is_i8)));
+        BOOST_TEST(is_bitcast_of(dst_tmp_1, exactly(gep_tmp_1), pointer_to(is_i32), pointer_to(is_i8)));
+        BOOST_TEST(is_bitcast_of(src_xs_0, exactly(gep_xs_0), pointer_to(is_i32), pointer_to(is_i8)));
+        BOOST_TEST(is_bitcast_of(src_xs_1, exactly(gep_xs_1), pointer_to(is_i32), pointer_to(is_i8)));
+        BOOST_TEST(
+            is_direct_call(
+                memcpy_0,
+                exactly(memcpy_fn),
+                call_arg(exactly(dst_tmp_0), {llvm::Attribute::Alignment}, llvm::Align(4)),
+                call_arg(exactly(src_xs_1), {llvm::Attribute::Alignment}, llvm::Align(4)),
+                call_arg(constant(16)),
+                call_arg(constant(false))));
+        BOOST_TEST(
+            is_direct_call(
+                memcpy_1,
+                exactly(memcpy_fn),
+                call_arg(exactly(dst_tmp_1), {llvm::Attribute::Alignment}, llvm::Align(4)),
+                call_arg(exactly(src_xs_0), {llvm::Attribute::Alignment}, llvm::Align(4)),
+                call_arg(constant(16)),
+                call_arg(constant(false))));
+        BOOST_TEST(is_direct_call(call, exactly(f), call_arg(exactly(alloca))));
+        BOOST_TEST(is_return_of(ret, exactly(call)));
+    }
+}
+
 // BOOST_AUTO_TEST_CASE(typecheck_error_000)
 // BOOST_AUTO_TEST_CASE(typecheck_error_001)
 // BOOST_AUTO_TEST_CASE(typecheck_error_002)

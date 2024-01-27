@@ -90,7 +90,6 @@ expected<expr_t> type_assign(context_t const& ctx, parser::expr_t const& expr)
                     if (auto lhs = type_assign(ctx, x.lhs.get()))
                     {
                         if (auto rhs = check_expr(ctx, x.rhs.get(), lhs->properties.sort.get()))
-                            // TODO require proof that it doesn't overflow; user can always appeal to `believe_me()`
                             return make_legal_expr(
                                 lhs->properties.sort.get(),
                                 expr_t::arith_expr_t{
@@ -103,7 +102,6 @@ expected<expr_t> type_assign(context_t const& ctx, parser::expr_t const& expr)
                     else if (auto rhs = type_assign(ctx, x.rhs.get()))
                     {
                         if (auto lhs = check_expr(ctx, x.lhs.get(), rhs->properties.sort.get()))
-                            // TODO require proof that it doesn't overflow; user can always appeal to `believe_me()`
                             return make_legal_expr(
                                 rhs->properties.sort.get(),
                                 expr_t::arith_expr_t{

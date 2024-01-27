@@ -1,7 +1,7 @@
 #include "dep0/typecheck/check.hpp"
-#include "private/check.hpp"
 
 #include "private/beta_delta_equivalence.hpp"
+#include "private/check.hpp"
 #include "private/derivation_rules.hpp"
 #include "private/returns_from_all_branches.hpp"
 #include "private/type_assign.hpp"

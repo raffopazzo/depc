@@ -24,13 +24,13 @@ BOOST_AUTO_TEST_CASE(pass_000)
         BOOST_TEST_REQUIRE(f->size() == 1ul);
         auto const inst = get_instructions(f->getEntryBlock());
         BOOST_TEST_REQUIRE(inst.size() == 7ul);
-        auto const gep1 = inst[0];
+        auto const gep1   = inst[0];
         auto const store1 = inst[1];
-        auto const gep2 = inst[2];
+        auto const gep2   = inst[2];
         auto const store2 = inst[3];
-        auto const gep3 = inst[4];
+        auto const gep3   = inst[4];
         auto const store3 = inst[5];
-        auto const ret = inst[6];
+        auto const ret    = inst[6];
         auto const ret_arg = f->getArg(0ul);
         BOOST_TEST(is_gep_of(gep1, is_i32, exactly(ret_arg), constant(0)));
         BOOST_TEST(is_gep_of(gep2, is_i32, exactly(ret_arg), constant(1)));
@@ -111,8 +111,8 @@ BOOST_AUTO_TEST_CASE(pass_002)
         auto const inst = get_instructions(f->getEntryBlock());
         BOOST_TEST_REQUIRE(inst.size() == 3ul);
         auto const alloca = inst[0];
-        auto const call = inst[1];
-        auto const ret = inst[2];
+        auto const call   = inst[1];
+        auto const ret    = inst[2];
         BOOST_TEST(is_alloca(alloca, is_i32, constant(0), align_of(4)));
         BOOST_TEST(
             is_direct_call(
@@ -140,11 +140,11 @@ BOOST_AUTO_TEST_CASE(pass_003)
         BOOST_TEST_REQUIRE(f->size() == 1ul);
         auto const inst = get_instructions(f->getEntryBlock());
         BOOST_TEST_REQUIRE(inst.size() == 5ul);
-        auto const gep1 = inst[0];
+        auto const gep1   = inst[0];
         auto const store1 = inst[1];
-        auto const gep2 = inst[2];
+        auto const gep2   = inst[2];
         auto const store2 = inst[3];
-        auto const ret = inst[4];
+        auto const ret    = inst[4];
         auto const ret_arg = f->getArg(0ul);
         BOOST_TEST(is_gep_of(gep1, is_i32, exactly(ret_arg), constant(0)));
         BOOST_TEST(is_gep_of(gep2, is_i32, exactly(ret_arg), constant(1)));
@@ -223,14 +223,14 @@ BOOST_AUTO_TEST_CASE(pass_006)
         auto const inst = get_instructions(f->getEntryBlock());
         BOOST_TEST_REQUIRE(inst.size() == 9ul);
         auto const alloca = inst[0];
-        auto const gep1 = inst[1];
+        auto const gep1   = inst[1];
         auto const store1 = inst[2];
-        auto const gep2 = inst[3];
+        auto const gep2   = inst[3];
         auto const store2 = inst[4];
-        auto const gep3 = inst[5];
+        auto const gep3   = inst[5];
         auto const store3 = inst[6];
-        auto const call = inst[7];
-        auto const ret = inst[8];
+        auto const call   = inst[7];
+        auto const ret    = inst[8];
         BOOST_TEST(is_alloca(alloca, is_i32, constant(3), align_of(4)));
         BOOST_TEST(is_gep_of(gep1, is_i32, exactly(alloca), constant(0)));
         BOOST_TEST(is_gep_of(gep2, is_i32, exactly(alloca), constant(1)));
@@ -265,16 +265,16 @@ BOOST_AUTO_TEST_CASE(pass_007)
         BOOST_TEST_REQUIRE(f->size() == 1ul);
         auto const inst = get_instructions(f->getEntryBlock());
         BOOST_TEST_REQUIRE(inst.size() == 10ul);
-        auto const gep1 = inst[0];
-        auto const call1 = inst[1];
+        auto const gep1   = inst[0];
+        auto const call1  = inst[1];
         auto const store1 = inst[2];
-        auto const gep2 = inst[3];
-        auto const call2 = inst[4];
+        auto const gep2   = inst[3];
+        auto const call2  = inst[4];
         auto const store2 = inst[5];
-        auto const gep3 = inst[6];
-        auto const call3 = inst[7];
+        auto const gep3   = inst[6];
+        auto const call3  = inst[7];
         auto const store3 = inst[8];
-        auto const ret = inst[9];
+        auto const ret    = inst[9];
         auto const ret_arg = f->getArg(0ul);
         auto const unit = pass_result.value()->getFunction("unit");
         BOOST_TEST(is_gep_of(gep1, is_i8, exactly(ret_arg), constant(0)));
@@ -306,21 +306,21 @@ BOOST_AUTO_TEST_CASE(pass_008)
         BOOST_TEST_REQUIRE(f->size() == 1ul);
         auto const inst = get_instructions(f->getEntryBlock());
         BOOST_TEST_REQUIRE(inst.size() == 15ul);
-        auto const gep_row_0 = inst[0];
+        auto const gep_row_0   = inst[0];
         auto const gep_val_0_0 = inst[1];
-        auto const store_0_0 = inst[2];
+        auto const store_0_0   = inst[2];
         auto const gep_val_0_1 = inst[3];
-        auto const store_0_1 = inst[4];
+        auto const store_0_1   = inst[4];
         auto const gep_val_0_2 = inst[5];
-        auto const store_0_2 = inst[6];
-        auto const gep_row_1 = inst[7];
+        auto const store_0_2   = inst[6];
+        auto const gep_row_1   = inst[7];
         auto const gep_val_1_0 = inst[8];
-        auto const store_1_0 = inst[9];
+        auto const store_1_0   = inst[9];
         auto const gep_val_1_1 = inst[10];
-        auto const store_1_1 = inst[11];
+        auto const store_1_1   = inst[11];
         auto const gep_val_1_2 = inst[12];
-        auto const store_1_2 = inst[13];
-        auto const ret = inst[14];
+        auto const store_1_2   = inst[13];
+        auto const ret         = inst[14];
         auto const ret_arg = f->getArg(0ul);
         BOOST_TEST(is_gep_of(gep_row_0, is_i32, exactly(ret_arg), constant(0)));
         BOOST_TEST(is_gep_of(gep_row_1, is_i32, exactly(ret_arg), constant(3)));
@@ -346,14 +346,14 @@ BOOST_AUTO_TEST_CASE(pass_008)
         BOOST_TEST_REQUIRE(f->size() == 1ul);
         auto const inst = get_instructions(f->getEntryBlock());
         BOOST_TEST_REQUIRE(inst.size() == 8ul);
-        auto const gep_row_0 = inst[0];
-        auto const gep_val_0_1 = inst[1];
+        auto const gep_row_0    = inst[0];
+        auto const gep_val_0_1  = inst[1];
         auto const load_val_0_1 = inst[2];
-        auto const gep_row_1 = inst[3];
-        auto const gep_val_1_2 = inst[4];
+        auto const gep_row_1    = inst[3];
+        auto const gep_val_1_2  = inst[4];
         auto const load_val_1_2 = inst[5];
-        auto const add = inst[6];
-        auto const ret = inst[7];
+        auto const add          = inst[6];
+        auto const ret          = inst[7];
         auto const ret_arg = f->getArg(0ul);
         BOOST_TEST(is_gep_of(gep_row_0, is_i32, exactly(ret_arg), constant(0)));
         BOOST_TEST(is_gep_of(gep_row_1, is_i32, exactly(ret_arg), constant(3)));
@@ -361,8 +361,8 @@ BOOST_AUTO_TEST_CASE(pass_008)
         BOOST_TEST(is_gep_of(gep_val_1_2, is_i32, exactly(gep_row_1), constant(2)));
         BOOST_TEST(is_load_of(load_val_0_1, is_i32, exactly(gep_val_0_1), align_of(4)));
         BOOST_TEST(is_load_of(load_val_1_2, is_i32, exactly(gep_val_1_2), align_of(4)));
-        BOOST_TEST(is_add_of(inst[6], exactly(load_val_0_1), exactly(load_val_1_2)));
-        BOOST_TEST(is_return_of(inst[7], exactly(inst[6])));
+        BOOST_TEST(is_add_of(add, exactly(load_val_0_1), exactly(load_val_1_2)));
+        BOOST_TEST(is_return_of(ret, exactly(add)));
     }
 }
 
@@ -442,13 +442,13 @@ BOOST_AUTO_TEST_CASE(pass_010)
         BOOST_TEST_REQUIRE(f->size() == 1ul);
         auto const inst = get_instructions(f->getEntryBlock());
         BOOST_TEST_REQUIRE(inst.size() == 7ul);
-        auto const gep1 = inst[0];
+        auto const gep1   = inst[0];
         auto const store1 = inst[1];
-        auto const gep2 = inst[2];
+        auto const gep2   = inst[2];
         auto const store2 = inst[3];
-        auto const gep3 = inst[4];
+        auto const gep3   = inst[4];
         auto const store3 = inst[5];
-        auto const ret = inst[6];
+        auto const ret    = inst[6];
         auto const ret_arg = f->getArg(0ul);
         BOOST_TEST(is_gep_of(gep1, is_i32, exactly(ret_arg), constant(0)));
         BOOST_TEST(is_gep_of(gep2, is_i32, exactly(ret_arg), constant(1)));
@@ -465,20 +465,20 @@ BOOST_AUTO_TEST_CASE(pass_010)
         auto const inst = get_instructions(f->getEntryBlock());
         BOOST_TEST_REQUIRE(inst.size() == 15ul);
         auto const alloca1 = inst[0];
-        auto const call1 = inst[1];
-        auto const gep1 = inst[2];
-        auto const load1 = inst[3];
+        auto const call1   = inst[1];
+        auto const gep1    = inst[2];
+        auto const load1   = inst[3];
         auto const alloca2 = inst[4];
-        auto const call2 = inst[5];
-        auto const gep2 = inst[6];
-        auto const load2 = inst[7];
-        auto const add1 = inst[8];
+        auto const call2   = inst[5];
+        auto const gep2    = inst[6];
+        auto const load2   = inst[7];
+        auto const add1    = inst[8];
         auto const alloca3 = inst[9];
-        auto const call3 = inst[10];
-        auto const gep3 = inst[11];
-        auto const load3 = inst[12];
-        auto const add2 = inst[13];
-        auto const ret = inst[14];
+        auto const call3   = inst[10];
+        auto const gep3    = inst[11];
+        auto const load3   = inst[12];
+        auto const add2    = inst[13];
+        auto const ret     = inst[14];
         auto const values = exactly(pass_result.value()->getFunction("values"));
         BOOST_TEST(is_alloca(alloca1, is_i32, constant(3), align_of(4)));
         BOOST_TEST(is_alloca(alloca2, is_i32, constant(3), align_of(4)));
@@ -555,22 +555,22 @@ BOOST_AUTO_TEST_CASE(pass_011)
         BOOST_TEST_REQUIRE(f->size() == 1ul);
         auto const inst = get_instructions(f->getEntryBlock());
         BOOST_TEST_REQUIRE(inst.size() == 16ul);
-        auto const alloca_xs = inst[0];
-        auto const gep_xs_0 = inst[1];
+        auto const alloca_xs  = inst[0];
+        auto const gep_xs_0   = inst[1];
         auto const store_xs_0 = inst[2];
-        auto const gep_xs_1 = inst[3];
+        auto const gep_xs_1   = inst[3];
         auto const store_xs_1 = inst[4];
-        auto const gep_xs_2 = inst[5];
+        auto const gep_xs_2   = inst[5];
         auto const store_xs_2 = inst[6];
-        auto const alloca_fs = inst[7];
-        auto const gep_fs_0 = inst[8];
+        auto const alloca_fs  = inst[7];
+        auto const gep_fs_0   = inst[8];
         auto const store_fs_0 = inst[9];
-        auto const gep_fs_1 = inst[10];
+        auto const gep_fs_1   = inst[10];
         auto const store_fs_1 = inst[11];
-        auto const gep_fs_2 = inst[12];
+        auto const gep_fs_2   = inst[12];
         auto const store_fs_2 = inst[13];
-        auto const call = inst[14];
-        auto const ret = inst[15];
+        auto const call       = inst[14];
+        auto const ret        = inst[15];
         auto const fn_ptr = fnptr_type(std::tuple{is_i32}, is_i32);
         auto const identity = exactly(pass_result.value()->getFunction("identity"));
         auto const plus_one = exactly(pass_result.value()->getFunction("plus_one"));
@@ -677,9 +677,9 @@ BOOST_AUTO_TEST_CASE(pass_012)
         {
             auto const inst = get_instructions(*entry);
             BOOST_TEST_REQUIRE(inst.size() == 3ul);
-            auto const gep0 = inst[0];
+            auto const gep0      = inst[0];
             auto const temp_bool = inst[1];
-            auto const br = inst[2];
+            auto const br        = inst[2];
             BOOST_TEST(is_gep_of(gep0, fn_ptr, ret_arg, constant(0)));
             BOOST_TEST(is_alloca(temp_bool, is_i1, constant(1), align_of(1)));
             BOOST_TEST(is_branch_of(br, which, exactly(then0), exactly(else0)));
@@ -770,13 +770,13 @@ BOOST_AUTO_TEST_CASE(pass_014)
         BOOST_TEST_REQUIRE(f->size() == 1ul);
         auto const inst = get_instructions(f->getEntryBlock());
         BOOST_TEST_REQUIRE(inst.size() == 7ul);
-        auto const gep1 = inst[0];
+        auto const gep1   = inst[0];
         auto const store1 = inst[1];
-        auto const gep2 = inst[2];
+        auto const gep2   = inst[2];
         auto const store2 = inst[3];
-        auto const gep3 = inst[4];
+        auto const gep3   = inst[4];
         auto const store3 = inst[5];
-        auto const ret = inst[6];
+        auto const ret    = inst[6];
         auto const ret_arg = f->getArg(0ul);
         BOOST_TEST(is_gep_of(gep1, is_i32, exactly(ret_arg), constant(0)));
         BOOST_TEST(is_gep_of(gep2, is_i32, exactly(ret_arg), constant(1)));
@@ -829,13 +829,13 @@ BOOST_AUTO_TEST_CASE(pass_014)
         {
             auto const inst = get_instructions(*else0);
             BOOST_TEST_REQUIRE(inst.size() == 7ul);
-            auto const gep1 = inst[0];
+            auto const gep1   = inst[0];
             auto const store1 = inst[1];
-            auto const gep2 = inst[2];
+            auto const gep2   = inst[2];
             auto const store2 = inst[3];
-            auto const gep3 = inst[4];
+            auto const gep3   = inst[4];
             auto const store3 = inst[5];
-            auto const ret = inst[6];
+            auto const ret    = inst[6];
             BOOST_TEST(is_gep_of(gep1, is_i32, exactly(ret_arg), constant(0)));
             BOOST_TEST(is_gep_of(gep2, is_i32, exactly(ret_arg), constant(1)));
             BOOST_TEST(is_gep_of(gep3, is_i32, exactly(ret_arg), constant(2)));
@@ -876,10 +876,10 @@ BOOST_AUTO_TEST_CASE(pass_014)
         {
             auto const inst = get_instructions(*else0);
             BOOST_TEST_REQUIRE(inst.size() == 4ul);
-            auto const dst = inst[0];
-            auto const src = inst[1];
+            auto const dst    = inst[0];
+            auto const src    = inst[1];
             auto const memcpy = inst[2];
-            auto const ret = inst[3];
+            auto const ret    = inst[3];
             BOOST_TEST(is_bitcast_of(dst, exactly(ret_arg), pointer_to(is_i32), pointer_to(is_i8)));
             BOOST_TEST(is_bitcast_of(src, exactly(xs), pointer_to(is_i32), pointer_to(is_i8)));
             BOOST_TEST(
@@ -920,10 +920,10 @@ BOOST_AUTO_TEST_CASE(pass_014)
         {
             auto const inst = get_instructions(*then0);
             BOOST_TEST_REQUIRE(inst.size() == 4ul);
-            auto const dst = inst[0];
-            auto const src = inst[1];
+            auto const dst    = inst[0];
+            auto const src    = inst[1];
             auto const memcpy = inst[2];
-            auto const ret = inst[3];
+            auto const ret    = inst[3];
             BOOST_TEST(is_bitcast_of(dst, exactly(ret_arg), pointer_to(is_i32), pointer_to(is_i8)));
             BOOST_TEST(is_bitcast_of(src, exactly(xs), pointer_to(is_i32), pointer_to(is_i8)));
             BOOST_TEST(
@@ -939,10 +939,10 @@ BOOST_AUTO_TEST_CASE(pass_014)
         {
             auto const inst = get_instructions(*else0);
             BOOST_TEST_REQUIRE(inst.size() == 4ul);
-            auto const dst = inst[0];
-            auto const src = inst[1];
+            auto const dst    = inst[0];
+            auto const src    = inst[1];
             auto const memcpy = inst[2];
-            auto const ret = inst[3];
+            auto const ret    = inst[3];
             BOOST_TEST(is_bitcast_of(dst, exactly(ret_arg), pointer_to(is_i32), pointer_to(is_i8)));
             BOOST_TEST(is_bitcast_of(src, exactly(ys), pointer_to(is_i32), pointer_to(is_i8)));
             BOOST_TEST(
@@ -991,11 +991,11 @@ BOOST_AUTO_TEST_CASE(pass_015)
         {
             auto const inst = get_instructions(*then0);
             BOOST_TEST_REQUIRE(inst.size() == 5ul);
-            auto const mul = inst[0];
-            auto const dst = inst[1];
-            auto const src = inst[2];
+            auto const mul    = inst[0];
+            auto const dst    = inst[1];
+            auto const src    = inst[2];
             auto const memcpy = inst[3];
-            auto const ret = inst[4];
+            auto const ret    = inst[4];
             BOOST_TEST(is_mul_of(mul, exactly(n), constant(4)));
             BOOST_TEST(is_bitcast_of(dst, exactly(ret_arg), pointer_to(is_i32), pointer_to(is_i8)));
             BOOST_TEST(is_bitcast_of(src, exactly(xs), pointer_to(is_i32), pointer_to(is_i8)));
@@ -1012,11 +1012,11 @@ BOOST_AUTO_TEST_CASE(pass_015)
         {
             auto const inst = get_instructions(*else0);
             BOOST_TEST_REQUIRE(inst.size() == 5ul);
-            auto const mul = inst[0];
-            auto const dst = inst[1];
-            auto const src = inst[2];
+            auto const mul    = inst[0];
+            auto const dst    = inst[1];
+            auto const src    = inst[2];
             auto const memcpy = inst[3];
-            auto const ret = inst[4];
+            auto const ret    = inst[4];
             BOOST_TEST(is_mul_of(mul, exactly(n), constant(4)));
             BOOST_TEST(is_bitcast_of(dst, exactly(ret_arg), pointer_to(is_i32), pointer_to(is_i8)));
             BOOST_TEST(is_bitcast_of(src, exactly(ys), pointer_to(is_i32), pointer_to(is_i8)));
@@ -1136,9 +1136,9 @@ BOOST_AUTO_TEST_CASE(pass_016_without_normalization)
         auto const inst = get_instructions(f->getEntryBlock());
         BOOST_TEST_REQUIRE(inst.size() == 4ul);
         auto const alloca = inst[0];
-        auto const call1 = inst[1];
-        auto const call2 = inst[2];
-        auto const ret = inst[3];
+        auto const call1  = inst[1];
+        auto const call2  = inst[2];
+        auto const ret    = inst[3];
         BOOST_TEST(is_alloca(alloca, is_i32, constant(3), align_of(4)));
         BOOST_TEST(
             is_direct_call(

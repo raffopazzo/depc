@@ -83,7 +83,7 @@ struct local_context_t
      * Extend the current context, allowing new enties to be stored even with colliding names,
      * thereby shadowing previous values and declarations.
      *
-     * @return local_context_t A new context where shadowing can take place.
+     * @return A new context where shadowing can take place.
      */
     local_context_t extend() const;
 

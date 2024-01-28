@@ -14,6 +14,9 @@ namespace dep0::llvmgen {
 
 /**
  * Holds useful properties to use when emitting LLVM code for (possibly multidimensional) arrays.
+ *
+ * Note that this object is a view into the type expression from which it was constructed;
+ * therefore usage after destruction of the originating type expression is undefined behaviour.
  */
 struct array_properties_view_t
 {
@@ -23,9 +26,9 @@ struct array_properties_view_t
     typecheck::expr_t const& element_type;
 
     /**
-     * The dimensions for the array, which can be any constant, variables or other expression.
+     * The dimensions for the array; each can be any constant, variable or other expression.
      * 
-     * Contains only one entry for undimensional arrays and many for multidimensional ones.
+     * Contains only one entry for monodimensional arrays and many for multidimensional ones.
      * For example `array_t(array_t(array_t(i32_t, 2), 3), 4)` will have dimensions `{4,3,2}`.
      */
     std::vector<typecheck::expr_t const*> dimensions;

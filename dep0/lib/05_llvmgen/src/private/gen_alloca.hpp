@@ -68,7 +68,7 @@ llvm::Instruction* gen_alloca(
     llvm::Value* const size);
 
 /**
- * Deterine if the given type expression requires an allocation,
+ * Determine if the given type expression requires an allocation,
  * and if it does then emit an alloca instruction along with all instructions needed to compute sizes etc.
  *
  * @param builder   The builder that will be used to generate all the LLVM instructions and values.

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "private/context.hpp"
+#include "private/gen_array.hpp"
 
 #include "dep0/typecheck/ast.hpp"
 
@@ -12,6 +13,9 @@
 
 namespace dep0::llvmgen {
 
+/**
+ * Contains the possible results returned by needs_alloca
+ */
 namespace needs_alloca_result
 {
     /**
@@ -24,8 +28,7 @@ namespace needs_alloca_result
      */
     struct array_t
     {
-        typecheck::expr_t const& type;
-        typecheck::expr_t const& size;
+        array_properties_view_t properties;
     };
 }
 using needs_alloca_result_t =
@@ -37,8 +40,6 @@ using needs_alloca_result_t =
  * Decides whether the given type expression requires an allocation or not.
  *
  * @param type  The type expression to check, which must have sort `typename_t`.
- *
- * @return The result of the decision.
  */
 needs_alloca_result_t needs_alloca(typecheck::expr_t const& type);
 
@@ -52,9 +53,8 @@ needs_alloca_result_t needs_alloca(typecheck::expr_t const& type);
 bool is_alloca_needed(typecheck::expr_t const& type);
 
 /**
- * Generate an IR alloca instruction.
+ * Generates an IR alloca instruction.
  *
- * @param builder      The builder that will be used to generate all the required LLVM instructions and values.
  * @param element_type The type expression representing the type of the element that needs to be allocated.
  * @param size         An LLVM value holding the number of elements to allocate.
  *
@@ -63,23 +63,22 @@ bool is_alloca_needed(typecheck::expr_t const& type);
 llvm::Instruction* gen_alloca(
     global_context_t&,
     local_context_t const&,
-    llvm::IRBuilder<>& builder,
+    llvm::IRBuilder<>&,
     typecheck::expr_t const& element_type,
     llvm::Value* const size);
 
 /**
- * Determine if the given type expression requires an allocation,
- * and if it does then emit an alloca instruction along with all instructions needed to compute sizes etc.
+ * Generates an alloca instruction but only if the input type requires an allocation.
  *
- * @param builder   The builder that will be used to generate all the LLVM instructions and values.
- * @param type      The type expression to check; for example an `array_t(i32_t, n)`.
+ * @param type      A type expression that may or may not require an allocation;
+ *                  for example `array_t(i32_t, n)` does but `i32_t` on its own does not.
  *
- * @return The generated alloca instruction or nullptr if allocation is not required for the given type.
+ * @return The generated alloca instruction, or nullptr if allocation is not required for the given type.
  */
 llvm::Instruction* gen_alloca_if_needed(
     global_context_t&,
     local_context_t const&,
-    llvm::IRBuilder<>& builder,
+    llvm::IRBuilder<>&,
     typecheck::expr_t const& type);
 
 } // namespace dep0::llvmgen

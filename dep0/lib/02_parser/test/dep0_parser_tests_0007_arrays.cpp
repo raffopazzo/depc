@@ -665,6 +665,7 @@ BOOST_AUTO_TEST_CASE(pass_016)
 BOOST_AUTO_TEST_CASE(pass_017)
 {
     BOOST_TEST_REQUIRE(pass("0007_arrays/pass_017.depc"));
+    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 3ul);
     auto const two = constant(2);
     {
         auto const& f = pass_result->func_defs[0ul];
@@ -713,6 +714,117 @@ BOOST_AUTO_TEST_CASE(pass_017)
                     init_list_of(
                         subscript_of(var("xs"), constant(1)),
                         subscript_of(var("xs"), constant(0))))));
+    }
+}
+
+BOOST_AUTO_TEST_CASE(pass_018)
+{
+    BOOST_TEST_REQUIRE(pass("0007_arrays/pass_018.depc"));
+    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 8ul);
+    {
+        auto const& f = pass_result->func_defs[0ul];
+        BOOST_TEST(f.name == "sq_matrix");
+        BOOST_TEST_REQUIRE(f.value.args.size() == 1ul);
+        BOOST_TEST(is_arg(f.value.args[0ul], is_u64, "n"));
+        BOOST_TEST(is_typename(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], array_of(array_of(is_i32, var("n")), var("n"))));
+    }
+    {
+        auto const& f = pass_result->func_defs[1ul];
+        BOOST_TEST(f.name == "id_matrix");
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_app_of(f.value.ret_type.get(), var("sq_matrix"), constant(2)));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(
+            is_return_of(
+                f.value.body.stmts[0ul],
+                init_list_of(
+                    init_list_of(constant(1), constant(0)),
+                    init_list_of(constant(0), constant(1)))));
+    }
+    {
+        auto const& f = pass_result->func_defs[2ul];
+        BOOST_TEST(f.name == "anti_id_matrix");
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_app_of(f.value.ret_type.get(), var("sq_matrix"), constant(2)));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(
+            is_return_of(
+                f.value.body.stmts[0ul],
+                init_list_of(
+                    init_list_of(constant(0), constant(1)),
+                    init_list_of(constant(1), constant(0)))));
+    }
+    {
+        auto const& f = pass_result->func_defs[3ul];
+        BOOST_TEST(f.name == "select_matrix");
+        BOOST_TEST_REQUIRE(f.value.args.size() == 1ul);
+        BOOST_TEST(is_arg(f.value.args[0ul], is_bool, "which"));
+        BOOST_TEST(is_app_of(f.value.ret_type.get(), var("sq_matrix"), constant(2)));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(
+            is_if_else(
+                f.value.body.stmts[0ul],
+                var("which"),
+                std::tuple{return_of(app_of(var("id_matrix")))},
+                std::tuple{return_of(app_of(var("anti_id_matrix")))}));
+    }
+    {
+        auto const& f = pass_result->func_defs[4ul];
+        BOOST_TEST(f.name == "trace");
+        BOOST_TEST_REQUIRE(f.value.args.size() == 1ul);
+        BOOST_TEST(is_arg(f.value.args[0ul], app_of(var("sq_matrix"), constant(2)), "m"));
+        BOOST_TEST(is_i32(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(
+            is_return_of(
+                f.value.body.stmts[0ul],
+                plus(
+                    subscript_of(subscript_of(var("m"), constant(0)), constant(0)),
+                    subscript_of(subscript_of(var("m"), constant(1)), constant(1)))));
+    }
+    {
+        auto const& f = pass_result->func_defs[5ul];
+        BOOST_TEST(f.name == "anti_trace");
+        BOOST_TEST_REQUIRE(f.value.args.size() == 1ul);
+        BOOST_TEST(is_arg(f.value.args[0ul], app_of(var("sq_matrix"), constant(2)), "m"));
+        BOOST_TEST(is_i32(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(
+            is_return_of(
+                f.value.body.stmts[0ul],
+                plus(
+                    subscript_of(subscript_of(var("m"), constant(1)), constant(0)),
+                    subscript_of(subscript_of(var("m"), constant(0)), constant(1)))));
+    }
+    {
+        auto const& f = pass_result->func_defs[6ul];
+        BOOST_TEST(f.name == "select_fn");
+        BOOST_TEST_REQUIRE(f.value.args.size() == 1ul);
+        BOOST_TEST(is_arg(f.value.args[0ul], is_bool, "which"));
+        BOOST_TEST(is_pi_of(f.value.ret_type.get(), std::tuple{arg_of(app_of(var("sq_matrix"), constant(2)))}, is_i32));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(
+            is_if_else(
+                f.value.body.stmts[0ul],
+                var("which"),
+                std::tuple{return_of(var("trace"))},
+                std::tuple{return_of(var("anti_trace"))}));
+    }
+    {
+        auto const& f = pass_result->func_defs[7ul];
+        BOOST_TEST(f.name == "test");
+        BOOST_TEST_REQUIRE(f.value.args.size() == 1ul);
+        BOOST_TEST(is_arg(f.value.args[0ul], is_bool, "which"));
+        BOOST_TEST(is_i32(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(
+            is_return_of(
+                f.value.body.stmts[0ul],
+                app_of(
+                    app_of(var("select_fn"), var("which")),
+                    app_of(var("select_matrix"), var("which")))));
     }
 }
 

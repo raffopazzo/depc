@@ -12,7 +12,7 @@ bool is_array(typecheck::expr_t const& type)
     return app and std::holds_alternative<typecheck::expr_t::array_t>(app->func.get().value);
 }
 
-std::optional<array_properties_t> get_properties_if_array(typecheck::expr_t const& type)
+std::optional<array_properties_view_t> get_properties_if_array(typecheck::expr_t const& type)
 {
     auto curr = get_if_app_of_array(type);
     if (not curr)
@@ -24,10 +24,10 @@ std::optional<array_properties_t> get_properties_if_array(typecheck::expr_t cons
         dimensions.push_back(&next->args[1ul]);
         curr = next;
     }
-    return array_properties_t{curr->args[0ul], std::move(dimensions)};
+    return array_properties_view_t{curr->args[0ul], std::move(dimensions)};
 }
 
-array_properties_t get_array_properties(typecheck::expr_t const& type)
+array_properties_view_t get_array_properties(typecheck::expr_t const& type)
 {
     auto properties = get_properties_if_array(type);
     assert(properties.has_value() and "type must be an array");
@@ -38,7 +38,7 @@ llvm::Value* gen_array_total_size(
     global_context_t& global,
     local_context_t const& local,
     llvm::IRBuilder<>& builder,
-    array_properties_t const& properties)
+    array_properties_view_t const& properties)
 {
     assert(properties.dimensions.size() > 0ul);
     return std::accumulate(
@@ -54,7 +54,7 @@ llvm::Value* gen_stride_size_if_needed(
     global_context_t& global,
     local_context_t const& local,
     llvm::IRBuilder<>& builder,
-    array_properties_t const& properties)
+    array_properties_view_t const& properties)
 {
     return
         properties.dimensions.size() > 1ul

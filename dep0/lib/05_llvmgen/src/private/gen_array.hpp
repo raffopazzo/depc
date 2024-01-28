@@ -15,7 +15,7 @@ namespace dep0::llvmgen {
 /**
  * Holds useful properties to use when emitting LLVM code for (possibly multidimensional) arrays.
  */
-struct array_properties_t
+struct array_properties_view_t
 {
     /**
      * The type of the elements stored by a (possibly multidimensional) array.
@@ -47,7 +47,7 @@ bool is_array(typecheck::expr_t const& type);
  *
  * @return The properties of the array type, or an empty optional if the type is not an array.
  */
-std::optional<array_properties_t> get_properties_if_array(typecheck::expr_t const& type);
+std::optional<array_properties_view_t> get_properties_if_array(typecheck::expr_t const& type);
 
 /**
  * Extract the properties of the array type, assuming that the input type is in fact an array;
@@ -57,7 +57,7 @@ std::optional<array_properties_t> get_properties_if_array(typecheck::expr_t cons
  *
  * @return The properties of the given array type.
  */
-array_properties_t get_array_properties(typecheck::expr_t const& type);
+array_properties_view_t get_array_properties(typecheck::expr_t const& type);
 
 /**
  * Generate an LLVM value representing the total size (in number of elements, not in bytes) of an array.
@@ -67,7 +67,7 @@ llvm::Value* gen_array_total_size(
     global_context_t&,
     local_context_t const&,
     llvm::IRBuilder<>&,
-    array_properties_t const&);
+    array_properties_view_t const&);
 
 /**
  * Generate an LLVM value representing the stride size (in number of elements, not in bytes) of an array.
@@ -80,7 +80,7 @@ llvm::Value* gen_stride_size_if_needed(
     global_context_t&,
     local_context_t const&,
     llvm::IRBuilder<>&,
-    array_properties_t const&);
+    array_properties_view_t const&);
 
 } // namespace dep0::llvmgen
 

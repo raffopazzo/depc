@@ -15,18 +15,19 @@ llvm::FunctionType* gen_func_type(
     llvm_func_proto_t const& proto)
 {
     bool constexpr is_var_arg = false;
-    auto ret_type = gen_type(global, local, proto.ret_type());
-    std::vector<llvm::Type*> arg_types;
-    match(
-        needs_alloca(proto.ret_type()),
-        [] (needs_alloca_result::no_t) {},
-        [&] (needs_alloca_result::array_t const& array)
-        {
-             // For arrays `gen_type` already returns a pointer,
-             // so no need to do `ret_type->getPointerTo()`.
-            arg_types.push_back(ret_type);
-            ret_type = llvm::Type::getVoidTy(global.llvm_ctx);
-        });
+    std::vector<llvm::Type*> arg_types; // might need to contain a return argument
+    auto const ret_type =
+        match(
+            needs_alloca(proto.ret_type()),
+            [&] (needs_alloca_result::no_t)
+            {
+                return gen_type(global, local, proto.ret_type());
+            },
+            [&] (needs_alloca_result::array_t const& array)
+            {
+                arg_types.push_back(gen_type(global, local, array.properties.element_type)->getPointerTo());
+                return llvm::Type::getVoidTy(global.llvm_ctx);
+            });
     arg_types.reserve(arg_types.size() + proto.args().size());
     for (typecheck::func_arg_t const& arg: proto.args())
         arg_types.push_back(gen_type(global, local, arg.type));

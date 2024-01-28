@@ -81,7 +81,7 @@ expected<expr_t> check_type(context_t const& ctx, parser::expr_t const& type)
                 : std::vector<dep0::error_t>{std::move(as_type.error()), std::move(as_kind.error())}));
 }
 
-expected<body_t> check_body(proof_state_t& state, parser::body_t const& x)
+expected<body_t> check_body(proof_state_t state, parser::body_t const& x)
 {
     if (auto stmts = fmap_or_error(x.stmts, [&] (parser::stmt_t const& s) { return check_stmt(state, s); }))
         return make_legal_body(std::move(*stmts));
@@ -109,7 +109,7 @@ expected<stmt_t> check_stmt(proof_state_t& state, parser::stmt_t const& s)
             {
                 auto new_state = proof_state_t(state.context.extend(), state.goal);
                 new_state.rewrite(*cond, derivation_rules::make_true());
-                return check_body(new_state, x.true_branch);
+                return check_body(std::move(new_state), x.true_branch);
             }();
             if (not true_branch)
                 return std::move(true_branch.error());
@@ -117,15 +117,15 @@ expected<stmt_t> check_stmt(proof_state_t& state, parser::stmt_t const& s)
             {
                 auto new_state = proof_state_t(state.context.extend(), state.goal);
                 new_state.rewrite(*cond, derivation_rules::make_false());
-                auto false_branch = check_body(new_state, *x.false_branch);
-                if (not false_branch)
+                if (auto false_branch = check_body(std::move(new_state), *x.false_branch))
+                    return make_legal_stmt(
+                        stmt_t::if_else_t{
+                            std::move(*cond),
+                            std::move(*true_branch),
+                            std::move(*false_branch)
+                        });
+                else
                     return std::move(false_branch.error());
-                return make_legal_stmt(
-                    stmt_t::if_else_t{
-                        std::move(*cond),
-                        std::move(*true_branch),
-                        std::move(*false_branch)
-                    });
             }
             // we are dealing with an if-else without an explicit else branch;
             // but if the true branch returns from all its sub-branches,

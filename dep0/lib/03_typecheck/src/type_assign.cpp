@@ -301,8 +301,7 @@ expected<expr_t> type_assign_abs(
             return error_t::from_error(std::move(ok.error()));
     }
     auto [arg_types, ret_type] = std::get<expr_t::pi_t>(func_type->value);
-    auto state = proof_state_t(f_ctx, ret_type.get());
-    auto body = check_body(state, f.body);
+    auto body = check_body(proof_state_t(f_ctx, ret_type.get()), f.body);
     if (not body)
         return std::move(body.error());
     // so far so good, but we now need to make sure that all branches contain a return statement,

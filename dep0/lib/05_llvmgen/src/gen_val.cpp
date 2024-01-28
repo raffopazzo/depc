@@ -49,9 +49,9 @@ llvm::Value* gen_val(
         {
             assert(dest->getType()->isPointerTy() and "memcpy destination must be a pointer");
             auto const& data_layout = global.llvm_module.getDataLayout();
-            auto const ptr_element_type = dest->getType()->getPointerElementType();
-            auto const align = data_layout.getPrefTypeAlign(ptr_element_type);
-            auto const bytes = data_layout.getTypeAllocSize(ptr_element_type);
+            auto const pointed_type = dest->getType()->getPointerElementType();
+            auto const align = data_layout.getPrefTypeAlign(pointed_type);
+            auto const bytes = data_layout.getTypeAllocSize(pointed_type);
             auto const size = gen_array_total_size(global, local, builder, *pty);
             auto const total_bytes = builder.CreateMul(size, builder.getInt64(bytes.getFixedSize()));
             builder.CreateMemCpy(dest, align, value, align, total_bytes);

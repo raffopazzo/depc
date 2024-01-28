@@ -43,7 +43,7 @@ expected<func_def_t> check_func_def(context_t&, parser::func_def_t const&);
  *
  * @return A legal body or an error.
  */
-expected<body_t> check_body(proof_state_t proof_state, parser::body_t const&);
+expected<body_t> check_body(proof_state_t, parser::body_t const&);
 
 /**
  * Checks whether a statement is legal, i.e. if all its expressions and bodies are legal.

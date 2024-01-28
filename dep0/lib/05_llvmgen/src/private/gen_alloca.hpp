@@ -53,21 +53,6 @@ needs_alloca_result_t needs_alloca(typecheck::expr_t const& type);
 bool is_alloca_needed(typecheck::expr_t const& type);
 
 /**
- * Generates an IR alloca instruction.
- *
- * @param element_type The type expression representing the type of the element that needs to be allocated.
- * @param size         An LLVM value holding the number of elements to allocate.
- *
- * @return The generated alloca instruction.
- */
-llvm::Instruction* gen_alloca(
-    global_context_t&,
-    local_context_t const&,
-    llvm::IRBuilder<>&,
-    typecheck::expr_t const& element_type,
-    llvm::Value* const size);
-
-/**
  * Generates an alloca instruction but only if the input type requires an allocation.
  *
  * @param type      A type expression that may or may not require an allocation;

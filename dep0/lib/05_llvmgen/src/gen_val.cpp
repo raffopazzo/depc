@@ -222,7 +222,8 @@ llvm::Value* gen_val(
             auto const dest2 = dest ? dest : [&]
             {
                 auto const total_size = gen_array_total_size(global, local, builder, properties);
-                return gen_alloca(global, local, builder, properties.element_type, total_size);
+                auto const element_type = gen_type(global, local, properties.element_type);
+                return builder.CreateAlloca(element_type, total_size);
             }();
             auto const type = dest2->getType()->getPointerElementType();
             auto const stride_size = gen_stride_size_if_needed(global, local, builder, properties);

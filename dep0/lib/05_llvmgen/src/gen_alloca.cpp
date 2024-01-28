@@ -8,7 +8,7 @@
 namespace dep0::llvmgen {
 
 /**
- * Helper method to share implementation code between needs_alloca and is_alloca_needed.
+ * Helper function to share implementation code between needs_alloca and is_alloca_needed.
  *
  * @param type      The type expression originally passed to needs_alloca and is_alloca_needed.
  * @param result    Optional pointer to the result, used by needs_alloca.
@@ -17,10 +17,10 @@ namespace dep0::llvmgen {
  */
 static bool needs_alloca_impl(typecheck::expr_t const& type, needs_alloca_result_t* const result)
 {
-    if (auto array_properties = get_properties_if_array(type))
+    if (is_array(type))
     {
         if (result)
-            result->emplace<needs_alloca_result::array_t>(std::move(*array_properties));
+            result->emplace<needs_alloca_result::array_t>(get_array_properties(type));
         return true;
     }
     if (result)
@@ -38,16 +38,6 @@ needs_alloca_result_t needs_alloca(typecheck::expr_t const& type)
 bool is_alloca_needed(typecheck::expr_t const& type)
 {
     return needs_alloca_impl(type, nullptr);
-}
-
-llvm::Instruction* gen_alloca(
-    global_context_t& global,
-    local_context_t const& local,
-    llvm::IRBuilder<>& builder,
-    typecheck::expr_t const& type,
-    llvm::Value* const size)
-{
-    return builder.CreateAlloca(gen_type(global, local, type), size);
 }
 
 llvm::Instruction* gen_alloca_if_needed(

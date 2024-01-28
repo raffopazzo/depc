@@ -34,16 +34,22 @@ expected<type_def_t> check_type_def(context_t&, parser::type_def_t const&);
 expected<func_def_t> check_func_def(context_t&, parser::func_def_t const&);
 
 /**
- * Checks whether a body is legal, i.e. if all its statements are legal and it returns from all paths;
- * the proof state can be modified by rewrite rules.
+ * Checks whether a body is legal, i.e. if all its statements are legal and it returns from all paths.
+ * The proof state is passed by value because this body cannot refine the proof state of any parent body,
+ * but its child statements can refine its proof state.
+ * For example, an `if` statement without the `false` branch which returns from all paths of the `true` branch,
+ * means that the `if` condition was false once execution gets past the `if` statement;
+ * this knowledge can be used to refine the current proof state.
  *
  * @return A legal body or an error.
  */
-expected<body_t> check_body(proof_state_t&, parser::body_t const&);
+expected<body_t> check_body(proof_state_t proof_state, parser::body_t const&);
 
 /**
- * Checks whether a statement is legal, i.e. if all its expressions and bodies are legal;
- * the proof state can be modified by rewrite rules.
+ * Checks whether a statement is legal, i.e. if all its expressions and bodies are legal.
+ * This function might refine the proof state of the enclosing body.
+ * For example, an `if` statement without the `false` branch which returns from all paths of the `true` branch,
+ * means that the `if` condition was false once execution gets past the `if` statement.
  *
  * @return A legal statement or an error.
  */

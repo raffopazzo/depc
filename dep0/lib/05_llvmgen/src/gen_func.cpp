@@ -78,7 +78,7 @@ void gen_func_body(
     {
         auto builder = llvm::IRBuilder<>(global.llvm_ctx);
         // Having open blocks means that the function has no return statement,
-        // this implies its return type is `unit_t`, so just return `i18 0`.
+        // this implies its return type is `unit_t`, so just return `i8 0`.
         snippet.seal_open_blocks(builder, [zero=builder.getInt8(0)] (auto& builder) { builder.CreateRet(zero); });
     }
 }

@@ -203,7 +203,7 @@ llvm::Value* gen_val(
         [&] (typecheck::expr_t::abs_t const& abs) -> llvm::Value*
         {
             auto const proto = llvm_func_proto_t::from_abs(abs);
-            assert(proto and "can only invoke a 1st order function type");
+            assert(proto and "can only generate a value for a 1st order function type");
             return storeOrReturn(gen_func(global, local, *proto, abs));
         },
         [&] (typecheck::expr_t::pi_t const&) -> llvm::Value*

@@ -122,7 +122,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
             return
                 ctx->primitiveRetType ? std::any_cast<expr_t>(visitPrimitiveType(ctx->primitiveRetType)) :
                 ctx->simpleRetType ? std::any_cast<expr_t>(visitTypeVar(ctx->simpleRetType)) :
-                ctx->complexRetType ? std::any_cast<expr_t>(visitExpr(ctx->complexRetType)) :
+                ctx->complexRetType ? visitExpr(ctx->complexRetType) :
                 ctx->KW_TYPENAME() ? visitTypename(ctx->KW_TYPENAME())
                 : throw error_t("unexpected alternative when parsing FuncDefContext", loc);
         };
@@ -162,7 +162,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         auto const ret_type = [&]
         {
             return
-                ctx->retType ? std::any_cast<expr_t>(visitExpr(ctx->retType)) :
+                ctx->retType ? visitExpr(ctx->retType) :
                 ctx->KW_TYPENAME() ? visitTypename(ctx->KW_TYPENAME())
                 : throw error_t("unexpected alternative when parsing FuncTypeContext", loc);
         };
@@ -187,7 +187,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         if (ctx->KW_TYPENAME())
             return func_arg_t{loc, visitTypename(ctx->KW_TYPENAME()), get_name()};
         if (ctx->expr())
-            return func_arg_t{loc, std::any_cast<expr_t>(visitExpr(ctx->expr())), get_name()};
+            return func_arg_t{loc, visitExpr(ctx->expr()), get_name()};
         throw error_t("unexpected alternative when parsing FuncArgContext", loc);
     }
 
@@ -212,8 +212,19 @@ struct parse_visitor_t : dep0::DepCParserVisitor
     virtual std::any visitFuncCallStmt(DepCParser::FuncCallStmtContext* ctx) override
     {
         assert(ctx);
-        assert(ctx->funcCall());
-        return stmt_t{get_loc(src, *ctx), std::any_cast<expr_t::app_t>(visitFuncCall(ctx->funcCall()))};
+        assert(ctx->func);
+        // func and args are all expressions,
+        // so ANTLR4 puts them all in `expr()`,
+        // but we know the first is func
+        auto const exprs = ctx->expr();
+        assert(exprs.size() > 0ul);
+        return stmt_t{
+            get_loc(src, *ctx),
+            expr_t::app_t{
+                visitExpr(ctx->func),
+                fmap<DepCParser::ExprContext*>(
+                    std::next(exprs.begin()), exprs.end(),
+                    [this] (DepCParser::ExprContext* ctx) { return visitExpr(ctx); })}};
     }
 
     virtual std::any visitIfElse(DepCParser::IfElseContext* ctx) override
@@ -264,6 +275,17 @@ struct parse_visitor_t : dep0::DepCParserVisitor
                     visitExpr(ctx->rhs)}}};
     }
 
+    virtual std::any visitSubscriptExpr(DepCParser::SubscriptExprContext* ctx) override
+    {
+        assert(ctx);
+        return expr_t{
+            get_loc(src, *ctx),
+            expr_t::subscript_t{
+                visitExpr(ctx->expr(0ul)),
+                visitExpr(ctx->expr(1ul))
+            }};
+    }
+
     virtual std::any visitVarExpr(DepCParser::VarExprContext* ctx) override
     {
         assert(ctx);
@@ -271,10 +293,27 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         return expr_t{get_loc(src, *ctx->var), expr_t::var_t{get_text(src, *ctx->var)}};
     }
 
+    virtual std::any visitArrayExpr(DepCParser::ArrayExprContext* ctx) override
+    {
+        assert(ctx);
+        return expr_t{get_loc(src, *ctx), expr_t::array_t{}};
+    }
+
     virtual std::any visitTypeExpr(DepCParser::TypeExprContext* ctx) override
     {
         assert(ctx);
         return visitType(ctx->type());
+    }
+
+    virtual std::any visitInitListExpr(DepCParser::InitListExprContext* ctx) override
+    {
+        assert(ctx);
+        return expr_t{
+            get_loc(src, *ctx),
+            expr_t::init_list_t{
+                fmap(ctx->expr(), [this] (auto* x) { return visitExpr(x); })
+            }
+        };
     }
 
     virtual std::any visitBooleanExpr(DepCParser::BooleanExprContext* ctx)
@@ -301,36 +340,45 @@ struct parse_visitor_t : dep0::DepCParserVisitor
     virtual std::any visitFuncCallExpr(DepCParser::FuncCallExprContext* ctx) override
     {
         assert(ctx);
-        assert(ctx->funcCall());
-        return expr_t{get_loc(src, *ctx), std::any_cast<expr_t::app_t>(visitFuncCall(ctx->funcCall()))};
-    }
-
-    virtual std::any visitFuncCall(DepCParser::FuncCallContext* ctx) override
-    {
-        assert(ctx);
-        assert(ctx->name);
-        return expr_t::app_t{
-            expr_t{
-                get_loc(src, *ctx),
-                expr_t::var_t{get_text(src, *ctx->name)}},
-            fmap(ctx->expr(), [this] (auto* ctx) { return visitExpr(ctx); })};
+        assert(ctx->func);
+        // func and args are all expressions,
+        // so ANTLR4 puts them all in `expr()`,
+        // but we know the first is func
+        auto const exprs = ctx->expr();
+        assert(exprs.size() > 0ul);
+        return expr_t{
+            get_loc(src, *ctx),
+            expr_t::app_t{
+                visitExpr(ctx->func),
+                fmap<DepCParser::ExprContext*>(
+                    std::next(exprs.begin()), exprs.end(),
+                    [this] (DepCParser::ExprContext* ctx) { return visitExpr(ctx); })}};
     }
 
     expr_t visitExpr(DepCParser::ExprContext* ctx)
     {
         assert(ctx);
+        // All these `if` statements should probably be ordered by likelihood,
+        // but we don't currently know what's the likelihood of each, for a typical program.
+        // So for now use the same order as they are listed in `DepCParser.g4`, for readability.
+        if (auto const p = dynamic_cast<DepCParser::FuncCallExprContext*>(ctx))
+            return std::any_cast<expr_t>(visitFuncCallExpr(p));
+        if (auto const p = dynamic_cast<DepCParser::SubscriptExprContext*>(ctx))
+            return std::any_cast<expr_t>(visitSubscriptExpr(p));
         if (auto const p = dynamic_cast<DepCParser::PlusExprContext*>(ctx))
             return std::any_cast<expr_t>(visitPlusExpr(p));
         if (auto const p = dynamic_cast<DepCParser::NumericExprContext*>(ctx))
             return std::any_cast<expr_t>(visitNumericExpr(p));
         if (auto const p = dynamic_cast<DepCParser::BooleanExprContext*>(ctx))
             return std::any_cast<expr_t>(visitBooleanExpr(p));
-        if (auto const p = dynamic_cast<DepCParser::FuncCallExprContext*>(ctx))
-            return std::any_cast<expr_t>(visitFuncCallExpr(p));
+        if (auto const p = dynamic_cast<DepCParser::ArrayExprContext*>(ctx))
+            return std::any_cast<expr_t>(visitArrayExpr(p));
         if (auto const p = dynamic_cast<DepCParser::VarExprContext*>(ctx))
             return std::any_cast<expr_t>(visitVarExpr(p));
         if (auto const p = dynamic_cast<DepCParser::TypeExprContext*>(ctx))
             return std::any_cast<expr_t>(visitTypeExpr(p));
+        if (auto const p = dynamic_cast<DepCParser::InitListExprContext*>(ctx))
+            return std::any_cast<expr_t>(visitInitListExpr(p));
         throw error_t("unexpected alternative when parsing ExprContext", get_loc(src, *ctx));
     }
 

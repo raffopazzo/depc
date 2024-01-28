@@ -95,22 +95,36 @@ struct expr_t
         std::vector<func_arg_t<P>> args;
         rec_t ret_type;
     };
+    struct array_t {};
+    struct init_list_t
+    {
+        std::vector<expr_t> values;
+    };
+    struct subscript_t
+    {
+        rec_t array;
+        rec_t index;
+    };
 
     using value_t =
         std::variant<
             typename_t,
             bool_t, unit_t, i8_t, i16_t, i32_t, i64_t, u8_t, u16_t, u32_t, u64_t,
-            boolean_constant_t,
-            numeric_constant_t,
-            arith_expr_t,
-            var_t,
-            app_t,
-            abs_t,
-            pi_t>;
+            boolean_constant_t, numeric_constant_t, arith_expr_t,
+            var_t, app_t, abs_t, pi_t,
+            array_t, init_list_t, subscript_t
+        >;
 
     properties_t properties;
     value_t value;
 };
+
+template <Properties P>
+typename expr_t<P>::app_t const* get_if_app_of_array(expr_t<P> const& x)
+{
+    auto const app = std::get_if<typename expr_t<P>::app_t>(&x.value);
+    return app and std::holds_alternative<typename expr_t<P>::array_t>(app->func.get().value) ? app : nullptr;
+}
 
 template <Properties P>
 struct func_arg_t

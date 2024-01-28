@@ -1,0 +1,17 @@
+i32_t last(array_t(i32_t, 3) xs)
+{
+    return xs[2];
+}
+
+auto count_3(bool start_from_zero) -> array_t(i32_t, 3)
+{
+    if (start_from_zero)
+        return {0,1,2};
+    else
+        return {1,2,3};
+}
+
+i32_t two_or_three(bool start_from_zero)
+{
+    return last(count_3(start_from_zero));
+}

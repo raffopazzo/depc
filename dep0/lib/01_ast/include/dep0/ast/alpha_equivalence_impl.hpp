@@ -125,6 +125,34 @@ struct alpha_equivalence_visitor
         return is_alpha_equivalent_impl<P>(x.args, x.ret_type.get(), nullptr, y.args, y.ret_type.get(), nullptr);
     }
 
+    result_t operator()(typename expr_t<P>::array_t&, typename expr_t<P>::array_t&) const
+    {
+        return std::true_type{};
+    }
+
+    result_t operator()(typename expr_t<P>::init_list_t& x, typename expr_t<P>::init_list_t& y) const
+    {
+        if (x.values.size() != y.values.size())
+        {
+            std::ostringstream err;
+            err << "initializer list with " << x.values.size() << " values is not alpha-equivalent to ";
+            err << "initializer list with " << y.values.size();
+            return dep0::error_t(err.str());
+        }
+        for (auto const i: std::views::iota(0ul, x.values.size()))
+            if (auto eq = is_alpha_equivalent_impl(x.values[i], y.values[i]); not eq)
+                return eq;
+        return {};
+    }
+
+    result_t operator()(typename expr_t<P>::subscript_t& x, typename expr_t<P>::subscript_t& y) const
+    {
+        auto eq = is_alpha_equivalent_impl(x.array.get(), y.array.get());
+        if (eq)
+            eq = is_alpha_equivalent_impl(x.index.get(), y.index.get());
+        return eq;
+    }
+
     result_t operator()(typename stmt_t<P>::if_else_t& x, typename stmt_t<P>::if_else_t& y) const
     {
         auto eq = is_alpha_equivalent_impl(x.cond, y.cond);

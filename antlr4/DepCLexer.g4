@@ -5,6 +5,7 @@ fragment ALPHA: [A-Za-z_]+; // we treat '-' as alpha
 fragment ALPHANUM: [A-Za-z0-9_]+;
 
 // Keywords
+KW_ARRAY: 'array_t';
 KW_AUTO: 'auto';
 KW_BOOL: 'bool';
 KW_ELSE: 'else';
@@ -31,8 +32,10 @@ ELLIPSIS: '...';
 EQ: '=';
 PLUS: '+';
 MINUS: '-';
+LBRACK: '[';
 LCURLY: '{';
 LPAREN: '(';
+RBRACK: ']';
 RCURLY: '}';
 RPAREN: ')';
 SEMI: ';';

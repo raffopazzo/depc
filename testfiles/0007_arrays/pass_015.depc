@@ -1,0 +1,12 @@
+auto xs_or_ys(bool which, u64_t n, array_t(i32_t, n) xs, array_t(i32_t, n) ys) -> array_t(i32_t, n)
+{
+    if (which)
+        return xs;
+    else
+        return ys;
+}
+
+auto xs_or_ys_2(bool which, array_t(i32_t, 2) xs, array_t(i32_t, 2) ys) -> array_t(i32_t, 2)
+{
+    return xs_or_ys(which, 2, xs, ys);
+}

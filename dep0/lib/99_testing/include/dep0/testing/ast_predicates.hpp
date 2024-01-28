@@ -25,15 +25,16 @@ boost::test_tools::predicate_result check_name(typename ast::expr_t<P>::var_t co
     return true;
 }
 
-template <std::size_t I, typename T, typename F, typename... Predicates>
-boost::test_tools::predicate_result check_all(std::vector<T> const& v, F&& f, Predicates&&...fs)
+template <typename T, Predicate<T>... Fs>
+boost::test_tools::predicate_result check_all(std::vector<T> const& v, Fs&&... fs)
 {
-    if (auto const result = std::forward<F>(f)(v.at(I)); not result)
-        return failure("predicate at index ", I, ": ", result.message());
-    if constexpr (sizeof...(Predicates) > 0ul)
-        return check_all<I+1>(v, std::forward<Predicates>(fs)...);
-    else
-        return true;
+    auto constexpr N = sizeof...(Fs);
+    if (v.size() != N)
+        return failure("wrong number of predicates for vector: ", N, " != ", v.size());
+    auto result = boost::test_tools::predicate_result(true);
+    auto it = v.begin();
+    ([&] { if (result) result = std::forward<Fs>(fs)(*it++); }(), ...);
+    return result;
 }
 
 } // namespace detail
@@ -129,6 +130,16 @@ inline constexpr auto is_u32 =
         return failure("type is not u32_t but ", pretty_name(type.value));
 };
 
+inline constexpr auto is_u64 =
+[] <ast::Properties P> (ast::expr_t<P> const& type)
+-> boost::test_tools::predicate_result
+{
+    if (std::holds_alternative<typename ast::expr_t<P>::u64_t>(type.value))
+        return true;
+    else
+        return failure("type is not u64_t but ", pretty_name(type.value));
+};
+
 inline constexpr auto is_unit =
 [] <ast::Properties P> (ast::expr_t<P> const& type)
 -> boost::test_tools::predicate_result
@@ -219,7 +230,7 @@ inline auto var(std::string const& name)
     };
 }
 
-template <ast::Properties P, Predicate<ast::expr_t<P>> F, typename... ArgPredicates>
+template <ast::Properties P, Predicate<ast::expr_t<P>> F, Predicate<ast::expr_t<P>>... ArgPredicates>
 boost::test_tools::predicate_result is_app_of(ast::expr_t<P> const& expr, F&& f_func, ArgPredicates&&... f_args)
 {
     auto const app = std::get_if<typename ast::expr_t<P>::app_t>(&expr.value);
@@ -230,12 +241,12 @@ boost::test_tools::predicate_result is_app_of(ast::expr_t<P> const& expr, F&& f_
     if (app->args.size() != sizeof...(ArgPredicates))
         return failure("wrong number of arguments ", app->args.size(), " != ", sizeof...(ArgPredicates));
     if constexpr (sizeof...(ArgPredicates) > 0ul)
-        return detail::check_all<0ul>(app->args, std::forward<ArgPredicates>(f_args)...);
+        return detail::check_all(app->args, std::forward<ArgPredicates>(f_args)...);
     else
         return true;
 }
 
-template <ast::Properties P, Predicate<ast::expr_t<P>> F, typename... ArgPredicates>
+template <ast::Properties P, Predicate<ast::expr_t<P>> F, Predicate<ast::expr_t<P>>... ArgPredicates>
 constexpr auto app_of(F&& f_func, ArgPredicates&&... f_args)
 {
     return [f_func=std::forward<F>(f_func), ...f_args=std::forward<ArgPredicates>(f_args)] (ast::expr_t<P> const& x)
@@ -244,37 +255,119 @@ constexpr auto app_of(F&& f_func, ArgPredicates&&... f_args)
     };
 }
 
-template <ast::Properties P, typename... ArgPredicates, Predicate<typename ast::expr_t<P>> F>
+template <ast::Properties P, Predicate<ast::func_arg_t<P>>... ArgPredicates, Predicate<ast::expr_t<P>> F>
 boost::test_tools::predicate_result
 is_pi_of(ast::expr_t<P> const& type, std::tuple<ArgPredicates...> const& f_args, F&& f_ret_type)
 {
-    auto const arr = std::get_if<typename ast::expr_t<P>::pi_t>(&type.value);
-    if (not arr)
+    auto const pi = std::get_if<typename ast::expr_t<P>::pi_t>(&type.value);
+    if (not pi)
         return failure("type is not pi_t but ", pretty_name(type.value));
-    if (auto const result = std::forward<F>(f_ret_type)(arr->ret_type.get()); not result)
+    if (auto const result = std::forward<F>(f_ret_type)(pi->ret_type.get()); not result)
         return failure("return type predicate failed: ", result.message());
     auto constexpr N = sizeof...(ArgPredicates);
-    if (arr->args.size() != N)
-        return failure("wrong number of arguments: ", N, " != ", arr->args.size());
+    if (pi->args.size() != N)
+        return failure("wrong number of arguments: ", N, " != ", pi->args.size());
     auto result = boost::test_tools::predicate_result(true);
     [&] <std::size_t... Is> (std::index_sequence<Is...>)
     {
         ([&]
         {
             if (result)
-                if (auto const tmp = std::get<Is>(f_args)(arr->args[Is]); not tmp)
+                if (auto const tmp = std::get<Is>(f_args)(pi->args[Is]); not tmp)
                     result = failure("argument predicate at index ", Is, " failed: ", tmp.message());
         }(), ...);
     } (std::make_index_sequence<N>{});
     return result;
 }
 
-template <ast::Properties P, Predicate<ast::expr_t<P>> F, typename... ArgPredicates>
+template <ast::Properties P, Predicate<ast::expr_t<P>> F, Predicate<ast::func_arg_t<P>>... ArgPredicates>
 constexpr auto pi_of(std::tuple<ArgPredicates...> args, F&& ret_type)
 {
     return [args=std::move(args), ret_type=std::forward<F>(ret_type)] (ast::expr_t<P> const& x)
     {
         return is_pi_of(x, args, ret_type);
+    };
+}
+
+inline constexpr auto is_array =
+[] <ast::Properties P> (ast::expr_t<P> const& x)
+-> boost::test_tools::predicate_result
+{
+    if (std::holds_alternative<typename ast::expr_t<P>::array_t>(x.value))
+        return true;
+    else
+        return failure("expression is not array_t but ", pretty_name(x.value));
+};
+
+template <ast::Properties P, Predicate<ast::expr_t<P>> F_type, Predicate<ast::expr_t<P>> F_size>
+boost::test_tools::predicate_result is_array_of(ast::expr_t<P> const& x, F_type&& f_type, F_size&& f_size)
+{
+    auto const app = std::get_if<typename ast::expr_t<P>::app_t>(&x.value);
+    if (not app)
+        return failure("not an array because not an application but ", pretty_name(x.value));
+    if (not std::holds_alternative<typename ast::expr_t<P>::array_t>(app->func.get().value))
+        return failure("not an array because not an application of array_t but ", pretty_name(app->func.get().value));
+    if (app->args.size() != 2ul)
+        return failure("not an array because not an application of array_t with 2 arguments but ", app->args.size());
+    if (auto const result = std::forward<F_type>(f_type)(app->args[0ul]); not result)
+        return failure("array element type predicate failed: ", result.message());
+    if (auto const result = std::forward<F_size>(f_size)(app->args[1ul]); not result)
+        return failure("array size predicate failed: ", result.message());
+    return true;
+}
+
+template <ast::Properties P, Predicate<ast::expr_t<P>> F_type, Predicate<ast::expr_t<P>> F_size>
+constexpr auto array_of(F_type&& f_type, F_size&& f_size)
+{
+    return [f_type=std::forward<F_type>(f_type), f_size=std::forward<F_size>(f_size)] (ast::expr_t<P> const& x)
+    {
+        return is_app_of(x, is_array, f_type, f_size);
+    };
+}
+
+template <ast::Properties P, Predicate<ast::expr_t<P>>... ValuePredicates>
+boost::test_tools::predicate_result is_init_list_of(ast::expr_t<P> const& expr, ValuePredicates&&... f_values)
+{
+    auto const init_list = std::get_if<typename ast::expr_t<P>::init_list_t>(&expr.value);
+    if (not init_list)
+        return failure("expr is not init_list_t but ", pretty_name(expr.value));
+    auto constexpr N = sizeof...(ValuePredicates);
+    if (init_list->values.size() != N)
+        return failure("wrong number of initializer values: ", N, " != ", init_list->values.size());
+    if constexpr (N > 0ul)
+        return detail::check_all(init_list->values, std::forward<ValuePredicates>(f_values)...);
+    else
+        return true;
+}
+
+template <ast::Properties P, Predicate<ast::expr_t<P>>... ValuePredicates>
+constexpr auto init_list_of(ValuePredicates&&... f_values)
+{
+    return [...f_values=std::forward<ValuePredicates>(f_values)] (ast::expr_t<P> const& x)
+    {
+        return is_init_list_of(x, f_values...);
+    };
+}
+
+template <ast::Properties P, Predicate<ast::expr_t<P>> F_array, Predicate<ast::expr_t<P>> F_index>
+boost::test_tools::predicate_result is_subscript_of(ast::expr_t<P> const& expr, F_array&& f_array, F_index&& f_index)
+{
+    auto const subscript = std::get_if<typename ast::expr_t<P>::subscript_t>(&expr.value);
+    if (not subscript)
+        return failure("type is not subscript_t but ", pretty_name(expr.value));
+    if (auto const result = std::forward<F_array>(f_array)(subscript->array.get()); not result)
+        return failure("array predicate failed: ", result.message());
+    if (auto const result = std::forward<F_index>(f_index)(subscript->index.get()); not result)
+        return failure("index predicate failed: ", result.message());
+    return true;
+}
+
+template <ast::Properties P, Predicate<ast::expr_t<P>> F_array, Predicate<ast::expr_t<P>> F_index>
+constexpr auto subscript_of(F_array&& f_array, F_index&& f_index)
+{
+    return [f_array=std::forward<F_array>(f_array), f_index=std::forward<F_index>(f_index)] (ast::expr_t<P> const& x)
+    {
+        return is_subscript_of(x, f_array, f_index);
     };
 }
 
@@ -298,7 +391,7 @@ boost::test_tools::predicate_result is_arg(
 
 inline auto typename_(std::optional<std::string> name = std::nullopt)
 {
-    return [name=std::move(name)] <ast::Properties P> (typename ast::func_arg_t<P> const& x)
+    return [name=std::move(name)] <ast::Properties P> (ast::func_arg_t<P> const& x)
     {
         return is_arg(x, is_typename, name);
     };
@@ -315,7 +408,7 @@ inline auto arg_of(F&& f, std::optional<std::string> name = std::nullopt)
 
 // stmt_t
 
-template <ast::Properties P, Predicate<ast::expr_t<P>> F, typename... ArgPredicates>
+template <ast::Properties P, Predicate<ast::expr_t<P>> F, Predicate<ast::expr_t<P>>... ArgPredicates>
 boost::test_tools::predicate_result is_func_call_of(ast::stmt_t<P> const& stmt, F&& f_func, ArgPredicates&&... f_args)
 {
     auto const app = std::get_if<typename ast::expr_t<P>::app_t>(&stmt.value);
@@ -326,7 +419,7 @@ boost::test_tools::predicate_result is_func_call_of(ast::stmt_t<P> const& stmt, 
     if (app->args.size() != sizeof...(ArgPredicates))
         return failure("wrong number of arguments ", app->args.size(), " != ", sizeof...(ArgPredicates));
     if constexpr (sizeof...(ArgPredicates) > 0ul)
-        return detail::check_all<0ul>(app->args, std::forward<ArgPredicates>(f_args)...);
+        return detail::check_all(app->args, std::forward<ArgPredicates>(f_args)...);
     else
         return true;
 }
@@ -338,6 +431,79 @@ boost::test_tools::predicate_result is_if_else(ast::stmt_t<P> const& stmt, F&& f
     if (not if_)
         return failure("statement is not if-else but ", pretty_name(stmt.value));
     return std::forward<F>(f)(*if_);
+}
+
+template <
+    ast::Properties P,
+    Predicate<ast::expr_t<P>> F_cond,
+    Predicate<ast::stmt_t<P>>... F_then>
+boost::test_tools::predicate_result
+    is_if_else(ast::stmt_t<P> const& stmt, F_cond&& f_cond, std::tuple<F_then...> f_then)
+{
+    auto const if_ = std::get_if<typename ast::stmt_t<P>::if_else_t>(&stmt.value);
+    if (not if_)
+        return failure("statement is not if-else but ", pretty_name(stmt.value));
+    if (auto const result = std::forward<F_cond>(f_cond)(if_->cond); not result)
+        return failure("predicate has failed for if-else condition: ", result.message());
+    if (if_->false_branch.has_value())
+        return failure("if-else has false branch but it should not");
+    auto constexpr N = sizeof...(F_then);
+    if (auto const n = if_->true_branch.stmts.size(); n != N)
+        return failure("wrong number of statements for the true branch: ", N, " != ", n);
+    auto result = boost::test_tools::predicate_result(true);
+    [&] <std::size_t... Is> (std::index_sequence<Is...>)
+    {
+        ([&]
+        {
+            if (result)
+                if (auto const tmp = std::get<Is>(f_then)(if_->true_branch.stmts[Is]); not tmp)
+                    result = failure("argument predicate at index ", Is, " failed: ", tmp.message());
+        }(), ...);
+    } (std::make_index_sequence<N>{});
+    return result;
+}
+
+template <
+    ast::Properties P,
+    Predicate<ast::expr_t<P>> F_cond,
+    Predicate<ast::stmt_t<P>>... F_then,
+    Predicate<ast::stmt_t<P>>... F_else>
+boost::test_tools::predicate_result
+    is_if_else(ast::stmt_t<P> const& stmt, F_cond&& f_cond, std::tuple<F_then...> f_then, std::tuple<F_else...> f_else)
+{
+    auto const if_ = std::get_if<typename ast::stmt_t<P>::if_else_t>(&stmt.value);
+    if (not if_)
+        return failure("statement is not if-else but ", pretty_name(stmt.value));
+    if (auto const result = std::forward<F_cond>(f_cond)(if_->cond); not result)
+        return failure("predicate has failed for if-else condition: ", result.message());
+    if (not if_->false_branch.has_value())
+        return failure("if-else should have false branch but it does not");
+    auto constexpr N_then = sizeof...(F_then);
+    auto constexpr N_else = sizeof...(F_else);
+    if (auto const n = if_->true_branch.stmts.size(); n != N_then)
+        return failure("wrong number of statements for the true branch: ", N_then, " != ", n);
+    if (auto const n = if_->false_branch->stmts.size(); n != N_else)
+        return failure("wrong number of statements for the false branch: ", N_else, " != ", n);
+    auto result = boost::test_tools::predicate_result(true);
+    [&] <std::size_t... Is> (std::index_sequence<Is...>)
+    {
+        ([&]
+        {
+            if (result)
+                if (auto const tmp = std::get<Is>(f_then)(if_->true_branch.stmts[Is]); not tmp)
+                    result = failure("argument predicate at index ", Is, " failed: ", tmp.message());
+        }(), ...);
+    } (std::make_index_sequence<N_then>{});
+    [&] <std::size_t... Is> (std::index_sequence<Is...>)
+    {
+        ([&]
+        {
+            if (result)
+                if (auto const tmp = std::get<Is>(f_else)(if_->false_branch->stmts[Is]); not tmp)
+                    result = failure("argument predicate at index ", Is, " failed: ", tmp.message());
+        }(), ...);
+    } (std::make_index_sequence<N_else>{});
+    return result;
 }
 
 template <ast::Properties P>
@@ -361,6 +527,15 @@ boost::test_tools::predicate_result is_return_of(ast::stmt_t<P> const& stmt, F&&
     if (not ret->expr.has_value())
         return failure("return statement does not contain an expression");
     return std::forward<F>(f)(*ret->expr);
+}
+
+template <ast::Properties P, Predicate<ast::expr_t<P>> F>
+constexpr auto return_of(F&& f)
+{
+    return [f=std::forward<F>(f)] (ast::stmt_t<P> const& x)
+    {
+        return is_return_of(x, f);
+    };
 }
 
 } // namespace dep0::testing

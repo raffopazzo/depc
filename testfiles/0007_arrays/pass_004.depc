@@ -1,0 +1,3 @@
+i32_t first(array_t(i32_t, 3) xs) { return xs[0]; }
+i32_t second(array_t(i32_t, 3) xs) { return xs[1]; }
+i32_t third(array_t(i32_t, 3) xs) { return xs[2]; }

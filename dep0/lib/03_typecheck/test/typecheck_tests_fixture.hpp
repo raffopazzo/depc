@@ -35,7 +35,31 @@ struct TypecheckTestsFixture
     }
 
     template <typename... Args>
-    constexpr auto plus(Args&&... args)
+    static constexpr auto array_of(Args&&... args)
+    {
+        return dep0::testing::array_of<dep0::typecheck::properties_t>(std::forward<Args>(args)...);
+    }
+
+    template <typename... Args>
+    static constexpr auto init_list_of(Args&&... args)
+    {
+        return dep0::testing::init_list_of<dep0::typecheck::properties_t>(std::forward<Args>(args)...);
+    }
+
+    template <typename... Args>
+    static constexpr auto return_of(Args&&... args)
+    {
+        return dep0::testing::return_of<dep0::typecheck::properties_t>(std::forward<Args>(args)...);
+    }
+
+    template <typename... Args>
+    static constexpr auto subscript_of(Args&&... args)
+    {
+        return dep0::testing::subscript_of<dep0::typecheck::properties_t>(std::forward<Args>(args)...);
+    }
+
+    template <typename... Args>
+    static constexpr auto plus(Args&&... args)
     {
         return dep0::testing::plus<dep0::typecheck::properties_t>(std::forward<Args>(args)...);
     }

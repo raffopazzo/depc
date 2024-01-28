@@ -1,0 +1,16 @@
+i32_t f() { return 0; }
+i32_t g() { return 1; }
+bool negate(bool x) { if (x) return false; else return true; }
+
+auto select(bool which) -> ()->i32_t
+{
+    if (which)
+        return f;
+    else
+        return g;
+}
+
+auto choose(bool which) -> array_t(()->i32_t, 2)
+{
+    return {select(which), select(negate(which))};
+}

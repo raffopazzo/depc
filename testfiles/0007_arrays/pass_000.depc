@@ -1,0 +1,4 @@
+auto values() -> array_t(i32_t, 3)
+{
+    return {1,2,3};
+}

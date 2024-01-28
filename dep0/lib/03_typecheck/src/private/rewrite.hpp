@@ -1,6 +1,7 @@
 #pragma once
 
 #include "dep0/typecheck/ast.hpp"
+
 #include <optional>
 
 namespace dep0::typecheck {

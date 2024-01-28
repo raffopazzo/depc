@@ -13,7 +13,7 @@ add_library(dep0_parser_lib
   )
 add_library(DepC::Dep0::Parser ALIAS dep0_parser_lib)
 target_compile_features(dep0_parser_lib PUBLIC cxx_std_20)
-target_include_directories(dep0_parser_lib PUBLIC include)
+target_include_directories(dep0_parser_lib PUBLIC include PRIVATE src)
 target_link_libraries(dep0_parser_lib
   PUBLIC
     DepC::Dep0::Ast

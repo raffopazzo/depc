@@ -93,6 +93,18 @@ bool occurs_in(typename expr_t<P>::var_t const& var, expr_t<P> const& x, occurre
         [&] (expr_t<P>::pi_t const& x)
         {
             return occurs_in<P>(var, x.args.begin(), x.args.end(), x.ret_type.get(), nullptr, style);
+        },
+        [&] (expr_t<P>::array_t const&)
+        {
+            return false;
+        },
+        [&] (expr_t<P>::init_list_t const& x)
+        {
+            return std::ranges::any_of(x.values, [&] (expr_t<P> const& v) { return occurs_in(var, v, style); });
+        },
+        [&] (expr_t<P>::subscript_t const& x)
+        {
+            return occurs_in(var, x.array.get(), style) or occurs_in(var, x.index.get(), style);
         });
 }
 

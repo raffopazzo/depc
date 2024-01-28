@@ -36,25 +36,25 @@ void gen_func_args(local_context_t& local, llvm_func_proto_t const& proto, llvm:
         assert(llvm_f->arg_size() == proto.args().size() and "function and prototype must have same arguments");
     for (auto const& arg: proto.args())
     {
-        auto const& llvm_arg = llvm_arg_it++;
+        auto& llvm_arg = *llvm_arg_it++;
         if (auto const attr = get_sign_ext_attribute(local, arg.type); attr != llvm::Attribute::None)
-            llvm_arg->addAttr(attr);
+            llvm_arg.addAttr(attr);
         if (is_alloca_needed(arg.type))
-            llvm_arg->addAttr(llvm::Attribute::NonNull);
+            llvm_arg.addAttr(llvm::Attribute::NonNull);
         if (arg.var)
         {
             if (arg.var->idx == 0ul)
-                llvm_arg->setName(arg.var->name.view());
+                llvm_arg.setName(arg.var->name.view());
             bool inserted = false;
             if (std::holds_alternative<typecheck::expr_t::pi_t>(arg.type.value))
             {
-                assert(llvm_arg->getType()->isPointerTy());
-                auto const function_type = cast<llvm::FunctionType>(llvm_arg->getType()->getPointerElementType());
+                assert(llvm_arg.getType()->isPointerTy());
+                auto const function_type = cast<llvm::FunctionType>(llvm_arg.getType()->getPointerElementType());
                 assert(function_type);
-                inserted = local.try_emplace(*arg.var, llvm_func_t(function_type, llvm_arg)).second;
+                inserted = local.try_emplace(*arg.var, llvm_func_t(function_type, &llvm_arg)).second;
             }
             else
-                inserted = local.try_emplace(*arg.var, llvm_arg).second;
+                inserted = local.try_emplace(*arg.var, &llvm_arg).second;
             assert(inserted);
         }
     }

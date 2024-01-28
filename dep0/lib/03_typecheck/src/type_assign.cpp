@@ -153,7 +153,7 @@ expected<expr_t> type_assign(context_t const& ctx, parser::expr_t const& expr)
         [&] (parser::expr_t::pi_t const& pi) -> expected<expr_t>
         {
             auto pi_ctx = ctx.extend();
-            return check_pi_type(pi_ctx, pi.args, pi.ret_type.get()); // TODO should this be renamed too?
+            return check_pi_type(pi_ctx, pi.args, pi.ret_type.get());
         },
         [&] (parser::expr_t::array_t const&) -> expected<expr_t>
         {

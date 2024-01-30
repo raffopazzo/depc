@@ -40,6 +40,7 @@ void gen_func_args(local_context_t& local, llvm_func_proto_t const& proto, llvm:
         if (auto const attr = get_sign_ext_attribute(local, arg.type); attr != llvm::Attribute::None)
             llvm_arg.addAttr(attr);
         if (is_alloca_needed(arg.type))
+            // TODO should we also set noalias, byval, etc? maybe for the return argument too?
             llvm_arg.addAttr(llvm::Attribute::NonNull);
         if (arg.var)
         {

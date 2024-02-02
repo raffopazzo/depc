@@ -2,9 +2,6 @@
 
 namespace dep0::ast {
 
-template <template <typename> typename T>
-concept Node = true;
-
 template <typename T>
 concept Properties = requires(T)
 {

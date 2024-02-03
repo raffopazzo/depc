@@ -73,12 +73,8 @@ bool delta_reduce(context_t<P> const&, typename expr_t<P>::numeric_constant_t&) 
 template <Properties P>
 bool delta_reduce(context_t<P> const& ctx, typename expr_t<P>::boolean_expr_t& x)
 {
-    return match(
-        x.value,
-        [&] (typename expr_t<P>::boolean_expr_t::lt_t& x)
-        {
-            return delta_reduce(ctx, x.lhs.get()) or delta_reduce(ctx, x.rhs.get());
-        });
+    auto [lhs, rhs] = match(x.value, [] (auto& x) { return std::pair{&x.lhs.get(), &x.rhs.get()}; });
+    return delta_reduce(ctx, *lhs) or delta_reduce(ctx, *rhs);
 }
 
 template <Properties P>

@@ -267,12 +267,13 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         assert(ctx);
         assert(ctx->lhs);
         assert(ctx->rhs);
+        auto lhs = visitExpr(ctx->lhs);
+        auto rhs = visitExpr(ctx->rhs);
         return expr_t{
             get_loc(src, *ctx),
-            expr_t::boolean_expr_t{
-                expr_t::boolean_expr_t::lt_t{
-                    visitExpr(ctx->lhs),
-                    visitExpr(ctx->rhs)}}};
+            ctx->GT()
+                ? expr_t::boolean_expr_t{expr_t::boolean_expr_t::gt_t{std::move(lhs), std::move(rhs)}}
+                : expr_t::boolean_expr_t{expr_t::boolean_expr_t::lt_t{std::move(lhs), std::move(rhs)}}};
     }
 
     virtual std::any visitPlusExpr(DepCParser::PlusExprContext* ctx) override

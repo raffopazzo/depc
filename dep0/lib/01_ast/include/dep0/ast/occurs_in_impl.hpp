@@ -71,12 +71,8 @@ bool occurs_in(typename expr_t<P>::var_t const& var, expr_t<P> const& x, occurre
         [] (expr_t<P>::numeric_constant_t const&) { return false; },
         [&] (expr_t<P>::boolean_expr_t const& x)
         {
-            return match(
-                x.value,
-                [&] (expr_t<P>::boolean_expr_t::lt_t const& x)
-                {
-                    return occurs_in(var, x.lhs.get(), style) or occurs_in(var, x.rhs.get(), style);
-                });
+            auto const [lhs, rhs] = match(x.value, [](auto const& x) { return std::pair{&x.lhs.get(), &x.rhs.get()}; });
+            return occurs_in(var, *lhs, style) or occurs_in(var, *rhs, style);
         },
         [&] (expr_t<P>::arith_expr_t const& x)
         {

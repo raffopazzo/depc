@@ -8,6 +8,8 @@
 
 #include "dep0/match.hpp"
 
+#include <boost/hana.hpp>
+
 #include <sstream>
 
 namespace dep0::ast {
@@ -38,7 +40,7 @@ struct alpha_equivalence_visitor
     using result_t = dep0::expected<std::true_type>;
 
     template <typename T, typename U>
-    result_t not_alpha_equivalent(T const& x, U const& y) const
+    static result_t not_alpha_equivalent(T const& x, U const& y)
     {
         std::ostringstream err;
         pretty_print<P>(err << '`', x) << "` is not alpha-equivalent to ";
@@ -87,19 +89,28 @@ struct alpha_equivalence_visitor
 
     result_t operator()(typename expr_t<P>::boolean_expr_t& x, typename expr_t<P>::boolean_expr_t& y) const
     {
-        struct visitor
+        auto const check_lhs_and_rhs = [] <typename T> (T& x, T& y)
         {
-            result_t operator()(
-                typename expr_t<P>::boolean_expr_t::lt_t& x,
-                typename expr_t<P>::boolean_expr_t::lt_t& y) const
-            {
-                auto eq = is_alpha_equivalent_impl(x.lhs.get(), y.lhs.get());
-                if (eq)
-                    eq = is_alpha_equivalent_impl(x.rhs.get(), y.rhs.get());
-                return eq;
-            }
+            auto eq = is_alpha_equivalent_impl(x.lhs.get(), y.lhs.get());
+            if (eq)
+                eq = is_alpha_equivalent_impl(x.rhs.get(), y.rhs.get());
+            return eq;
         };
-        return std::visit(visitor{}, x.value, y.value);
+        return std::visit(
+            boost::hana::overload(
+                [&] (typename expr_t<P>::boolean_expr_t::gt_t& x, typename expr_t<P>::boolean_expr_t::gt_t& y)
+                {
+                    return check_lhs_and_rhs(x, y);
+                },
+                [&] (typename expr_t<P>::boolean_expr_t::lt_t& x, typename expr_t<P>::boolean_expr_t::lt_t& y)
+                {
+                    return check_lhs_and_rhs(x, y);
+                },
+                [&] <typename T, typename U> (T const&, U const&) requires (not std::is_same_v<T, U>)
+                {
+                    return not_alpha_equivalent(x, y);
+                }),
+            x.value, y.value);
     };
 
     result_t operator()(typename expr_t<P>::arith_expr_t& x, typename expr_t<P>::arith_expr_t& y) const

@@ -134,20 +134,29 @@ std::optional<expr_t> rewrite(expr_t const& from, expr_t const& to, expr_t const
             [] (expr_t::numeric_constant_t){},
             [&] (expr_t::boolean_expr_t const& x)
             {
-                match(
-                    x.value,
-                    [&] (expr_t::boolean_expr_t::lt_t const& lt)
-                    {
-                        auto new_lhs = rewrite(from, to, lt.lhs.get());
-                        auto new_rhs = rewrite(from, to, lt.rhs.get());
-                        if (new_lhs or new_rhs)
-                            result.emplace(
-                                old.properties,
-                                expr_t::boolean_expr_t{
+                auto const [lhs, rhs] =
+                    match(x.value, [] (auto const& x) { return std::pair{&x.lhs.get(), &x.rhs.get()}; });
+                auto new_lhs = rewrite(from, to, *lhs);
+                auto new_rhs = rewrite(from, to, *rhs);
+                if (new_lhs or new_rhs)
+                    result.emplace(
+                        old.properties,
+                        match(
+                            x.value,
+                            [&] (expr_t::boolean_expr_t::gt_t const&)
+                            {
+                                return expr_t::boolean_expr_t{
+                                    expr_t::boolean_expr_t::gt_t{
+                                        choose(std::move(new_lhs), *lhs),
+                                        choose(std::move(new_rhs), *rhs)}};
+                            },
+                            [&] (expr_t::boolean_expr_t::lt_t const&)
+                            {
+                                return expr_t::boolean_expr_t{
                                     expr_t::boolean_expr_t::lt_t{
-                                        choose(std::move(new_lhs), lt.lhs.get()),
-                                        choose(std::move(new_rhs), lt.rhs.get())}});
-                    });
+                                        choose(std::move(new_lhs), *lhs),
+                                        choose(std::move(new_rhs), *rhs)}};
+                            }));
             },
             [&] (expr_t::arith_expr_t const& x)
             {

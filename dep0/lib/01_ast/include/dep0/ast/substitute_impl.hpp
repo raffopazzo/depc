@@ -68,7 +68,7 @@ void substitute(typename expr_t<P>::var_t const& var, expr_t<P> const& expr, exp
         {
             match(
                 x.value,
-                [&] (typename expr_t<P>::boolean_expr_t::lt_t& x)
+                [&] (auto& x)
                 {
                     substitute(var, expr, x.lhs.get());
                     substitute(var, expr, x.rhs.get());

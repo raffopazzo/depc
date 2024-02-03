@@ -273,6 +273,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         return expr_t{
             loc,
             ctx->GT() ? expr_t::boolean_expr_t{expr_t::boolean_expr_t::gt_t{std::move(lhs), std::move(rhs)}}
+            : ctx->GTE() ? expr_t::boolean_expr_t{expr_t::boolean_expr_t::gte_t{std::move(lhs), std::move(rhs)}}
             : ctx->LT() ? expr_t::boolean_expr_t{expr_t::boolean_expr_t::lt_t{std::move(lhs), std::move(rhs)}}
             : ctx->LTE() ? expr_t::boolean_expr_t{expr_t::boolean_expr_t::lte_t{std::move(lhs), std::move(rhs)}}
             : throw error_t("unexpected alternative when parsing operand of BooleanExprContext", loc)};

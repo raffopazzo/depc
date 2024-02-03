@@ -163,6 +163,12 @@ llvm::Value* gen_val(
                             ? llvm::CmpInst::Predicate::ICMP_SGT
                             : llvm::CmpInst::Predicate::ICMP_UGT;
                     },
+                    [sign] (typecheck::expr_t::boolean_expr_t::gte_t const&)
+                    {
+                        return sign == dep0::ast::sign_t::signed_v
+                            ? llvm::CmpInst::Predicate::ICMP_SGE
+                            : llvm::CmpInst::Predicate::ICMP_UGE;
+                    },
                     [sign] (typecheck::expr_t::boolean_expr_t::lt_t const&)
                     {
                         return sign == dep0::ast::sign_t::signed_v

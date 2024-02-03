@@ -150,6 +150,13 @@ std::optional<expr_t> rewrite(expr_t const& from, expr_t const& to, expr_t const
                                         choose(std::move(new_lhs), *lhs),
                                         choose(std::move(new_rhs), *rhs)}};
                             },
+                            [&] (expr_t::boolean_expr_t::gte_t const&)
+                            {
+                                return expr_t::boolean_expr_t{
+                                    expr_t::boolean_expr_t::gte_t{
+                                        choose(std::move(new_lhs), *lhs),
+                                        choose(std::move(new_rhs), *rhs)}};
+                            },
                             [&] (expr_t::boolean_expr_t::lt_t const&)
                             {
                                 return expr_t::boolean_expr_t{

@@ -99,6 +99,10 @@ expected<expr_t> type_assign(context_t const& ctx, parser::expr_t const& expr)
                         {
                             return {expr_t::boolean_expr_t::gt_t{std::move(*new_lhs), std::move(*new_rhs)}};
                         },
+                        [&] (parser::expr_t::boolean_expr_t::gte_t const&) -> expr_t::boolean_expr_t
+                        {
+                            return {expr_t::boolean_expr_t::gte_t{std::move(*new_lhs), std::move(*new_rhs)}};
+                        },
                         [&] (parser::expr_t::boolean_expr_t::lt_t const&) -> expr_t::boolean_expr_t
                         {
                             return {expr_t::boolean_expr_t::lt_t{std::move(*new_lhs), std::move(*new_rhs)}};

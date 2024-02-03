@@ -31,6 +31,7 @@ COMMA: ',';
 ELLIPSIS: '...';
 EQ: '=';
 GT: '>';
+GTE: '>=';
 LBRACK: '[';
 LCURLY: '{';
 LPAREN: '(';

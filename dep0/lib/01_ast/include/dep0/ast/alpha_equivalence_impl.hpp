@@ -89,22 +89,14 @@ struct alpha_equivalence_visitor
 
     result_t operator()(typename expr_t<P>::boolean_expr_t& x, typename expr_t<P>::boolean_expr_t& y) const
     {
-        auto const check_lhs_and_rhs = [] <typename T> (T& x, T& y)
-        {
-            auto eq = is_alpha_equivalent_impl(x.lhs.get(), y.lhs.get());
-            if (eq)
-                eq = is_alpha_equivalent_impl(x.rhs.get(), y.rhs.get());
-            return eq;
-        };
         return std::visit(
             boost::hana::overload(
-                [&] (typename expr_t<P>::boolean_expr_t::gt_t& x, typename expr_t<P>::boolean_expr_t::gt_t& y)
+                [] <typename T> (T& x, T& y)
                 {
-                    return check_lhs_and_rhs(x, y);
-                },
-                [&] (typename expr_t<P>::boolean_expr_t::lt_t& x, typename expr_t<P>::boolean_expr_t::lt_t& y)
-                {
-                    return check_lhs_and_rhs(x, y);
+                    auto eq = is_alpha_equivalent_impl(x.lhs.get(), y.lhs.get());
+                    if (eq)
+                        eq = is_alpha_equivalent_impl(x.rhs.get(), y.rhs.get());
+                    return eq;
                 },
                 [&] <typename T, typename U> (T const&, U const&) requires (not std::is_same_v<T, U>)
                 {

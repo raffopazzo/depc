@@ -287,7 +287,8 @@ std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::boolean_expr_t 
         pretty_print(os, *lhs, indent);
     os << match(x.value,
         [] (typename expr_t<P>::boolean_expr_t::gt_t const&) { return " > "; },
-        [] (typename expr_t<P>::boolean_expr_t::lt_t const&) { return " < "; });
+        [] (typename expr_t<P>::boolean_expr_t::lt_t const&) { return " < "; },
+        [] (typename expr_t<P>::boolean_expr_t::lte_t const&) { return " <= "; });
     if (detail::needs_parenthesis(*rhs))
         pretty_print(os << '(', *rhs, indent) << ')';
     else

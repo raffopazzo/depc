@@ -267,13 +267,15 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         assert(ctx);
         assert(ctx->lhs);
         assert(ctx->rhs);
+        auto const loc = get_loc(src, *ctx);
         auto lhs = visitExpr(ctx->lhs);
         auto rhs = visitExpr(ctx->rhs);
         return expr_t{
-            get_loc(src, *ctx),
-            ctx->GT()
-                ? expr_t::boolean_expr_t{expr_t::boolean_expr_t::gt_t{std::move(lhs), std::move(rhs)}}
-                : expr_t::boolean_expr_t{expr_t::boolean_expr_t::lt_t{std::move(lhs), std::move(rhs)}}};
+            loc,
+            ctx->GT() ? expr_t::boolean_expr_t{expr_t::boolean_expr_t::gt_t{std::move(lhs), std::move(rhs)}}
+            : ctx->LT() ? expr_t::boolean_expr_t{expr_t::boolean_expr_t::lt_t{std::move(lhs), std::move(rhs)}}
+            : ctx->LTE() ? expr_t::boolean_expr_t{expr_t::boolean_expr_t::lte_t{std::move(lhs), std::move(rhs)}}
+            : throw error_t("unexpected alternative when parsing operand of BooleanExprContext", loc)};
     }
 
     virtual std::any visitPlusExpr(DepCParser::PlusExprContext* ctx) override

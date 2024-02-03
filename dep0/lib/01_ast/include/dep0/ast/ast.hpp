@@ -74,7 +74,12 @@ struct expr_t
             rec_t lhs;
             rec_t rhs;
         };
-        using value_t = std::variant<gt_t, lt_t>;
+        struct lte_t
+        {
+            rec_t lhs;
+            rec_t rhs;
+        };
+        using value_t = std::variant<gt_t, lt_t, lte_t>;
         value_t value;
     };
     struct arith_expr_t

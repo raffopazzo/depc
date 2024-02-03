@@ -71,6 +71,12 @@ struct TypecheckTestsFixture
     }
 
     template <typename... Args>
+    static constexpr auto lte(Args&&... args)
+    {
+        return dep0::testing::lte<dep0::typecheck::properties_t>(std::forward<Args>(args)...);
+    }
+
+    template <typename... Args>
     static constexpr auto plus(Args&&... args)
     {
         return dep0::testing::plus<dep0::typecheck::properties_t>(std::forward<Args>(args)...);

@@ -168,6 +168,12 @@ llvm::Value* gen_val(
                         return sign == dep0::ast::sign_t::signed_v
                             ? llvm::CmpInst::Predicate::ICMP_SLT
                             : llvm::CmpInst::Predicate::ICMP_ULT;
+                    },
+                    [sign] (typecheck::expr_t::boolean_expr_t::lte_t const&)
+                    {
+                        return sign == dep0::ast::sign_t::signed_v
+                            ? llvm::CmpInst::Predicate::ICMP_SLE
+                            : llvm::CmpInst::Predicate::ICMP_ULE;
                     });
             return storeOrReturn(builder.CreateCmp(op, lhs_val, rhs_val));
         },

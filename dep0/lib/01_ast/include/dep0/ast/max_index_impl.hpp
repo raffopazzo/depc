@@ -70,7 +70,16 @@ std::size_t max_index(expr_t<P> const& x)
         [] (expr_t<P>::u64_t const&) { return 0ul; },
         [] (expr_t<P>::boolean_constant_t const&) { return 0ul; },
         [] (expr_t<P>::numeric_constant_t const&) { return 0ul; },
-        [&] (expr_t<P>::arith_expr_t const& x)
+        [] (expr_t<P>::boolean_expr_t const& x)
+        {
+            return match(
+                x.value,
+                [&] (expr_t<P>::boolean_expr_t::lt_t const& x)
+                {
+                    return std::max(max_index(x.lhs.get()), max_index(x.rhs.get()));
+                });
+        },
+        [] (expr_t<P>::arith_expr_t const& x)
         {
             return match(
                 x.value,
@@ -79,27 +88,27 @@ std::size_t max_index(expr_t<P> const& x)
                     return std::max(max_index(x.lhs.get()), max_index(x.rhs.get()));
                 });
         },
-        [&] (expr_t<P>::var_t const& x)
+        [] (expr_t<P>::var_t const& x)
         {
             return x.idx;
         },
-        [&] (expr_t<P>::app_t const& x)
+        [] (expr_t<P>::app_t const& x)
         {
             return max_index<P>(x);
         },
-        [&] (expr_t<P>::abs_t const& x)
+        [] (expr_t<P>::abs_t const& x)
         {
             return max_index<P>(x.args.begin(), x.args.end(), x.ret_type.get(), &x.body);
         },
-        [&] (expr_t<P>::pi_t const& x)
+        [] (expr_t<P>::pi_t const& x)
         {
             return max_index<P>(x.args.begin(), x.args.end(), x.ret_type.get(), nullptr);
         },
-        [&] (expr_t<P>::array_t const&)
+        [] (expr_t<P>::array_t const&)
         {
             return 0ul;
         },
-        [&] (expr_t<P>::init_list_t const& x)
+        [] (expr_t<P>::init_list_t const& x)
         {
             return std::accumulate(
                 x.values.begin(), x.values.end(),
@@ -109,7 +118,7 @@ std::size_t max_index(expr_t<P> const& x)
                     return std::max(acc, max_index(v));
                 });
         },
-        [&] (expr_t<P>::subscript_t const& x)
+        [] (expr_t<P>::subscript_t const& x)
         {
             return std::max(max_index(x.array.get()), max_index(x.index.get()));
         });

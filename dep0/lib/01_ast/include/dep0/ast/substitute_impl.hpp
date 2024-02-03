@@ -62,6 +62,18 @@ void substitute(typename expr_t<P>::var_t const& var, expr_t<P> const& expr, exp
         [] (typename expr_t<P>::u16_t const&) {},
         [] (typename expr_t<P>::u32_t const&) {},
         [] (typename expr_t<P>::u64_t const&) {},
+        [] (typename expr_t<P>::boolean_constant_t&) { },
+        [] (typename expr_t<P>::numeric_constant_t&) { },
+        [&] (typename expr_t<P>::boolean_expr_t& x)
+        {
+            match(
+                x.value,
+                [&] (typename expr_t<P>::boolean_expr_t::lt_t& x)
+                {
+                    substitute(var, expr, x.lhs.get());
+                    substitute(var, expr, x.rhs.get());
+                });
+        },
         [&] (typename expr_t<P>::arith_expr_t& x)
         {
             match(
@@ -72,8 +84,6 @@ void substitute(typename expr_t<P>::var_t const& var, expr_t<P> const& expr, exp
                     substitute(var, expr, x.rhs.get());
                 });
         },
-        [&] (typename expr_t<P>::boolean_constant_t&) { },
-        [&] (typename expr_t<P>::numeric_constant_t&) { },
         [&] (typename expr_t<P>::var_t& v)
         {
             if (v == var)

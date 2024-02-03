@@ -79,6 +79,52 @@ expected<expr_t> type_assign(context_t const& ctx, parser::expr_t const& expr)
             err << "cannot assign a unique type to numeric constant without being context-sensitive";
             return error_t::from_error(dep0::error_t(err.str(), loc));
         },
+        [&] (parser::expr_t::boolean_expr_t const& x) -> expected<expr_t>
+        {
+            return match(
+                x.value,
+                [&] (parser::expr_t::boolean_expr_t::lt_t const& x) -> expected<expr_t>
+                {
+                    // Make sure we can assign a type to expressions like `x<1` or `1<x`,
+                    // based on the type of `x`, even though `1` itself cannot be assigned a type.
+                    if (auto lhs = type_assign(ctx, x.lhs.get()))
+                    {
+                        if (auto rhs = check_expr(ctx, x.rhs.get(), lhs->properties.sort.get()))
+                            return make_legal_expr(
+                                derivation_rules::make_bool(),
+                                expr_t::boolean_expr_t{
+                                    expr_t::boolean_expr_t::lt_t{
+                                        std::move(*lhs),
+                                        std::move(*rhs)}});
+                        else
+                            return std::move(rhs.error());
+                    }
+                    else if (auto rhs = type_assign(ctx, x.rhs.get()))
+                    {
+                        if (auto lhs = check_expr(ctx, x.lhs.get(), rhs->properties.sort.get()))
+                            return make_legal_expr(
+                                derivation_rules::make_bool(),
+                                expr_t::boolean_expr_t{
+                                    expr_t::boolean_expr_t::lt_t{
+                                        std::move(*lhs),
+                                        std::move(*rhs)}});
+                        else
+                            return std::move(lhs.error());
+                    }
+                    else
+                    {
+                        std::ostringstream err;
+                        err << "cannot assign a unique type to boolean expression";
+                        return error_t::from_error(dep0::error_t(
+                            err.str(),
+                            loc,
+                            std::vector<dep0::error_t>{
+                                std::move(lhs.error()),
+                                std::move(rhs.error())
+                            }));
+                    }
+                });
+        },
         [&] (parser::expr_t::arith_expr_t const& x) -> expected<expr_t>
         {
             return match(
@@ -90,24 +136,30 @@ expected<expr_t> type_assign(context_t const& ctx, parser::expr_t const& expr)
                     if (auto lhs = type_assign(ctx, x.lhs.get()))
                     {
                         if (auto rhs = check_expr(ctx, x.rhs.get(), lhs->properties.sort.get()))
+                        {
+                            auto type = lhs->properties.sort.get(); // about to move from lhs, take a copy
                             return make_legal_expr(
-                                lhs->properties.sort.get(),
+                                std::move(type),
                                 expr_t::arith_expr_t{
                                     expr_t::arith_expr_t::plus_t{
                                         std::move(*lhs),
                                         std::move(*rhs)}});
+                        }
                         else
                             return std::move(rhs.error());
                     }
                     else if (auto rhs = type_assign(ctx, x.rhs.get()))
                     {
                         if (auto lhs = check_expr(ctx, x.lhs.get(), rhs->properties.sort.get()))
+                        {
+                            auto type = rhs->properties.sort.get(); // about to move from rhs, take a copy
                             return make_legal_expr(
-                                rhs->properties.sort.get(),
+                                std::move(type),
                                 expr_t::arith_expr_t{
                                     expr_t::arith_expr_t::plus_t{
                                         std::move(*lhs),
                                         std::move(*rhs)}});
+                        }
                         else
                             return std::move(lhs.error());
                     }

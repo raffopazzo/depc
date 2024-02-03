@@ -131,6 +131,39 @@ llvm::Value* gen_val(
             assert(llvm_type);
             return storeOrReturn(llvm::ConstantInt::get(llvm_type, x.value.str(), 10));
         },
+        [&] (typecheck::expr_t::boolean_expr_t const& x) -> llvm::Value*
+        {
+            return storeOrReturn(match(
+                x.value,
+                [&] (typecheck::expr_t::boolean_expr_t::lt_t const& x) -> llvm::Value*
+                {
+                    // use temporaries to make sure that LHS comes before RHS in the emitted IR
+                    auto const lhs = gen_val(global, local, builder, x.lhs.get(), nullptr);
+                    auto const rhs = gen_val(global, local, builder, x.rhs.get(), nullptr);
+                    auto const sign =
+                        match(
+                            std::get<typecheck::expr_t>(x.lhs.get().properties.sort.get()).value,
+                            [] (typecheck::expr_t::bool_t const&) { return dep0::ast::sign_t::unsigned_v; },
+                            [] (typecheck::expr_t::u8_t const&) { return dep0::ast::sign_t::unsigned_v; },
+                            [] (typecheck::expr_t::u16_t const&) { return dep0::ast::sign_t::unsigned_v; },
+                            [] (typecheck::expr_t::u32_t const&) { return dep0::ast::sign_t::unsigned_v; },
+                            [] (typecheck::expr_t::u64_t const&) { return dep0::ast::sign_t::unsigned_v; },
+                            [&local] (typecheck::expr_t::var_t const& var)
+                            {
+                                auto const type_def = std::get_if<typecheck::type_def_t>(local[var]);
+                                assert(type_def and "unknown variable or not a typedef");
+                                return match(
+                                    type_def->value,
+                                    [] (typecheck::type_def_t::integer_t const& integer) { return integer.sign; });
+                            },
+                            [] (auto const&) { return dep0::ast::sign_t::signed_v; });
+                    auto const op =
+                        sign == dep0::ast::sign_t::signed_v
+                            ? llvm::CmpInst::Predicate::ICMP_SLT
+                            : llvm::CmpInst::Predicate::ICMP_ULT;
+                    return builder.CreateCmp(op, lhs, rhs);
+                }));
+        },
         [&] (typecheck::expr_t::arith_expr_t const& x) -> llvm::Value*
         {
             return storeOrReturn(match(

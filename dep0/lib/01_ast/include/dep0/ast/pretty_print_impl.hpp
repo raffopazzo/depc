@@ -31,9 +31,10 @@ template <Properties P> bool needs_new_line(typename expr_t<P>::u8_t const&);
 template <Properties P> bool needs_new_line(typename expr_t<P>::u16_t const&);
 template <Properties P> bool needs_new_line(typename expr_t<P>::u32_t const&);
 template <Properties P> bool needs_new_line(typename expr_t<P>::u64_t const&);
-template <Properties P> bool needs_new_line(typename expr_t<P>::arith_expr_t const&);
 template <Properties P> bool needs_new_line(typename expr_t<P>::boolean_constant_t const&);
 template <Properties P> bool needs_new_line(typename expr_t<P>::numeric_constant_t const&);
+template <Properties P> bool needs_new_line(typename expr_t<P>::boolean_expr_t const&);
+template <Properties P> bool needs_new_line(typename expr_t<P>::arith_expr_t const&);
 template <Properties P> bool needs_new_line(typename expr_t<P>::var_t const&);
 template <Properties P> bool needs_new_line(typename expr_t<P>::app_t const&);
 template <Properties P> bool needs_new_line(typename expr_t<P>::abs_t const&);
@@ -233,6 +234,32 @@ std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::u64_t const&, s
 }
 
 template <Properties P>
+std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::boolean_constant_t const& x, std::size_t const indent)
+{
+    return os << (x.value ? "true" : "false");
+}
+
+template <Properties P>
+std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::numeric_constant_t const& x, std::size_t const indent)
+{
+    return os << x.value;
+}
+
+template <Properties P>
+std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::boolean_expr_t const& x, std::size_t const indent)
+{
+    match(
+        x.value,
+        [&] (typename expr_t<P>::boolean_expr_t::lt_t const& x)
+        {
+            pretty_print(os, x.lhs.get(), indent);
+            os << " < ";
+            pretty_print(os, x.rhs.get(), indent);
+        });
+    return os;
+}
+
+template <Properties P>
 std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::arith_expr_t const& x, std::size_t const indent)
 {
     match(
@@ -244,18 +271,6 @@ std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::arith_expr_t co
             pretty_print(os, x.rhs.get(), indent);
         });
     return os;
-}
-
-template <Properties P>
-std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::boolean_constant_t const& x, std::size_t const indent)
-{
-    return os << (x.value ? "true" : "false");
-}
-
-template <Properties P>
-std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::numeric_constant_t const& x, std::size_t const indent)
-{
-    return os << x.value;
 }
 
 template <Properties P>
@@ -407,6 +422,20 @@ template <Properties P> bool needs_new_line(typename expr_t<P>::u16_t const&) { 
 template <Properties P> bool needs_new_line(typename expr_t<P>::u32_t const&) { return false; }
 template <Properties P> bool needs_new_line(typename expr_t<P>::u64_t const&) { return false; }
 
+template <Properties P> bool needs_new_line(typename expr_t<P>::boolean_constant_t const&) { return false; }
+template <Properties P> bool needs_new_line(typename expr_t<P>::numeric_constant_t const&) { return false; }
+
+template <Properties P>
+bool needs_new_line(typename expr_t<P>::boolean_expr_t const& x)
+{
+    return match(
+        x.value,
+        [&] (typename expr_t<P>::boolean_expr_t::lt_t const& x)
+        {
+            return needs_new_line(x.lhs.get()) or needs_new_line(x.rhs.get());
+        });
+}
+
 template <Properties P>
 bool needs_new_line(typename expr_t<P>::arith_expr_t const& x)
 {
@@ -418,8 +447,6 @@ bool needs_new_line(typename expr_t<P>::arith_expr_t const& x)
         });
 }
 
-template <Properties P> bool needs_new_line(typename expr_t<P>::boolean_constant_t const&) { return false; }
-template <Properties P> bool needs_new_line(typename expr_t<P>::numeric_constant_t const&) { return false; }
 template <Properties P> bool needs_new_line(typename expr_t<P>::var_t const&) { return false; }
 
 template <Properties P>

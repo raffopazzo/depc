@@ -1,0 +1,205 @@
+#define BOOST_TEST_MODULE dep0_llvmgen_tests_0008_boolean_expr
+#include <boost/test/included/unit_test.hpp>
+
+#include "llvmgen_tests_fixture.hpp"
+#include "llvm_predicates_v2.hpp"
+
+using namespace dep0::llvmgen::testing::v2;
+
+BOOST_FIXTURE_TEST_SUITE(dep0_llvmgen_tests_0008_boolean_expr, LLVMGenTestsFixture)
+
+BOOST_AUTO_TEST_CASE(pass_000)
+{
+    apply_beta_delta_normalization = false;
+    BOOST_TEST_REQUIRE(pass("0008_boolean_expr/pass_000.depc"));
+    auto const slt = llvm::CmpInst::Predicate::ICMP_SLT;
+    auto const ult = llvm::CmpInst::Predicate::ICMP_ULT;
+    {
+        auto const f = pass_result.value()->getFunction("negate");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(is_i1, "x")}, is_i1));
+        auto const blks = get_blocks(*f);
+        BOOST_TEST_REQUIRE(blks.size() == 3ul);
+        auto const entry = blks[0];
+        auto const then0 = blks[1];
+        auto const else0 = blks[2];
+        BOOST_TEST(is_branch_of(entry->getTerminator(), exactly(f->getArg(0ul)), exactly(then0), exactly(else0)));
+        BOOST_TEST(is_return_of(then0->getTerminator(), constant(false)));
+        BOOST_TEST(is_return_of(else0->getTerminator(), constant(true)));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("f0");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i1));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(true)));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("f1");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i1));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(true)));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("f2");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i1));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(false)));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("f3");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i1));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        auto const f1 = exactly(pass_result.value()->getFunction("f1"));
+        auto const negate = exactly(pass_result.value()->getFunction("negate"));
+        BOOST_TEST(
+            is_return_of(
+                f->getEntryBlock().getTerminator(),
+                cmp_of(
+                    ult,
+                    direct_call_of(negate, call_arg(cmp_of(ult, constant(true), direct_call_of(f1)))),
+                    direct_call_of(negate, call_arg(cmp_of(ult, direct_call_of(f1), constant(true)))))));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("f4");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(is_i32, "x", {llvm::Attribute::SExt})}, is_i1));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), cmp_of(slt, constant(1), exactly(f->getArg(0ul)))));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("f5");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(is_i32, "x", {llvm::Attribute::ZExt})}, is_i1));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), cmp_of(ult, exactly(f->getArg(0ul)), constant(2))));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("f6");
+        BOOST_TEST_REQUIRE(
+            is_function_of(
+                f,
+                std::tuple{
+                    arg_of(is_i8, "x", {llvm::Attribute::SExt}),
+                    arg_of(is_i8, "y", {llvm::Attribute::SExt})},
+                is_i1));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(
+            is_return_of(
+                f->getEntryBlock().getTerminator(),
+                cmp_of(slt, exactly(f->getArg(0ul)), exactly(f->getArg(1ul)))));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("f7");
+        BOOST_TEST_REQUIRE(
+            is_function_of(
+                f,
+                std::tuple{
+                    arg_of(is_i32, "x", {llvm::Attribute::SExt}),
+                    arg_of(is_i32, "y", {llvm::Attribute::SExt})},
+                is_i1));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(
+            is_return_of(
+                f->getEntryBlock().getTerminator(),
+                cmp_of(slt, exactly(f->getArg(0ul)), add_of(exactly(f->getArg(0ul)), exactly(f->getArg(1ul))))));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("f8");
+        BOOST_TEST_REQUIRE(
+            is_function_of(
+                f,
+                std::tuple{
+                    arg_of(is_i32, "x", {llvm::Attribute::ZExt}),
+                    arg_of(is_i32, "y", {llvm::Attribute::ZExt})},
+                is_i1));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(
+            is_return_of(
+                f->getEntryBlock().getTerminator(),
+                cmp_of(
+                    ult,
+                    add_of(exactly(f->getArg(0ul)), exactly(f->getArg(1ul))),
+                    add_of(exactly(f->getArg(0ul)), exactly(f->getArg(1ul))))));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("f9");
+        BOOST_TEST_REQUIRE(
+            is_function_of(
+                f,
+                std::tuple{
+                    arg_of(is_i8, "x", {llvm::Attribute::ZExt}),
+                    arg_of(is_i8, "y", {llvm::Attribute::ZExt})},
+                is_i1));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(
+            is_return_of(
+                f->getEntryBlock().getTerminator(),
+                cmp_of(
+                    ult,
+                    add_of(exactly(f->getArg(0ul)), exactly(f->getArg(1ul))),
+                    exactly(f->getArg(0ul)))));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("f10");
+        BOOST_TEST_REQUIRE(
+            is_function_of(
+                f,
+                std::tuple{
+                    arg_of(pointer_to(is_i1), "xs", {llvm::Attribute::NonNull})},
+                is_i1));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        auto const xs = f->getArg(0ul);
+        BOOST_TEST(
+            is_return_of(
+                f->getEntryBlock().getTerminator(),
+                cmp_of(
+                    ult,
+                    cmp_of(
+                        ult,
+                        load_of(is_i1, gep_of(is_i1, exactly(xs), constant(0)), align_of(1)),
+                        load_of(is_i1, gep_of(is_i1, exactly(xs), constant(1)), align_of(1))),
+                    load_of(is_i1, gep_of(is_i1, exactly(xs), constant(2)), align_of(1)))));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("f11");
+        BOOST_TEST_REQUIRE(
+            is_function_of(
+                f,
+                std::tuple{
+                    arg_of(pointer_to(is_i1), "xs", {llvm::Attribute::NonNull})},
+                is_i1));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        auto const xs = f->getArg(0ul);
+        BOOST_TEST(
+            is_return_of(
+                f->getEntryBlock().getTerminator(),
+                cmp_of(
+                    ult,
+                    load_of(is_i1, gep_of(is_i1, exactly(xs), constant(0)), align_of(1)),
+                    cmp_of(
+                        ult,
+                        load_of(is_i1, gep_of(is_i1, exactly(xs), constant(1)), align_of(1)),
+                        load_of(is_i1, gep_of(is_i1, exactly(xs), constant(2)), align_of(1))))));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("f12");
+        BOOST_TEST_REQUIRE(
+            is_function_of(
+                f,
+                std::tuple{
+                    arg_of(pointer_to(is_i32), "xs", {llvm::Attribute::NonNull})},
+                is_i1));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        auto const xs = f->getArg(0ul);
+        BOOST_TEST(
+            is_return_of(
+                f->getEntryBlock().getTerminator(),
+                cmp_of(
+                    slt,
+                    add_of(
+                        load_of(is_i32, gep_of(is_i32, exactly(xs), constant(0)), align_of(4)),
+                        load_of(is_i32, gep_of(is_i32, exactly(xs), constant(1)), align_of(4))),
+                    add_of(
+                        load_of(is_i32, gep_of(is_i32, exactly(xs), constant(1)), align_of(4)),
+                        load_of(is_i32, gep_of(is_i32, exactly(xs), constant(2)), align_of(4))))));
+    }
+}
+
+BOOST_AUTO_TEST_SUITE_END()

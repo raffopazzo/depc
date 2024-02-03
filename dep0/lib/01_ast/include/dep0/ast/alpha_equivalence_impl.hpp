@@ -85,6 +85,23 @@ struct alpha_equivalence_visitor
             return not_alpha_equivalent(x, y);
     }
 
+    result_t operator()(typename expr_t<P>::boolean_expr_t& x, typename expr_t<P>::boolean_expr_t& y) const
+    {
+        struct visitor
+        {
+            result_t operator()(
+                typename expr_t<P>::boolean_expr_t::lt_t& x,
+                typename expr_t<P>::boolean_expr_t::lt_t& y) const
+            {
+                auto eq = is_alpha_equivalent_impl(x.lhs.get(), y.lhs.get());
+                if (eq)
+                    eq = is_alpha_equivalent_impl(x.rhs.get(), y.rhs.get());
+                return eq;
+            }
+        };
+        return std::visit(visitor{}, x.value, y.value);
+    };
+
     result_t operator()(typename expr_t<P>::arith_expr_t& x, typename expr_t<P>::arith_expr_t& y) const
     {
         struct visitor

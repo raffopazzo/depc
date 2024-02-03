@@ -56,19 +56,28 @@ bool occurs_in(typename expr_t<P>::var_t const& var, expr_t<P> const& x, occurre
 {
     return match(
         x.value,
-        [&] (expr_t<P>::typename_t const&) { return false; },
-        [&] (expr_t<P>::bool_t const&) { return false; },
-        [&] (expr_t<P>::unit_t const&) { return false; },
-        [&] (expr_t<P>::i8_t const&) { return false; },
-        [&] (expr_t<P>::i16_t const&) { return false; },
-        [&] (expr_t<P>::i32_t const&) { return false; },
-        [&] (expr_t<P>::i64_t const&) { return false; },
-        [&] (expr_t<P>::u8_t const&) { return false; },
-        [&] (expr_t<P>::u16_t const&) { return false; },
-        [&] (expr_t<P>::u32_t const&) { return false; },
-        [&] (expr_t<P>::u64_t const&) { return false; },
-        [&] (expr_t<P>::boolean_constant_t const&) { return false; },
-        [&] (expr_t<P>::numeric_constant_t const&) { return false; },
+        [] (expr_t<P>::typename_t const&) { return false; },
+        [] (expr_t<P>::bool_t const&) { return false; },
+        [] (expr_t<P>::unit_t const&) { return false; },
+        [] (expr_t<P>::i8_t const&) { return false; },
+        [] (expr_t<P>::i16_t const&) { return false; },
+        [] (expr_t<P>::i32_t const&) { return false; },
+        [] (expr_t<P>::i64_t const&) { return false; },
+        [] (expr_t<P>::u8_t const&) { return false; },
+        [] (expr_t<P>::u16_t const&) { return false; },
+        [] (expr_t<P>::u32_t const&) { return false; },
+        [] (expr_t<P>::u64_t const&) { return false; },
+        [] (expr_t<P>::boolean_constant_t const&) { return false; },
+        [] (expr_t<P>::numeric_constant_t const&) { return false; },
+        [&] (expr_t<P>::boolean_expr_t const& x)
+        {
+            return match(
+                x.value,
+                [&] (expr_t<P>::boolean_expr_t::lt_t const& x)
+                {
+                    return occurs_in(var, x.lhs.get(), style) or occurs_in(var, x.rhs.get(), style);
+                });
+        },
         [&] (expr_t<P>::arith_expr_t const& x)
         {
             return match(
@@ -94,7 +103,7 @@ bool occurs_in(typename expr_t<P>::var_t const& var, expr_t<P> const& x, occurre
         {
             return occurs_in<P>(var, x.args.begin(), x.args.end(), x.ret_type.get(), nullptr, style);
         },
-        [&] (expr_t<P>::array_t const&)
+        [] (expr_t<P>::array_t const&)
         {
             return false;
         },

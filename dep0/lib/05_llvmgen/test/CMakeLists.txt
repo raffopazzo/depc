@@ -19,6 +19,8 @@ add_library(dep0_llvmgen_tests_fixture
     llvm_predicates_v2/branch.cpp
     llvm_predicates_v2/call.hpp
     llvm_predicates_v2/call.cpp
+    llvm_predicates_v2/cmp.hpp
+    llvm_predicates_v2/cmp.cpp
     llvm_predicates_v2/constants.hpp
     llvm_predicates_v2/constants.cpp
     llvm_predicates_v2/function.hpp
@@ -72,3 +74,4 @@ add_dep0_llvmgen_test(0004_plus_expr)
 add_dep0_llvmgen_test(0005_pi_types)
 add_dep0_llvmgen_test(0006_kinds)
 add_dep0_llvmgen_test(0007_arrays)
+add_dep0_llvmgen_test(0008_boolean_expr)

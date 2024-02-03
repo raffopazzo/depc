@@ -68,10 +68,12 @@ expr:
     func=expr '(' (expr (',' expr)*)? ')' # funcCallExpr
     | expr '[' expr ']' # subscriptExpr
     | lhs=expr '+' rhs=expr # plusExpr
-    | sign=('+' | '-')? value=INT # numericExpr
-    | value=('true'|'false') # booleanExpr
+    | lhs=expr '<' rhs=expr # booleanExpr
+    | sign=('+' | '-')? value=INT # numericConstant
+    | value=('true'|'false') # booleanConstant
     | 'array_t' # arrayExpr
     | var=ID # varExpr
     | type # typeExpr // in an expression `f(x)` x should be parsed as `var` so this rule must come after `var`
+    | '(' expr ')' # subExpr
     | '{' (expr (',' expr)*)? '}' # initListExpr
     ;

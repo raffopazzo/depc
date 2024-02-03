@@ -101,6 +101,15 @@ std::size_t size(expr_t<P> const& x)
         [] (expr_t<P>::u64_t const&) { return 0ul; },
         [] (expr_t<P>::boolean_constant_t const&) { return 0ul; },
         [] (expr_t<P>::numeric_constant_t const&) { return 0ul; },
+        [] (expr_t<P>::boolean_expr_t const& x)
+        {
+            return 1ul + match(
+                x.value,
+                [] (expr_t<P>::boolean_expr_t::lt_t const& x)
+                {
+                    return std::max(size(x.lhs.get()), size(x.rhs.get()));
+                });
+        },
         [] (expr_t<P>::arith_expr_t const& x)
         {
             return 1ul + match(

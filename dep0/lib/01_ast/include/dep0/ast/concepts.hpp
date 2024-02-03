@@ -2,6 +2,9 @@
 
 namespace dep0::ast {
 
+/**
+ * Checks whether `T` is a trait-type providing the type of properties for each node of the AST.
+ */
 template <typename T>
 concept Properties = requires(T)
 {

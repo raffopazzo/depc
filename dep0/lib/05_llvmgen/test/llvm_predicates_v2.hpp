@@ -7,6 +7,7 @@
 #include "llvm_predicates_v2/bitcast.hpp"
 #include "llvm_predicates_v2/branch.hpp"
 #include "llvm_predicates_v2/call.hpp"
+#include "llvm_predicates_v2/cmp.hpp"
 #include "llvm_predicates_v2/constants.hpp"
 #include "llvm_predicates_v2/function.hpp"
 #include "llvm_predicates_v2/function_type.hpp"

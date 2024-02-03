@@ -35,6 +35,7 @@ MINUS: '-';
 LBRACK: '[';
 LCURLY: '{';
 LPAREN: '(';
+LT: '<';
 RBRACK: ']';
 RCURLY: '}';
 RPAREN: ')';

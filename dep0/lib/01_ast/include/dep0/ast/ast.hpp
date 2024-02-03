@@ -24,6 +24,10 @@ template <Properties P> struct body_t;
 template <Properties P> struct stmt_t;
 template <Properties P> struct expr_t;
 
+enum class sign_t { signed_v, unsigned_v };
+enum class width_t { _8, _16, _32, _64 };
+enum class relation_t { gt, gte, lt, lte };
+
 // definitions
 
 template <Properties P>
@@ -64,28 +68,9 @@ struct expr_t
     };
     struct relation_expr_t
     {
-        struct gt_t
-        {
-            rec_t lhs;
-            rec_t rhs;
-        };
-        struct gte_t
-        {
-            rec_t lhs;
-            rec_t rhs;
-        };
-        struct lt_t
-        {
-            rec_t lhs;
-            rec_t rhs;
-        };
-        struct lte_t
-        {
-            rec_t lhs;
-            rec_t rhs;
-        };
-        using value_t = std::variant<gt_t, gte_t, lt_t, lte_t>;
-        value_t value;
+        relation_t relation;
+        rec_t lhs;
+        rec_t rhs;
     };
     struct arith_expr_t
     {
@@ -183,9 +168,6 @@ struct stmt_t
     properties_t properties;
     value_t value;
 };
-
-enum class sign_t { signed_v, unsigned_v };
-enum class width_t { _8, _16, _32, _64 };
 
 template <Properties P>
 struct type_def_t

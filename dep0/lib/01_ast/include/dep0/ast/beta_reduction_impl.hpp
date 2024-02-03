@@ -268,20 +268,17 @@ bool beta_normalize(expr_t<P>& expr)
         },
         [&] (typename expr_t<P>::relation_expr_t& x)
         {
-            auto [lhs, rhs] = match(x.value, [] (auto& x) { return std::pair{&x.lhs.get(), &x.rhs.get()}; });
-            bool changed = beta_normalize(*lhs);
-            changed |= beta_normalize(*rhs);
-            if (auto const a = std::get_if<typename expr_t<P>::boolean_constant_t>(&lhs->value))
-                if (auto const b = std::get_if<typename expr_t<P>::boolean_constant_t>(&rhs->value))
+            bool changed = beta_normalize(x.lhs.get());
+            changed |= beta_normalize(x.rhs.get());
+            if (auto const a = std::get_if<typename expr_t<P>::boolean_constant_t>(&x.lhs.get().value))
+                if (auto const b = std::get_if<typename expr_t<P>::boolean_constant_t>(&x.rhs.get().value))
                 {
                     changed = true;
                     bool const c =
-                        match(
-                            x.value,
-                            [a, b] (typename expr_t<P>::relation_expr_t::gt_t&) { return a->value > b->value; },
-                            [a, b] (typename expr_t<P>::relation_expr_t::gte_t&) { return a->value >= b->value; },
-                            [a, b] (typename expr_t<P>::relation_expr_t::lt_t&) { return a->value < b->value; },
-                            [a, b] (typename expr_t<P>::relation_expr_t::lte_t&) { return a->value <= b->value; });
+                        x.relation == dep0::ast::relation_t::gt ? a->value > b->value
+                        : x.relation == dep0::ast::relation_t::gte ? a->value >= b->value
+                        : x.relation == dep0::ast::relation_t::lt ? a->value < b->value
+                        : a->value <= b->value;
                     expr.value.template emplace<typename expr_t<P>::boolean_constant_t>(c);
                 }
             return changed;

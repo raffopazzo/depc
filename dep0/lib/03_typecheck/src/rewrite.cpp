@@ -134,43 +134,15 @@ std::optional<expr_t> rewrite(expr_t const& from, expr_t const& to, expr_t const
             [] (expr_t::numeric_constant_t){},
             [&] (expr_t::relation_expr_t const& x)
             {
-                auto const [lhs, rhs] =
-                    match(x.value, [] (auto const& x) { return std::pair{&x.lhs.get(), &x.rhs.get()}; });
-                auto new_lhs = rewrite(from, to, *lhs);
-                auto new_rhs = rewrite(from, to, *rhs);
+                auto new_lhs = rewrite(from, to, x.lhs.get());
+                auto new_rhs = rewrite(from, to, x.rhs.get());
                 if (new_lhs or new_rhs)
                     result.emplace(
                         old.properties,
-                        match(
-                            x.value,
-                            [&] (expr_t::relation_expr_t::gt_t const&)
-                            {
-                                return expr_t::relation_expr_t{
-                                    expr_t::relation_expr_t::gt_t{
-                                        choose(std::move(new_lhs), *lhs),
-                                        choose(std::move(new_rhs), *rhs)}};
-                            },
-                            [&] (expr_t::relation_expr_t::gte_t const&)
-                            {
-                                return expr_t::relation_expr_t{
-                                    expr_t::relation_expr_t::gte_t{
-                                        choose(std::move(new_lhs), *lhs),
-                                        choose(std::move(new_rhs), *rhs)}};
-                            },
-                            [&] (expr_t::relation_expr_t::lt_t const&)
-                            {
-                                return expr_t::relation_expr_t{
-                                    expr_t::relation_expr_t::lt_t{
-                                        choose(std::move(new_lhs), *lhs),
-                                        choose(std::move(new_rhs), *rhs)}};
-                            },
-                            [&] (expr_t::relation_expr_t::lte_t const&)
-                            {
-                                return expr_t::relation_expr_t{
-                                    expr_t::relation_expr_t::lte_t{
-                                        choose(std::move(new_lhs), *lhs),
-                                        choose(std::move(new_rhs), *rhs)}};
-                            }));
+                        expr_t::relation_expr_t{
+                            x.relation,
+                            choose(std::move(new_lhs), x.lhs.get()),
+                            choose(std::move(new_rhs), x.rhs.get())});
             },
             [&] (expr_t::arith_expr_t const& x)
             {

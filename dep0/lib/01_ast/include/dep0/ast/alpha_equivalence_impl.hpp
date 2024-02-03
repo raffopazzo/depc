@@ -89,20 +89,13 @@ struct alpha_equivalence_visitor
 
     result_t operator()(typename expr_t<P>::relation_expr_t& x, typename expr_t<P>::relation_expr_t& y) const
     {
-        return std::visit(
-            boost::hana::overload(
-                [] <typename T> (T& x, T& y)
-                {
-                    auto eq = is_alpha_equivalent_impl(x.lhs.get(), y.lhs.get());
-                    if (eq)
-                        eq = is_alpha_equivalent_impl(x.rhs.get(), y.rhs.get());
-                    return eq;
-                },
-                [&] <typename T, typename U> (T const&, U const&) requires (not std::is_same_v<T, U>)
-                {
-                    return not_alpha_equivalent(x, y);
-                }),
-            x.value, y.value);
+        auto eq =
+            x.relation == y.relation
+                ? is_alpha_equivalent_impl(x.lhs.get(), y.lhs.get())
+                : not_alpha_equivalent(x, y);
+        if (eq)
+            eq = is_alpha_equivalent_impl(x.rhs.get(), y.rhs.get());
+        return eq;
     };
 
     result_t operator()(typename expr_t<P>::arith_expr_t& x, typename expr_t<P>::arith_expr_t& y) const

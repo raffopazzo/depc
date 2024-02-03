@@ -133,13 +133,12 @@ llvm::Value* gen_val(
         },
         [&] (typecheck::expr_t::relation_expr_t const& x) -> llvm::Value*
         {
-            auto const [lhs, rhs] = match(x.value, [](auto const& x) { return std::pair{&x.lhs.get(), &x.rhs.get()}; });
             // use temporaries to make sure that LHS comes before RHS in the emitted IR
-            auto const lhs_val = gen_val(global, local, builder, *lhs, nullptr);
-            auto const rhs_val = gen_val(global, local, builder, *rhs, nullptr);
+            auto const lhs_val = gen_val(global, local, builder, x.lhs.get(), nullptr);
+            auto const rhs_val = gen_val(global, local, builder, x.rhs.get(), nullptr);
             auto const sign =
                 match(
-                    std::get<typecheck::expr_t>(lhs->properties.sort.get()).value,
+                    std::get<typecheck::expr_t>(x.lhs.get().properties.sort.get()).value,
                     [] (typecheck::expr_t::bool_t const&) { return dep0::ast::sign_t::unsigned_v; },
                     [] (typecheck::expr_t::u8_t const&) { return dep0::ast::sign_t::unsigned_v; },
                     [] (typecheck::expr_t::u16_t const&) { return dep0::ast::sign_t::unsigned_v; },
@@ -154,33 +153,22 @@ llvm::Value* gen_val(
                             [] (typecheck::type_def_t::integer_t const& integer) { return integer.sign; });
                     },
                     [] (auto const&) { return dep0::ast::sign_t::signed_v; });
-            auto const op =
-                match(
-                    x.value,
-                    [sign] (typecheck::expr_t::relation_expr_t::gt_t const&)
-                    {
-                        return sign == dep0::ast::sign_t::signed_v
-                            ? llvm::CmpInst::Predicate::ICMP_SGT
-                            : llvm::CmpInst::Predicate::ICMP_UGT;
-                    },
-                    [sign] (typecheck::expr_t::relation_expr_t::gte_t const&)
-                    {
-                        return sign == dep0::ast::sign_t::signed_v
-                            ? llvm::CmpInst::Predicate::ICMP_SGE
-                            : llvm::CmpInst::Predicate::ICMP_UGE;
-                    },
-                    [sign] (typecheck::expr_t::relation_expr_t::lt_t const&)
-                    {
-                        return sign == dep0::ast::sign_t::signed_v
-                            ? llvm::CmpInst::Predicate::ICMP_SLT
-                            : llvm::CmpInst::Predicate::ICMP_ULT;
-                    },
-                    [sign] (typecheck::expr_t::relation_expr_t::lte_t const&)
-                    {
-                        return sign == dep0::ast::sign_t::signed_v
-                            ? llvm::CmpInst::Predicate::ICMP_SLE
-                            : llvm::CmpInst::Predicate::ICMP_ULE;
-                    });
+            auto const op = [sign, relation=x.relation]
+            {
+                using enum dep0::ast::relation_t;
+                using enum dep0::ast::sign_t;
+                using enum llvm::CmpInst::Predicate;
+                switch (relation)
+                {
+                case gt: return sign == signed_v ? ICMP_SGT : ICMP_UGT;
+                case gte: return sign == signed_v ? ICMP_SGE : ICMP_UGE;
+                case lt: return sign == signed_v ? ICMP_SLT : ICMP_ULT;
+                case lte: return sign == signed_v ? ICMP_SLE : ICMP_ULE;
+                default:
+                    assert(false and "invalid relation operator");
+                    __builtin_unreachable();
+                }
+            }();
             return storeOrReturn(builder.CreateCmp(op, lhs_val, rhs_val));
         },
         [&] (typecheck::expr_t::arith_expr_t const& x) -> llvm::Value*

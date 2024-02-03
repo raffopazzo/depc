@@ -280,20 +280,18 @@ std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::numeric_constan
 template <Properties P>
 std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::relation_expr_t const& x, std::size_t const indent)
 {
-    auto const [lhs, rhs] = match(x.value, [](auto const& x) { return std::pair{&x.lhs.get(), &x.rhs.get()}; });
-    if (detail::needs_parenthesis(*lhs))
-        pretty_print(os << '(', *lhs, indent) << ')';
+    if (detail::needs_parenthesis(x.lhs.get()))
+        pretty_print(os << '(', x.lhs.get(), indent) << ')';
     else
-        pretty_print(os, *lhs, indent);
-    os << match(x.value,
-        [] (typename expr_t<P>::relation_expr_t::gt_t const&) { return " > "; },
-        [] (typename expr_t<P>::relation_expr_t::gte_t const&) { return " >= "; },
-        [] (typename expr_t<P>::relation_expr_t::lt_t const&) { return " < "; },
-        [] (typename expr_t<P>::relation_expr_t::lte_t const&) { return " <= "; });
-    if (detail::needs_parenthesis(*rhs))
-        pretty_print(os << '(', *rhs, indent) << ')';
+        pretty_print(os, x.lhs.get(), indent);
+    if (x.relation == dep0::ast::relation_t::gt) os << " > ";
+    if (x.relation == dep0::ast::relation_t::gte) os << " >= ";
+    if (x.relation == dep0::ast::relation_t::lt) os << " < ";
+    if (x.relation == dep0::ast::relation_t::lte) os << " <= ";
+    if (detail::needs_parenthesis(x.rhs.get()))
+        pretty_print(os << '(', x.rhs.get(), indent) << ')';
     else
-        pretty_print(os, *rhs, indent);
+        pretty_print(os, x.rhs.get(), indent);
     return os;
 }
 
@@ -467,12 +465,7 @@ template <Properties P> bool needs_new_line(typename expr_t<P>::numeric_constant
 template <Properties P>
 bool needs_new_line(typename expr_t<P>::relation_expr_t const& x)
 {
-    return match(
-        x.value,
-        [] (auto const& x)
-        {
-            return needs_new_line(x.lhs.get()) or needs_new_line(x.rhs.get());
-        });
+    return needs_new_line(x.lhs.get()) or needs_new_line(x.rhs.get());
 }
 
 template <Properties P>

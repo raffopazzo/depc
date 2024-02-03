@@ -81,36 +81,32 @@ expected<expr_t> type_assign(context_t const& ctx, parser::expr_t const& expr)
         },
         [&] (parser::expr_t::relation_expr_t const& x) -> expected<expr_t>
         {
-            auto const [lhs, rhs] = match(x.value, [](auto const& x) { return std::pair{&x.lhs.get(), &x.rhs.get()}; });
             // Make sure we can assign a type to expressions like `x<1` or `1<x`,
             // based on the type of `x`, even though `1` itself cannot be assigned a type.
-            auto new_rhs = type_assign(ctx, *rhs);
-            auto new_lhs = new_rhs
-                ? check_expr(ctx, *lhs, new_rhs->properties.sort.get())
-                : type_assign(ctx, *lhs);
-            if (new_lhs and not new_rhs)
-                new_rhs = check_expr(ctx, *rhs, new_lhs->properties.sort.get());
-            if (new_lhs and new_rhs)
-                return make_legal_expr(
-                    derivation_rules::make_bool(),
-                    match(
-                        x.value,
-                        [&] (parser::expr_t::relation_expr_t::gt_t const&) -> expr_t::relation_expr_t
-                        {
-                            return {expr_t::relation_expr_t::gt_t{std::move(*new_lhs), std::move(*new_rhs)}};
-                        },
-                        [&] (parser::expr_t::relation_expr_t::gte_t const&) -> expr_t::relation_expr_t
-                        {
-                            return {expr_t::relation_expr_t::gte_t{std::move(*new_lhs), std::move(*new_rhs)}};
-                        },
-                        [&] (parser::expr_t::relation_expr_t::lt_t const&) -> expr_t::relation_expr_t
-                        {
-                            return {expr_t::relation_expr_t::lt_t{std::move(*new_lhs), std::move(*new_rhs)}};
-                        },
-                        [&] (parser::expr_t::relation_expr_t::lte_t const&) -> expr_t::relation_expr_t
-                        {
-                            return {expr_t::relation_expr_t::lte_t{std::move(*new_lhs), std::move(*new_rhs)}};
-                        }));
+            if (auto lhs = type_assign(ctx, x.lhs.get()))
+            {
+                if (auto rhs = check_expr(ctx, x.rhs.get(), lhs->properties.sort.get()))
+                    return make_legal_expr(
+                        derivation_rules::make_bool(),
+                        expr_t::relation_expr_t{
+                            x.relation,
+                            std::move(*lhs),
+                            std::move(*rhs)});
+                else
+                    return std::move(rhs.error());
+            }
+            else if (auto rhs = type_assign(ctx, x.rhs.get()))
+            {
+                if (auto lhs = check_expr(ctx, x.lhs.get(), rhs->properties.sort.get()))
+                    return make_legal_expr(
+                        derivation_rules::make_bool(),
+                        expr_t::relation_expr_t{
+                            x.relation,
+                            std::move(*lhs),
+                            std::move(*rhs)});
+                else
+                    return std::move(lhs.error());
+            }
             else
             {
                 std::ostringstream err;
@@ -119,8 +115,8 @@ expected<expr_t> type_assign(context_t const& ctx, parser::expr_t const& expr)
                     err.str(),
                     loc,
                     std::vector<dep0::error_t>{
-                        std::move(new_lhs.error()),
-                        std::move(new_rhs.error())
+                        std::move(lhs.error()),
+                        std::move(rhs.error())
                     }));
             }
         },

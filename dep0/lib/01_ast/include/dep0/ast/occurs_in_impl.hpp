@@ -71,12 +71,7 @@ bool occurs_in(typename expr_t<P>::var_t const& var, expr_t<P> const& x, occurre
         [] (expr_t<P>::numeric_constant_t const&) { return false; },
         [&] (expr_t<P>::relation_expr_t const& x)
         {
-            return match(
-                x.value,
-                [&] (auto const& x)
-                {
-                    return occurs_in(var, x.lhs.get(), style) or occurs_in(var, x.rhs.get(), style);
-                });
+            return occurs_in(var, x.lhs.get(), style) or occurs_in(var, x.rhs.get(), style);
         },
         [&] (expr_t<P>::arith_expr_t const& x)
         {

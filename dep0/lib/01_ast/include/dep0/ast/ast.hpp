@@ -62,7 +62,7 @@ struct expr_t
     {
         boost::multiprecision::cpp_int value;
     };
-    struct boolean_expr_t
+    struct relation_expr_t
     {
         struct gt_t
         {
@@ -135,7 +135,7 @@ struct expr_t
         std::variant<
             typename_t,
             bool_t, unit_t, i8_t, i16_t, i32_t, i64_t, u8_t, u16_t, u32_t, u64_t,
-            boolean_constant_t, numeric_constant_t, boolean_expr_t, arith_expr_t,
+            boolean_constant_t, numeric_constant_t, relation_expr_t, arith_expr_t,
             var_t, app_t, abs_t, pi_t,
             array_t, init_list_t, subscript_t
         >;

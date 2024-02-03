@@ -29,7 +29,7 @@ template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P
 template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::u64_t&);
 template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::boolean_constant_t&);
 template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::numeric_constant_t&);
-template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::boolean_expr_t&);
+template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::relation_expr_t&);
 template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::arith_expr_t&);
 template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::var_t&);
 template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::app_t&);
@@ -71,7 +71,7 @@ template <Properties P>
 bool delta_reduce(context_t<P> const&, typename expr_t<P>::numeric_constant_t&) { return false; }
 
 template <Properties P>
-bool delta_reduce(context_t<P> const& ctx, typename expr_t<P>::boolean_expr_t& x)
+bool delta_reduce(context_t<P> const& ctx, typename expr_t<P>::relation_expr_t& x)
 {
     auto [lhs, rhs] = match(x.value, [] (auto& x) { return std::pair{&x.lhs.get(), &x.rhs.get()}; });
     return delta_reduce(ctx, *lhs) or delta_reduce(ctx, *rhs);

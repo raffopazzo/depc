@@ -68,7 +68,7 @@ expr:
     func=expr '(' (expr (',' expr)*)? ')' # funcCallExpr
     | expr '[' expr ']' # subscriptExpr
     | lhs=expr '+' rhs=expr # plusExpr
-    | lhs=expr op=('<' | '<=' | '>' | '>=') rhs=expr # booleanExpr
+    | lhs=expr op=('<' | '<=' | '>' | '>=') rhs=expr # relationExpr
     | sign=('+' | '-')? value=INT # numericConstant
     | value=('true'|'false') # booleanConstant
     | 'array_t' # arrayExpr

@@ -262,7 +262,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         throw error_t("unexpected alternative when parsing BodyOrStmtContext", loc);
     }
 
-    virtual std::any visitBooleanExpr(DepCParser::BooleanExprContext* ctx) override
+    virtual std::any visitRelationExpr(DepCParser::RelationExprContext* ctx) override
     {
         assert(ctx);
         assert(ctx->lhs);
@@ -272,11 +272,11 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         auto rhs = visitExpr(ctx->rhs);
         return expr_t{
             loc,
-            ctx->GT() ? expr_t::boolean_expr_t{expr_t::boolean_expr_t::gt_t{std::move(lhs), std::move(rhs)}}
-            : ctx->GTE() ? expr_t::boolean_expr_t{expr_t::boolean_expr_t::gte_t{std::move(lhs), std::move(rhs)}}
-            : ctx->LT() ? expr_t::boolean_expr_t{expr_t::boolean_expr_t::lt_t{std::move(lhs), std::move(rhs)}}
-            : ctx->LTE() ? expr_t::boolean_expr_t{expr_t::boolean_expr_t::lte_t{std::move(lhs), std::move(rhs)}}
-            : throw error_t("unexpected alternative when parsing operand of BooleanExprContext", loc)};
+            ctx->GT() ? expr_t::relation_expr_t{expr_t::relation_expr_t::gt_t{std::move(lhs), std::move(rhs)}}
+            : ctx->GTE() ? expr_t::relation_expr_t{expr_t::relation_expr_t::gte_t{std::move(lhs), std::move(rhs)}}
+            : ctx->LT() ? expr_t::relation_expr_t{expr_t::relation_expr_t::lt_t{std::move(lhs), std::move(rhs)}}
+            : ctx->LTE() ? expr_t::relation_expr_t{expr_t::relation_expr_t::lte_t{std::move(lhs), std::move(rhs)}}
+            : throw error_t("unexpected alternative when parsing operand of RelationExprContext", loc)};
     }
 
     virtual std::any visitPlusExpr(DepCParser::PlusExprContext* ctx) override
@@ -390,8 +390,8 @@ struct parse_visitor_t : dep0::DepCParserVisitor
             return std::any_cast<expr_t>(visitSubscriptExpr(p));
         if (auto const p = dynamic_cast<DepCParser::PlusExprContext*>(ctx))
             return std::any_cast<expr_t>(visitPlusExpr(p));
-        if (auto const p = dynamic_cast<DepCParser::BooleanExprContext*>(ctx))
-            return std::any_cast<expr_t>(visitBooleanExpr(p));
+        if (auto const p = dynamic_cast<DepCParser::RelationExprContext*>(ctx))
+            return std::any_cast<expr_t>(visitRelationExpr(p));
         if (auto const p = dynamic_cast<DepCParser::NumericConstantContext*>(ctx))
             return std::any_cast<expr_t>(visitNumericConstant(p));
         if (auto const p = dynamic_cast<DepCParser::BooleanConstantContext*>(ctx))

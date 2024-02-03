@@ -70,10 +70,14 @@ std::size_t max_index(expr_t<P> const& x)
         [] (expr_t<P>::u64_t const&) { return 0ul; },
         [] (expr_t<P>::boolean_constant_t const&) { return 0ul; },
         [] (expr_t<P>::numeric_constant_t const&) { return 0ul; },
-        [] (expr_t<P>::boolean_expr_t const& x)
+        [] (expr_t<P>::relation_expr_t const& x)
         {
-            auto const [lhs, rhs] = match(x.value, [](auto const& x) { return std::pair{&x.lhs.get(), &x.rhs.get()}; });
-            return std::max(max_index(*lhs), max_index(*rhs));
+            return match(
+                x.value,
+                [] (auto const& x)
+                {
+                    return std::max(max_index(x.lhs.get()), max_index(x.rhs.get()));
+                });
         },
         [] (expr_t<P>::arith_expr_t const& x)
         {

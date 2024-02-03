@@ -79,7 +79,7 @@ expected<expr_t> type_assign(context_t const& ctx, parser::expr_t const& expr)
             err << "cannot assign a unique type to numeric constant without being context-sensitive";
             return error_t::from_error(dep0::error_t(err.str(), loc));
         },
-        [&] (parser::expr_t::boolean_expr_t const& x) -> expected<expr_t>
+        [&] (parser::expr_t::relation_expr_t const& x) -> expected<expr_t>
         {
             auto const [lhs, rhs] = match(x.value, [](auto const& x) { return std::pair{&x.lhs.get(), &x.rhs.get()}; });
             // Make sure we can assign a type to expressions like `x<1` or `1<x`,
@@ -95,26 +95,26 @@ expected<expr_t> type_assign(context_t const& ctx, parser::expr_t const& expr)
                     derivation_rules::make_bool(),
                     match(
                         x.value,
-                        [&] (parser::expr_t::boolean_expr_t::gt_t const&) -> expr_t::boolean_expr_t
+                        [&] (parser::expr_t::relation_expr_t::gt_t const&) -> expr_t::relation_expr_t
                         {
-                            return {expr_t::boolean_expr_t::gt_t{std::move(*new_lhs), std::move(*new_rhs)}};
+                            return {expr_t::relation_expr_t::gt_t{std::move(*new_lhs), std::move(*new_rhs)}};
                         },
-                        [&] (parser::expr_t::boolean_expr_t::gte_t const&) -> expr_t::boolean_expr_t
+                        [&] (parser::expr_t::relation_expr_t::gte_t const&) -> expr_t::relation_expr_t
                         {
-                            return {expr_t::boolean_expr_t::gte_t{std::move(*new_lhs), std::move(*new_rhs)}};
+                            return {expr_t::relation_expr_t::gte_t{std::move(*new_lhs), std::move(*new_rhs)}};
                         },
-                        [&] (parser::expr_t::boolean_expr_t::lt_t const&) -> expr_t::boolean_expr_t
+                        [&] (parser::expr_t::relation_expr_t::lt_t const&) -> expr_t::relation_expr_t
                         {
-                            return {expr_t::boolean_expr_t::lt_t{std::move(*new_lhs), std::move(*new_rhs)}};
+                            return {expr_t::relation_expr_t::lt_t{std::move(*new_lhs), std::move(*new_rhs)}};
                         },
-                        [&] (parser::expr_t::boolean_expr_t::lte_t const&) -> expr_t::boolean_expr_t
+                        [&] (parser::expr_t::relation_expr_t::lte_t const&) -> expr_t::relation_expr_t
                         {
-                            return {expr_t::boolean_expr_t::lte_t{std::move(*new_lhs), std::move(*new_rhs)}};
+                            return {expr_t::relation_expr_t::lte_t{std::move(*new_lhs), std::move(*new_rhs)}};
                         }));
             else
             {
                 std::ostringstream err;
-                err << "cannot assign a unique type to boolean expression";
+                err << "cannot assign a unique type to relation expression";
                 return error_t::from_error(dep0::error_t(
                     err.str(),
                     loc,

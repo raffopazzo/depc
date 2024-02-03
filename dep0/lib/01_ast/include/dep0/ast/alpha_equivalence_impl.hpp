@@ -87,7 +87,7 @@ struct alpha_equivalence_visitor
             return not_alpha_equivalent(x, y);
     }
 
-    result_t operator()(typename expr_t<P>::boolean_expr_t& x, typename expr_t<P>::boolean_expr_t& y) const
+    result_t operator()(typename expr_t<P>::relation_expr_t& x, typename expr_t<P>::relation_expr_t& y) const
     {
         return std::visit(
             boost::hana::overload(

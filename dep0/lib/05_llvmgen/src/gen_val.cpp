@@ -131,7 +131,7 @@ llvm::Value* gen_val(
             assert(llvm_type);
             return storeOrReturn(llvm::ConstantInt::get(llvm_type, x.value.str(), 10));
         },
-        [&] (typecheck::expr_t::boolean_expr_t const& x) -> llvm::Value*
+        [&] (typecheck::expr_t::relation_expr_t const& x) -> llvm::Value*
         {
             auto const [lhs, rhs] = match(x.value, [](auto const& x) { return std::pair{&x.lhs.get(), &x.rhs.get()}; });
             // use temporaries to make sure that LHS comes before RHS in the emitted IR
@@ -157,25 +157,25 @@ llvm::Value* gen_val(
             auto const op =
                 match(
                     x.value,
-                    [sign] (typecheck::expr_t::boolean_expr_t::gt_t const&)
+                    [sign] (typecheck::expr_t::relation_expr_t::gt_t const&)
                     {
                         return sign == dep0::ast::sign_t::signed_v
                             ? llvm::CmpInst::Predicate::ICMP_SGT
                             : llvm::CmpInst::Predicate::ICMP_UGT;
                     },
-                    [sign] (typecheck::expr_t::boolean_expr_t::gte_t const&)
+                    [sign] (typecheck::expr_t::relation_expr_t::gte_t const&)
                     {
                         return sign == dep0::ast::sign_t::signed_v
                             ? llvm::CmpInst::Predicate::ICMP_SGE
                             : llvm::CmpInst::Predicate::ICMP_UGE;
                     },
-                    [sign] (typecheck::expr_t::boolean_expr_t::lt_t const&)
+                    [sign] (typecheck::expr_t::relation_expr_t::lt_t const&)
                     {
                         return sign == dep0::ast::sign_t::signed_v
                             ? llvm::CmpInst::Predicate::ICMP_SLT
                             : llvm::CmpInst::Predicate::ICMP_ULT;
                     },
-                    [sign] (typecheck::expr_t::boolean_expr_t::lte_t const&)
+                    [sign] (typecheck::expr_t::relation_expr_t::lte_t const&)
                     {
                         return sign == dep0::ast::sign_t::signed_v
                             ? llvm::CmpInst::Predicate::ICMP_SLE

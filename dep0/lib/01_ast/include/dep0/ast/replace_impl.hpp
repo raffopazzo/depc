@@ -61,7 +61,7 @@ void replace(typename expr_t<P>::var_t const& from, typename expr_t<P>::var_t co
         [] (typename expr_t<P>::u64_t const&) {},
         [] (typename expr_t<P>::boolean_constant_t const&) { },
         [] (typename expr_t<P>::numeric_constant_t const&) { },
-        [&] (typename expr_t<P>::boolean_expr_t& x)
+        [&] (typename expr_t<P>::relation_expr_t& x)
         {
             return match(
                 x.value,

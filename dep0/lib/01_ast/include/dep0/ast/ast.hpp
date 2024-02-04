@@ -24,9 +24,6 @@ template <Properties P> struct body_t;
 template <Properties P> struct stmt_t;
 template <Properties P> struct expr_t;
 
-enum class sign_t { signed_v, unsigned_v };
-enum class width_t { _8, _16, _32, _64 };
-
 // definitions
 
 template <Properties P>
@@ -210,6 +207,9 @@ struct stmt_t
     properties_t properties;
     value_t value;
 };
+
+enum class sign_t { signed_v, unsigned_v };
+enum class width_t { _8, _16, _32, _64 };
 
 template <Properties P>
 struct type_def_t

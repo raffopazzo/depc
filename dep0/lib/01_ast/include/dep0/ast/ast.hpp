@@ -68,16 +68,16 @@ struct expr_t
     };
     struct boolean_expr_t
     {
-        struct negation_t
+        struct not_t
         {
             rec_t expr;
         };
-        struct conjuction_t
+        struct and_t
         {
             rec_t lhs;
             rec_t rhs;
         };
-        struct disjuction_t
+        struct or_t
         {
             rec_t lhs;
             rec_t rhs;
@@ -87,7 +87,7 @@ struct expr_t
             rec_t lhs;
             rec_t rhs;
         };
-        using value_t = std::variant<negation_t, conjuction_t, disjuction_t, xor_t>;
+        using value_t = std::variant<not_t, and_t, or_t, xor_t>;
         value_t value;
     };
     struct relation_expr_t

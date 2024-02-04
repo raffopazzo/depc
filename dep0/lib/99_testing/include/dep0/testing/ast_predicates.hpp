@@ -189,75 +189,75 @@ inline auto constant(int const value)
 }
 
 template <ast::Properties P, Predicate<ast::expr_t<P>> F>
-boost::test_tools::predicate_result is_neg(ast::expr_t<P> const& expr, F&& f)
+boost::test_tools::predicate_result is_not_of(ast::expr_t<P> const& expr, F&& f)
 {
     auto const* x = std::get_if<typename ast::expr_t<P>::boolean_expr_t>(&expr.value);
     if (not x)
         return failure("expression is not boolean_expr_t but ", pretty_name(expr.value));
-    auto const neg = std::get_if<typename ast::expr_t<P>::boolean_expr_t::negation_t>(&x->value);
-    if (not neg)
-        return failure("boolean expression is not negation_t but ", pretty_name(x->value));
-    if (auto const result = std::forward<F>(f)(neg->expr.get()); not result)
+    auto const not_ = std::get_if<typename ast::expr_t<P>::boolean_expr_t::not_t>(&x->value);
+    if (not not_)
+        return failure("boolean expression is not not_t but ", pretty_name(x->value));
+    if (auto const result = std::forward<F>(f)(not_->expr.get()); not result)
         return failure("negation expression predicate failed: ", result.message());
     return true;
 }
 
 template <ast::Properties P, Predicate<ast::expr_t<P>> F>
-constexpr auto neg(F&& f)
+constexpr auto not_of(F&& f)
 {
     return [f=std::forward<F>(f)] (ast::expr_t<P> const& x)
     {
-        return is_neg(x, f);
+        return is_not_of(x, f);
     };
 }
 
 template <ast::Properties P, Predicate<ast::expr_t<P>> F1, Predicate<ast::expr_t<P>> F2>
-boost::test_tools::predicate_result is_conj(ast::expr_t<P> const& expr, F1&& f1, F2&& f2)
+boost::test_tools::predicate_result is_and_of(ast::expr_t<P> const& expr, F1&& f1, F2&& f2)
 {
     auto const* x = std::get_if<typename ast::expr_t<P>::boolean_expr_t>(&expr.value);
     if (not x)
         return failure("expression is not boolean_expr_t but ", pretty_name(expr.value));
-    auto const conj = std::get_if<typename ast::expr_t<P>::boolean_expr_t::conjuction_t>(&x->value);
-    if (not conj)
-        return failure("boolean expression is not conjuction_t but ", pretty_name(x->value));
-    if (auto const result = std::forward<F1>(f1)(conj->lhs.get()); not result)
+    auto const and_ = std::get_if<typename ast::expr_t<P>::boolean_expr_t::and_t>(&x->value);
+    if (not and_)
+        return failure("boolean expression is not and_t but ", pretty_name(x->value));
+    if (auto const result = std::forward<F1>(f1)(and_->lhs.get()); not result)
         return failure("on the left-hand side: ", result.message());
-    if (auto const result = std::forward<F2>(f2)(conj->rhs.get()); not result)
+    if (auto const result = std::forward<F2>(f2)(and_->rhs.get()); not result)
         return failure("on the right-hand side: ", result.message());
     return true;
 }
 
 template <ast::Properties P, Predicate<ast::expr_t<P>> F1, Predicate<ast::expr_t<P>> F2>
-constexpr auto conj(F1&& f1, F2&& f2)
+constexpr auto and_of(F1&& f1, F2&& f2)
 {
     return [f1=std::forward<F1>(f1), f2=std::forward<F2>(f2)] (ast::expr_t<P> const& x)
     {
-        return is_conj(x, f1, f2);
+        return is_and_of(x, f1, f2);
     };
 }
 
 template <ast::Properties P, Predicate<ast::expr_t<P>> F1, Predicate<ast::expr_t<P>> F2>
-boost::test_tools::predicate_result is_disj(ast::expr_t<P> const& expr, F1&& f1, F2&& f2)
+boost::test_tools::predicate_result is_or_of(ast::expr_t<P> const& expr, F1&& f1, F2&& f2)
 {
     auto const* x = std::get_if<typename ast::expr_t<P>::boolean_expr_t>(&expr.value);
     if (not x)
         return failure("expression is not boolean_expr_t but ", pretty_name(expr.value));
-    auto const disj = std::get_if<typename ast::expr_t<P>::boolean_expr_t::disjuction_t>(&x->value);
-    if (not disj)
-        return failure("boolean expression is not disjuction_t but ", pretty_name(x->value));
-    if (auto const result = std::forward<F1>(f1)(disj->lhs.get()); not result)
+    auto const or_ = std::get_if<typename ast::expr_t<P>::boolean_expr_t::or_t>(&x->value);
+    if (not or_)
+        return failure("boolean expression is not or_t but ", pretty_name(x->value));
+    if (auto const result = std::forward<F1>(f1)(or_->lhs.get()); not result)
         return failure("on the left-hand side: ", result.message());
-    if (auto const result = std::forward<F2>(f2)(disj->rhs.get()); not result)
+    if (auto const result = std::forward<F2>(f2)(or_->rhs.get()); not result)
         return failure("on the right-hand side: ", result.message());
     return true;
 }
 
 template <ast::Properties P, Predicate<ast::expr_t<P>> F1, Predicate<ast::expr_t<P>> F2>
-constexpr auto disj(F1&& f1, F2&& f2)
+constexpr auto or_of(F1&& f1, F2&& f2)
 {
     return [f1=std::forward<F1>(f1), f2=std::forward<F2>(f2)] (ast::expr_t<P> const& x)
     {
-        return is_disj(x, f1, f2);
+        return is_or_of(x, f1, f2);
     };
 }
 

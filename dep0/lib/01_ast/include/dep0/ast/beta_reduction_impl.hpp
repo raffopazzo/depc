@@ -272,7 +272,7 @@ bool beta_normalize(expr_t<P>& expr)
         {
             return match(
                 x.value,
-                [&] (typename expr_t<P>::boolean_expr_t::negation_t& x)
+                [&] (typename expr_t<P>::boolean_expr_t::not_t& x)
                 {
                     bool changed = beta_normalize(x.expr.get());
                     if (auto const c = std::get_if<typename expr_t<P>::boolean_constant_t>(&x.expr.get().value))
@@ -293,11 +293,11 @@ bool beta_normalize(expr_t<P>& expr)
                             changed = true;
                             bool const c =
                                 boost::hana::overload(
-                                    [&] (boost::hana::type<typename expr_t<P>::boolean_expr_t::conjuction_t>)
+                                    [&] (boost::hana::type<typename expr_t<P>::boolean_expr_t::and_t>)
                                     {
                                         return a->value and b->value;
                                     },
-                                    [&] (boost::hana::type<typename expr_t<P>::boolean_expr_t::disjuction_t>)
+                                    [&] (boost::hana::type<typename expr_t<P>::boolean_expr_t::or_t>)
                                     {
                                         return a->value or b->value;
                                     },

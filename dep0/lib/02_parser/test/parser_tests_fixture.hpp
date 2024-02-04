@@ -54,21 +54,21 @@ struct ParserTestsFixture
     }
 
     template <typename... Args>
-    static constexpr auto neg(Args&&... args)
+    static constexpr auto not_of(Args&&... args)
     {
-        return dep0::testing::neg<dep0::parser::properties_t>(std::forward<Args>(args)...);
+        return dep0::testing::not_of<dep0::parser::properties_t>(std::forward<Args>(args)...);
     }
 
     template <typename... Args>
-    static constexpr auto conj(Args&&... args)
+    static constexpr auto and_of(Args&&... args)
     {
-        return dep0::testing::conj<dep0::parser::properties_t>(std::forward<Args>(args)...);
+        return dep0::testing::and_of<dep0::parser::properties_t>(std::forward<Args>(args)...);
     }
 
     template <typename... Args>
-    static constexpr auto disj(Args&&... args)
+    static constexpr auto or_of(Args&&... args)
     {
-        return dep0::testing::disj<dep0::parser::properties_t>(std::forward<Args>(args)...);
+        return dep0::testing::or_of<dep0::parser::properties_t>(std::forward<Args>(args)...);
     }
 
     template <typename... Args>

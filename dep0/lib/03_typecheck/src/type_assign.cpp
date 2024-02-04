@@ -85,13 +85,13 @@ expected<expr_t> type_assign(context_t const& ctx, parser::expr_t const& expr)
         {
             return match(
                 x.value,
-                [&] (parser::expr_t::boolean_expr_t::negation_t const& x) -> expected<expr_t>
+                [&] (parser::expr_t::boolean_expr_t::not_t const& x) -> expected<expr_t>
                 {
                     if (auto expr = check_expr(ctx, x.expr.get(), derivation_rules::make_bool()))
                         return make_legal_expr(
                             derivation_rules::make_bool(),
                             expr_t::boolean_expr_t{
-                                expr_t::boolean_expr_t::negation_t{
+                                expr_t::boolean_expr_t::not_t{
                                     std::move(*expr)}});
                     else
                         return std::move(expr.error());
@@ -107,18 +107,18 @@ expected<expr_t> type_assign(context_t const& ctx, parser::expr_t const& expr)
                     return make_legal_expr(
                         derivation_rules::make_bool(),
                         boost::hana::overload(
-                            [&] (boost::hana::type<parser::expr_t::boolean_expr_t::conjuction_t>)
+                            [&] (boost::hana::type<parser::expr_t::boolean_expr_t::and_t>)
                             {
                                 return expr_t::boolean_expr_t{
-                                    expr_t::boolean_expr_t::conjuction_t{
+                                    expr_t::boolean_expr_t::and_t{
                                         std::move(*lhs),
                                         std::move(*rhs)
                                     }};
                             },
-                            [&] (boost::hana::type<parser::expr_t::boolean_expr_t::disjuction_t>)
+                            [&] (boost::hana::type<parser::expr_t::boolean_expr_t::or_t>)
                             {
                                 return expr_t::boolean_expr_t{
-                                    expr_t::boolean_expr_t::disjuction_t{
+                                    expr_t::boolean_expr_t::or_t{
                                         std::move(*lhs),
                                         std::move(*rhs)
                                     }};

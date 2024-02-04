@@ -73,7 +73,7 @@ bool occurs_in(typename expr_t<P>::var_t const& var, expr_t<P> const& x, occurre
         {
             return match(
                 x.value,
-                [&] (expr_t<P>::boolean_expr_t::negation_t const& x)
+                [&] (expr_t<P>::boolean_expr_t::not_t const& x)
                 {
                     return occurs_in(var, x.expr.get(), style);
                 },

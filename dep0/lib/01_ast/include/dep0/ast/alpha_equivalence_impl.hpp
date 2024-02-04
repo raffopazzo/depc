@@ -91,7 +91,7 @@ struct alpha_equivalence_visitor
     {
         return std::visit(
             boost::hana::overload(
-                [] (expr_t<P>::boolean_expr_t::negation_t& x, expr_t<P>::boolean_expr_t::negation_t& y)
+                [] (expr_t<P>::boolean_expr_t::not_t& x, expr_t<P>::boolean_expr_t::not_t& y)
                 {
                     return is_alpha_equivalent_impl(x.expr.get(), y.expr.get());
                 },

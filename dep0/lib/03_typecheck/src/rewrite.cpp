@@ -138,13 +138,13 @@ std::optional<expr_t> rewrite(expr_t const& from, expr_t const& to, expr_t const
             {
                 match(
                     x.value,
-                    [&] (expr_t::boolean_expr_t::negation_t const& x)
+                    [&] (expr_t::boolean_expr_t::not_t const& x)
                     {
                         if (auto new_expr = rewrite(from, to, x.expr.get()))
                             result.emplace(
                                 old.properties,
                                 expr_t::boolean_expr_t{
-                                    expr_t::boolean_expr_t::negation_t{
+                                    expr_t::boolean_expr_t::not_t{
                                         std::move(*new_expr)}});
                     },
                     [&] <typename T> (T const& x)
@@ -155,17 +155,17 @@ std::optional<expr_t> rewrite(expr_t const& from, expr_t const& to, expr_t const
                             result.emplace(
                                 old.properties,
                                 boost::hana::overload(
-                                    [&] (boost::hana::type<expr_t::boolean_expr_t::conjuction_t>)
+                                    [&] (boost::hana::type<expr_t::boolean_expr_t::and_t>)
                                     {
                                         return expr_t::boolean_expr_t{
-                                            expr_t::boolean_expr_t::conjuction_t{
+                                            expr_t::boolean_expr_t::and_t{
                                                 choose(std::move(new_lhs), x.lhs.get()),
                                                 choose(std::move(new_rhs), x.rhs.get())}};
                                     },
-                                    [&] (boost::hana::type<expr_t::boolean_expr_t::disjuction_t>)
+                                    [&] (boost::hana::type<expr_t::boolean_expr_t::or_t>)
                                     {
                                         return expr_t::boolean_expr_t{
-                                            expr_t::boolean_expr_t::disjuction_t{
+                                            expr_t::boolean_expr_t::or_t{
                                                 choose(std::move(new_lhs), x.lhs.get()),
                                                 choose(std::move(new_rhs), x.rhs.get())}};
                                     },

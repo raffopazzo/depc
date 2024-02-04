@@ -870,7 +870,7 @@ BOOST_AUTO_TEST_CASE(pass_004)
         BOOST_TEST(is_arg(f.value.args[0ul], is_bool, "x"));
         BOOST_TEST(is_bool(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], neg(var("x"))));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], not_of(var("x"))));
     }
     {
         auto const& f = pass_result->func_defs[1ul];
@@ -879,7 +879,7 @@ BOOST_AUTO_TEST_CASE(pass_004)
         BOOST_TEST(f.value.args.size() == 0ul);
         BOOST_TEST(is_bool(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], neg(constant(false))));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], not_of(constant(false))));
     }
     {
         auto const& f = pass_result->func_defs[2ul];
@@ -888,7 +888,7 @@ BOOST_AUTO_TEST_CASE(pass_004)
         BOOST_TEST(f.value.args.size() == 0ul);
         BOOST_TEST(is_bool(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], neg(constant(true))));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], not_of(constant(true))));
     }
     {
         auto const& f = pass_result->func_defs[3ul];
@@ -897,7 +897,7 @@ BOOST_AUTO_TEST_CASE(pass_004)
         BOOST_TEST(f.value.args.size() == 0ul);
         BOOST_TEST(is_bool(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], lt(neg(constant(true)), constant(true))));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], lt(not_of(constant(true)), constant(true))));
     }
     {
         auto const& f = pass_result->func_defs[4ul];
@@ -906,7 +906,7 @@ BOOST_AUTO_TEST_CASE(pass_004)
         BOOST_TEST(f.value.args.size() == 0ul);
         BOOST_TEST(is_bool(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], lt(neg(constant(true)), neg(constant(false)))));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], lt(not_of(constant(true)), not_of(constant(false)))));
     }
     {
         auto const& f = pass_result->func_defs[5ul];
@@ -915,7 +915,7 @@ BOOST_AUTO_TEST_CASE(pass_004)
         BOOST_TEST(f.value.args.size() == 0ul);
         BOOST_TEST(is_bool(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], neg(lt(constant(true), constant(false)))));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], not_of(lt(constant(true), constant(false)))));
     }
     {
         auto const& f = pass_result->func_defs[6ul];
@@ -929,7 +929,7 @@ BOOST_AUTO_TEST_CASE(pass_004)
         BOOST_TEST(is_arg(f.value.args[1ul], is_bool, "y"));
         BOOST_TEST(is_bool(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], lt(neg(var("x")), var("y"))));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], lt(not_of(var("x")), var("y"))));
     }
     {
         auto const& f = pass_result->func_defs[7ul];
@@ -943,7 +943,7 @@ BOOST_AUTO_TEST_CASE(pass_004)
         BOOST_TEST(is_arg(f.value.args[1ul], is_bool, "y"));
         BOOST_TEST(is_bool(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], neg(lt(var("x"), var("y")))));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], not_of(lt(var("x"), var("y")))));
     }
     {
         auto const& f = pass_result->func_defs[8ul];
@@ -957,7 +957,7 @@ BOOST_AUTO_TEST_CASE(pass_004)
         BOOST_TEST(is_arg(f.value.args[1ul], is_bool, "y"));
         BOOST_TEST(is_bool(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], lt(neg(var("x")), neg(var("y")))));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], lt(not_of(var("x")), not_of(var("y")))));
     }
     {
         auto const& f = pass_result->func_defs[9ul];
@@ -970,7 +970,7 @@ BOOST_AUTO_TEST_CASE(pass_004)
         BOOST_TEST(is_arg(f.value.args[0ul], array_of(is_bool, constant(2)), "xs"));
         BOOST_TEST(is_bool(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], neg(subscript_of(var("xs"), constant(0)))));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], not_of(subscript_of(var("xs"), constant(0)))));
     }
     {
         auto const& f = pass_result->func_defs[10ul];
@@ -986,7 +986,7 @@ BOOST_AUTO_TEST_CASE(pass_004)
         BOOST_TEST(
             is_return_of(
                 f.value.body.stmts[0ul],
-                lt(neg(subscript_of(var("xs"), constant(0))), subscript_of(var("xs"), constant(1)))));
+                lt(not_of(subscript_of(var("xs"), constant(0))), subscript_of(var("xs"), constant(1)))));
     }
     {
         auto const& f = pass_result->func_defs[11ul];
@@ -1002,7 +1002,7 @@ BOOST_AUTO_TEST_CASE(pass_004)
         BOOST_TEST(
             is_return_of(
                 f.value.body.stmts[0ul],
-                neg(lt(subscript_of(var("xs"), constant(0)), subscript_of(var("xs"), constant(1))))));
+                not_of(lt(subscript_of(var("xs"), constant(0)), subscript_of(var("xs"), constant(1))))));
     }
     {
         auto const& f = pass_result->func_defs[12ul];
@@ -1018,7 +1018,7 @@ BOOST_AUTO_TEST_CASE(pass_004)
         BOOST_TEST(
             is_return_of(
                 f.value.body.stmts[0ul],
-                lt(neg(subscript_of(var("xs"), constant(0))), neg(subscript_of(var("xs"), constant(1))))));
+                lt(not_of(subscript_of(var("xs"), constant(0))), not_of(subscript_of(var("xs"), constant(1))))));
     }
 }
 
@@ -1033,7 +1033,7 @@ BOOST_AUTO_TEST_CASE(pass_005)
         BOOST_TEST(f.value.args.size() == 0ul);
         BOOST_TEST(is_bool(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], conj(constant(true), constant(false))));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], and_of(constant(true), constant(false))));
     }
     {
         auto const& f = pass_result->func_defs[1ul];
@@ -1042,7 +1042,7 @@ BOOST_AUTO_TEST_CASE(pass_005)
         BOOST_TEST(f.value.args.size() == 0ul);
         BOOST_TEST(is_bool(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], conj(constant(true), constant(true))));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], and_of(constant(true), constant(true))));
     }
     {
         auto const& f = pass_result->func_defs[2ul];
@@ -1051,7 +1051,7 @@ BOOST_AUTO_TEST_CASE(pass_005)
         BOOST_TEST(f.value.args.size() == 0ul);
         BOOST_TEST(is_bool(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], conj(constant(true), neg(constant(false)))));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], and_of(constant(true), not_of(constant(false)))));
     }
     {
         auto const& f = pass_result->func_defs[3ul];
@@ -1060,7 +1060,7 @@ BOOST_AUTO_TEST_CASE(pass_005)
         BOOST_TEST(f.value.args.size() == 0ul);
         BOOST_TEST(is_bool(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], conj(neg(constant(false)), constant(true))));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], and_of(not_of(constant(false)), constant(true))));
     }
     {
         auto const& f = pass_result->func_defs[4ul];
@@ -1069,7 +1069,7 @@ BOOST_AUTO_TEST_CASE(pass_005)
         BOOST_TEST(f.value.args.size() == 0ul);
         BOOST_TEST(is_bool(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], neg(conj(constant(false), constant(true)))));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], not_of(and_of(constant(false), constant(true)))));
     }
     {
         auto const& f = pass_result->func_defs[5ul];
@@ -1083,7 +1083,7 @@ BOOST_AUTO_TEST_CASE(pass_005)
         BOOST_TEST(is_arg(f.value.args[1], is_bool, "y"));
         BOOST_TEST(is_bool(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], conj(var("x"), var("y"))));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], and_of(var("x"), var("y"))));
     }
     {
         auto const& f = pass_result->func_defs[6ul];
@@ -1097,7 +1097,7 @@ BOOST_AUTO_TEST_CASE(pass_005)
         BOOST_TEST(is_arg(f.value.args[1], is_bool, "y"));
         BOOST_TEST(is_bool(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], neg(conj(var("x"), var("y")))));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], not_of(and_of(var("x"), var("y")))));
     }
     {
         auto const& f = pass_result->func_defs[7ul];
@@ -1111,7 +1111,7 @@ BOOST_AUTO_TEST_CASE(pass_005)
         BOOST_TEST(is_arg(f.value.args[1], is_bool, "y"));
         BOOST_TEST(is_bool(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], conj(neg(var("x")), var("y"))));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], and_of(not_of(var("x")), var("y"))));
     }
     {
         auto const& f = pass_result->func_defs[8ul];
@@ -1127,7 +1127,7 @@ BOOST_AUTO_TEST_CASE(pass_005)
         BOOST_TEST(
             is_return_of(
                 f.value.body.stmts[0ul],
-                conj(
+                and_of(
                     subscript_of(var("xs"), constant(0)),
                     subscript_of(var("xs"), constant(1)))));
     }
@@ -1145,8 +1145,8 @@ BOOST_AUTO_TEST_CASE(pass_005)
         BOOST_TEST(
             is_return_of(
                 f.value.body.stmts[0ul],
-                conj(
-                    neg(subscript_of(var("xs"), constant(0))),
+                and_of(
+                    not_of(subscript_of(var("xs"), constant(0))),
                     subscript_of(var("xs"), constant(1)))));
     }
     {
@@ -1163,8 +1163,8 @@ BOOST_AUTO_TEST_CASE(pass_005)
         BOOST_TEST(
             is_return_of(
                 f.value.body.stmts[0ul],
-                neg(
-                    conj(
+                not_of(
+                    and_of(
                         subscript_of(var("xs"), constant(0)),
                         subscript_of(var("xs"), constant(1))))));
     }
@@ -1182,9 +1182,9 @@ BOOST_AUTO_TEST_CASE(pass_005)
         BOOST_TEST(
             is_return_of(
                 f.value.body.stmts[0ul],
-                conj(
-                    neg(subscript_of(var("xs"), constant(0))),
-                    neg(subscript_of(var("xs"), constant(1))))));
+                and_of(
+                    not_of(subscript_of(var("xs"), constant(0))),
+                    not_of(subscript_of(var("xs"), constant(1))))));
     }
 }
 
@@ -1199,7 +1199,7 @@ BOOST_AUTO_TEST_CASE(pass_006)
         BOOST_TEST(f.value.args.size() == 0ul);
         BOOST_TEST(is_bool(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], disj(constant(true), constant(false))));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], or_of(constant(true), constant(false))));
     }
     {
         auto const& f = pass_result->func_defs[1ul];
@@ -1208,7 +1208,7 @@ BOOST_AUTO_TEST_CASE(pass_006)
         BOOST_TEST(f.value.args.size() == 0ul);
         BOOST_TEST(is_bool(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], disj(constant(true), constant(true))));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], or_of(constant(true), constant(true))));
     }
     {
         auto const& f = pass_result->func_defs[2ul];
@@ -1217,7 +1217,7 @@ BOOST_AUTO_TEST_CASE(pass_006)
         BOOST_TEST(f.value.args.size() == 0ul);
         BOOST_TEST(is_bool(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], disj(constant(true), neg(constant(false)))));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], or_of(constant(true), not_of(constant(false)))));
     }
     {
         auto const& f = pass_result->func_defs[3ul];
@@ -1226,7 +1226,7 @@ BOOST_AUTO_TEST_CASE(pass_006)
         BOOST_TEST(f.value.args.size() == 0ul);
         BOOST_TEST(is_bool(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], disj(neg(constant(false)), constant(true))));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], or_of(not_of(constant(false)), constant(true))));
     }
     {
         auto const& f = pass_result->func_defs[4ul];
@@ -1235,7 +1235,7 @@ BOOST_AUTO_TEST_CASE(pass_006)
         BOOST_TEST(f.value.args.size() == 0ul);
         BOOST_TEST(is_bool(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], neg(disj(constant(false), constant(true)))));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], not_of(or_of(constant(false), constant(true)))));
     }
     {
         auto const& f = pass_result->func_defs[5ul];
@@ -1249,7 +1249,7 @@ BOOST_AUTO_TEST_CASE(pass_006)
         BOOST_TEST(is_arg(f.value.args[1], is_bool, "y"));
         BOOST_TEST(is_bool(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], disj(var("x"), var("y"))));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], or_of(var("x"), var("y"))));
     }
     {
         auto const& f = pass_result->func_defs[6ul];
@@ -1263,7 +1263,7 @@ BOOST_AUTO_TEST_CASE(pass_006)
         BOOST_TEST(is_arg(f.value.args[1], is_bool, "y"));
         BOOST_TEST(is_bool(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], neg(disj(var("x"), var("y")))));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], not_of(or_of(var("x"), var("y")))));
     }
     {
         auto const& f = pass_result->func_defs[7ul];
@@ -1277,7 +1277,7 @@ BOOST_AUTO_TEST_CASE(pass_006)
         BOOST_TEST(is_arg(f.value.args[1], is_bool, "y"));
         BOOST_TEST(is_bool(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], disj(neg(var("x")), var("y"))));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], or_of(not_of(var("x")), var("y"))));
     }
     {
         auto const& f = pass_result->func_defs[8ul];
@@ -1290,9 +1290,9 @@ BOOST_AUTO_TEST_CASE(pass_006)
         BOOST_TEST(
             is_return_of(
                 f.value.body.stmts[0ul],
-                disj(
-                    conj(var("x"), var("y")),
-                    conj(neg(var("x")), neg(var("y"))))));
+                or_of(
+                    and_of(var("x"), var("y")),
+                    and_of(not_of(var("x")), not_of(var("y"))))));
     }
     {
         auto const& f = pass_result->func_defs[9ul];
@@ -1309,11 +1309,11 @@ BOOST_AUTO_TEST_CASE(pass_006)
         BOOST_TEST(
             is_return_of(
                 f.value.body.stmts[0ul],
-                conj(
-                    conj(
+                and_of(
+                    and_of(
                         var("x"),
-                        disj(var("y"), neg(var("x")))),
-                    neg(var("y")))));
+                        or_of(var("y"), not_of(var("x")))),
+                    not_of(var("y")))));
     }
     {
         auto const& f = pass_result->func_defs[10ul];
@@ -1330,11 +1330,11 @@ BOOST_AUTO_TEST_CASE(pass_006)
         BOOST_TEST(
             is_return_of(
                 f.value.body.stmts[0ul],
-                disj(
-                    disj(
+                or_of(
+                    or_of(
                         var("x"),
-                        conj(var("y"), neg(var("x")))),
-                    neg(var("y")))));
+                        and_of(var("y"), not_of(var("x")))),
+                    not_of(var("y")))));
     }
     {
         auto const& f = pass_result->func_defs[11ul];
@@ -1351,11 +1351,11 @@ BOOST_AUTO_TEST_CASE(pass_006)
         BOOST_TEST(
             is_return_of(
                 f.value.body.stmts[0ul],
-                disj(
-                    disj(
+                or_of(
+                    or_of(
                         var("x"),
-                        conj(var("y"), neg(var("x")))),
-                    neg(var("y")))));
+                        and_of(var("y"), not_of(var("x")))),
+                    not_of(var("y")))));
     }
     {
         auto const& f = pass_result->func_defs[12ul];
@@ -1371,7 +1371,7 @@ BOOST_AUTO_TEST_CASE(pass_006)
         BOOST_TEST(
             is_return_of(
                 f.value.body.stmts[0ul],
-                disj(
+                or_of(
                     subscript_of(var("xs"), constant(0)),
                     subscript_of(var("xs"), constant(1)))));
     }
@@ -1389,8 +1389,8 @@ BOOST_AUTO_TEST_CASE(pass_006)
         BOOST_TEST(
             is_return_of(
                 f.value.body.stmts[0ul],
-                disj(
-                    neg(subscript_of(var("xs"), constant(0))),
+                or_of(
+                    not_of(subscript_of(var("xs"), constant(0))),
                     subscript_of(var("xs"), constant(1)))));
     }
     {
@@ -1407,8 +1407,8 @@ BOOST_AUTO_TEST_CASE(pass_006)
         BOOST_TEST(
             is_return_of(
                 f.value.body.stmts[0ul],
-                neg(
-                    disj(
+                not_of(
+                    or_of(
                         subscript_of(var("xs"), constant(0)),
                         subscript_of(var("xs"), constant(1))))));
     }
@@ -1426,9 +1426,9 @@ BOOST_AUTO_TEST_CASE(pass_006)
         BOOST_TEST(
             is_return_of(
                 f.value.body.stmts[0ul],
-                disj(
-                    neg(subscript_of(var("xs"), constant(0))),
-                    neg(subscript_of(var("xs"), constant(1))))));
+                or_of(
+                    not_of(subscript_of(var("xs"), constant(0))),
+                    not_of(subscript_of(var("xs"), constant(1))))));
     }
 }
 
@@ -1461,7 +1461,7 @@ BOOST_AUTO_TEST_CASE(pass_007)
         BOOST_TEST(f.value.args.size() == 0ul);
         BOOST_TEST(is_bool(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], xor_of(constant(true), neg(constant(false)))));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], xor_of(constant(true), not_of(constant(false)))));
     }
     {
         auto const& f = pass_result->func_defs[3ul];
@@ -1470,7 +1470,7 @@ BOOST_AUTO_TEST_CASE(pass_007)
         BOOST_TEST(f.value.args.size() == 0ul);
         BOOST_TEST(is_bool(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], xor_of(neg(constant(false)), constant(true))));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], xor_of(not_of(constant(false)), constant(true))));
     }
     {
         auto const& f = pass_result->func_defs[4ul];
@@ -1479,7 +1479,7 @@ BOOST_AUTO_TEST_CASE(pass_007)
         BOOST_TEST(f.value.args.size() == 0ul);
         BOOST_TEST(is_bool(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], neg(xor_of(constant(false), constant(true)))));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], not_of(xor_of(constant(false), constant(true)))));
     }
     {
         auto const& f = pass_result->func_defs[5ul];
@@ -1507,7 +1507,7 @@ BOOST_AUTO_TEST_CASE(pass_007)
         BOOST_TEST(is_arg(f.value.args[1], is_bool, "y"));
         BOOST_TEST(is_bool(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], neg(xor_of(var("x"), var("y")))));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], not_of(xor_of(var("x"), var("y")))));
     }
     {
         auto const& f = pass_result->func_defs[7ul];
@@ -1521,7 +1521,7 @@ BOOST_AUTO_TEST_CASE(pass_007)
         BOOST_TEST(is_arg(f.value.args[1], is_bool, "y"));
         BOOST_TEST(is_bool(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], xor_of(neg(var("x")), var("y"))));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], xor_of(not_of(var("x")), var("y"))));
     }
     {
         auto const& f = pass_result->func_defs[8ul];
@@ -1538,9 +1538,9 @@ BOOST_AUTO_TEST_CASE(pass_007)
         BOOST_TEST(
             is_return_of(
                 f.value.body.stmts[0ul],
-                disj(
-                    conj(var("x"), var("y")),
-                    xor_of(neg(var("x")), neg(var("y"))))));
+                or_of(
+                    and_of(var("x"), var("y")),
+                    xor_of(not_of(var("x")), not_of(var("y"))))));
     }
     {
         auto const& f = pass_result->func_defs[9ul];
@@ -1557,11 +1557,11 @@ BOOST_AUTO_TEST_CASE(pass_007)
         BOOST_TEST(
             is_return_of(
                 f.value.body.stmts[0ul],
-                conj(
+                and_of(
                     var("x"),
                     xor_of(
-                        disj(var("y"), neg(var("x"))),
-                        neg(var("y"))))));
+                        or_of(var("y"), not_of(var("x"))),
+                        not_of(var("y"))))));
     }
     {
         auto const& f = pass_result->func_defs[10ul];
@@ -1578,9 +1578,9 @@ BOOST_AUTO_TEST_CASE(pass_007)
         BOOST_TEST(
             is_return_of(
                 f.value.body.stmts[0ul],
-                conj(
+                and_of(
                     xor_of(var("x"), var("y")),
-                    xor_of(neg(var("x")), neg(var("y"))))));
+                    xor_of(not_of(var("x")), not_of(var("y"))))));
     }
     {
         auto const& f = pass_result->func_defs[11ul];
@@ -1600,8 +1600,8 @@ BOOST_AUTO_TEST_CASE(pass_007)
                 xor_of(
                     xor_of(
                         var("x"),
-                        conj(var("y"), neg(var("x")))),
-                    neg(var("y")))));
+                        and_of(var("y"), not_of(var("x")))),
+                    not_of(var("y")))));
     }
     {
         auto const& f = pass_result->func_defs[12ul];
@@ -1636,7 +1636,7 @@ BOOST_AUTO_TEST_CASE(pass_007)
             is_return_of(
                 f.value.body.stmts[0ul],
                 xor_of(
-                    neg(subscript_of(var("xs"), constant(0))),
+                    not_of(subscript_of(var("xs"), constant(0))),
                     subscript_of(var("xs"), constant(1)))));
     }
     {
@@ -1653,7 +1653,7 @@ BOOST_AUTO_TEST_CASE(pass_007)
         BOOST_TEST(
             is_return_of(
                 f.value.body.stmts[0ul],
-                neg(
+                not_of(
                     xor_of(
                         subscript_of(var("xs"), constant(0)),
                         subscript_of(var("xs"), constant(1))))));
@@ -1673,8 +1673,8 @@ BOOST_AUTO_TEST_CASE(pass_007)
             is_return_of(
                 f.value.body.stmts[0ul],
                 xor_of(
-                    neg(subscript_of(var("xs"), constant(0))),
-                    neg(subscript_of(var("xs"), constant(1))))));
+                    not_of(subscript_of(var("xs"), constant(0))),
+                    not_of(subscript_of(var("xs"), constant(1))))));
     }
 }
 

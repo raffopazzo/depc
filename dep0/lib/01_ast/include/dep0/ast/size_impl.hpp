@@ -105,7 +105,7 @@ std::size_t size(expr_t<P> const& x)
         {
             return 1ul + match(
                 x.value,
-                [] (expr_t<P>::boolean_expr_t::negation_t const& x)
+                [] (expr_t<P>::boolean_expr_t::not_t const& x)
                 {
                     return size(x.expr.get());
                 },

@@ -74,7 +74,7 @@ std::size_t max_index(expr_t<P> const& x)
         {
             return match(
                 x.value,
-                [] (expr_t<P>::boolean_expr_t::negation_t const& x)
+                [] (expr_t<P>::boolean_expr_t::not_t const& x)
                 {
                     return max_index(x.expr.get());
                 },

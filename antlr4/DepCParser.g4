@@ -67,12 +67,12 @@ returnStmt: 'return' expr? ';';
 expr:
     func=expr '(' (expr (',' expr)*)? ')' # funcCallExpr
     | expr '[' expr ']' # subscriptExpr
-    | 'not' expr # negationExpr
+    | 'not' expr # notExpr
     | lhs=expr '+' rhs=expr # plusExpr
     | lhs=expr op=('<' | '<=' | '>' | '>=') rhs=expr # relationExpr
     | lhs=expr 'xor' rhs=expr # xorExpr
-    | lhs=expr 'and' rhs=expr # conjuctionExpr
-    | lhs=expr 'or' rhs=expr # disjuctionExpr
+    | lhs=expr 'and' rhs=expr # andExpr
+    | lhs=expr 'or' rhs=expr # orExpr
     | sign=('+' | '-')? value=INT # numericConstant
     | value=('true'|'false') # booleanConstant
     | 'array_t' # arrayExpr

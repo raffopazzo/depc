@@ -292,16 +292,16 @@ std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::boolean_expr_t 
 {
     match(
         x.value,
-        [&] (typename expr_t<P>::boolean_expr_t::negation_t const& x)
+        [&] (typename expr_t<P>::boolean_expr_t::not_t const& x)
         {
             detail::maybe_with_paranthesis(os << "not ", x.expr.get(), indent);
         },
-        [&] (typename expr_t<P>::boolean_expr_t::conjuction_t const& x)
+        [&] (typename expr_t<P>::boolean_expr_t::and_t const& x)
         {
             detail::maybe_with_paranthesis(os, x.lhs.get(), indent);
             detail::maybe_with_paranthesis(os << " and ", x.rhs.get(), indent);
         },
-        [&] (typename expr_t<P>::boolean_expr_t::disjuction_t const& x)
+        [&] (typename expr_t<P>::boolean_expr_t::or_t const& x)
         {
             detail::maybe_with_paranthesis(os, x.lhs.get(), indent);
             detail::maybe_with_paranthesis(os << " or ", x.rhs.get(), indent);
@@ -498,7 +498,7 @@ bool needs_new_line(typename expr_t<P>::boolean_expr_t const& x)
 {
     return match(
         x.value,
-        [] (typename expr_t<P>::boolean_expr_t::negation_t const& x)
+        [] (typename expr_t<P>::boolean_expr_t::not_t const& x)
         {
             return needs_new_line(x.expr.get());
         },
@@ -593,7 +593,7 @@ template <Properties P> bool needs_parenthesis(typename expr_t<P>::boolean_const
 template <Properties P> bool needs_parenthesis(typename expr_t<P>::numeric_constant_t const&) { return false; }
 template <Properties P> bool needs_parenthesis(typename expr_t<P>::boolean_expr_t const& x)
 {
-    return not std::holds_alternative<typename expr_t<P>::boolean_expr_t::negation_t>(x.value);
+    return not std::holds_alternative<typename expr_t<P>::boolean_expr_t::not_t>(x.value);
 }
 template <Properties P> bool needs_parenthesis(typename expr_t<P>::relation_expr_t const&) { return true; }
 template <Properties P> bool needs_parenthesis(typename expr_t<P>::arith_expr_t const&) { return true; }

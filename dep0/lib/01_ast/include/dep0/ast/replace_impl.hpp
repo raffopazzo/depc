@@ -65,7 +65,7 @@ void replace(typename expr_t<P>::var_t const& from, typename expr_t<P>::var_t co
         {
             return match(
                 x.value,
-                [&] (typename expr_t<P>::boolean_expr_t::negation_t& x)
+                [&] (typename expr_t<P>::boolean_expr_t::not_t& x)
                 {
                     replace(from, to, x.expr.get());
                 },

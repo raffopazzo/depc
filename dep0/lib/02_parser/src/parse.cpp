@@ -292,35 +292,35 @@ struct parse_visitor_t : dep0::DepCParserVisitor
                     visitExpr(ctx->rhs)}}};
     }
 
-    virtual std::any visitNegationExpr(DepCParser::NegationExprContext* ctx) override
+    virtual std::any visitNotExpr(DepCParser::NotExprContext* ctx) override
     {
         assert(ctx);
         return expr_t{
             get_loc(src, *ctx),
             expr_t::boolean_expr_t{
-                expr_t::boolean_expr_t::negation_t{
+                expr_t::boolean_expr_t::not_t{
                     visitExpr(ctx->expr())}}};
     }
 
-    virtual std::any visitConjuctionExpr(DepCParser::ConjuctionExprContext* ctx) override
+    virtual std::any visitAndExpr(DepCParser::AndExprContext* ctx) override
     {
         assert(ctx);
         return expr_t{
             get_loc(src, *ctx),
             expr_t::boolean_expr_t{
-                expr_t::boolean_expr_t::conjuction_t{
+                expr_t::boolean_expr_t::and_t{
                     visitExpr(ctx->lhs),
                     visitExpr(ctx->rhs)
                 }}};
     }
 
-    virtual std::any visitDisjuctionExpr(DepCParser::DisjuctionExprContext* ctx) override
+    virtual std::any visitOrExpr(DepCParser::OrExprContext* ctx) override
     {
         assert(ctx);
         return expr_t{
             get_loc(src, *ctx),
             expr_t::boolean_expr_t{
-                expr_t::boolean_expr_t::disjuction_t{
+                expr_t::boolean_expr_t::or_t{
                     visitExpr(ctx->lhs),
                     visitExpr(ctx->rhs)
                 }}};
@@ -434,18 +434,18 @@ struct parse_visitor_t : dep0::DepCParserVisitor
             return std::any_cast<expr_t>(visitFuncCallExpr(p));
         if (auto const p = dynamic_cast<DepCParser::SubscriptExprContext*>(ctx))
             return std::any_cast<expr_t>(visitSubscriptExpr(p));
-        if (auto const p = dynamic_cast<DepCParser::NegationExprContext*>(ctx))
-            return std::any_cast<expr_t>(visitNegationExpr(p));
+        if (auto const p = dynamic_cast<DepCParser::NotExprContext*>(ctx))
+            return std::any_cast<expr_t>(visitNotExpr(p));
         if (auto const p = dynamic_cast<DepCParser::PlusExprContext*>(ctx))
             return std::any_cast<expr_t>(visitPlusExpr(p));
         if (auto const p = dynamic_cast<DepCParser::RelationExprContext*>(ctx))
             return std::any_cast<expr_t>(visitRelationExpr(p));
         if (auto const p = dynamic_cast<DepCParser::XorExprContext*>(ctx))
             return std::any_cast<expr_t>(visitXorExpr(p));
-        if (auto const p = dynamic_cast<DepCParser::ConjuctionExprContext*>(ctx))
-            return std::any_cast<expr_t>(visitConjuctionExpr(p));
-        if (auto const p = dynamic_cast<DepCParser::DisjuctionExprContext*>(ctx))
-            return std::any_cast<expr_t>(visitDisjuctionExpr(p));
+        if (auto const p = dynamic_cast<DepCParser::AndExprContext*>(ctx))
+            return std::any_cast<expr_t>(visitAndExpr(p));
+        if (auto const p = dynamic_cast<DepCParser::OrExprContext*>(ctx))
+            return std::any_cast<expr_t>(visitOrExpr(p));
         if (auto const p = dynamic_cast<DepCParser::NumericConstantContext*>(ctx))
             return std::any_cast<expr_t>(visitNumericConstant(p));
         if (auto const p = dynamic_cast<DepCParser::BooleanConstantContext*>(ctx))

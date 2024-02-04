@@ -137,7 +137,7 @@ llvm::Value* gen_val(
         {
             return storeOrReturn(match(
                 x.value,
-                [&] (typecheck::expr_t::boolean_expr_t::negation_t const& x) -> llvm::Value*
+                [&] (typecheck::expr_t::boolean_expr_t::not_t const& x) -> llvm::Value*
                 {
                     return builder.CreateNot(gen_val(global, local, builder, x.expr.get(), nullptr));
                 },
@@ -146,11 +146,11 @@ llvm::Value* gen_val(
                     auto const lhs_val = gen_val(global, local, builder, x.lhs.get(), nullptr);
                     auto const rhs_val = gen_val(global, local, builder, x.rhs.get(), nullptr);
                     return boost::hana::overload(
-                        [&] (boost::hana::type<typecheck::expr_t::boolean_expr_t::conjuction_t>)
+                        [&] (boost::hana::type<typecheck::expr_t::boolean_expr_t::and_t>)
                         {
                             return builder.CreateAnd(lhs_val, rhs_val);
                         },
-                        [&] (boost::hana::type<typecheck::expr_t::boolean_expr_t::disjuction_t>)
+                        [&] (boost::hana::type<typecheck::expr_t::boolean_expr_t::or_t>)
                         {
                             return builder.CreateOr(lhs_val, rhs_val);
                         },

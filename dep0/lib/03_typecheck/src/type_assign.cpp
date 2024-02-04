@@ -193,13 +193,10 @@ expected<expr_t> type_assign(context_t const& ctx, parser::expr_t const& expr)
                     {
                         std::ostringstream err;
                         err << "cannot assign a unique type to relation expression";
-                        return error_t::from_error(dep0::error_t(
-                            err.str(),
-                            loc,
-                            std::vector<dep0::error_t>{
-                                std::move(lhs.error()),
-                                std::move(rhs.error())
-                            }));
+                        std::vector<dep0::error_t> reasons;
+                        if (lhs.has_error()) reasons.push_back(std::move(lhs.error()));
+                        if (rhs.has_error()) reasons.push_back(std::move(rhs.error()));
+                        return error_t::from_error(dep0::error_t(err.str(), loc, std::move(reasons)));
                     }
                 });
         },
@@ -224,13 +221,10 @@ expected<expr_t> type_assign(context_t const& ctx, parser::expr_t const& expr)
                     {
                         std::ostringstream err;
                         err << "cannot assign a unique type to arithmetic expression";
-                        return error_t::from_error(dep0::error_t(
-                            err.str(),
-                            loc,
-                            std::vector<dep0::error_t>{
-                                std::move(lhs.error()),
-                                std::move(rhs.error())
-                            }));
+                        std::vector<dep0::error_t> reasons;
+                        if (lhs.has_error()) reasons.push_back(std::move(lhs.error()));
+                        if (rhs.has_error()) reasons.push_back(std::move(rhs.error()));
+                        return error_t::from_error(dep0::error_t(err.str(), loc, std::move(reasons)));
                     }
                 });
         },

@@ -262,6 +262,31 @@ constexpr auto disj(F1&& f1, F2&& f2)
 }
 
 template <ast::Properties P, Predicate<ast::expr_t<P>> F1, Predicate<ast::expr_t<P>> F2>
+boost::test_tools::predicate_result is_xor(ast::expr_t<P> const& expr, F1&& f1, F2&& f2)
+{
+    auto const* x = std::get_if<typename ast::expr_t<P>::boolean_expr_t>(&expr.value);
+    if (not x)
+        return failure("expression is not boolean_expr_t but ", pretty_name(expr.value));
+    auto const xor_ = std::get_if<typename ast::expr_t<P>::boolean_expr_t::xor_t>(&x->value);
+    if (not xor_)
+        return failure("boolean expression is not xor_t but ", pretty_name(x->value));
+    if (auto const result = std::forward<F1>(f1)(xor_->lhs.get()); not result)
+        return failure("on the left-hand side: ", result.message());
+    if (auto const result = std::forward<F2>(f2)(xor_->rhs.get()); not result)
+        return failure("on the right-hand side: ", result.message());
+    return true;
+}
+
+template <ast::Properties P, Predicate<ast::expr_t<P>> F1, Predicate<ast::expr_t<P>> F2>
+constexpr auto xor_of(F1&& f1, F2&& f2)
+{
+    return [f1=std::forward<F1>(f1), f2=std::forward<F2>(f2)] (ast::expr_t<P> const& x)
+    {
+        return is_xor(x, f1, f2);
+    };
+}
+
+template <ast::Properties P, Predicate<ast::expr_t<P>> F1, Predicate<ast::expr_t<P>> F2>
 boost::test_tools::predicate_result is_gt(ast::expr_t<P> const& expr, F1&& f1, F2&& f2)
 {
     auto const* x = std::get_if<typename ast::expr_t<P>::relation_expr_t>(&expr.value);

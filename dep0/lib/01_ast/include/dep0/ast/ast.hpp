@@ -82,7 +82,12 @@ struct expr_t
             rec_t lhs;
             rec_t rhs;
         };
-        using value_t = std::variant<negation_t, conjuction_t, disjuction_t>;
+        struct xor_t
+        {
+            rec_t lhs;
+            rec_t rhs;
+        };
+        using value_t = std::variant<negation_t, conjuction_t, disjuction_t, xor_t>;
         value_t value;
     };
     struct relation_expr_t

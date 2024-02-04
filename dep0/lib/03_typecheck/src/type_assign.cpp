@@ -122,6 +122,14 @@ expected<expr_t> type_assign(context_t const& ctx, parser::expr_t const& expr)
                                         std::move(*lhs),
                                         std::move(*rhs)
                                     }};
+                            },
+                            [&] (boost::hana::type<parser::expr_t::boolean_expr_t::xor_t>)
+                            {
+                                return expr_t::boolean_expr_t{
+                                    expr_t::boolean_expr_t::xor_t{
+                                        std::move(*lhs),
+                                        std::move(*rhs)
+                                    }};
                             })(boost::hana::type_c<T>));
                 });
         },

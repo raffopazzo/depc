@@ -27,6 +27,7 @@ KW_U32_T: 'u32_t';
 KW_U64_T: 'u64_t';
 KW_U8_T: 'u8_t';
 KW_UNIT_T: 'unit_t';
+KW_XOR: 'xor';
 
 // Punctuation
 ARROW: '->';

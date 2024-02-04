@@ -300,6 +300,10 @@ bool beta_normalize(expr_t<P>& expr)
                                     [&] (boost::hana::type<typename expr_t<P>::boolean_expr_t::disjuction_t>)
                                     {
                                         return a->value or b->value;
+                                    },
+                                    [&] (boost::hana::type<typename expr_t<P>::boolean_expr_t::xor_t>)
+                                    {
+                                        return a->value xor b->value;
                                     })(boost::hana::type_c<T>);
                             expr.value.template emplace<typename expr_t<P>::boolean_constant_t>(c);
                         }

@@ -70,6 +70,7 @@ expr:
     | 'not' expr # negationExpr
     | lhs=expr '+' rhs=expr # plusExpr
     | lhs=expr op=('<' | '<=' | '>' | '>=') rhs=expr # relationExpr
+    | lhs=expr 'xor' rhs=expr # xorExpr
     | lhs=expr 'and' rhs=expr # conjuctionExpr
     | lhs=expr 'or' rhs=expr # disjuctionExpr
     | sign=('+' | '-')? value=INT # numericConstant

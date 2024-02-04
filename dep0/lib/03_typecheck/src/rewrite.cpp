@@ -168,6 +168,13 @@ std::optional<expr_t> rewrite(expr_t const& from, expr_t const& to, expr_t const
                                             expr_t::boolean_expr_t::disjuction_t{
                                                 choose(std::move(new_lhs), x.lhs.get()),
                                                 choose(std::move(new_rhs), x.rhs.get())}};
+                                    },
+                                    [&] (boost::hana::type<expr_t::boolean_expr_t::xor_t>)
+                                    {
+                                        return expr_t::boolean_expr_t{
+                                            expr_t::boolean_expr_t::xor_t{
+                                                choose(std::move(new_lhs), x.lhs.get()),
+                                                choose(std::move(new_rhs), x.rhs.get())}};
                                     })(boost::hana::type_c<T>));
                     });
             },

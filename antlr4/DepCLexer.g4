@@ -5,6 +5,7 @@ fragment ALPHA: [A-Za-z_]+; // we treat '-' as alpha
 fragment ALPHANUM: [A-Za-z0-9_]+;
 
 // Keywords
+KW_AND: 'and';
 KW_ARRAY: 'array_t';
 KW_AUTO: 'auto';
 KW_BOOL: 'bool';

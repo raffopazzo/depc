@@ -212,6 +212,31 @@ constexpr auto neg(F&& f)
 }
 
 template <ast::Properties P, Predicate<ast::expr_t<P>> F1, Predicate<ast::expr_t<P>> F2>
+boost::test_tools::predicate_result is_conj(ast::expr_t<P> const& expr, F1&& f1, F2&& f2)
+{
+    auto const* x = std::get_if<typename ast::expr_t<P>::boolean_expr_t>(&expr.value);
+    if (not x)
+        return failure("expression is not boolean_expr_t but ", pretty_name(expr.value));
+    auto const conj = std::get_if<typename ast::expr_t<P>::boolean_expr_t::conjuction_t>(&x->value);
+    if (not conj)
+        return failure("boolean expression is not conjuction_t but ", pretty_name(x->value));
+    if (auto const result = std::forward<F1>(f1)(conj->lhs.get()); not result)
+        return failure("on the left-hand side: ", result.message());
+    if (auto const result = std::forward<F2>(f2)(conj->rhs.get()); not result)
+        return failure("on the right-hand side: ", result.message());
+    return true;
+}
+
+template <ast::Properties P, Predicate<ast::expr_t<P>> F1, Predicate<ast::expr_t<P>> F2>
+constexpr auto conj(F1&& f1, F2&& f2)
+{
+    return [f1=std::forward<F1>(f1), f2=std::forward<F2>(f2)] (ast::expr_t<P> const& x)
+    {
+        return is_conj(x, f1, f2);
+    };
+}
+
+template <ast::Properties P, Predicate<ast::expr_t<P>> F1, Predicate<ast::expr_t<P>> F2>
 boost::test_tools::predicate_result is_gt(ast::expr_t<P> const& expr, F1&& f1, F2&& f2)
 {
     auto const* x = std::get_if<typename ast::expr_t<P>::relation_expr_t>(&expr.value);

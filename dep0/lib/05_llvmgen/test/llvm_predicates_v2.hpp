@@ -3,6 +3,7 @@
 #include "llvm_predicates_v2/add.hpp"
 #include "llvm_predicates_v2/align.hpp"
 #include "llvm_predicates_v2/alloca.hpp"
+#include "llvm_predicates_v2/and.hpp"
 #include "llvm_predicates_v2/argument.hpp"
 #include "llvm_predicates_v2/bitcast.hpp"
 #include "llvm_predicates_v2/branch.hpp"

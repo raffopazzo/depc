@@ -83,6 +83,14 @@ inline std::ostream& new_line(std::ostream& os, std::size_t const indent)
     return os << std::endl << std::string(indent * 4ul, ' ');
 }
 
+template <Properties P>
+std::ostream& maybe_with_paranthesis(std::ostream& os, expr_t<P> const& x, std::size_t const indent)
+{
+    return detail::needs_parenthesis(x)
+        ? pretty_print(os << '(', x, indent) << ')'
+        : pretty_print(os, x, indent);
+}
+
 } // namespace detail
 
 template <Properties P>
@@ -286,11 +294,12 @@ std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::boolean_expr_t 
         x.value,
         [&] (typename expr_t<P>::boolean_expr_t::negation_t const& x)
         {
-            os << "not ";
-            if (detail::needs_parenthesis(x.expr.get()))
-                pretty_print(os << '(', x.expr.get(), indent) << ')';
-            else
-                pretty_print(os, x.expr.get(), indent);
+            detail::maybe_with_paranthesis(os << "not ", x.expr.get(), indent);
+        },
+        [&] (typename expr_t<P>::boolean_expr_t::conjuction_t const& x)
+        {
+            detail::maybe_with_paranthesis(os, x.lhs.get(), indent);
+            detail::maybe_with_paranthesis(os << " and ", x.rhs.get(), indent);
         });
     return os;
 }
@@ -298,18 +307,12 @@ std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::boolean_expr_t 
 template <Properties P>
 std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::relation_expr_t const& x, std::size_t const indent)
 {
-    if (detail::needs_parenthesis(x.lhs.get()))
-        pretty_print(os << '(', x.lhs.get(), indent) << ')';
-    else
-        pretty_print(os, x.lhs.get(), indent);
+    detail::maybe_with_paranthesis(os, x.lhs.get(), indent);
     if (x.relation == dep0::ast::relation_t::gt) os << " > ";
     if (x.relation == dep0::ast::relation_t::gte) os << " >= ";
     if (x.relation == dep0::ast::relation_t::lt) os << " < ";
     if (x.relation == dep0::ast::relation_t::lte) os << " <= ";
-    if (detail::needs_parenthesis(x.rhs.get()))
-        pretty_print(os << '(', x.rhs.get(), indent) << ')';
-    else
-        pretty_print(os, x.rhs.get(), indent);
+    detail::maybe_with_paranthesis(os, x.rhs.get(), indent);
     return os;
 }
 
@@ -488,6 +491,10 @@ bool needs_new_line(typename expr_t<P>::boolean_expr_t const& x)
         [] (typename expr_t<P>::boolean_expr_t::negation_t const& x)
         {
             return needs_new_line(x.expr.get());
+        },
+        [] (typename expr_t<P>::boolean_expr_t::conjuction_t const& x)
+        {
+            return needs_new_line(x.lhs.get()) or needs_new_line(x.rhs.get());
         });
 }
 
@@ -574,7 +581,10 @@ template <Properties P> bool needs_parenthesis(typename expr_t<P>::u32_t const&)
 template <Properties P> bool needs_parenthesis(typename expr_t<P>::u64_t const&) { return false; }
 template <Properties P> bool needs_parenthesis(typename expr_t<P>::boolean_constant_t const&) { return false; }
 template <Properties P> bool needs_parenthesis(typename expr_t<P>::numeric_constant_t const&) { return false; }
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::boolean_expr_t const&) { return false; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::boolean_expr_t const& x)
+{
+    return not std::holds_alternative<typename expr_t<P>::boolean_expr_t::negation_t>(x.value);
+}
 template <Properties P> bool needs_parenthesis(typename expr_t<P>::relation_expr_t const&) { return true; }
 template <Properties P> bool needs_parenthesis(typename expr_t<P>::arith_expr_t const&) { return true; }
 template <Properties P> bool needs_parenthesis(typename expr_t<P>::var_t const&) { return false; }

@@ -138,6 +138,13 @@ llvm::Value* gen_val(
                 [&] (typecheck::expr_t::boolean_expr_t::negation_t const& x) -> llvm::Value*
                 {
                     return builder.CreateNot(gen_val(global, local, builder, x.expr.get(), nullptr));
+                },
+                [&] (typecheck::expr_t::boolean_expr_t::conjuction_t const &x) -> llvm::Value*
+                {
+                    // use temporaries to make sure that LHS comes before RHS in the emitted IR
+                    auto const lhs_val = gen_val(global, local, builder, x.lhs.get(), nullptr);
+                    auto const rhs_val = gen_val(global, local, builder, x.rhs.get(), nullptr);
+                    return builder.CreateAnd(lhs_val, rhs_val);
                 }));
         },
         [&] (typecheck::expr_t::relation_expr_t const& x) -> llvm::Value*

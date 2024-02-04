@@ -76,6 +76,10 @@ bool occurs_in(typename expr_t<P>::var_t const& var, expr_t<P> const& x, occurre
                 [&] (expr_t<P>::boolean_expr_t::negation_t const& x)
                 {
                     return occurs_in(var, x.expr.get(), style);
+                },
+                [&] (expr_t<P>::boolean_expr_t::conjuction_t const& x)
+                {
+                    return occurs_in(var, x.lhs.get(), style) or occurs_in(var, x.rhs.get(), style);
                 });
         },
         [&] (expr_t<P>::relation_expr_t const& x)

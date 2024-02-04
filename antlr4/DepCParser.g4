@@ -70,6 +70,7 @@ expr:
     | 'not' expr # negationExpr
     | lhs=expr '+' rhs=expr # plusExpr
     | lhs=expr op=('<' | '<=' | '>' | '>=') rhs=expr # relationExpr
+    | lhs=expr 'and' rhs=expr # conjuctionExpr
     | sign=('+' | '-')? value=INT # numericConstant
     | value=('true'|'false') # booleanConstant
     | 'array_t' # arrayExpr

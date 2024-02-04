@@ -792,7 +792,7 @@ BOOST_AUTO_TEST_CASE(pass_003)
 
 BOOST_AUTO_TEST_CASE(pass_004)
 {
-    apply_beta_delta_normalization = false;
+    apply_beta_delta_normalization = true;
     auto const ult = llvm::CmpInst::Predicate::ICMP_ULT;
     BOOST_TEST_REQUIRE(pass("0008_boolean_expr/pass_004.depc"));
     {
@@ -921,6 +921,131 @@ BOOST_AUTO_TEST_CASE(pass_004)
                 f->getEntryBlock().getTerminator(),
                 cmp_of(
                     ult,
+                    neg_of(load_of(is_i1, gep_of(is_i1, exactly(xs), constant(0)), align_of(1))),
+                    neg_of(load_of(is_i1, gep_of(is_i1, exactly(xs), constant(1)), align_of(1))))));
+    }
+}
+
+BOOST_AUTO_TEST_CASE(pass_005)
+{
+    apply_beta_delta_normalization = true;
+    BOOST_TEST_REQUIRE(pass("0008_boolean_expr/pass_005.depc"));
+    {
+        auto const f = pass_result.value()->getFunction("f0");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i1));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(false)));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("f1");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i1));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(true)));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("f2");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i1));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(true)));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("f3");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i1));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(true)));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("f4");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i1));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(true)));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("f5");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(is_i1, "x"), arg_of(is_i1, "y")}, is_i1));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        auto const x = f->getArg(0ul);
+        auto const y = f->getArg(1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), and_of(exactly(x), exactly(y))));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("f6");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(is_i1, "x"), arg_of(is_i1, "y")}, is_i1));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        auto const x = f->getArg(0ul);
+        auto const y = f->getArg(1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), neg_of(and_of(exactly(x), exactly(y)))));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("f7");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(is_i1, "x"), arg_of(is_i1, "y")}, is_i1));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        auto const x = f->getArg(0ul);
+        auto const y = f->getArg(1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), and_of(neg_of(exactly(x)), exactly(y))));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("f8");
+        BOOST_TEST_REQUIRE(
+            is_function_of(
+                f,
+                std::tuple{arg_of(pointer_to(is_i1), "xs", {llvm::Attribute::NonNull})},
+                is_i1));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        auto const xs = f->getArg(0ul);
+        BOOST_TEST(
+            is_return_of(
+                f->getEntryBlock().getTerminator(),
+                and_of(
+                    load_of(is_i1, gep_of(is_i1, exactly(xs), constant(0)), align_of(1)),
+                    load_of(is_i1, gep_of(is_i1, exactly(xs), constant(1)), align_of(1)))));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("f9");
+        BOOST_TEST_REQUIRE(
+            is_function_of(
+                f,
+                std::tuple{arg_of(pointer_to(is_i1), "xs", {llvm::Attribute::NonNull})},
+                is_i1));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        auto const xs = f->getArg(0ul);
+        BOOST_TEST(
+            is_return_of(
+                f->getEntryBlock().getTerminator(),
+                and_of(
+                    neg_of(load_of(is_i1, gep_of(is_i1, exactly(xs), constant(0)), align_of(1))),
+                    load_of(is_i1, gep_of(is_i1, exactly(xs), constant(1)), align_of(1)))));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("f10");
+        BOOST_TEST_REQUIRE(
+            is_function_of(
+                f,
+                std::tuple{arg_of(pointer_to(is_i1), "xs", {llvm::Attribute::NonNull})},
+                is_i1));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        auto const xs = f->getArg(0ul);
+        BOOST_TEST(
+            is_return_of(
+                f->getEntryBlock().getTerminator(),
+                neg_of(
+                    and_of(
+                        load_of(is_i1, gep_of(is_i1, exactly(xs), constant(0)), align_of(1)),
+                        load_of(is_i1, gep_of(is_i1, exactly(xs), constant(1)), align_of(1))))));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("f11");
+        BOOST_TEST_REQUIRE(
+            is_function_of(
+                f,
+                std::tuple{arg_of(pointer_to(is_i1), "xs", {llvm::Attribute::NonNull})},
+                is_i1));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        auto const xs = f->getArg(0ul);
+        BOOST_TEST(
+            is_return_of(
+                f->getEntryBlock().getTerminator(),
+                and_of(
                     neg_of(load_of(is_i1, gep_of(is_i1, exactly(xs), constant(0)), align_of(1))),
                     neg_of(load_of(is_i1, gep_of(is_i1, exactly(xs), constant(1)), align_of(1))))));
     }

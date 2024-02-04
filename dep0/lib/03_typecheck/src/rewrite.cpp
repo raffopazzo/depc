@@ -144,6 +144,18 @@ std::optional<expr_t> rewrite(expr_t const& from, expr_t const& to, expr_t const
                                 expr_t::boolean_expr_t{
                                     expr_t::boolean_expr_t::negation_t{
                                         std::move(*new_expr)}});
+                    },
+                    [&] (expr_t::boolean_expr_t::conjuction_t const& x)
+                    {
+                        auto new_lhs = rewrite(from, to, x.lhs.get());
+                        auto new_rhs = rewrite(from, to, x.rhs.get());
+                        if (new_lhs or new_rhs)
+                            result.emplace(
+                                old.properties,
+                                expr_t::boolean_expr_t{
+                                    expr_t::boolean_expr_t::conjuction_t{
+                                        choose(std::move(new_lhs), x.lhs.get()),
+                                        choose(std::move(new_rhs), x.rhs.get())}});
                     });
             },
             [&] (expr_t::relation_expr_t const& x)
@@ -162,17 +174,17 @@ std::optional<expr_t> rewrite(expr_t const& from, expr_t const& to, expr_t const
             {
                 match(
                     x.value,
-                    [&] (expr_t::arith_expr_t::plus_t const& plus)
+                    [&] (expr_t::arith_expr_t::plus_t const& x)
                     {
-                        auto new_lhs = rewrite(from, to, plus.lhs.get());
-                        auto new_rhs = rewrite(from, to, plus.rhs.get());
+                        auto new_lhs = rewrite(from, to, x.lhs.get());
+                        auto new_rhs = rewrite(from, to, x.rhs.get());
                         if (new_lhs or new_rhs)
                             result.emplace(
                                 old.properties,
                                 expr_t::arith_expr_t{
                                     expr_t::arith_expr_t::plus_t{
-                                        choose(std::move(new_lhs), plus.lhs.get()),
-                                        choose(std::move(new_rhs), plus.rhs.get())}});
+                                        choose(std::move(new_lhs), x.lhs.get()),
+                                        choose(std::move(new_rhs), x.rhs.get())}});
                     });
             },
             [] (expr_t::var_t const&) { },

@@ -11,6 +11,8 @@ add_library(dep0_llvmgen_tests_fixture
     llvm_predicates_v2/align.cpp
     llvm_predicates_v2/alloca.hpp
     llvm_predicates_v2/alloca.cpp
+    llvm_predicates_v2/and.hpp
+    llvm_predicates_v2/and.cpp
     llvm_predicates_v2/argument.hpp
     llvm_predicates_v2/argument.cpp
     llvm_predicates_v2/bitcast.hpp

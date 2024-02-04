@@ -89,16 +89,24 @@ struct alpha_equivalence_visitor
 
     result_t operator()(typename expr_t<P>::boolean_expr_t& x, typename expr_t<P>::boolean_expr_t& y) const
     {
-        struct visitor
-        {
-            result_t operator()(
-                typename expr_t<P>::boolean_expr_t::negation_t& x,
-                typename expr_t<P>::boolean_expr_t::negation_t& y) const
-            {
-                return is_alpha_equivalent_impl(x.expr.get(), y.expr.get());
-            }
-        };
-        return std::visit(visitor{}, x.value, y.value);
+        return std::visit(
+            boost::hana::overload(
+                [] (expr_t<P>::boolean_expr_t::negation_t& x, expr_t<P>::boolean_expr_t::negation_t& y)
+                {
+                    return is_alpha_equivalent_impl(x.expr.get(), y.expr.get());
+                },
+                [] (expr_t<P>::boolean_expr_t::conjuction_t& x, expr_t<P>::boolean_expr_t::conjuction_t& y)
+                {
+                    auto eq = is_alpha_equivalent_impl(x.lhs.get(), y.lhs.get());
+                    if (eq)
+                        eq = is_alpha_equivalent_impl(x.rhs.get(), y.rhs.get());
+                    return eq;
+                },
+                [&] <typename T, typename U> (T const&, U const&) requires (not std::is_same_v<T, U>)
+                {
+                    return not_alpha_equivalent(x, y);
+                }),
+            x.value, y.value);
     };
 
     result_t operator()(typename expr_t<P>::relation_expr_t& x, typename expr_t<P>::relation_expr_t& y) const

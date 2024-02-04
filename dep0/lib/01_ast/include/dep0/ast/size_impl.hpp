@@ -108,6 +108,10 @@ std::size_t size(expr_t<P> const& x)
                 [] (expr_t<P>::boolean_expr_t::negation_t const& x)
                 {
                     return size(x.expr.get());
+                },
+                [] (expr_t<P>::boolean_expr_t::conjuction_t const& x)
+                {
+                    return 1ul + std::max(size(x.lhs.get()), size(x.rhs.get()));
                 });
         },
         [] (expr_t<P>::relation_expr_t const& x)

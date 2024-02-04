@@ -292,11 +292,12 @@ boost::test_tools::predicate_result is_gt(ast::expr_t<P> const& expr, F1&& f1, F
     auto const* x = std::get_if<typename ast::expr_t<P>::relation_expr_t>(&expr.value);
     if (not x)
         return failure("expression is not relation_expr_t but ", pretty_name(expr.value));
-    if (x->relation != dep0::ast::relation_t::gt)
-        return failure("relation not gt but ", static_cast<int>(x->relation));
-    if (auto const result = std::forward<F1>(f1)(x->lhs.get()); not result)
+    auto const gt = std::get_if<typename ast::expr_t<P>::relation_expr_t::gt_t>(&x->value);
+    if (not gt)
+        return failure("relation not gt but ", pretty_name(x->value));
+    if (auto const result = std::forward<F1>(f1)(gt->lhs.get()); not result)
         return failure("on the left-hand side: ", result.message());
-    if (auto const result = std::forward<F2>(f2)(x->rhs.get()); not result)
+    if (auto const result = std::forward<F2>(f2)(gt->rhs.get()); not result)
         return failure("on the right-hand side: ", result.message());
     return true;
 }
@@ -316,11 +317,12 @@ boost::test_tools::predicate_result is_gte(ast::expr_t<P> const& expr, F1&& f1, 
     auto const* x = std::get_if<typename ast::expr_t<P>::relation_expr_t>(&expr.value);
     if (not x)
         return failure("expression is not relation_expr_t but ", pretty_name(expr.value));
-    if (x->relation != dep0::ast::relation_t::gte)
-        return failure("relation not gte but ", static_cast<int>(x->relation));
-    if (auto const result = std::forward<F1>(f1)(x->lhs.get()); not result)
+    auto const gte = std::get_if<typename ast::expr_t<P>::relation_expr_t::gte_t>(&x->value);
+    if (not gte)
+        return failure("relation not gte but ", pretty_name(x->value));
+    if (auto const result = std::forward<F1>(f1)(gte->lhs.get()); not result)
         return failure("on the left-hand side: ", result.message());
-    if (auto const result = std::forward<F2>(f2)(x->rhs.get()); not result)
+    if (auto const result = std::forward<F2>(f2)(gte->rhs.get()); not result)
         return failure("on the right-hand side: ", result.message());
     return true;
 }
@@ -340,11 +342,12 @@ boost::test_tools::predicate_result is_lt(ast::expr_t<P> const& expr, F1&& f1, F
     auto const* x = std::get_if<typename ast::expr_t<P>::relation_expr_t>(&expr.value);
     if (not x)
         return failure("expression is not relation_expr_t but ", pretty_name(expr.value));
-    if (x->relation != dep0::ast::relation_t::lt)
-        return failure("relation not lt but ", static_cast<int>(x->relation));
-    if (auto const result = std::forward<F1>(f1)(x->lhs.get()); not result)
+    auto const lt = std::get_if<typename ast::expr_t<P>::relation_expr_t::lt_t>(&x->value);
+    if (not lt)
+        return failure("relation not lt but ", pretty_name(x->value));
+    if (auto const result = std::forward<F1>(f1)(lt->lhs.get()); not result)
         return failure("on the left-hand side: ", result.message());
-    if (auto const result = std::forward<F2>(f2)(x->rhs.get()); not result)
+    if (auto const result = std::forward<F2>(f2)(lt->rhs.get()); not result)
         return failure("on the right-hand side: ", result.message());
     return true;
 }
@@ -364,11 +367,12 @@ boost::test_tools::predicate_result is_lte(ast::expr_t<P> const& expr, F1&& f1, 
     auto const* x = std::get_if<typename ast::expr_t<P>::relation_expr_t>(&expr.value);
     if (not x)
         return failure("expression is not relation_expr_t but ", pretty_name(expr.value));
-    if (x->relation != dep0::ast::relation_t::lte)
-        return failure("relation not lte but ", static_cast<int>(x->relation));
-    if (auto const result = std::forward<F1>(f1)(x->lhs.get()); not result)
+    auto const lte = std::get_if<typename ast::expr_t<P>::relation_expr_t::lte_t>(&x->value);
+    if (not lte)
+        return failure("relation not lte but ", pretty_name(x->value));
+    if (auto const result = std::forward<F1>(f1)(lte->lhs.get()); not result)
         return failure("on the left-hand side: ", result.message());
-    if (auto const result = std::forward<F2>(f2)(x->rhs.get()); not result)
+    if (auto const result = std::forward<F2>(f2)(lte->rhs.get()); not result)
         return failure("on the right-hand side: ", result.message());
     return true;
 }

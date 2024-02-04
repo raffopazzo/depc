@@ -154,41 +154,26 @@ std::optional<expr_t> rewrite(expr_t const& from, expr_t const& to, expr_t const
                         if (new_lhs or new_rhs)
                             result.emplace(
                                 old.properties,
-                                boost::hana::overload(
-                                    [&] (boost::hana::type<expr_t::boolean_expr_t::and_t>)
-                                    {
-                                        return expr_t::boolean_expr_t{
-                                            expr_t::boolean_expr_t::and_t{
-                                                choose(std::move(new_lhs), x.lhs.get()),
-                                                choose(std::move(new_rhs), x.rhs.get())}};
-                                    },
-                                    [&] (boost::hana::type<expr_t::boolean_expr_t::or_t>)
-                                    {
-                                        return expr_t::boolean_expr_t{
-                                            expr_t::boolean_expr_t::or_t{
-                                                choose(std::move(new_lhs), x.lhs.get()),
-                                                choose(std::move(new_rhs), x.rhs.get())}};
-                                    },
-                                    [&] (boost::hana::type<expr_t::boolean_expr_t::xor_t>)
-                                    {
-                                        return expr_t::boolean_expr_t{
-                                            expr_t::boolean_expr_t::xor_t{
-                                                choose(std::move(new_lhs), x.lhs.get()),
-                                                choose(std::move(new_rhs), x.rhs.get())}};
-                                    })(boost::hana::type_c<T>));
+                                expr_t::boolean_expr_t{T{
+                                    choose(std::move(new_lhs), x.lhs.get()),
+                                    choose(std::move(new_rhs), x.rhs.get())}});
                     });
             },
             [&] (expr_t::relation_expr_t const& x)
             {
-                auto new_lhs = rewrite(from, to, x.lhs.get());
-                auto new_rhs = rewrite(from, to, x.rhs.get());
-                if (new_lhs or new_rhs)
-                    result.emplace(
-                        old.properties,
-                        expr_t::relation_expr_t{
-                            x.relation,
-                            choose(std::move(new_lhs), x.lhs.get()),
-                            choose(std::move(new_rhs), x.rhs.get())});
+                match(
+                    x.value,
+                    [&] <typename T> (T const& x)
+                    {
+                        auto new_lhs = rewrite(from, to, x.lhs.get());
+                        auto new_rhs = rewrite(from, to, x.rhs.get());
+                        if (new_lhs or new_rhs)
+                            result.emplace(
+                                old.properties,
+                                expr_t::relation_expr_t{T{
+                                    choose(std::move(new_lhs), x.lhs.get()),
+                                    choose(std::move(new_rhs), x.rhs.get())}});
+                    });
             },
             [&] (expr_t::arith_expr_t const& x)
             {

@@ -268,15 +268,19 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         assert(ctx->lhs);
         assert(ctx->rhs);
         auto const loc = get_loc(src, *ctx);
-        auto const relation = [&]
+        auto const make_relation = [&] <typename T> ()
         {
-            if (ctx->GT()) return dep0::ast::relation_t::gt;
-            if (ctx->GTE()) return dep0::ast::relation_t::gte;
-            if (ctx->LT()) return dep0::ast::relation_t::lt;
-            if (ctx->LTE()) return dep0::ast::relation_t::lte;
-            throw error_t("unexpected relation operator when parsing RelationExprContext", loc);
-        }();
-        return expr_t{loc, expr_t::relation_expr_t{relation, visitExpr(ctx->lhs), visitExpr(ctx->rhs)}};
+            return expr_t{loc, expr_t::relation_expr_t{T{visitExpr(ctx->lhs), visitExpr(ctx->rhs)}}};
+        };
+        if (ctx->GT())
+            return make_relation.template operator()<expr_t::relation_expr_t::gt_t>();
+        if (ctx->GTE())
+            return make_relation.template operator()<expr_t::relation_expr_t::gte_t>();
+        if (ctx->LT())
+            return make_relation.template operator()<expr_t::relation_expr_t::lt_t>();
+        if (ctx->LTE())
+            return make_relation.template operator()<expr_t::relation_expr_t::lte_t>();
+        throw error_t("unexpected alternative when parsing RelationExprContext", loc);
     }
 
     virtual std::any visitPlusExpr(DepCParser::PlusExprContext* ctx) override

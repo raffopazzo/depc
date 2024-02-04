@@ -317,12 +317,28 @@ std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::boolean_expr_t 
 template <Properties P>
 std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::relation_expr_t const& x, std::size_t const indent)
 {
-    detail::maybe_with_paranthesis(os, x.lhs.get(), indent);
-    if (x.relation == dep0::ast::relation_t::gt) os << " > ";
-    if (x.relation == dep0::ast::relation_t::gte) os << " >= ";
-    if (x.relation == dep0::ast::relation_t::lt) os << " < ";
-    if (x.relation == dep0::ast::relation_t::lte) os << " <= ";
-    detail::maybe_with_paranthesis(os, x.rhs.get(), indent);
+    match(
+        x.value,
+        [&] (typename expr_t<P>::relation_expr_t::gt_t const& x)
+        {
+            detail::maybe_with_paranthesis(os, x.lhs.get(), indent);
+            detail::maybe_with_paranthesis(os << " > ", x.rhs.get(), indent);
+        },
+        [&] (typename expr_t<P>::relation_expr_t::gte_t const& x)
+        {
+            detail::maybe_with_paranthesis(os, x.lhs.get(), indent);
+            detail::maybe_with_paranthesis(os << " >= ", x.rhs.get(), indent);
+        },
+        [&] (typename expr_t<P>::relation_expr_t::lt_t const& x)
+        {
+            detail::maybe_with_paranthesis(os, x.lhs.get(), indent);
+            detail::maybe_with_paranthesis(os << " < ", x.rhs.get(), indent);
+        },
+        [&] (typename expr_t<P>::relation_expr_t::lte_t const& x)
+        {
+            detail::maybe_with_paranthesis(os, x.lhs.get(), indent);
+            detail::maybe_with_paranthesis(os << " <= ", x.rhs.get(), indent);
+        });
     return os;
 }
 
@@ -511,7 +527,12 @@ bool needs_new_line(typename expr_t<P>::boolean_expr_t const& x)
 template <Properties P>
 bool needs_new_line(typename expr_t<P>::relation_expr_t const& x)
 {
-    return needs_new_line(x.lhs.get()) or needs_new_line(x.rhs.get());
+    return match(
+        x.value,
+        [] (auto const& x)
+        {
+            return needs_new_line(x.lhs.get()) or needs_new_line(x.rhs.get());
+        });
 }
 
 template <Properties P>

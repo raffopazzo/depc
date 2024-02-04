@@ -77,8 +77,13 @@ void replace(typename expr_t<P>::var_t const& from, typename expr_t<P>::var_t co
         },
         [&] (typename expr_t<P>::relation_expr_t& x)
         {
-            replace(from, to, x.lhs.get());
-            replace(from, to, x.rhs.get());
+            return match(
+                x.value,
+                [&] (auto& x)
+                {
+                    replace(from, to, x.lhs.get());
+                    replace(from, to, x.rhs.get());
+                });
         },
         [&] (typename expr_t<P>::arith_expr_t& x)
         {

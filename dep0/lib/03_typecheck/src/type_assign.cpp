@@ -17,6 +17,23 @@
 
 namespace dep0::typecheck {
 
+/**
+ * Assign a type to a pair of exprassions that are connected by a binary relation or operator, eg `x+1` or `1 < x`.
+ * In this example `1` on its own cannot be assigned a unique type, but if `x` can, then `1` must have the same type.
+ * @return The result of each individual type-assignment; either one or both might have either failed or succeded.
+ */
+static std::pair<expected<expr_t>, expected<expr_t>>
+    type_assign_pair(context_t const& ctx, parser::expr_t const& lhs, parser::expr_t const& rhs)
+{
+    auto a = type_assign(ctx, lhs);
+    auto b = a
+        ? check_expr(ctx, rhs, a->properties.sort.get())
+        : type_assign(ctx, rhs);
+    if (b and not a)
+        a = check_expr(ctx, lhs, b->properties.sort.get());
+    return std::pair{std::move(a), std::move(b)};
+}
+
 expected<expr_t> type_assign(context_t const& ctx, parser::expr_t const& expr)
 {
     auto const loc = expr.properties;
@@ -135,44 +152,56 @@ expected<expr_t> type_assign(context_t const& ctx, parser::expr_t const& expr)
         },
         [&] (parser::expr_t::relation_expr_t const& x) -> expected<expr_t>
         {
-            // Make sure we can assign a type to expressions like `x<1` or `1<x`,
-            // based on the type of `x`, even though `1` itself cannot be assigned a type.
-            if (auto lhs = type_assign(ctx, x.lhs.get()))
-            {
-                if (auto rhs = check_expr(ctx, x.rhs.get(), lhs->properties.sort.get()))
-                    return make_legal_expr(
-                        derivation_rules::make_bool(),
-                        expr_t::relation_expr_t{
-                            x.relation,
-                            std::move(*lhs),
-                            std::move(*rhs)});
-                else
-                    return std::move(rhs.error());
-            }
-            else if (auto rhs = type_assign(ctx, x.rhs.get()))
-            {
-                if (auto lhs = check_expr(ctx, x.lhs.get(), rhs->properties.sort.get()))
-                    return make_legal_expr(
-                        derivation_rules::make_bool(),
-                        expr_t::relation_expr_t{
-                            x.relation,
-                            std::move(*lhs),
-                            std::move(*rhs)});
-                else
-                    return std::move(lhs.error());
-            }
-            else
-            {
-                std::ostringstream err;
-                err << "cannot assign a unique type to relation expression";
-                return error_t::from_error(dep0::error_t(
-                    err.str(),
-                    loc,
-                    std::vector<dep0::error_t>{
-                        std::move(lhs.error()),
-                        std::move(rhs.error())
-                    }));
-            }
+            return match(
+                x.value,
+                [&] <typename T> (T const& x) -> expected<expr_t>
+                {
+                    auto [lhs, rhs] = type_assign_pair(ctx, x.lhs.get(), x.rhs.get());
+                    if (lhs and rhs)
+                        return make_legal_expr(
+                            derivation_rules::make_bool(),
+                            boost::hana::overload(
+                                [&] (boost::hana::type<parser::expr_t::relation_expr_t::gt_t>)
+                                {
+                                    return expr_t::relation_expr_t{
+                                        expr_t::relation_expr_t::gt_t{
+                                            std::move(*lhs),
+                                            std::move(*rhs)}};
+                                },
+                                [&] (boost::hana::type<parser::expr_t::relation_expr_t::gte_t>)
+                                {
+                                    return expr_t::relation_expr_t{
+                                        expr_t::relation_expr_t::gte_t{
+                                            std::move(*lhs),
+                                            std::move(*rhs)}};
+                                },
+                                [&] (boost::hana::type<parser::expr_t::relation_expr_t::lt_t>)
+                                {
+                                    return expr_t::relation_expr_t{
+                                        expr_t::relation_expr_t::lt_t{
+                                            std::move(*lhs),
+                                            std::move(*rhs)}};
+                                },
+                                [&] (boost::hana::type<parser::expr_t::relation_expr_t::lte_t>)
+                                {
+                                    return expr_t::relation_expr_t{
+                                        expr_t::relation_expr_t::lte_t{
+                                            std::move(*lhs),
+                                            std::move(*rhs)}};
+                                })(boost::hana::type_c<T>));
+                    else
+                    {
+                        std::ostringstream err;
+                        err << "cannot assign a unique type to relation expression";
+                        return error_t::from_error(dep0::error_t(
+                            err.str(),
+                            loc,
+                            std::vector<dep0::error_t>{
+                                std::move(lhs.error()),
+                                std::move(rhs.error())
+                            }));
+                    }
+                });
         },
         [&] (parser::expr_t::arith_expr_t const& x) -> expected<expr_t>
         {
@@ -180,37 +209,16 @@ expected<expr_t> type_assign(context_t const& ctx, parser::expr_t const& expr)
                 x.value,
                 [&] (parser::expr_t::arith_expr_t::plus_t const& x) -> expected<expr_t>
                 {
-                    // Make sure we can assign a type to expressions like `x+1` or `1+x`,
-                    // based on the type of `x`, even though `1` itself cannot be assigned a type.
-                    if (auto lhs = type_assign(ctx, x.lhs.get()))
+                    auto [lhs, rhs] = type_assign_pair(ctx, x.lhs.get(), x.rhs.get());
+                    if (lhs and rhs)
                     {
-                        if (auto rhs = check_expr(ctx, x.rhs.get(), lhs->properties.sort.get()))
-                        {
-                            auto type = lhs->properties.sort.get(); // about to move from lhs, take a copy
-                            return make_legal_expr(
-                                std::move(type),
-                                expr_t::arith_expr_t{
-                                    expr_t::arith_expr_t::plus_t{
-                                        std::move(*lhs),
-                                        std::move(*rhs)}});
-                        }
-                        else
-                            return std::move(rhs.error());
-                    }
-                    else if (auto rhs = type_assign(ctx, x.rhs.get()))
-                    {
-                        if (auto lhs = check_expr(ctx, x.lhs.get(), rhs->properties.sort.get()))
-                        {
-                            auto type = rhs->properties.sort.get(); // about to move from rhs, take a copy
-                            return make_legal_expr(
-                                std::move(type),
-                                expr_t::arith_expr_t{
-                                    expr_t::arith_expr_t::plus_t{
-                                        std::move(*lhs),
-                                        std::move(*rhs)}});
-                        }
-                        else
-                            return std::move(lhs.error());
+                        auto type = lhs->properties.sort.get(); // about to move from lhs, take a copy
+                        return make_legal_expr(
+                            std::move(type),
+                            expr_t::arith_expr_t{
+                                expr_t::arith_expr_t::plus_t{
+                                    std::move(*lhs),
+                                    std::move(*rhs)}});
                     }
                     else
                     {

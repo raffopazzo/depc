@@ -111,12 +111,12 @@ std::size_t size(expr_t<P> const& x)
                 },
                 [] (auto const& x)
                 {
-                    return 1ul + std::max(size(x.lhs.get()), size(x.rhs.get()));
+                    return std::max(size(x.lhs.get()), size(x.rhs.get()));
                 });
         },
         [] (expr_t<P>::relation_expr_t const& x)
         {
-            return 1ul + std::max(size(x.lhs.get()), size(x.rhs.get()));
+            return 1ul + match(x.value, [] (auto const& x) { return std::max(size(x.lhs.get()), size(x.rhs.get())); });
         },
         [] (expr_t<P>::arith_expr_t const& x)
         {

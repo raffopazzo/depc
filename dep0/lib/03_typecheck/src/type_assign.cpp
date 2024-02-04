@@ -79,6 +79,22 @@ expected<expr_t> type_assign(context_t const& ctx, parser::expr_t const& expr)
             err << "cannot assign a unique type to numeric constant without being context-sensitive";
             return error_t::from_error(dep0::error_t(err.str(), loc));
         },
+        [&] (parser::expr_t::boolean_expr_t const& x) -> expected<expr_t>
+        {
+            return match(
+                x.value,
+                [&] (parser::expr_t::boolean_expr_t::negation_t const& x) -> expected<expr_t>
+                {
+                    if (auto expr = check_expr(ctx, x.expr.get(), derivation_rules::make_bool()))
+                        return make_legal_expr(
+                            derivation_rules::make_bool(),
+                            expr_t::boolean_expr_t{
+                                expr_t::boolean_expr_t::negation_t{
+                                    std::move(*expr)}});
+                    else
+                        return std::move(expr.error());
+                });
+        },
         [&] (parser::expr_t::relation_expr_t const& x) -> expected<expr_t>
         {
             // Make sure we can assign a type to expressions like `x<1` or `1<x`,

@@ -64,6 +64,15 @@ void substitute(typename expr_t<P>::var_t const& var, expr_t<P> const& expr, exp
         [] (typename expr_t<P>::u64_t const&) {},
         [] (typename expr_t<P>::boolean_constant_t&) { },
         [] (typename expr_t<P>::numeric_constant_t&) { },
+        [&] (typename expr_t<P>::boolean_expr_t& x)
+        {
+            match(
+                x.value,
+                [&] (typename expr_t<P>::boolean_expr_t::negation_t& x)
+                {
+                    substitute(var, expr, x.expr.get());
+                });
+        },
         [&] (typename expr_t<P>::relation_expr_t& x)
         {
             substitute(var, expr, x.lhs.get());

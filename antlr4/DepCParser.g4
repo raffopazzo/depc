@@ -67,6 +67,7 @@ returnStmt: 'return' expr? ';';
 expr:
     func=expr '(' (expr (',' expr)*)? ')' # funcCallExpr
     | expr '[' expr ']' # subscriptExpr
+    | 'not' expr # negationExpr
     | lhs=expr '+' rhs=expr # plusExpr
     | lhs=expr op=('<' | '<=' | '>' | '>=') rhs=expr # relationExpr
     | sign=('+' | '-')? value=INT # numericConstant

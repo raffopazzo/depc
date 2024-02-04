@@ -22,7 +22,8 @@ llvm::Attribute::AttrKind get_sign_ext_attribute(local_context_t const& local, t
         [] (typecheck::expr_t::u64_t const&) { return llvm::Attribute::ZExt; },
         [] (typecheck::expr_t::boolean_constant_t const&) { return llvm::Attribute::None; },
         [] (typecheck::expr_t::numeric_constant_t const&) { return llvm::Attribute::None; },
-        [] (typecheck::expr_t::relation_expr_t const&) { return llvm::Attribute::None; },
+        [] (typecheck::expr_t::boolean_expr_t const&) { return llvm::Attribute::None; }, // TOOD should this be ZExt?
+        [] (typecheck::expr_t::relation_expr_t const&) { return llvm::Attribute::None; }, // TODO and this too?
         [] (typecheck::expr_t::arith_expr_t const&) { return llvm::Attribute::None; },
         [&] (typecheck::expr_t::var_t const& var)
         {

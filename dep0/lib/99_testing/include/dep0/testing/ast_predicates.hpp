@@ -188,6 +188,29 @@ inline auto constant(int const value)
     };
 }
 
+template <ast::Properties P, Predicate<ast::expr_t<P>> F>
+boost::test_tools::predicate_result is_neg(ast::expr_t<P> const& expr, F&& f)
+{
+    auto const* x = std::get_if<typename ast::expr_t<P>::boolean_expr_t>(&expr.value);
+    if (not x)
+        return failure("expression is not boolean_expr_t but ", pretty_name(expr.value));
+    auto const neg = std::get_if<typename ast::expr_t<P>::boolean_expr_t::negation_t>(&x->value);
+    if (not neg)
+        return failure("boolean expression is not negation_t but ", pretty_name(x->value));
+    if (auto const result = std::forward<F>(f)(neg->expr.get()); not result)
+        return failure("negation expression predicate failed: ", result.message());
+    return true;
+}
+
+template <ast::Properties P, Predicate<ast::expr_t<P>> F>
+constexpr auto neg(F&& f)
+{
+    return [f=std::forward<F>(f)] (ast::expr_t<P> const& x)
+    {
+        return is_neg(x, f);
+    };
+}
+
 template <ast::Properties P, Predicate<ast::expr_t<P>> F1, Predicate<ast::expr_t<P>> F2>
 boost::test_tools::predicate_result is_gt(ast::expr_t<P> const& expr, F1&& f1, F2&& f2)
 {

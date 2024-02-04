@@ -30,6 +30,7 @@ bool is_first_order_type(typecheck::expr_t const& type)
         [] (typecheck::expr_t::u64_t const&) { return true; },
         [] (typecheck::expr_t::boolean_constant_t const&) { return false; },
         [] (typecheck::expr_t::numeric_constant_t const&) { return false; },
+        [] (typecheck::expr_t::boolean_expr_t const&) { return false; },
         [] (typecheck::expr_t::relation_expr_t const&) { return false; },
         [] (typecheck::expr_t::arith_expr_t const&) { return false; },
         [] (typecheck::expr_t::var_t const&) { return true; }, // caller must call only if expr is a type

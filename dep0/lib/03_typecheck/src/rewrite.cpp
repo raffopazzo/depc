@@ -132,6 +132,20 @@ std::optional<expr_t> rewrite(expr_t const& from, expr_t const& to, expr_t const
             [] (expr_t::u64_t) { },
             [] (expr_t::boolean_constant_t){},
             [] (expr_t::numeric_constant_t){},
+            [&] (expr_t::boolean_expr_t const& x)
+            {
+                match(
+                    x.value,
+                    [&] (expr_t::boolean_expr_t::negation_t const& x)
+                    {
+                        if (auto new_expr = rewrite(from, to, x.expr.get()))
+                            result.emplace(
+                                old.properties,
+                                expr_t::boolean_expr_t{
+                                    expr_t::boolean_expr_t::negation_t{
+                                        std::move(*new_expr)}});
+                    });
+            },
             [&] (expr_t::relation_expr_t const& x)
             {
                 auto new_lhs = rewrite(from, to, x.lhs.get());

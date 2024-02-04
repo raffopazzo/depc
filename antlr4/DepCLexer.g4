@@ -15,6 +15,7 @@ KW_I32_T: 'i32_t';
 KW_I64_T: 'i64_t';
 KW_I8_T: 'i8_t';
 KW_IF: 'if';
+KW_NOT: 'not';
 KW_RETURN: 'return';
 KW_TRUE: 'true';
 KW_TYPEDEF: 'typedef';

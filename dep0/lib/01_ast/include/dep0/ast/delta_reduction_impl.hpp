@@ -29,6 +29,7 @@ template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P
 template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::u64_t&);
 template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::boolean_constant_t&);
 template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::numeric_constant_t&);
+template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::boolean_expr_t&);
 template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::relation_expr_t&);
 template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::arith_expr_t&);
 template <Properties P> bool delta_reduce(context_t<P> const&, typename expr_t<P>::var_t&);
@@ -69,6 +70,17 @@ bool delta_reduce(context_t<P> const&, typename expr_t<P>::boolean_constant_t&) 
 
 template <Properties P>
 bool delta_reduce(context_t<P> const&, typename expr_t<P>::numeric_constant_t&) { return false; }
+
+template <Properties P>
+bool delta_reduce(context_t<P> const& ctx, typename expr_t<P>::boolean_expr_t& x)
+{
+    return match(
+        x.value,
+        [&] (typename expr_t<P>::boolean_expr_t::negation_t& x)
+        {
+            return delta_reduce(ctx, x.expr.get());
+        });
+}
 
 template <Properties P>
 bool delta_reduce(context_t<P> const& ctx, typename expr_t<P>::relation_expr_t& x)

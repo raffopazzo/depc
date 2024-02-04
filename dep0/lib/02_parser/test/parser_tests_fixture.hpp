@@ -54,6 +54,12 @@ struct ParserTestsFixture
     }
 
     template <typename... Args>
+    static constexpr auto neg(Args&&... args)
+    {
+        return dep0::testing::neg<dep0::parser::properties_t>(std::forward<Args>(args)...);
+    }
+
+    template <typename... Args>
     static constexpr auto gt(Args&&... args)
     {
         return dep0::testing::gt<dep0::parser::properties_t>(std::forward<Args>(args)...);

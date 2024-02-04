@@ -18,6 +18,7 @@
 #include "llvm_predicates_v2/select.hpp"
 #include "llvm_predicates_v2/store.hpp"
 #include "llvm_predicates_v2/types.hpp"
+#include "llvm_predicates_v2/xor.hpp"
 
 #include "dep0/testing/failure.hpp"
 

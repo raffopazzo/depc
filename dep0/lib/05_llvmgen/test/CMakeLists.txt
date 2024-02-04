@@ -45,6 +45,8 @@ add_library(dep0_llvmgen_tests_fixture
     llvm_predicates_v2/to_string.cpp
     llvm_predicates_v2/types.hpp
     llvm_predicates_v2/types.cpp
+    llvm_predicates_v2/xor.hpp
+    llvm_predicates_v2/xor.cpp
     llvm_predicates_v2.hpp
     llvm_predicates_v2.cpp
     )

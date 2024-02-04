@@ -131,6 +131,15 @@ llvm::Value* gen_val(
             assert(llvm_type);
             return storeOrReturn(llvm::ConstantInt::get(llvm_type, x.value.str(), 10));
         },
+        [&] (typecheck::expr_t::boolean_expr_t const& x) -> llvm::Value*
+        {
+            return storeOrReturn(match(
+                x.value,
+                [&] (typecheck::expr_t::boolean_expr_t::negation_t const& x) -> llvm::Value*
+                {
+                    return builder.CreateNot(gen_val(global, local, builder, x.expr.get(), nullptr));
+                }));
+        },
         [&] (typecheck::expr_t::relation_expr_t const& x) -> llvm::Value*
         {
             // use temporaries to make sure that LHS comes before RHS in the emitted IR

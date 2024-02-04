@@ -266,6 +266,22 @@ bool beta_normalize(expr_t<P>& expr)
                             }
             return changed;
         },
+        [&] (typename expr_t<P>::boolean_expr_t& x)
+        {
+            return match(
+                x.value,
+                [&] (typename expr_t<P>::boolean_expr_t::negation_t& x)
+                {
+                    bool changed = beta_normalize(x.expr.get());
+                    if (auto const c = std::get_if<typename expr_t<P>::boolean_constant_t>(&x.expr.get().value))
+                    {
+                        changed = true;
+                        bool const value = c->value; // take a copy before destructive self assignment
+                        expr.value.template emplace<typename expr_t<P>::boolean_constant_t>(value);
+                    }
+                    return changed;
+                });
+        },
         [&] (typename expr_t<P>::relation_expr_t& x)
         {
             bool changed = beta_normalize(x.lhs.get());

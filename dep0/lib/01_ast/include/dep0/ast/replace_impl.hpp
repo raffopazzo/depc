@@ -69,7 +69,7 @@ void replace(typename expr_t<P>::var_t const& from, typename expr_t<P>::var_t co
                 {
                     replace(from, to, x.expr.get());
                 },
-                [&] (typename expr_t<P>::boolean_expr_t::conjuction_t& x)
+                [&] (auto& x)
                 {
                     replace(from, to, x.lhs.get());
                     replace(from, to, x.rhs.get());

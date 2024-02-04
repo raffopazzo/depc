@@ -300,6 +300,11 @@ std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::boolean_expr_t 
         {
             detail::maybe_with_paranthesis(os, x.lhs.get(), indent);
             detail::maybe_with_paranthesis(os << " and ", x.rhs.get(), indent);
+        },
+        [&] (typename expr_t<P>::boolean_expr_t::disjuction_t const& x)
+        {
+            detail::maybe_with_paranthesis(os, x.lhs.get(), indent);
+            detail::maybe_with_paranthesis(os << " or ", x.rhs.get(), indent);
         });
     return os;
 }
@@ -492,7 +497,7 @@ bool needs_new_line(typename expr_t<P>::boolean_expr_t const& x)
         {
             return needs_new_line(x.expr.get());
         },
-        [] (typename expr_t<P>::boolean_expr_t::conjuction_t const& x)
+        [] (auto const& x)
         {
             return needs_new_line(x.lhs.get()) or needs_new_line(x.rhs.get());
         });

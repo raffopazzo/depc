@@ -15,6 +15,7 @@
 #include "llvm_predicates_v2/gep.hpp"
 #include "llvm_predicates_v2/load.hpp"
 #include "llvm_predicates_v2/mul.hpp"
+#include "llvm_predicates_v2/or.hpp"
 #include "llvm_predicates_v2/return.hpp"
 #include "llvm_predicates_v2/select.hpp"
 #include "llvm_predicates_v2/store.hpp"

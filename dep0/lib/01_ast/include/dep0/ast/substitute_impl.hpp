@@ -72,7 +72,7 @@ void substitute(typename expr_t<P>::var_t const& var, expr_t<P> const& expr, exp
                 {
                     substitute(var, expr, x.expr.get());
                 },
-                [&] (typename expr_t<P>::boolean_expr_t::conjuction_t& x)
+                [&] (auto& x)
                 {
                     substitute(var, expr, x.lhs.get());
                     substitute(var, expr, x.rhs.get());

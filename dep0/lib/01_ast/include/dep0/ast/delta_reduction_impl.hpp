@@ -80,7 +80,7 @@ bool delta_reduce(context_t<P> const& ctx, typename expr_t<P>::boolean_expr_t& x
         {
             return delta_reduce(ctx, x.expr.get());
         },
-        [&] (typename expr_t<P>::boolean_expr_t::conjuction_t& x)
+        [&] (auto& x)
         {
             return delta_reduce(ctx, x.lhs.get()) or delta_reduce(ctx, x.rhs.get());
         });

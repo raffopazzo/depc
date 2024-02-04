@@ -78,7 +78,7 @@ std::size_t max_index(expr_t<P> const& x)
                 {
                     return max_index(x.expr.get());
                 },
-                [] (expr_t<P>::boolean_expr_t::conjuction_t const& x)
+                [] (auto const& x)
                 {
                     return std::max(max_index(x.lhs.get()), max_index(x.rhs.get()));
                 });

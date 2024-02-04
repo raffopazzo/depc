@@ -314,6 +314,18 @@ struct parse_visitor_t : dep0::DepCParserVisitor
                 }}};
     }
 
+    virtual std::any visitDisjuctionExpr(DepCParser::DisjuctionExprContext* ctx) override
+    {
+        assert(ctx);
+        return expr_t{
+            get_loc(src, *ctx),
+            expr_t::boolean_expr_t{
+                expr_t::boolean_expr_t::disjuction_t{
+                    visitExpr(ctx->lhs),
+                    visitExpr(ctx->rhs)
+                }}};
+    }
+
     virtual std::any visitSubscriptExpr(DepCParser::SubscriptExprContext* ctx) override
     {
         assert(ctx);
@@ -418,6 +430,8 @@ struct parse_visitor_t : dep0::DepCParserVisitor
             return std::any_cast<expr_t>(visitRelationExpr(p));
         if (auto const p = dynamic_cast<DepCParser::ConjuctionExprContext*>(ctx))
             return std::any_cast<expr_t>(visitConjuctionExpr(p));
+        if (auto const p = dynamic_cast<DepCParser::DisjuctionExprContext*>(ctx))
+            return std::any_cast<expr_t>(visitDisjuctionExpr(p));
         if (auto const p = dynamic_cast<DepCParser::NumericConstantContext*>(ctx))
             return std::any_cast<expr_t>(visitNumericConstant(p));
         if (auto const p = dynamic_cast<DepCParser::BooleanConstantContext*>(ctx))

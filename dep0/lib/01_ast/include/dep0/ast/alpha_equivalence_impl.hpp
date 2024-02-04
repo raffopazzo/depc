@@ -95,7 +95,7 @@ struct alpha_equivalence_visitor
                 {
                     return is_alpha_equivalent_impl(x.expr.get(), y.expr.get());
                 },
-                [] (expr_t<P>::boolean_expr_t::conjuction_t& x, expr_t<P>::boolean_expr_t::conjuction_t& y)
+                [] <typename T> (T& x, T& y)
                 {
                     auto eq = is_alpha_equivalent_impl(x.lhs.get(), y.lhs.get());
                     if (eq)

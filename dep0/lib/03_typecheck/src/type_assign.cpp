@@ -10,6 +10,8 @@
 
 #include "dep0/match.hpp"
 
+#include <boost/hana.hpp>
+
 #include <ranges>
 #include <sstream>
 
@@ -94,7 +96,7 @@ expected<expr_t> type_assign(context_t const& ctx, parser::expr_t const& expr)
                     else
                         return std::move(expr.error());
                 },
-                [&] (parser::expr_t::boolean_expr_t::conjuction_t const& x) -> expected<expr_t>
+                [&] <typename T> (T const& x) -> expected<expr_t>
                 {
                     auto lhs = check_expr(ctx, x.lhs.get(), derivation_rules::make_bool());
                     if (not lhs)
@@ -104,11 +106,23 @@ expected<expr_t> type_assign(context_t const& ctx, parser::expr_t const& expr)
                         return std::move(rhs.error());
                     return make_legal_expr(
                         derivation_rules::make_bool(),
-                        expr_t::boolean_expr_t{
-                            expr_t::boolean_expr_t::conjuction_t{
-                                std::move(*lhs),
-                                std::move(*rhs)
-                            }});
+                        boost::hana::overload(
+                            [&] (boost::hana::type<parser::expr_t::boolean_expr_t::conjuction_t>)
+                            {
+                                return expr_t::boolean_expr_t{
+                                    expr_t::boolean_expr_t::conjuction_t{
+                                        std::move(*lhs),
+                                        std::move(*rhs)
+                                    }};
+                            },
+                            [&] (boost::hana::type<parser::expr_t::boolean_expr_t::disjuction_t>)
+                            {
+                                return expr_t::boolean_expr_t{
+                                    expr_t::boolean_expr_t::disjuction_t{
+                                        std::move(*lhs),
+                                        std::move(*rhs)
+                                    }};
+                            })(boost::hana::type_c<T>));
                 });
         },
         [&] (parser::expr_t::relation_expr_t const& x) -> expected<expr_t>

@@ -5,6 +5,8 @@
 
 #include "dep0/match.hpp"
 
+#include <boost/hana.hpp>
+
 #include <algorithm>
 #include <cassert>
 #include <ranges>
@@ -281,7 +283,7 @@ bool beta_normalize(expr_t<P>& expr)
                     }
                     return changed;
                 },
-                [&] (typename expr_t<P>::boolean_expr_t::conjuction_t& x)
+                [&] <typename T> (T& x)
                 {
                     bool changed = beta_normalize(x.lhs.get());
                     changed |= beta_normalize(x.rhs.get());
@@ -289,7 +291,16 @@ bool beta_normalize(expr_t<P>& expr)
                         if (auto const b = std::get_if<typename expr_t<P>::boolean_constant_t>(&x.rhs.get().value))
                         {
                             changed = true;
-                            bool const c = a->value and b->value; // compute result before destructive self assignment
+                            bool const c =
+                                boost::hana::overload(
+                                    [&] (boost::hana::type<typename expr_t<P>::boolean_expr_t::conjuction_t>)
+                                    {
+                                        return a->value and b->value;
+                                    },
+                                    [&] (boost::hana::type<typename expr_t<P>::boolean_expr_t::disjuction_t>)
+                                    {
+                                        return a->value or b->value;
+                                    })(boost::hana::type_c<T>);
                             expr.value.template emplace<typename expr_t<P>::boolean_constant_t>(c);
                         }
                     return changed;

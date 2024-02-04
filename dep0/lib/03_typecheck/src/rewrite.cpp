@@ -6,6 +6,8 @@
 #include "dep0/fmap.hpp"
 #include "dep0/match.hpp"
 
+#include <boost/hana.hpp>
+
 #include <algorithm>
 #include <cassert>
 #include <iterator>
@@ -145,17 +147,28 @@ std::optional<expr_t> rewrite(expr_t const& from, expr_t const& to, expr_t const
                                     expr_t::boolean_expr_t::negation_t{
                                         std::move(*new_expr)}});
                     },
-                    [&] (expr_t::boolean_expr_t::conjuction_t const& x)
+                    [&] <typename T> (T const& x)
                     {
                         auto new_lhs = rewrite(from, to, x.lhs.get());
                         auto new_rhs = rewrite(from, to, x.rhs.get());
                         if (new_lhs or new_rhs)
                             result.emplace(
                                 old.properties,
-                                expr_t::boolean_expr_t{
-                                    expr_t::boolean_expr_t::conjuction_t{
-                                        choose(std::move(new_lhs), x.lhs.get()),
-                                        choose(std::move(new_rhs), x.rhs.get())}});
+                                boost::hana::overload(
+                                    [&] (boost::hana::type<expr_t::boolean_expr_t::conjuction_t>)
+                                    {
+                                        return expr_t::boolean_expr_t{
+                                            expr_t::boolean_expr_t::conjuction_t{
+                                                choose(std::move(new_lhs), x.lhs.get()),
+                                                choose(std::move(new_rhs), x.rhs.get())}};
+                                    },
+                                    [&] (boost::hana::type<expr_t::boolean_expr_t::disjuction_t>)
+                                    {
+                                        return expr_t::boolean_expr_t{
+                                            expr_t::boolean_expr_t::disjuction_t{
+                                                choose(std::move(new_lhs), x.lhs.get()),
+                                                choose(std::move(new_rhs), x.rhs.get())}};
+                                    })(boost::hana::type_c<T>));
                     });
             },
             [&] (expr_t::relation_expr_t const& x)

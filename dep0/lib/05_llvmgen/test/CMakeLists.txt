@@ -35,6 +35,8 @@ add_library(dep0_llvmgen_tests_fixture
     llvm_predicates_v2/load.cpp
     llvm_predicates_v2/mul.hpp
     llvm_predicates_v2/mul.cpp
+    llvm_predicates_v2/or.hpp
+    llvm_predicates_v2/or.cpp
     llvm_predicates_v2/predicate.hpp
     llvm_predicates_v2/predicate.cpp
     llvm_predicates_v2/return.hpp

@@ -67,11 +67,17 @@ returnStmt: 'return' expr? ';';
 expr:
     func=expr '(' (expr (',' expr)*)? ')' # funcCallExpr
     | expr '[' expr ']' # subscriptExpr
+    | 'not' expr # notExpr
     | lhs=expr '+' rhs=expr # plusExpr
-    | sign=('+' | '-')? value=INT # numericExpr
-    | value=('true'|'false') # booleanExpr
+    | lhs=expr op=('<' | '<=' | '>' | '>=') rhs=expr # relationExpr
+    | lhs=expr 'xor' rhs=expr # xorExpr
+    | lhs=expr 'and' rhs=expr # andExpr
+    | lhs=expr 'or' rhs=expr # orExpr
+    | sign=('+' | '-')? value=INT # numericConstant
+    | value=('true'|'false') # booleanConstant
     | 'array_t' # arrayExpr
     | var=ID # varExpr
     | type # typeExpr // in an expression `f(x)` x should be parsed as `var` so this rule must come after `var`
+    | '(' expr ')' # subExpr
     | '{' (expr (',' expr)*)? '}' # initListExpr
     ;

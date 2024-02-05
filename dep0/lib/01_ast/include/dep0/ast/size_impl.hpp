@@ -101,14 +101,26 @@ std::size_t size(expr_t<P> const& x)
         [] (expr_t<P>::u64_t const&) { return 0ul; },
         [] (expr_t<P>::boolean_constant_t const&) { return 0ul; },
         [] (expr_t<P>::numeric_constant_t const&) { return 0ul; },
-        [] (expr_t<P>::arith_expr_t const& x)
+        [] (expr_t<P>::boolean_expr_t const& x)
         {
             return 1ul + match(
                 x.value,
-                [] (expr_t<P>::arith_expr_t::plus_t const& x)
+                [] (expr_t<P>::boolean_expr_t::not_t const& x)
+                {
+                    return size(x.expr.get());
+                },
+                [] (auto const& x)
                 {
                     return std::max(size(x.lhs.get()), size(x.rhs.get()));
                 });
+        },
+        [] (expr_t<P>::relation_expr_t const& x)
+        {
+            return 1ul + match(x.value, [] (auto const& x) { return std::max(size(x.lhs.get()), size(x.rhs.get())); });
+        },
+        [] (expr_t<P>::arith_expr_t const& x)
+        {
+            return 1ul + match(x.value, [] (auto const& x) { return std::max(size(x.lhs.get()), size(x.rhs.get())); });
         },
         [] (expr_t<P>::var_t const& x) { return 0ul; },
         [] (expr_t<P>::app_t const& x) { return impl::size<P>(x); },

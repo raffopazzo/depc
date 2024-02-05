@@ -10,7 +10,7 @@ BOOST_FIXTURE_TEST_SUITE(dep0_parser_tests_0002_user_defined_integrals, ParserTe
 BOOST_AUTO_TEST_CASE(pass_000)
 {
     BOOST_TEST_REQUIRE(pass("0002_user_defined_integrals/pass_000.depc"));
-    BOOST_TEST(pass_result->type_defs.size() == 10ul);
+    BOOST_TEST_REQUIRE(pass_result->type_defs.size() == 10ul);
     BOOST_TEST(pass_result->func_defs.size() == 16ul);
     BOOST_TEST(is_integer_def(
         pass_result->type_defs[0],

@@ -282,7 +282,6 @@ expected<expr_t> check_expr(context_t const& ctx, parser::expr_t const& x, sort_
                     return make_legal_expr(
                         expected_type,
                         expr_t::arith_expr_t{
-                            // TODO require proof that it doesn't overflow; user can always appeal to `believe_me()`
                             expr_t::arith_expr_t::plus_t{
                                 std::move(*lhs),
                                 std::move(*rhs)}});

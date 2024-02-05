@@ -188,6 +188,204 @@ inline auto constant(int const value)
     };
 }
 
+template <ast::Properties P, Predicate<ast::expr_t<P>> F>
+boost::test_tools::predicate_result is_not_of(ast::expr_t<P> const& expr, F&& f)
+{
+    auto const* x = std::get_if<typename ast::expr_t<P>::boolean_expr_t>(&expr.value);
+    if (not x)
+        return failure("expression is not boolean_expr_t but ", pretty_name(expr.value));
+    auto const not_ = std::get_if<typename ast::expr_t<P>::boolean_expr_t::not_t>(&x->value);
+    if (not not_)
+        return failure("boolean expression is not not_t but ", pretty_name(x->value));
+    if (auto const result = std::forward<F>(f)(not_->expr.get()); not result)
+        return failure("negation expression predicate failed: ", result.message());
+    return true;
+}
+
+template <ast::Properties P, Predicate<ast::expr_t<P>> F>
+constexpr auto not_of(F&& f)
+{
+    return [f=std::forward<F>(f)] (ast::expr_t<P> const& x)
+    {
+        return is_not_of(x, f);
+    };
+}
+
+template <ast::Properties P, Predicate<ast::expr_t<P>> F1, Predicate<ast::expr_t<P>> F2>
+boost::test_tools::predicate_result is_and_of(ast::expr_t<P> const& expr, F1&& f1, F2&& f2)
+{
+    auto const* x = std::get_if<typename ast::expr_t<P>::boolean_expr_t>(&expr.value);
+    if (not x)
+        return failure("expression is not boolean_expr_t but ", pretty_name(expr.value));
+    auto const and_ = std::get_if<typename ast::expr_t<P>::boolean_expr_t::and_t>(&x->value);
+    if (not and_)
+        return failure("boolean expression is not and_t but ", pretty_name(x->value));
+    if (auto const result = std::forward<F1>(f1)(and_->lhs.get()); not result)
+        return failure("on the left-hand side: ", result.message());
+    if (auto const result = std::forward<F2>(f2)(and_->rhs.get()); not result)
+        return failure("on the right-hand side: ", result.message());
+    return true;
+}
+
+template <ast::Properties P, Predicate<ast::expr_t<P>> F1, Predicate<ast::expr_t<P>> F2>
+constexpr auto and_of(F1&& f1, F2&& f2)
+{
+    return [f1=std::forward<F1>(f1), f2=std::forward<F2>(f2)] (ast::expr_t<P> const& x)
+    {
+        return is_and_of(x, f1, f2);
+    };
+}
+
+template <ast::Properties P, Predicate<ast::expr_t<P>> F1, Predicate<ast::expr_t<P>> F2>
+boost::test_tools::predicate_result is_or_of(ast::expr_t<P> const& expr, F1&& f1, F2&& f2)
+{
+    auto const* x = std::get_if<typename ast::expr_t<P>::boolean_expr_t>(&expr.value);
+    if (not x)
+        return failure("expression is not boolean_expr_t but ", pretty_name(expr.value));
+    auto const or_ = std::get_if<typename ast::expr_t<P>::boolean_expr_t::or_t>(&x->value);
+    if (not or_)
+        return failure("boolean expression is not or_t but ", pretty_name(x->value));
+    if (auto const result = std::forward<F1>(f1)(or_->lhs.get()); not result)
+        return failure("on the left-hand side: ", result.message());
+    if (auto const result = std::forward<F2>(f2)(or_->rhs.get()); not result)
+        return failure("on the right-hand side: ", result.message());
+    return true;
+}
+
+template <ast::Properties P, Predicate<ast::expr_t<P>> F1, Predicate<ast::expr_t<P>> F2>
+constexpr auto or_of(F1&& f1, F2&& f2)
+{
+    return [f1=std::forward<F1>(f1), f2=std::forward<F2>(f2)] (ast::expr_t<P> const& x)
+    {
+        return is_or_of(x, f1, f2);
+    };
+}
+
+template <ast::Properties P, Predicate<ast::expr_t<P>> F1, Predicate<ast::expr_t<P>> F2>
+boost::test_tools::predicate_result is_xor(ast::expr_t<P> const& expr, F1&& f1, F2&& f2)
+{
+    auto const* x = std::get_if<typename ast::expr_t<P>::boolean_expr_t>(&expr.value);
+    if (not x)
+        return failure("expression is not boolean_expr_t but ", pretty_name(expr.value));
+    auto const xor_ = std::get_if<typename ast::expr_t<P>::boolean_expr_t::xor_t>(&x->value);
+    if (not xor_)
+        return failure("boolean expression is not xor_t but ", pretty_name(x->value));
+    if (auto const result = std::forward<F1>(f1)(xor_->lhs.get()); not result)
+        return failure("on the left-hand side: ", result.message());
+    if (auto const result = std::forward<F2>(f2)(xor_->rhs.get()); not result)
+        return failure("on the right-hand side: ", result.message());
+    return true;
+}
+
+template <ast::Properties P, Predicate<ast::expr_t<P>> F1, Predicate<ast::expr_t<P>> F2>
+constexpr auto xor_of(F1&& f1, F2&& f2)
+{
+    return [f1=std::forward<F1>(f1), f2=std::forward<F2>(f2)] (ast::expr_t<P> const& x)
+    {
+        return is_xor(x, f1, f2);
+    };
+}
+
+template <ast::Properties P, Predicate<ast::expr_t<P>> F1, Predicate<ast::expr_t<P>> F2>
+boost::test_tools::predicate_result is_gt(ast::expr_t<P> const& expr, F1&& f1, F2&& f2)
+{
+    auto const* x = std::get_if<typename ast::expr_t<P>::relation_expr_t>(&expr.value);
+    if (not x)
+        return failure("expression is not relation_expr_t but ", pretty_name(expr.value));
+    auto const gt = std::get_if<typename ast::expr_t<P>::relation_expr_t::gt_t>(&x->value);
+    if (not gt)
+        return failure("relation not gt but ", pretty_name(x->value));
+    if (auto const result = std::forward<F1>(f1)(gt->lhs.get()); not result)
+        return failure("on the left-hand side: ", result.message());
+    if (auto const result = std::forward<F2>(f2)(gt->rhs.get()); not result)
+        return failure("on the right-hand side: ", result.message());
+    return true;
+}
+
+template <ast::Properties P, Predicate<ast::expr_t<P>> F1, Predicate<ast::expr_t<P>> F2>
+constexpr auto gt(F1&& f1, F2&& f2)
+{
+    return [f1=std::forward<F1>(f1), f2=std::forward<F2>(f2)] (ast::expr_t<P> const& x)
+    {
+        return is_gt(x, f1, f2);
+    };
+}
+
+template <ast::Properties P, Predicate<ast::expr_t<P>> F1, Predicate<ast::expr_t<P>> F2>
+boost::test_tools::predicate_result is_gte(ast::expr_t<P> const& expr, F1&& f1, F2&& f2)
+{
+    auto const* x = std::get_if<typename ast::expr_t<P>::relation_expr_t>(&expr.value);
+    if (not x)
+        return failure("expression is not relation_expr_t but ", pretty_name(expr.value));
+    auto const gte = std::get_if<typename ast::expr_t<P>::relation_expr_t::gte_t>(&x->value);
+    if (not gte)
+        return failure("relation not gte but ", pretty_name(x->value));
+    if (auto const result = std::forward<F1>(f1)(gte->lhs.get()); not result)
+        return failure("on the left-hand side: ", result.message());
+    if (auto const result = std::forward<F2>(f2)(gte->rhs.get()); not result)
+        return failure("on the right-hand side: ", result.message());
+    return true;
+}
+
+template <ast::Properties P, Predicate<ast::expr_t<P>> F1, Predicate<ast::expr_t<P>> F2>
+constexpr auto gte(F1&& f1, F2&& f2)
+{
+    return [f1=std::forward<F1>(f1), f2=std::forward<F2>(f2)] (ast::expr_t<P> const& x)
+    {
+        return is_gte(x, f1, f2);
+    };
+}
+
+template <ast::Properties P, Predicate<ast::expr_t<P>> F1, Predicate<ast::expr_t<P>> F2>
+boost::test_tools::predicate_result is_lt(ast::expr_t<P> const& expr, F1&& f1, F2&& f2)
+{
+    auto const* x = std::get_if<typename ast::expr_t<P>::relation_expr_t>(&expr.value);
+    if (not x)
+        return failure("expression is not relation_expr_t but ", pretty_name(expr.value));
+    auto const lt = std::get_if<typename ast::expr_t<P>::relation_expr_t::lt_t>(&x->value);
+    if (not lt)
+        return failure("relation not lt but ", pretty_name(x->value));
+    if (auto const result = std::forward<F1>(f1)(lt->lhs.get()); not result)
+        return failure("on the left-hand side: ", result.message());
+    if (auto const result = std::forward<F2>(f2)(lt->rhs.get()); not result)
+        return failure("on the right-hand side: ", result.message());
+    return true;
+}
+
+template <ast::Properties P, Predicate<ast::expr_t<P>> F1, Predicate<ast::expr_t<P>> F2>
+constexpr auto lt(F1&& f1, F2&& f2)
+{
+    return [f1=std::forward<F1>(f1), f2=std::forward<F2>(f2)] (ast::expr_t<P> const& x)
+    {
+        return is_lt(x, f1, f2);
+    };
+}
+
+template <ast::Properties P, Predicate<ast::expr_t<P>> F1, Predicate<ast::expr_t<P>> F2>
+boost::test_tools::predicate_result is_lte(ast::expr_t<P> const& expr, F1&& f1, F2&& f2)
+{
+    auto const* x = std::get_if<typename ast::expr_t<P>::relation_expr_t>(&expr.value);
+    if (not x)
+        return failure("expression is not relation_expr_t but ", pretty_name(expr.value));
+    auto const lte = std::get_if<typename ast::expr_t<P>::relation_expr_t::lte_t>(&x->value);
+    if (not lte)
+        return failure("relation not lte but ", pretty_name(x->value));
+    if (auto const result = std::forward<F1>(f1)(lte->lhs.get()); not result)
+        return failure("on the left-hand side: ", result.message());
+    if (auto const result = std::forward<F2>(f2)(lte->rhs.get()); not result)
+        return failure("on the right-hand side: ", result.message());
+    return true;
+}
+
+template <ast::Properties P, Predicate<ast::expr_t<P>> F1, Predicate<ast::expr_t<P>> F2>
+constexpr auto lte(F1&& f1, F2&& f2)
+{
+    return [f1=std::forward<F1>(f1), f2=std::forward<F2>(f2)] (ast::expr_t<P> const& x)
+    {
+        return is_lte(x, f1, f2);
+    };
+}
+
 template <ast::Properties P, Predicate<ast::expr_t<P>> F1, Predicate<ast::expr_t<P>> F2>
 boost::test_tools::predicate_result is_plus(ast::expr_t<P> const& expr, F1&& f1, F2&& f2)
 {

@@ -1,3 +1,5 @@
+add_custom_target(dep0_ast_tests)
+
 add_library(dep0_ast_tests_fixture
     ast_tests_fixture.hpp
     ast_tests_fixture.cpp)
@@ -8,22 +10,14 @@ target_link_libraries(dep0_ast_tests_fixture
     Boost::Boost
     )
 
-add_executable(dep0_alpha_equivalence_tests dep0_alpha_equivalence_tests.cpp)
-add_test(NAME dep0_alpha_equivalence_tests COMMAND dep0_alpha_equivalence_tests)
-target_link_libraries(dep0_alpha_equivalence_tests PRIVATE dep0_ast_tests_fixture)
-
-add_executable(dep0_beta_delta_reduction_tests dep0_beta_delta_reduction_tests.cpp)
-add_test(NAME dep0_beta_delta_reduction_tests COMMAND dep0_beta_delta_reduction_tests)
-target_link_libraries(dep0_beta_delta_reduction_tests PRIVATE dep0_ast_tests_fixture)
-
-add_executable(dep0_delta_reduction_tests dep0_delta_reduction_tests.cpp)
-add_test(NAME dep0_delta_reduction_tests COMMAND dep0_delta_reduction_tests)
-target_link_libraries(dep0_delta_reduction_tests PRIVATE dep0_ast_tests_fixture)
-
-add_executable(dep0_occurs_in_tests dep0_occurs_in_tests.cpp)
-add_test(NAME dep0_occurs_in_tests COMMAND dep0_occurs_in_tests)
-target_link_libraries(dep0_occurs_in_tests PRIVATE dep0_ast_tests_fixture)
-
-add_executable(dep0_substitute_tests dep0_substitute_tests.cpp)
-add_test(NAME dep0_substitute_tests COMMAND dep0_substitute_tests)
-target_link_libraries(dep0_substitute_tests PRIVATE dep0_ast_tests_fixture)
+macro(add_dep0_ast_test name)
+  add_executable(dep0_${name}_tests dep0_${name}_tests.cpp)
+  add_test(NAME dep0_${name}_tests COMMAND dep0_${name}_tests)
+  target_link_libraries(dep0_${name}_tests PRIVATE dep0_ast_tests_fixture)
+  add_dependencies(dep0_ast_tests dep0_${name}_tests)
+endmacro()
+add_dep0_ast_test(alpha_equivalence)
+add_dep0_ast_test(beta_delta_reduction)
+add_dep0_ast_test(delta_reduction)
+add_dep0_ast_test(occurs_in)
+add_dep0_ast_test(substitute)

@@ -1,0 +1,12 @@
+bool f0() { return true and false; }
+bool f1() { return true and true; }
+bool f2() { return true and not false; }
+bool f3() { return not false and true; }
+bool f4() { return not (false and true); }
+bool f5(bool x, bool y) { return x and y; }
+bool f6(bool x, bool y) { return not (x and y); }
+bool f7(bool x, bool y) { return not x and y; }
+bool f8(array_t(bool, 2) xs) { return xs[0] and xs[1]; }
+bool f9(array_t(bool, 2) xs) { return not xs[0] and xs[1]; }
+bool f10(array_t(bool, 2) xs) { return not (xs[0] and xs[1]); }
+bool f11(array_t(bool, 2) xs) { return not xs[0] and not xs[1]; }

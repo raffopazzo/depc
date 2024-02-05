@@ -8,6 +8,8 @@
 
 #include "dep0/match.hpp"
 
+#include <boost/hana.hpp>
+
 #include <sstream>
 
 namespace dep0::ast {
@@ -38,7 +40,7 @@ struct alpha_equivalence_visitor
     using result_t = dep0::expected<std::true_type>;
 
     template <typename T, typename U>
-    result_t not_alpha_equivalent(T const& x, U const& y) const
+    static result_t not_alpha_equivalent(T const& x, U const& y)
     {
         std::ostringstream err;
         pretty_print<P>(err << '`', x) << "` is not alpha-equivalent to ";
@@ -84,6 +86,46 @@ struct alpha_equivalence_visitor
         else
             return not_alpha_equivalent(x, y);
     }
+
+    result_t operator()(typename expr_t<P>::boolean_expr_t& x, typename expr_t<P>::boolean_expr_t& y) const
+    {
+        return std::visit(
+            boost::hana::overload(
+                [] (expr_t<P>::boolean_expr_t::not_t& x, expr_t<P>::boolean_expr_t::not_t& y)
+                {
+                    return is_alpha_equivalent_impl(x.expr.get(), y.expr.get());
+                },
+                [] <typename T> (T& x, T& y)
+                {
+                    auto eq = is_alpha_equivalent_impl(x.lhs.get(), y.lhs.get());
+                    if (eq)
+                        eq = is_alpha_equivalent_impl(x.rhs.get(), y.rhs.get());
+                    return eq;
+                },
+                [&] <typename T, typename U> (T const&, U const&) requires (not std::is_same_v<T, U>)
+                {
+                    return not_alpha_equivalent(x, y);
+                }),
+            x.value, y.value);
+    };
+
+    result_t operator()(typename expr_t<P>::relation_expr_t& x, typename expr_t<P>::relation_expr_t& y) const
+    {
+        return std::visit(
+            boost::hana::overload(
+                [] <typename T> (T& x, T& y)
+                {
+                    auto eq = is_alpha_equivalent_impl(x.lhs.get(), y.lhs.get());
+                    if (eq)
+                        eq = is_alpha_equivalent_impl(x.rhs.get(), y.rhs.get());
+                    return eq;
+                },
+                [&] <typename T, typename U> (T const&, U const&) requires (not std::is_same_v<T, U>)
+                {
+                    return not_alpha_equivalent(x, y);
+                }),
+            x.value, y.value);
+    };
 
     result_t operator()(typename expr_t<P>::arith_expr_t& x, typename expr_t<P>::arith_expr_t& y) const
     {

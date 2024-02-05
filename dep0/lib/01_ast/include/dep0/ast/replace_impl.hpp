@@ -59,6 +59,32 @@ void replace(typename expr_t<P>::var_t const& from, typename expr_t<P>::var_t co
         [] (typename expr_t<P>::u16_t const&) {},
         [] (typename expr_t<P>::u32_t const&) {},
         [] (typename expr_t<P>::u64_t const&) {},
+        [] (typename expr_t<P>::boolean_constant_t const&) { },
+        [] (typename expr_t<P>::numeric_constant_t const&) { },
+        [&] (typename expr_t<P>::boolean_expr_t& x)
+        {
+            return match(
+                x.value,
+                [&] (typename expr_t<P>::boolean_expr_t::not_t& x)
+                {
+                    replace(from, to, x.expr.get());
+                },
+                [&] (auto& x)
+                {
+                    replace(from, to, x.lhs.get());
+                    replace(from, to, x.rhs.get());
+                });
+        },
+        [&] (typename expr_t<P>::relation_expr_t& x)
+        {
+            return match(
+                x.value,
+                [&] (auto& x)
+                {
+                    replace(from, to, x.lhs.get());
+                    replace(from, to, x.rhs.get());
+                });
+        },
         [&] (typename expr_t<P>::arith_expr_t& x)
         {
             return match(
@@ -69,8 +95,6 @@ void replace(typename expr_t<P>::var_t const& from, typename expr_t<P>::var_t co
                     replace(from, to, x.rhs.get());
                 });
         },
-        [&] (typename expr_t<P>::boolean_constant_t const&) { },
-        [&] (typename expr_t<P>::numeric_constant_t const&) { },
         [&] (typename expr_t<P>::var_t& v)
         {
             if (v == from)

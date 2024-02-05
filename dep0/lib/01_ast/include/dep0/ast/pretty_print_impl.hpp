@@ -31,9 +31,11 @@ template <Properties P> bool needs_new_line(typename expr_t<P>::u8_t const&);
 template <Properties P> bool needs_new_line(typename expr_t<P>::u16_t const&);
 template <Properties P> bool needs_new_line(typename expr_t<P>::u32_t const&);
 template <Properties P> bool needs_new_line(typename expr_t<P>::u64_t const&);
-template <Properties P> bool needs_new_line(typename expr_t<P>::arith_expr_t const&);
 template <Properties P> bool needs_new_line(typename expr_t<P>::boolean_constant_t const&);
 template <Properties P> bool needs_new_line(typename expr_t<P>::numeric_constant_t const&);
+template <Properties P> bool needs_new_line(typename expr_t<P>::boolean_expr_t const&);
+template <Properties P> bool needs_new_line(typename expr_t<P>::relation_expr_t const&);
+template <Properties P> bool needs_new_line(typename expr_t<P>::arith_expr_t const&);
 template <Properties P> bool needs_new_line(typename expr_t<P>::var_t const&);
 template <Properties P> bool needs_new_line(typename expr_t<P>::app_t const&);
 template <Properties P> bool needs_new_line(typename expr_t<P>::abs_t const&);
@@ -43,9 +45,50 @@ template <Properties P> bool needs_new_line(typename expr_t<P>::init_list_t cons
 template <Properties P> bool needs_new_line(typename expr_t<P>::subscript_t const&);
 /** @} */
 
+/**
+ * @defgroup needs_parenthesis
+ * @brief A family of functions to test whether an expression should be printed inside parenthesis.
+ *
+ * For example `(x + y)` but not `x[1][2]` nor `f(x+y)()`.
+ * @{
+ */
+template <Properties P> bool needs_parenthesis(expr_t<P> const&);
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::typename_t const&);
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::bool_t const&);
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::unit_t const&);
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::i8_t const&);
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::i16_t const&);
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::i32_t const&);
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::i64_t const&);
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::u8_t const&);
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::u16_t const&);
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::u32_t const&);
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::u64_t const&);
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::boolean_constant_t const&);
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::numeric_constant_t const&);
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::boolean_expr_t const&);
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::relation_expr_t const&);
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::arith_expr_t const&);
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::var_t const&);
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::app_t const&);
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::abs_t const&);
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::pi_t const&);
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::array_t const&);
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::init_list_t const&);
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::subscript_t const&);
+/** @} */
+
 inline std::ostream& new_line(std::ostream& os, std::size_t const indent)
 {
     return os << std::endl << std::string(indent * 4ul, ' ');
+}
+
+template <Properties P>
+std::ostream& maybe_with_paranthesis(std::ostream& os, expr_t<P> const& x, std::size_t const indent)
+{
+    return detail::needs_parenthesis(x)
+        ? pretty_print(os << '(', x, indent) << ')'
+        : pretty_print(os, x, indent);
 }
 
 } // namespace detail
@@ -233,6 +276,73 @@ std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::u64_t const&, s
 }
 
 template <Properties P>
+std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::boolean_constant_t const& x, std::size_t const indent)
+{
+    return os << (x.value ? "true" : "false");
+}
+
+template <Properties P>
+std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::numeric_constant_t const& x, std::size_t const indent)
+{
+    return os << x.value;
+}
+
+template <Properties P>
+std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::boolean_expr_t const& x, std::size_t const indent)
+{
+    match(
+        x.value,
+        [&] (typename expr_t<P>::boolean_expr_t::not_t const& x)
+        {
+            detail::maybe_with_paranthesis(os << "not ", x.expr.get(), indent);
+        },
+        [&] (typename expr_t<P>::boolean_expr_t::and_t const& x)
+        {
+            detail::maybe_with_paranthesis(os, x.lhs.get(), indent);
+            detail::maybe_with_paranthesis(os << " and ", x.rhs.get(), indent);
+        },
+        [&] (typename expr_t<P>::boolean_expr_t::or_t const& x)
+        {
+            detail::maybe_with_paranthesis(os, x.lhs.get(), indent);
+            detail::maybe_with_paranthesis(os << " or ", x.rhs.get(), indent);
+        },
+        [&] (typename expr_t<P>::boolean_expr_t::xor_t const& x)
+        {
+            detail::maybe_with_paranthesis(os, x.lhs.get(), indent);
+            detail::maybe_with_paranthesis(os << " xor ", x.rhs.get(), indent);
+        });
+    return os;
+}
+
+template <Properties P>
+std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::relation_expr_t const& x, std::size_t const indent)
+{
+    match(
+        x.value,
+        [&] (typename expr_t<P>::relation_expr_t::gt_t const& x)
+        {
+            detail::maybe_with_paranthesis(os, x.lhs.get(), indent);
+            detail::maybe_with_paranthesis(os << " > ", x.rhs.get(), indent);
+        },
+        [&] (typename expr_t<P>::relation_expr_t::gte_t const& x)
+        {
+            detail::maybe_with_paranthesis(os, x.lhs.get(), indent);
+            detail::maybe_with_paranthesis(os << " >= ", x.rhs.get(), indent);
+        },
+        [&] (typename expr_t<P>::relation_expr_t::lt_t const& x)
+        {
+            detail::maybe_with_paranthesis(os, x.lhs.get(), indent);
+            detail::maybe_with_paranthesis(os << " < ", x.rhs.get(), indent);
+        },
+        [&] (typename expr_t<P>::relation_expr_t::lte_t const& x)
+        {
+            detail::maybe_with_paranthesis(os, x.lhs.get(), indent);
+            detail::maybe_with_paranthesis(os << " <= ", x.rhs.get(), indent);
+        });
+    return os;
+}
+
+template <Properties P>
 std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::arith_expr_t const& x, std::size_t const indent)
 {
     match(
@@ -244,18 +354,6 @@ std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::arith_expr_t co
             pretty_print(os, x.rhs.get(), indent);
         });
     return os;
-}
-
-template <Properties P>
-std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::boolean_constant_t const& x, std::size_t const indent)
-{
-    return os << (x.value ? "true" : "false");
-}
-
-template <Properties P>
-std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::numeric_constant_t const& x, std::size_t const indent)
-{
-    return os << x.value;
 }
 
 template <Properties P>
@@ -375,6 +473,7 @@ std::ostream& pretty_print(
     return os;
 }
 
+// implementation of needs_new_line
 namespace detail {
 
 template <Properties P>
@@ -407,19 +506,46 @@ template <Properties P> bool needs_new_line(typename expr_t<P>::u16_t const&) { 
 template <Properties P> bool needs_new_line(typename expr_t<P>::u32_t const&) { return false; }
 template <Properties P> bool needs_new_line(typename expr_t<P>::u64_t const&) { return false; }
 
+template <Properties P> bool needs_new_line(typename expr_t<P>::boolean_constant_t const&) { return false; }
+template <Properties P> bool needs_new_line(typename expr_t<P>::numeric_constant_t const&) { return false; }
+
 template <Properties P>
-bool needs_new_line(typename expr_t<P>::arith_expr_t const& x)
+bool needs_new_line(typename expr_t<P>::boolean_expr_t const& x)
 {
     return match(
         x.value,
-        [&] (typename expr_t<P>::arith_expr_t::plus_t const& x)
+        [] (typename expr_t<P>::boolean_expr_t::not_t const& x)
+        {
+            return needs_new_line(x.expr.get());
+        },
+        [] (auto const& x)
         {
             return needs_new_line(x.lhs.get()) or needs_new_line(x.rhs.get());
         });
 }
 
-template <Properties P> bool needs_new_line(typename expr_t<P>::boolean_constant_t const&) { return false; }
-template <Properties P> bool needs_new_line(typename expr_t<P>::numeric_constant_t const&) { return false; }
+template <Properties P>
+bool needs_new_line(typename expr_t<P>::relation_expr_t const& x)
+{
+    return match(
+        x.value,
+        [] (auto const& x)
+        {
+            return needs_new_line(x.lhs.get()) or needs_new_line(x.rhs.get());
+        });
+}
+
+template <Properties P>
+bool needs_new_line(typename expr_t<P>::arith_expr_t const& x)
+{
+    return match(
+        x.value,
+        [] (typename expr_t<P>::arith_expr_t::plus_t const& x)
+        {
+            return needs_new_line(x.lhs.get()) or needs_new_line(x.rhs.get());
+        });
+}
+
 template <Properties P> bool needs_new_line(typename expr_t<P>::var_t const&) { return false; }
 
 template <Properties P>
@@ -461,6 +587,44 @@ bool needs_new_line(typename expr_t<P>::subscript_t const& x)
 {
     return needs_new_line(x.array.get()) or needs_new_line(x.index.get());
 }
+
+} // namespace detail
+
+// implementation of needs_parenthesis
+namespace detail {
+
+template <Properties P>
+bool needs_parenthesis(expr_t<P> const& x)
+{
+    return match(x.value, [&] (auto const& x) { return needs_parenthesis<P>(x); });
+}
+
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::typename_t const&) { return false; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::bool_t const&) { return false; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::unit_t const&) { return false; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::i8_t const&) { return false; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::i16_t const&) { return false; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::i32_t const&) { return false; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::i64_t const&) { return false; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::u8_t const&) { return false; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::u16_t const&) { return false; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::u32_t const&) { return false; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::u64_t const&) { return false; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::boolean_constant_t const&) { return false; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::numeric_constant_t const&) { return false; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::boolean_expr_t const& x)
+{
+    return not std::holds_alternative<typename expr_t<P>::boolean_expr_t::not_t>(x.value);
+}
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::relation_expr_t const&) { return true; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::arith_expr_t const&) { return true; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::var_t const&) { return false; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::app_t const&) { return false; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::abs_t const&) { return false; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::pi_t const&) { return false; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::array_t const&) { return false; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::init_list_t const&) { return false; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::subscript_t const&) { return false; }
 
 } // namespace detail
 

@@ -13,6 +13,8 @@
 
 #include <llvm/Transforms/Utils/BasicBlockUtils.h>
 
+#include <boost/hana.hpp>
+
 #include <algorithm>
 #include <ranges>
 
@@ -130,6 +132,81 @@ llvm::Value* gen_val(
             auto const llvm_type = cast<llvm::IntegerType>(gen_type(global, local, type));
             assert(llvm_type);
             return storeOrReturn(llvm::ConstantInt::get(llvm_type, x.value.str(), 10));
+        },
+        [&] (typecheck::expr_t::boolean_expr_t const& x) -> llvm::Value*
+        {
+            return storeOrReturn(match(
+                x.value,
+                [&] (typecheck::expr_t::boolean_expr_t::not_t const& x) -> llvm::Value*
+                {
+                    return builder.CreateNot(gen_val(global, local, builder, x.expr.get(), nullptr));
+                },
+                [&] <typename T> (T const& x) -> llvm::Value*
+                {
+                    auto const lhs_val = gen_val(global, local, builder, x.lhs.get(), nullptr);
+                    auto const rhs_val = gen_val(global, local, builder, x.rhs.get(), nullptr);
+                    return boost::hana::overload(
+                        [&] (boost::hana::type<typecheck::expr_t::boolean_expr_t::and_t>)
+                        {
+                            return builder.CreateAnd(lhs_val, rhs_val);
+                        },
+                        [&] (boost::hana::type<typecheck::expr_t::boolean_expr_t::or_t>)
+                        {
+                            return builder.CreateOr(lhs_val, rhs_val);
+                        },
+                        [&] (boost::hana::type<typecheck::expr_t::boolean_expr_t::xor_t>)
+                        {
+                            return builder.CreateXor(lhs_val, rhs_val);
+                        })(boost::hana::type_c<T>);
+                }));
+        },
+        [&] (typecheck::expr_t::relation_expr_t const& x) -> llvm::Value*
+        {
+            return storeOrReturn(match(
+                x.value,
+                [&] <typename T> (T const& x) -> llvm::Value*
+                {
+                    using enum dep0::ast::sign_t;
+                    using enum llvm::CmpInst::Predicate;
+                    auto const lhs_val = gen_val(global, local, builder, x.lhs.get(), nullptr);
+                    auto const rhs_val = gen_val(global, local, builder, x.rhs.get(), nullptr);
+                    auto const sign =
+                        match(
+                            std::get<typecheck::expr_t>(x.lhs.get().properties.sort.get()).value,
+                            [] (typecheck::expr_t::bool_t const&) { return dep0::ast::sign_t::unsigned_v; },
+                            [] (typecheck::expr_t::u8_t const&) { return dep0::ast::sign_t::unsigned_v; },
+                            [] (typecheck::expr_t::u16_t const&) { return dep0::ast::sign_t::unsigned_v; },
+                            [] (typecheck::expr_t::u32_t const&) { return dep0::ast::sign_t::unsigned_v; },
+                            [] (typecheck::expr_t::u64_t const&) { return dep0::ast::sign_t::unsigned_v; },
+                            [&local] (typecheck::expr_t::var_t const& var)
+                            {
+                                auto const type_def = std::get_if<typecheck::type_def_t>(local[var]);
+                                assert(type_def and "unknown variable or not a typedef");
+                                return match(
+                                    type_def->value,
+                                    [] (typecheck::type_def_t::integer_t const& integer) { return integer.sign; });
+                            },
+                            [] (auto const&) { return dep0::ast::sign_t::signed_v; });
+                    auto const op =
+                        boost::hana::overload(
+                            [sign] (boost::hana::type<typecheck::expr_t::relation_expr_t::gt_t>)
+                            {
+                                return sign == signed_v ? ICMP_SGT : ICMP_UGT;
+                            },
+                            [sign] (boost::hana::type<typecheck::expr_t::relation_expr_t::gte_t>)
+                            {
+                                return sign == signed_v ? ICMP_SGE : ICMP_UGE;
+                            },
+                            [sign] (boost::hana::type<typecheck::expr_t::relation_expr_t::lt_t>)
+                            {
+                                return sign == signed_v ? ICMP_SLT : ICMP_ULT;
+                            },
+                            [sign] (boost::hana::type<typecheck::expr_t::relation_expr_t::lte_t>)
+                            {
+                                return sign == signed_v ? ICMP_SLE : ICMP_ULE;
+                            })(boost::hana::type_c<T>);
+                    return builder.CreateCmp(op, lhs_val, rhs_val);
+                }));
         },
         [&] (typecheck::expr_t::arith_expr_t const& x) -> llvm::Value*
         {

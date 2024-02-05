@@ -5,6 +5,8 @@
 
 #include "dep0/match.hpp"
 
+#include <boost/hana.hpp>
+
 #include <algorithm>
 #include <cassert>
 #include <ranges>
@@ -265,6 +267,83 @@ bool beta_normalize(expr_t<P>& expr)
                                 impl::destructive_self_assign(expr, std::move(*ret->expr));
                             }
             return changed;
+        },
+        [&] (typename expr_t<P>::boolean_expr_t& x)
+        {
+            return match(
+                x.value,
+                [&] (typename expr_t<P>::boolean_expr_t::not_t& x)
+                {
+                    bool changed = beta_normalize(x.expr.get());
+                    if (auto const c = std::get_if<typename expr_t<P>::boolean_constant_t>(&x.expr.get().value))
+                    {
+                        changed = true;
+                        bool const value = not c->value; // compute result before destructive self assignment
+                        expr.value.template emplace<typename expr_t<P>::boolean_constant_t>(value);
+                    }
+                    return changed;
+                },
+                [&] <typename T> (T& x)
+                {
+                    bool changed = beta_normalize(x.lhs.get());
+                    changed |= beta_normalize(x.rhs.get());
+                    if (auto const a = std::get_if<typename expr_t<P>::boolean_constant_t>(&x.lhs.get().value))
+                        if (auto const b = std::get_if<typename expr_t<P>::boolean_constant_t>(&x.rhs.get().value))
+                        {
+                            changed = true;
+                            bool const c =
+                                boost::hana::overload(
+                                    [&] (boost::hana::type<typename expr_t<P>::boolean_expr_t::and_t>)
+                                    {
+                                        return a->value and b->value;
+                                    },
+                                    [&] (boost::hana::type<typename expr_t<P>::boolean_expr_t::or_t>)
+                                    {
+                                        return a->value or b->value;
+                                    },
+                                    [&] (boost::hana::type<typename expr_t<P>::boolean_expr_t::xor_t>)
+                                    {
+                                        return a->value xor b->value;
+                                    })(boost::hana::type_c<T>);
+                            expr.value.template emplace<typename expr_t<P>::boolean_constant_t>(c);
+                        }
+                    return changed;
+                });
+        },
+        [&] (typename expr_t<P>::relation_expr_t& x)
+        {
+            return match(
+                x.value,
+                [&] <typename T> (T& x)
+                {
+                    bool changed = beta_normalize(x.lhs.get());
+                    changed |= beta_normalize(x.rhs.get());
+                    if (auto const a = std::get_if<typename expr_t<P>::boolean_constant_t>(&x.lhs.get().value))
+                        if (auto const b = std::get_if<typename expr_t<P>::boolean_constant_t>(&x.rhs.get().value))
+                        {
+                            changed = true;
+                            bool const c =
+                                boost::hana::overload(
+                                    [&] (boost::hana::type<typename expr_t<P>::relation_expr_t::gt_t>)
+                                    {
+                                        return a->value > b->value;
+                                    },
+                                    [&] (boost::hana::type<typename expr_t<P>::relation_expr_t::gte_t>)
+                                    {
+                                        return a->value >= b->value;
+                                    },
+                                    [&] (boost::hana::type<typename expr_t<P>::relation_expr_t::lt_t>)
+                                    {
+                                        return a->value < b->value;
+                                    },
+                                    [&] (boost::hana::type<typename expr_t<P>::relation_expr_t::lte_t>)
+                                    {
+                                        return a->value <= b->value;
+                                    })(boost::hana::type_c<T>);
+                            expr.value.template emplace<typename expr_t<P>::boolean_constant_t>(c);
+                        }
+                    return changed;
+                });
         },
         [&] (typename expr_t<P>::arith_expr_t& x)
         {

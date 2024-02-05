@@ -11,6 +11,8 @@ add_library(dep0_llvmgen_tests_fixture
     llvm_predicates_v2/align.cpp
     llvm_predicates_v2/alloca.hpp
     llvm_predicates_v2/alloca.cpp
+    llvm_predicates_v2/and.hpp
+    llvm_predicates_v2/and.cpp
     llvm_predicates_v2/argument.hpp
     llvm_predicates_v2/argument.cpp
     llvm_predicates_v2/bitcast.hpp
@@ -19,6 +21,8 @@ add_library(dep0_llvmgen_tests_fixture
     llvm_predicates_v2/branch.cpp
     llvm_predicates_v2/call.hpp
     llvm_predicates_v2/call.cpp
+    llvm_predicates_v2/cmp.hpp
+    llvm_predicates_v2/cmp.cpp
     llvm_predicates_v2/constants.hpp
     llvm_predicates_v2/constants.cpp
     llvm_predicates_v2/function.hpp
@@ -31,6 +35,8 @@ add_library(dep0_llvmgen_tests_fixture
     llvm_predicates_v2/load.cpp
     llvm_predicates_v2/mul.hpp
     llvm_predicates_v2/mul.cpp
+    llvm_predicates_v2/or.hpp
+    llvm_predicates_v2/or.cpp
     llvm_predicates_v2/predicate.hpp
     llvm_predicates_v2/predicate.cpp
     llvm_predicates_v2/return.hpp
@@ -43,6 +49,8 @@ add_library(dep0_llvmgen_tests_fixture
     llvm_predicates_v2/to_string.cpp
     llvm_predicates_v2/types.hpp
     llvm_predicates_v2/types.cpp
+    llvm_predicates_v2/xor.hpp
+    llvm_predicates_v2/xor.cpp
     llvm_predicates_v2.hpp
     llvm_predicates_v2.cpp
     )
@@ -72,3 +80,4 @@ add_dep0_llvmgen_test(0004_plus_expr)
 add_dep0_llvmgen_test(0005_pi_types)
 add_dep0_llvmgen_test(0006_kinds)
 add_dep0_llvmgen_test(0007_arrays)
+add_dep0_llvmgen_test(0008_boolean_expr)

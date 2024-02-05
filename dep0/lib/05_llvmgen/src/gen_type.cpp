@@ -97,6 +97,16 @@ llvm::Type* gen_type(global_context_t& global, local_context_t const& local, typ
             assert(false and "cannot generate a type for a numeric constant");
             __builtin_unreachable();
         },
+        [&] (typecheck::expr_t::boolean_expr_t const&) -> llvm::Type*
+        {
+            assert(false and "cannot generate a type for a boolean expression");
+            __builtin_unreachable();
+        },
+        [&] (typecheck::expr_t::relation_expr_t const&) -> llvm::Type*
+        {
+            assert(false and "cannot generate a type for a relation expression");
+            __builtin_unreachable();
+        },
         [&] (typecheck::expr_t::arith_expr_t const&) -> llvm::Type*
         {
             assert(false and "cannot generate a type for an arithmetic expression");

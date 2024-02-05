@@ -192,7 +192,7 @@ auto direct_call_of(F&& f, call_arg_t<Args>... args)
                 }(std::make_index_sequence<sizeof...(Args)>{}));
         }
     };
-    return predicate_t{std::forward<F>(f), std::move(args)...};
+    return predicate_t{std::forward<F>(f), {std::move(args)...}};
 }
 
 inline constexpr auto is_indirect_call = boost::hana::overload(
@@ -246,7 +246,7 @@ auto indirect_call_of(F&& f, call_arg_t<Args>... args)
                 }(std::make_index_sequence<sizeof...(Args)>{}));
         }
     };
-    return predicate_t{std::forward<F>(f), std::move(args)...};
+    return predicate_t{std::forward<F>(f), {std::move(args)...}};
 }
 
 } // namespace dep0::llvmgen::testing

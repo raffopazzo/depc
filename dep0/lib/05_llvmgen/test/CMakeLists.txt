@@ -3,8 +3,6 @@ add_custom_target(dep0_llvmgen_tests)
 add_library(dep0_llvmgen_tests_fixture
     llvmgen_tests_fixture.hpp
     llvmgen_tests_fixture.cpp
-    llvm_predicates.hpp
-    llvm_predicates.cpp
     llvm_predicates_v2/add.hpp
     llvm_predicates_v2/add.cpp
     llvm_predicates_v2/align.hpp

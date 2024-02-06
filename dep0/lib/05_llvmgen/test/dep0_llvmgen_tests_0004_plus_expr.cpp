@@ -2,9 +2,9 @@
 #include <boost/test/included/unit_test.hpp>
 
 #include "llvmgen_tests_fixture.hpp"
-#include "llvm_predicates_v2.hpp"
+#include "llvm_predicates.hpp"
 
-using namespace dep0::llvmgen::testing::v2;
+using namespace dep0::llvmgen::testing;
 
 static auto const sext = std::vector{llvm::Attribute::SExt};
 

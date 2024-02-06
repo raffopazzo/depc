@@ -1,10 +1,43 @@
+
 add_library(dep0_testing_lib
+    include/dep0/testing/ast_predicates/details/check_name.hpp
+    include/dep0/testing/ast_predicates/app.hpp
+    include/dep0/testing/ast_predicates/arith_expr.hpp
+    include/dep0/testing/ast_predicates/array.hpp
+    include/dep0/testing/ast_predicates/boolean_expr.hpp
+    include/dep0/testing/ast_predicates/constants.hpp
+    include/dep0/testing/ast_predicates/func_arg.hpp
+    include/dep0/testing/ast_predicates/init_list.hpp
+    include/dep0/testing/ast_predicates/pi.hpp
+    include/dep0/testing/ast_predicates/stmt.hpp
+    include/dep0/testing/ast_predicates/subscript.hpp
+    include/dep0/testing/ast_predicates/relation_expr.hpp
+    include/dep0/testing/ast_predicates/type_def.hpp
+    include/dep0/testing/ast_predicates/types.hpp
+    include/dep0/testing/ast_predicates/var.hpp
     include/dep0/testing/ast_predicates.hpp
+    include/dep0/testing/check_all.hpp
     include/dep0/testing/failure.hpp
     include/dep0/testing/literal_string.hpp
     include/dep0/testing/predicate.hpp
     include/dep0/testing/pretty_name.hpp
+    src/ast_predicates/details/check_name.cpp
+    src/ast_predicates/app.cpp
+    src/ast_predicates/arith_expr.cpp
+    src/ast_predicates/array.cpp
+    src/ast_predicates/boolean_expr.cpp
+    src/ast_predicates/constants.cpp
+    src/ast_predicates/func_arg.cpp
+    src/ast_predicates/init_list.cpp
+    src/ast_predicates/pi.cpp
+    src/ast_predicates/stmt.cpp
+    src/ast_predicates/subscript.cpp
+    src/ast_predicates/relation_expr.cpp
+    src/ast_predicates/type_def.cpp
+    src/ast_predicates/types.cpp
+    src/ast_predicates/var.cpp
     src/ast_predicates.cpp
+    src/check_all.cpp
     src/failure.cpp
     src/literal_string.cpp
     src/predicate.cpp

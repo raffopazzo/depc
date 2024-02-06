@@ -1,4 +1,3 @@
-
 add_library(dep0_testing_lib
     include/dep0/testing/ast_predicates/details/check_name.hpp
     include/dep0/testing/ast_predicates/app.hpp

@@ -31,7 +31,7 @@ BOOST_AUTO_TEST_CASE(pass_000)
         auto const f = pass_result.value()->getFunction("d");
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i64, sext));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(-1234567890123456789LL)));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(-1234567890123456789ll)));
     }
 }
 

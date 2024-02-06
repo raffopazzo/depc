@@ -19,6 +19,9 @@ boost::test_tools::predicate_result is_i1(llvm::Type const*);
 boost::test_tools::predicate_result is_i8(llvm::Type const&);
 boost::test_tools::predicate_result is_i8(llvm::Type const*);
 
+boost::test_tools::predicate_result is_i16(llvm::Type const&);
+boost::test_tools::predicate_result is_i16(llvm::Type const*);
+
 boost::test_tools::predicate_result is_i32(llvm::Type const&);
 boost::test_tools::predicate_result is_i32(llvm::Type const*);
 
@@ -57,6 +60,11 @@ inline constexpr auto is_i1 = boost::hana::overload(
 inline constexpr auto is_i8 = boost::hana::overload(
     [] (llvm::Type const& x) { return impl::is_i8(x); },
     [] (llvm::Type const* const p) { return impl::is_i8(p); }
+);
+
+inline constexpr auto is_i16 = boost::hana::overload(
+    [] (llvm::Type const& x) { return impl::is_i16(x); },
+    [] (llvm::Type const* const p) { return impl::is_i16(p); }
 );
 
 inline constexpr auto is_i32 = boost::hana::overload(

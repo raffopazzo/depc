@@ -1,11 +1,12 @@
 #include "llvm_predicates_v2/types.hpp"
+#include "llvm_predicates_v2/to_string.hpp"
 
 namespace dep0::llvmgen::testing::v2::impl {
 
 boost::test_tools::predicate_result is_i1(llvm::Type const& x)
 {
     if (not x.isIntegerTy(1))
-        return dep0::testing::failure("type is not 1bit integer");
+        return dep0::testing::failure("type is not 1bit integer but ", to_string(x));
     return true;
 }
 
@@ -19,7 +20,7 @@ boost::test_tools::predicate_result is_i1(llvm::Type const* const p)
 boost::test_tools::predicate_result is_i8(llvm::Type const& x)
 {
     if (not x.isIntegerTy(8))
-        return dep0::testing::failure("type is not 8bit integer");
+        return dep0::testing::failure("type is not 8bit integer but ", to_string(x));
     return true;
 }
 
@@ -30,10 +31,24 @@ boost::test_tools::predicate_result is_i8(llvm::Type const* const p)
     return is_i8(*p);
 }
 
+boost::test_tools::predicate_result is_i16(llvm::Type const& x)
+{
+    if (not x.isIntegerTy(16))
+        return dep0::testing::failure("type is not 16bit integer but ", to_string(x));
+    return true;
+}
+
+boost::test_tools::predicate_result is_i16(llvm::Type const* const p)
+{
+    if (not p)
+        return dep0::testing::failure("type is null");
+    return is_i8(*p);
+}
+
 boost::test_tools::predicate_result is_i32(llvm::Type const& x)
 {
     if (not x.isIntegerTy(32))
-        return dep0::testing::failure("type is not 32bit integer");
+        return dep0::testing::failure("type is not 32bit integer but ", to_string(x));
     return true;
 }
 
@@ -47,7 +62,7 @@ boost::test_tools::predicate_result is_i32(llvm::Type const* const p)
 boost::test_tools::predicate_result is_i64(llvm::Type const& x)
 {
     if (not x.isIntegerTy(64))
-        return dep0::testing::failure("type is not 64bit integer");
+        return dep0::testing::failure("type is not 64bit integer but ", to_string(x));
     return true;
 }
 
@@ -61,7 +76,7 @@ boost::test_tools::predicate_result is_i64(llvm::Type const* const p)
 boost::test_tools::predicate_result is_void(llvm::Type const& x)
 {
     if (not x.isVoidTy())
-        return dep0::testing::failure("type is not void");
+        return dep0::testing::failure("type is not void but ", to_string(x));
     return true;
 }
 

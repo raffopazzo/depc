@@ -2,9 +2,9 @@
 #include <boost/test/included/unit_test.hpp>
 
 #include "llvmgen_tests_fixture.hpp"
-#include "llvm_predicates.hpp"
+#include "llvm_predicates_v2.hpp"
 
-using namespace dep0::llvmgen::testing;
+using namespace dep0::llvmgen::testing::v2;
 
 BOOST_FIXTURE_TEST_SUITE(dep0_llvmgen_tests_0000_basics, LLVMGenTestsFixture)
 
@@ -28,13 +28,15 @@ BOOST_AUTO_TEST_CASE(pass_014)
     BOOST_TEST_REQUIRE(pass("0000_basics/pass_014.depc"));
     {
         auto const f = pass_result.value()->getFunction("unit");
-        BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(is_return_of_void(f->getEntryBlock().getTerminator()));
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i8));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(0)));
     }
     {
         auto const f = pass_result.value()->getFunction("f");
-        BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(is_return_of_void(f->getEntryBlock().getTerminator()));
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i8));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(0)));
     }
 }
 

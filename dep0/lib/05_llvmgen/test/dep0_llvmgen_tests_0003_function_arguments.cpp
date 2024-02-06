@@ -6,6 +6,9 @@
 
 using namespace dep0::llvmgen::testing;
 
+static auto const sext = std::vector{llvm::Attribute::SExt};
+static auto const zext = std::vector{llvm::Attribute::ZExt};
+
 BOOST_FIXTURE_TEST_SUITE(dep0_llvmgen_tests_0003_function_arguments, LLVMGenTestsFixture)
 
 BOOST_AUTO_TEST_CASE(pass_000)
@@ -13,50 +16,87 @@ BOOST_AUTO_TEST_CASE(pass_000)
     BOOST_TEST_REQUIRE(pass("0003_function_arguments/pass_000.depc"));
     {
         auto const f = pass_result.value()->getFunction("id");
-        BOOST_TEST_REQUIRE(f);
-        BOOST_TEST_REQUIRE(f->arg_size() == 1ul);
-        BOOST_TEST(is_i32(f->getArg(0ul), "x"));
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), "x"));
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(is_i32, "x", sext)}, is_i32, sext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), exactly(f->getArg(0ul))));
     }
 }
+
 BOOST_AUTO_TEST_CASE(pass_001)
 {
     BOOST_TEST_REQUIRE(pass("0003_function_arguments/pass_001.depc"));
-    auto const id = pass_result.value()->getFunction("id");
-    BOOST_TEST_REQUIRE(id);
+    {
+        auto const f = pass_result.value()->getFunction("id");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(is_i32, "x", sext)}, is_i32, sext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), exactly(f->getArg(0ul))));
+    }
     {
         auto const f = pass_result.value()->getFunction("main");
-        BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), call_inst([id] (llvm::CallInst const& call)
-        {
-            BOOST_TEST(call.getCalledFunction() == id);
-            BOOST_TEST_REQUIRE(call.arg_size() == 1ul);
-            BOOST_TEST(call.paramHasAttr(0, llvm::Attribute::SExt));
-            return boost::test_tools::predicate_result(true);
-        })));
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, sext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(
+            is_return_of(
+                f->getEntryBlock().getTerminator(),
+                direct_call_of(
+                    exactly(pass_result.value()->getFunction("id")),
+                    call_arg(constant(0), sext))));
     }
 }
-BOOST_AUTO_TEST_CASE(pass_002) { BOOST_TEST(pass("0003_function_arguments/pass_002.depc")); }
+
+BOOST_AUTO_TEST_CASE(pass_002)
+{
+    BOOST_TEST(pass("0003_function_arguments/pass_002.depc"));
+    {
+        auto const f = pass_result.value()->getFunction("first");
+        BOOST_TEST_REQUIRE(
+            is_function_of(
+                f,
+                std::tuple{arg_of(is_i32, "x", sext), arg_of(is_i32, "y", sext)},
+                is_i32, sext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), exactly(f->getArg(0ul))));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("main");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, sext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(
+            is_return_of(
+                f->getEntryBlock().getTerminator(),
+                direct_call_of(
+                    exactly(pass_result.value()->getFunction("first")),
+                    call_arg(constant(0), sext),
+                    call_arg(constant(1), sext))));
+    }
+}
+
 BOOST_AUTO_TEST_CASE(pass_003)
 {
     BOOST_TEST_REQUIRE(pass("0003_function_arguments/pass_003.depc"));
-    auto const first = pass_result.value()->getFunction("first");
-    BOOST_TEST_REQUIRE(first);
+    {
+        auto const f = pass_result.value()->getFunction("first");
+        BOOST_TEST_REQUIRE(
+            is_function_of(
+                f,
+                std::tuple{arg_of(is_i32, "x", sext), arg_of(is_i32, "y", zext)},
+                is_i32, sext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), exactly(f->getArg(0ul))));
+    }
     {
         auto const f = pass_result.value()->getFunction("main");
-        BOOST_TEST_REQUIRE(f);
-        auto const& b = f->getEntryBlock();
-        BOOST_TEST_REQUIRE(b.size() == 2ul);
-        BOOST_TEST(is_call_inst(*b.begin(), [first] (llvm::CallInst const& call)
-        {
-            BOOST_TEST(call.getCalledFunction() == first);
-            BOOST_TEST_REQUIRE(call.arg_size() == 2ul);
-            BOOST_TEST(call.paramHasAttr(0, llvm::Attribute::SExt));
-            BOOST_TEST(call.paramHasAttr(1, llvm::Attribute::ZExt));
-            BOOST_TEST(is_signed_constant(*call.getArgOperand(0), 0));
-            BOOST_TEST(is_signed_constant(*call.getArgOperand(1), 1));
-            return boost::test_tools::predicate_result(true);
-        }));
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, sext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        auto const inst = get_instructions(f->getEntryBlock());
+        BOOST_TEST_REQUIRE(inst.size() == 2ul);
+        BOOST_TEST(
+            is_direct_call(
+                inst[0ul],
+                exactly(pass_result.value()->getFunction("first")),
+                call_arg(constant(0), sext),
+                call_arg(constant(1), zext)));
+        BOOST_TEST(is_return_of(inst[1ul], constant(0)));
     }
 }
 
@@ -65,40 +105,47 @@ BOOST_AUTO_TEST_CASE(pass_004)
     BOOST_TEST_REQUIRE(pass("0003_function_arguments/pass_004.depc"));
     {
         auto const f = pass_result.value()->getFunction("unit");
-        BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(has_void_return_type(*f));
-        BOOST_TEST(f->arg_size() == 0ul);
-        BOOST_TEST(is_return_of_void(f->getEntryBlock().getTerminator()));
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i8));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(0)));
     }
     {
         auto const f = pass_result.value()->getFunction("f1");
-        BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(has_void_return_type(*f));
-        BOOST_TEST_REQUIRE(f->arg_size() == 1ul);
-        BOOST_TEST(f->getArg(0ul)->getType()->isIntegerTy(8ul));
-        BOOST_TEST(is_return_of_void(f->getEntryBlock().getTerminator()));
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(is_i8)}, is_i8));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(0)));
     }
     {
         auto const f = pass_result.value()->getFunction("g1");
-        BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(has_void_return_type(*f));
-        BOOST_TEST(f->arg_size() == 0ul);
-        BOOST_TEST(is_return_of_void(f->getEntryBlock().getTerminator()));
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i8));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        auto const inst = get_instructions(f->getEntryBlock());
+        BOOST_TEST_REQUIRE(inst.size() == 3ul);
+        auto const call1 = inst[0ul];
+        auto const call2 = inst[1ul];
+        auto const ret   = inst[2ul];
+        BOOST_TEST(is_direct_call(call1, exactly(pass_result.value()->getFunction("unit"))));
+        BOOST_TEST(is_direct_call(call2, exactly(pass_result.value()->getFunction("f1")), call_arg(exactly(call1))));
+        BOOST_TEST(is_return_of(ret, constant(0)));
     }
     {
         auto const f = pass_result.value()->getFunction("f2");
-        BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(has_void_return_type(*f));
-        BOOST_TEST_REQUIRE(f->arg_size() == 1ul);
-        BOOST_TEST(f->getArg(0ul)->getType()->isIntegerTy(8ul));
-        BOOST_TEST(is_return_of_void(f->getEntryBlock().getTerminator()));
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(is_i8, "x")}, is_i8));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(0)));
     }
     {
         auto const f = pass_result.value()->getFunction("g2");
-        BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(has_void_return_type(*f));
-        BOOST_TEST(f->arg_size() == 0ul);
-        BOOST_TEST(is_return_of_void(f->getEntryBlock().getTerminator()));
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i8));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        auto const inst = get_instructions(f->getEntryBlock());
+        BOOST_TEST_REQUIRE(inst.size() == 3ul);
+        auto const call1 = inst[0ul];
+        auto const call2 = inst[1ul];
+        auto const ret   = inst[2ul];
+        BOOST_TEST(is_direct_call(call1, exactly(pass_result.value()->getFunction("unit"))));
+        BOOST_TEST(is_direct_call(call2, exactly(pass_result.value()->getFunction("f2")), call_arg(exactly(call1))));
+        BOOST_TEST(is_return_of(ret, constant(0)));
     }
 }
 

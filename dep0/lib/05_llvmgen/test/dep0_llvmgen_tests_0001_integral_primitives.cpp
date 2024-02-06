@@ -6,6 +6,9 @@
 
 using namespace dep0::llvmgen::testing;
 
+static auto const sext = std::vector{llvm::Attribute::SExt};
+static auto const zext = std::vector{llvm::Attribute::ZExt};
+
 BOOST_FIXTURE_TEST_SUITE(dep0_llvmgen_tests_0001_integral_primitives, LLVMGenTestsFixture)
 
 BOOST_AUTO_TEST_CASE(pass_000)
@@ -13,69 +16,69 @@ BOOST_AUTO_TEST_CASE(pass_000)
     BOOST_TEST_REQUIRE(pass("0001_integral_primitives/pass_000.depc"));
     {
         auto const f = pass_result.value()->getFunction("f0");
-        BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(f->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::SExt));
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), signed_constant(127)));
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i8, sext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(127)));
     }
     {
         auto const f = pass_result.value()->getFunction("f18");
-        BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(f->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::SExt));
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), signed_constant(32767)));
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i16, sext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(32767)));
     }
     {
         auto const f = pass_result.value()->getFunction("f42");
-        BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(f->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::SExt));
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), signed_constant(2147483647)));
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, sext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(2147483647)));
     }
     {
         auto const f = pass_result.value()->getFunction("f81");
-        BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(f->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::SExt));
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), signed_constant(9223372036854775807)));
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i64, sext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(9223372036854775807ll)));
     }
     {
         auto const f = pass_result.value()->getFunction("f141");
-        BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(f->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::ZExt));
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), unsigned_constant(255ul)));
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i8, zext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(255ul)));
     }
     {
         auto const f = pass_result.value()->getFunction("f153");
-        BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(f->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::ZExt));
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), unsigned_constant(65535ul)));
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i16, zext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(65535ul)));
     }
     {
         auto const f = pass_result.value()->getFunction("f169");
-        BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(f->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::ZExt));
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), unsigned_constant(4294967295ul)));
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, zext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(4294967295ul)));
     }
     {
         auto const f = pass_result.value()->getFunction("f195");
-        BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(f->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::ZExt));
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), unsigned_constant(18446744073709551615ul)));
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i64, zext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(18446744073709551615ul)));
     }
     {
         auto const f = pass_result.value()->getFunction("f235");
-        BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(f->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::ZExt));
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), unsigned_constant(9999999999999999999ul)));
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i64, zext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(9999999999999999999ul)));
     }
     {
         auto const f = pass_result.value()->getFunction("f237");
-        BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(f->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::ZExt));
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), unsigned_constant(9999999999999999999ul)));
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i64, zext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(9999999999999999999ul)));
     }
     {
         auto const f = pass_result.value()->getFunction("f238");
-        BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(f->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::ZExt));
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), unsigned_constant(9999999999999999999ul)));
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i64, zext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(9999999999999999999ul)));
     }
 }
 

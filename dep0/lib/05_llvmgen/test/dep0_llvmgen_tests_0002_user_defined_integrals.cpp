@@ -2,9 +2,12 @@
 #include <boost/test/included/unit_test.hpp>
 
 #include "llvmgen_tests_fixture.hpp"
-#include "llvm_predicates.hpp"
+#include "llvm_predicates_v2.hpp"
 
-using namespace dep0::llvmgen::testing;
+using namespace dep0::llvmgen::testing::v2;
+
+static auto const sext = std::vector{llvm::Attribute::SExt};
+static auto const zext = std::vector{llvm::Attribute::ZExt};
 
 BOOST_FIXTURE_TEST_SUITE(dep0_llvmgen_tests_0002_user_defined_integrals, LLVMGenTestsFixture)
 
@@ -13,36 +16,22 @@ BOOST_AUTO_TEST_CASE(pass_000)
     BOOST_TEST_REQUIRE(pass("0002_user_defined_integrals/pass_000.depc"));
     {
         auto const f = pass_result.value()->getFunction("h");
-        BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(f->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::ZExt));
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant_int([] (llvm::ConstantInt const& c)
-        {
-            BOOST_TEST(c.getType()->isIntegerTy(8));
-            BOOST_TEST(c.getZExtValue() == 23ul);
-            return boost::test_tools::predicate_result(true);
-        })));
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i8, zext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(23)));
     }
     {
         auto const f = pass_result.value()->getFunction("n");
-        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, zext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
         BOOST_TEST(f->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::ZExt));
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant_int([] (llvm::ConstantInt const& c)
-        {
-            BOOST_TEST(c.getType()->isIntegerTy(32));
-            BOOST_TEST(c.getZExtValue() == 123456789ul);
-            return boost::test_tools::predicate_result(true);
-        })));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(123456789ul)));
     }
     {
         auto const f = pass_result.value()->getFunction("d");
-        BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(f->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::SExt));
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant_int([] (llvm::ConstantInt const& c)
-        {
-            BOOST_TEST(c.getType()->isIntegerTy(64));
-            BOOST_TEST(c.getSExtValue() == -1234567890123456789l);
-            return boost::test_tools::predicate_result(true);
-        })));
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i64, sext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(-1234567890123456789LL)));
     }
 }
 
@@ -51,14 +40,9 @@ BOOST_AUTO_TEST_CASE(pass_001)
     BOOST_TEST_REQUIRE(pass("0002_user_defined_integrals/pass_001.depc"));
     {
         auto const f = pass_result.value()->getFunction("zero");
-        BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(f->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::SExt));
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant_int([] (llvm::ConstantInt const& c)
-        {
-            BOOST_TEST(c.getType()->isIntegerTy(8));
-            BOOST_TEST(c.getSExtValue() == 0);
-            return boost::test_tools::predicate_result(true);
-        })));
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i8, sext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(0)));
     }
 }
 
@@ -67,14 +51,9 @@ BOOST_AUTO_TEST_CASE(pass_002)
     BOOST_TEST_REQUIRE(pass("0002_user_defined_integrals/pass_002.depc"));
     {
         auto const f = pass_result.value()->getFunction("zero");
-        BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(f->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::ZExt));
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant_int([] (llvm::ConstantInt const& c)
-        {
-            BOOST_TEST(c.getType()->isIntegerTy(8));
-            BOOST_TEST(c.getZExtValue() == 0);
-            return boost::test_tools::predicate_result(true);
-        })));
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i8, zext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(0)));
     }
 }
 

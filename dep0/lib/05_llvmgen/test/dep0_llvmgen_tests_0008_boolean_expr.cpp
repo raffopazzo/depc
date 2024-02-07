@@ -5,6 +5,7 @@
 #include "llvm_predicates.hpp"
 
 using namespace dep0::llvmgen::testing;
+using enum llvm::CmpInst::Predicate;
 
 template <Predicate<llvm::Value> F>
 auto not_of(F&& f)
@@ -22,8 +23,6 @@ BOOST_AUTO_TEST_CASE(pass_000)
 {
     apply_beta_delta_normalization = false;
     BOOST_TEST_REQUIRE(pass("0008_boolean_expr/pass_000.depc"));
-    auto const slt = llvm::CmpInst::Predicate::ICMP_SLT;
-    auto const ult = llvm::CmpInst::Predicate::ICMP_ULT;
     {
         auto const f = pass_result.value()->getFunction("negate");
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(is_i1, "x", zext)}, is_i1, zext));
@@ -64,21 +63,21 @@ BOOST_AUTO_TEST_CASE(pass_000)
             is_return_of(
                 f->getEntryBlock().getTerminator(),
                 cmp_of(
-                    ult,
-                    direct_call_of(negate, call_arg(cmp_of(ult, constant(true), direct_call_of(f1)), zext)),
-                    direct_call_of(negate, call_arg(cmp_of(ult, direct_call_of(f1), constant(true)), zext)))));
+                    ICMP_ULT,
+                    direct_call_of(negate, call_arg(cmp_of(ICMP_ULT, constant(true), direct_call_of(f1)), zext)),
+                    direct_call_of(negate, call_arg(cmp_of(ICMP_ULT, direct_call_of(f1), constant(true)), zext)))));
     }
     {
         auto const f = pass_result.value()->getFunction("f4");
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(is_i32, "x", sext)}, is_i1, zext));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), cmp_of(slt, constant(1), exactly(f->getArg(0ul)))));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), cmp_of(ICMP_SLT, constant(1), exactly(f->getArg(0ul)))));
     }
     {
         auto const f = pass_result.value()->getFunction("f5");
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(is_i32, "x", zext)}, is_i1, zext));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), cmp_of(ult, exactly(f->getArg(0ul)), constant(2))));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), cmp_of(ICMP_ULT, exactly(f->getArg(0ul)), constant(2))));
     }
     {
         auto const f = pass_result.value()->getFunction("f6");
@@ -87,7 +86,7 @@ BOOST_AUTO_TEST_CASE(pass_000)
         BOOST_TEST(
             is_return_of(
                 f->getEntryBlock().getTerminator(),
-                cmp_of(slt, exactly(f->getArg(0ul)), exactly(f->getArg(1ul)))));
+                cmp_of(ICMP_SLT, exactly(f->getArg(0ul)), exactly(f->getArg(1ul)))));
     }
     {
         auto const f = pass_result.value()->getFunction("f7");
@@ -96,7 +95,7 @@ BOOST_AUTO_TEST_CASE(pass_000)
         BOOST_TEST(
             is_return_of(
                 f->getEntryBlock().getTerminator(),
-                cmp_of(slt, exactly(f->getArg(0ul)), add_of(exactly(f->getArg(0ul)), exactly(f->getArg(1ul))))));
+                cmp_of(ICMP_SLT, exactly(f->getArg(0ul)), add_of(exactly(f->getArg(0ul)), exactly(f->getArg(1ul))))));
     }
     {
         auto const f = pass_result.value()->getFunction("f8");
@@ -106,7 +105,7 @@ BOOST_AUTO_TEST_CASE(pass_000)
             is_return_of(
                 f->getEntryBlock().getTerminator(),
                 cmp_of(
-                    ult,
+                    ICMP_ULT,
                     add_of(exactly(f->getArg(0ul)), exactly(f->getArg(1ul))),
                     add_of(exactly(f->getArg(0ul)), exactly(f->getArg(1ul))))));
     }
@@ -118,7 +117,7 @@ BOOST_AUTO_TEST_CASE(pass_000)
             is_return_of(
                 f->getEntryBlock().getTerminator(),
                 cmp_of(
-                    ult,
+                    ICMP_ULT,
                     add_of(exactly(f->getArg(0ul)), exactly(f->getArg(1ul))),
                     exactly(f->getArg(0ul)))));
     }
@@ -131,9 +130,9 @@ BOOST_AUTO_TEST_CASE(pass_000)
             is_return_of(
                 f->getEntryBlock().getTerminator(),
                 cmp_of(
-                    ult,
+                    ICMP_ULT,
                     cmp_of(
-                        ult,
+                        ICMP_ULT,
                         load_of(is_i1, gep_of(is_i1, exactly(xs), constant(0)), align_of(1)),
                         load_of(is_i1, gep_of(is_i1, exactly(xs), constant(1)), align_of(1))),
                     load_of(is_i1, gep_of(is_i1, exactly(xs), constant(2)), align_of(1)))));
@@ -147,10 +146,10 @@ BOOST_AUTO_TEST_CASE(pass_000)
             is_return_of(
                 f->getEntryBlock().getTerminator(),
                 cmp_of(
-                    ult,
+                    ICMP_ULT,
                     load_of(is_i1, gep_of(is_i1, exactly(xs), constant(0)), align_of(1)),
                     cmp_of(
-                        ult,
+                        ICMP_ULT,
                         load_of(is_i1, gep_of(is_i1, exactly(xs), constant(1)), align_of(1)),
                         load_of(is_i1, gep_of(is_i1, exactly(xs), constant(2)), align_of(1))))));
     }
@@ -163,7 +162,7 @@ BOOST_AUTO_TEST_CASE(pass_000)
             is_return_of(
                 f->getEntryBlock().getTerminator(),
                 cmp_of(
-                    slt,
+                    ICMP_SLT,
                     add_of(
                         load_of(is_i32, gep_of(is_i32, exactly(xs), constant(0)), align_of(4)),
                         load_of(is_i32, gep_of(is_i32, exactly(xs), constant(1)), align_of(4))),
@@ -177,8 +176,6 @@ BOOST_AUTO_TEST_CASE(pass_001)
 {
     apply_beta_delta_normalization = false;
     BOOST_TEST_REQUIRE(pass("0008_boolean_expr/pass_001.depc"));
-    auto const sgt = llvm::CmpInst::Predicate::ICMP_SGT;
-    auto const ugt = llvm::CmpInst::Predicate::ICMP_UGT;
     {
         auto const f = pass_result.value()->getFunction("negate");
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(is_i1, "x", zext)}, is_i1, zext));
@@ -219,21 +216,21 @@ BOOST_AUTO_TEST_CASE(pass_001)
             is_return_of(
                 f->getEntryBlock().getTerminator(),
                 cmp_of(
-                    ugt,
-                    direct_call_of(negate, call_arg(cmp_of(ugt, constant(true), direct_call_of(f1)), zext)),
-                    direct_call_of(negate, call_arg(cmp_of(ugt, direct_call_of(f1), constant(true)), zext)))));
+                    ICMP_UGT,
+                    direct_call_of(negate, call_arg(cmp_of(ICMP_UGT, constant(true), direct_call_of(f1)), zext)),
+                    direct_call_of(negate, call_arg(cmp_of(ICMP_UGT, direct_call_of(f1), constant(true)), zext)))));
     }
     {
         auto const f = pass_result.value()->getFunction("f4");
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(is_i32, "x", sext)}, is_i1, zext));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), cmp_of(sgt, constant(1), exactly(f->getArg(0ul)))));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), cmp_of(ICMP_SGT, constant(1), exactly(f->getArg(0ul)))));
     }
     {
         auto const f = pass_result.value()->getFunction("f5");
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(is_i32, "x", zext)}, is_i1, zext));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), cmp_of(ugt, exactly(f->getArg(0ul)), constant(2))));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), cmp_of(ICMP_UGT, exactly(f->getArg(0ul)), constant(2))));
     }
     {
         auto const f = pass_result.value()->getFunction("f6");
@@ -242,7 +239,7 @@ BOOST_AUTO_TEST_CASE(pass_001)
         BOOST_TEST(
             is_return_of(
                 f->getEntryBlock().getTerminator(),
-                cmp_of(sgt, exactly(f->getArg(0ul)), exactly(f->getArg(1ul)))));
+                cmp_of(ICMP_SGT, exactly(f->getArg(0ul)), exactly(f->getArg(1ul)))));
     }
     {
         auto const f = pass_result.value()->getFunction("f7");
@@ -251,7 +248,7 @@ BOOST_AUTO_TEST_CASE(pass_001)
         BOOST_TEST(
             is_return_of(
                 f->getEntryBlock().getTerminator(),
-                cmp_of(sgt, exactly(f->getArg(0ul)), add_of(exactly(f->getArg(0ul)), exactly(f->getArg(1ul))))));
+                cmp_of(ICMP_SGT, exactly(f->getArg(0ul)), add_of(exactly(f->getArg(0ul)), exactly(f->getArg(1ul))))));
     }
     {
         auto const f = pass_result.value()->getFunction("f8");
@@ -261,7 +258,7 @@ BOOST_AUTO_TEST_CASE(pass_001)
             is_return_of(
                 f->getEntryBlock().getTerminator(),
                 cmp_of(
-                    ugt,
+                    ICMP_UGT,
                     add_of(exactly(f->getArg(0ul)), exactly(f->getArg(1ul))),
                     add_of(exactly(f->getArg(0ul)), exactly(f->getArg(1ul))))));
     }
@@ -273,7 +270,7 @@ BOOST_AUTO_TEST_CASE(pass_001)
             is_return_of(
                 f->getEntryBlock().getTerminator(),
                 cmp_of(
-                    ugt,
+                    ICMP_UGT,
                     add_of(exactly(f->getArg(0ul)), exactly(f->getArg(1ul))),
                     exactly(f->getArg(0ul)))));
     }
@@ -286,9 +283,9 @@ BOOST_AUTO_TEST_CASE(pass_001)
             is_return_of(
                 f->getEntryBlock().getTerminator(),
                 cmp_of(
-                    ugt,
+                    ICMP_UGT,
                     cmp_of(
-                        ugt,
+                        ICMP_UGT,
                         load_of(is_i1, gep_of(is_i1, exactly(xs), constant(0)), align_of(1)),
                         load_of(is_i1, gep_of(is_i1, exactly(xs), constant(1)), align_of(1))),
                     load_of(is_i1, gep_of(is_i1, exactly(xs), constant(2)), align_of(1)))));
@@ -302,10 +299,10 @@ BOOST_AUTO_TEST_CASE(pass_001)
             is_return_of(
                 f->getEntryBlock().getTerminator(),
                 cmp_of(
-                    ugt,
+                    ICMP_UGT,
                     load_of(is_i1, gep_of(is_i1, exactly(xs), constant(0)), align_of(1)),
                     cmp_of(
-                        ugt,
+                        ICMP_UGT,
                         load_of(is_i1, gep_of(is_i1, exactly(xs), constant(1)), align_of(1)),
                         load_of(is_i1, gep_of(is_i1, exactly(xs), constant(2)), align_of(1))))));
     }
@@ -318,7 +315,7 @@ BOOST_AUTO_TEST_CASE(pass_001)
             is_return_of(
                 f->getEntryBlock().getTerminator(),
                 cmp_of(
-                    sgt,
+                    ICMP_SGT,
                     add_of(
                         load_of(is_i32, gep_of(is_i32, exactly(xs), constant(0)), align_of(4)),
                         load_of(is_i32, gep_of(is_i32, exactly(xs), constant(1)), align_of(4))),
@@ -332,8 +329,6 @@ BOOST_AUTO_TEST_CASE(pass_002)
 {
     apply_beta_delta_normalization = false;
     BOOST_TEST_REQUIRE(pass("0008_boolean_expr/pass_002.depc"));
-    auto const sle = llvm::CmpInst::Predicate::ICMP_SLE;
-    auto const ule = llvm::CmpInst::Predicate::ICMP_ULE;
     {
         auto const f = pass_result.value()->getFunction("negate");
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(is_i1, "x", zext)}, is_i1, zext));
@@ -374,21 +369,21 @@ BOOST_AUTO_TEST_CASE(pass_002)
             is_return_of(
                 f->getEntryBlock().getTerminator(),
                 cmp_of(
-                    ule,
-                    direct_call_of(negate, call_arg(cmp_of(ule, constant(true), direct_call_of(f1)), zext)),
-                    direct_call_of(negate, call_arg(cmp_of(ule, direct_call_of(f1), constant(true)), zext)))));
+                    ICMP_ULE,
+                    direct_call_of(negate, call_arg(cmp_of(ICMP_ULE, constant(true), direct_call_of(f1)), zext)),
+                    direct_call_of(negate, call_arg(cmp_of(ICMP_ULE, direct_call_of(f1), constant(true)), zext)))));
     }
     {
         auto const f = pass_result.value()->getFunction("f4");
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(is_i32, "x", sext)}, is_i1, zext));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), cmp_of(sle, constant(1), exactly(f->getArg(0ul)))));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), cmp_of(ICMP_SLE, constant(1), exactly(f->getArg(0ul)))));
     }
     {
         auto const f = pass_result.value()->getFunction("f5");
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(is_i32, "x", zext)}, is_i1, zext));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), cmp_of(ule, exactly(f->getArg(0ul)), constant(2))));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), cmp_of(ICMP_ULE, exactly(f->getArg(0ul)), constant(2))));
     }
     {
         auto const f = pass_result.value()->getFunction("f6");
@@ -397,7 +392,7 @@ BOOST_AUTO_TEST_CASE(pass_002)
         BOOST_TEST(
             is_return_of(
                 f->getEntryBlock().getTerminator(),
-                cmp_of(sle, exactly(f->getArg(0ul)), exactly(f->getArg(1ul)))));
+                cmp_of(ICMP_SLE, exactly(f->getArg(0ul)), exactly(f->getArg(1ul)))));
     }
     {
         auto const f = pass_result.value()->getFunction("f7");
@@ -406,7 +401,7 @@ BOOST_AUTO_TEST_CASE(pass_002)
         BOOST_TEST(
             is_return_of(
                 f->getEntryBlock().getTerminator(),
-                cmp_of(sle, exactly(f->getArg(0ul)), add_of(exactly(f->getArg(0ul)), exactly(f->getArg(1ul))))));
+                cmp_of(ICMP_SLE, exactly(f->getArg(0ul)), add_of(exactly(f->getArg(0ul)), exactly(f->getArg(1ul))))));
     }
     {
         auto const f = pass_result.value()->getFunction("f8");
@@ -416,7 +411,7 @@ BOOST_AUTO_TEST_CASE(pass_002)
             is_return_of(
                 f->getEntryBlock().getTerminator(),
                 cmp_of(
-                    ule,
+                    ICMP_ULE,
                     add_of(exactly(f->getArg(0ul)), exactly(f->getArg(1ul))),
                     add_of(exactly(f->getArg(0ul)), exactly(f->getArg(1ul))))));
     }
@@ -428,7 +423,7 @@ BOOST_AUTO_TEST_CASE(pass_002)
             is_return_of(
                 f->getEntryBlock().getTerminator(),
                 cmp_of(
-                    ule,
+                    ICMP_ULE,
                     add_of(exactly(f->getArg(0ul)), exactly(f->getArg(1ul))),
                     exactly(f->getArg(0ul)))));
     }
@@ -441,9 +436,9 @@ BOOST_AUTO_TEST_CASE(pass_002)
             is_return_of(
                 f->getEntryBlock().getTerminator(),
                 cmp_of(
-                    ule,
+                    ICMP_ULE,
                     cmp_of(
-                        ule,
+                        ICMP_ULE,
                         load_of(is_i1, gep_of(is_i1, exactly(xs), constant(0)), align_of(1)),
                         load_of(is_i1, gep_of(is_i1, exactly(xs), constant(1)), align_of(1))),
                     load_of(is_i1, gep_of(is_i1, exactly(xs), constant(2)), align_of(1)))));
@@ -457,10 +452,10 @@ BOOST_AUTO_TEST_CASE(pass_002)
             is_return_of(
                 f->getEntryBlock().getTerminator(),
                 cmp_of(
-                    ule,
+                    ICMP_ULE,
                     load_of(is_i1, gep_of(is_i1, exactly(xs), constant(0)), align_of(1)),
                     cmp_of(
-                        ule,
+                        ICMP_ULE,
                         load_of(is_i1, gep_of(is_i1, exactly(xs), constant(1)), align_of(1)),
                         load_of(is_i1, gep_of(is_i1, exactly(xs), constant(2)), align_of(1))))));
     }
@@ -473,7 +468,7 @@ BOOST_AUTO_TEST_CASE(pass_002)
             is_return_of(
                 f->getEntryBlock().getTerminator(),
                 cmp_of(
-                    sle,
+                    ICMP_SLE,
                     add_of(
                         load_of(is_i32, gep_of(is_i32, exactly(xs), constant(0)), align_of(4)),
                         load_of(is_i32, gep_of(is_i32, exactly(xs), constant(1)), align_of(4))),
@@ -487,8 +482,6 @@ BOOST_AUTO_TEST_CASE(pass_003)
 {
     apply_beta_delta_normalization = false;
     BOOST_TEST_REQUIRE(pass("0008_boolean_expr/pass_003.depc"));
-    auto const sge = llvm::CmpInst::Predicate::ICMP_SGE;
-    auto const uge = llvm::CmpInst::Predicate::ICMP_UGE;
     {
         auto const f = pass_result.value()->getFunction("negate");
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(is_i1, "x", zext)}, is_i1, zext));
@@ -529,21 +522,21 @@ BOOST_AUTO_TEST_CASE(pass_003)
             is_return_of(
                 f->getEntryBlock().getTerminator(),
                 cmp_of(
-                    uge,
-                    direct_call_of(negate, call_arg(cmp_of(uge, constant(true), direct_call_of(f1)), zext)),
-                    direct_call_of(negate, call_arg(cmp_of(uge, direct_call_of(f1), constant(true)), zext)))));
+                    ICMP_UGE,
+                    direct_call_of(negate, call_arg(cmp_of(ICMP_UGE, constant(true), direct_call_of(f1)), zext)),
+                    direct_call_of(negate, call_arg(cmp_of(ICMP_UGE, direct_call_of(f1), constant(true)), zext)))));
     }
     {
         auto const f = pass_result.value()->getFunction("f4");
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(is_i32, "x", sext)}, is_i1, zext));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), cmp_of(sge, constant(1), exactly(f->getArg(0ul)))));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), cmp_of(ICMP_SGE, constant(1), exactly(f->getArg(0ul)))));
     }
     {
         auto const f = pass_result.value()->getFunction("f5");
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(is_i32, "x", zext)}, is_i1, zext));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), cmp_of(uge, exactly(f->getArg(0ul)), constant(2))));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), cmp_of(ICMP_UGE, exactly(f->getArg(0ul)), constant(2))));
     }
     {
         auto const f = pass_result.value()->getFunction("f6");
@@ -552,7 +545,7 @@ BOOST_AUTO_TEST_CASE(pass_003)
         BOOST_TEST(
             is_return_of(
                 f->getEntryBlock().getTerminator(),
-                cmp_of(sge, exactly(f->getArg(0ul)), exactly(f->getArg(1ul)))));
+                cmp_of(ICMP_SGE, exactly(f->getArg(0ul)), exactly(f->getArg(1ul)))));
     }
     {
         auto const f = pass_result.value()->getFunction("f7");
@@ -561,7 +554,7 @@ BOOST_AUTO_TEST_CASE(pass_003)
         BOOST_TEST(
             is_return_of(
                 f->getEntryBlock().getTerminator(),
-                cmp_of(sge, exactly(f->getArg(0ul)), add_of(exactly(f->getArg(0ul)), exactly(f->getArg(1ul))))));
+                cmp_of(ICMP_SGE, exactly(f->getArg(0ul)), add_of(exactly(f->getArg(0ul)), exactly(f->getArg(1ul))))));
     }
     {
         auto const f = pass_result.value()->getFunction("f8");
@@ -571,7 +564,7 @@ BOOST_AUTO_TEST_CASE(pass_003)
             is_return_of(
                 f->getEntryBlock().getTerminator(),
                 cmp_of(
-                    uge,
+                    ICMP_UGE,
                     add_of(exactly(f->getArg(0ul)), exactly(f->getArg(1ul))),
                     add_of(exactly(f->getArg(0ul)), exactly(f->getArg(1ul))))));
     }
@@ -583,7 +576,7 @@ BOOST_AUTO_TEST_CASE(pass_003)
             is_return_of(
                 f->getEntryBlock().getTerminator(),
                 cmp_of(
-                    uge,
+                    ICMP_UGE,
                     add_of(exactly(f->getArg(0ul)), exactly(f->getArg(1ul))),
                     exactly(f->getArg(0ul)))));
     }
@@ -596,9 +589,9 @@ BOOST_AUTO_TEST_CASE(pass_003)
             is_return_of(
                 f->getEntryBlock().getTerminator(),
                 cmp_of(
-                    uge,
+                    ICMP_UGE,
                     cmp_of(
-                        uge,
+                        ICMP_UGE,
                         load_of(is_i1, gep_of(is_i1, exactly(xs), constant(0)), align_of(1)),
                         load_of(is_i1, gep_of(is_i1, exactly(xs), constant(1)), align_of(1))),
                     load_of(is_i1, gep_of(is_i1, exactly(xs), constant(2)), align_of(1)))));
@@ -612,10 +605,10 @@ BOOST_AUTO_TEST_CASE(pass_003)
             is_return_of(
                 f->getEntryBlock().getTerminator(),
                 cmp_of(
-                    uge,
+                    ICMP_UGE,
                     load_of(is_i1, gep_of(is_i1, exactly(xs), constant(0)), align_of(1)),
                     cmp_of(
-                        uge,
+                        ICMP_UGE,
                         load_of(is_i1, gep_of(is_i1, exactly(xs), constant(1)), align_of(1)),
                         load_of(is_i1, gep_of(is_i1, exactly(xs), constant(2)), align_of(1))))));
     }
@@ -628,7 +621,7 @@ BOOST_AUTO_TEST_CASE(pass_003)
             is_return_of(
                 f->getEntryBlock().getTerminator(),
                 cmp_of(
-                    sge,
+                    ICMP_SGE,
                     add_of(
                         load_of(is_i32, gep_of(is_i32, exactly(xs), constant(0)), align_of(4)),
                         load_of(is_i32, gep_of(is_i32, exactly(xs), constant(1)), align_of(4))),
@@ -641,7 +634,6 @@ BOOST_AUTO_TEST_CASE(pass_003)
 BOOST_AUTO_TEST_CASE(pass_004)
 {
     apply_beta_delta_normalization = true;
-    auto const ult = llvm::CmpInst::Predicate::ICMP_ULT;
     BOOST_TEST_REQUIRE(pass("0008_boolean_expr/pass_004.depc"));
     {
         auto const f = pass_result.value()->getFunction("negate");
@@ -685,7 +677,7 @@ BOOST_AUTO_TEST_CASE(pass_004)
         BOOST_TEST_REQUIRE(f->size() == 1ul);
         auto const x = f->getArg(0ul);
         auto const y = f->getArg(1ul);
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), cmp_of(ult, not_of(exactly(x)), exactly(y))));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), cmp_of(ICMP_ULT, not_of(exactly(x)), exactly(y))));
     }
     {
         auto const f = pass_result.value()->getFunction("f6");
@@ -693,7 +685,7 @@ BOOST_AUTO_TEST_CASE(pass_004)
         BOOST_TEST_REQUIRE(f->size() == 1ul);
         auto const x = f->getArg(0ul);
         auto const y = f->getArg(1ul);
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), not_of(cmp_of(ult, exactly(x), exactly(y)))));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), not_of(cmp_of(ICMP_ULT, exactly(x), exactly(y)))));
     }
     {
         auto const f = pass_result.value()->getFunction("f7");
@@ -704,7 +696,7 @@ BOOST_AUTO_TEST_CASE(pass_004)
         BOOST_TEST(
             is_return_of(
                 f->getEntryBlock().getTerminator(),
-                cmp_of(ult, not_of(exactly(x)), not_of(exactly(y)))));
+                cmp_of(ICMP_ULT, not_of(exactly(x)), not_of(exactly(y)))));
     }
     {
         auto const f = pass_result.value()->getFunction("f8");
@@ -725,7 +717,7 @@ BOOST_AUTO_TEST_CASE(pass_004)
             is_return_of(
                 f->getEntryBlock().getTerminator(),
                 cmp_of(
-                    ult,
+                    ICMP_ULT,
                     not_of(load_of(is_i1, gep_of(is_i1, exactly(xs), constant(0)), align_of(1))),
                     load_of(is_i1, gep_of(is_i1, exactly(xs), constant(1)), align_of(1)))));
     }
@@ -739,7 +731,7 @@ BOOST_AUTO_TEST_CASE(pass_004)
                 f->getEntryBlock().getTerminator(),
                 not_of(
                     cmp_of(
-                        ult,
+                        ICMP_ULT,
                         load_of(is_i1, gep_of(is_i1, exactly(xs), constant(0)), align_of(1)),
                         load_of(is_i1, gep_of(is_i1, exactly(xs), constant(1)), align_of(1))))));
     }
@@ -752,7 +744,7 @@ BOOST_AUTO_TEST_CASE(pass_004)
             is_return_of(
                 f->getEntryBlock().getTerminator(),
                 cmp_of(
-                    ult,
+                    ICMP_ULT,
                     not_of(load_of(is_i1, gep_of(is_i1, exactly(xs), constant(0)), align_of(1))),
                     not_of(load_of(is_i1, gep_of(is_i1, exactly(xs), constant(1)), align_of(1))))));
     }
@@ -1188,6 +1180,181 @@ BOOST_AUTO_TEST_CASE(pass_007)
                 xor_of(
                     not_of(load_of(is_i1, gep_of(is_i1, exactly(xs), constant(0)), align_of(1))),
                     not_of(load_of(is_i1, gep_of(is_i1, exactly(xs), constant(1)), align_of(1))))));
+    }
+}
+
+BOOST_AUTO_TEST_CASE(pass_008)
+{
+    apply_beta_delta_normalization = false;
+    BOOST_TEST_REQUIRE(pass("0008_boolean_expr/pass_008.depc"));
+    {
+        auto const f = pass_result.value()->getFunction("negate");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(is_i1, "x", zext)}, is_i1, zext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), not_of(exactly(f->getArg(0ul)))));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("f0");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i1, zext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(false)));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("f1");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i1, zext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(true)));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("f2");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i1, zext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(true)));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("f3");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i1, zext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(true)));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("f4");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i1, zext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(true)));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("f5");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i1, zext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        auto const f1 = exactly(pass_result.value()->getFunction("f1"));
+        auto const negate = exactly(pass_result.value()->getFunction("negate"));
+        BOOST_TEST(
+            is_return_of(
+                f->getEntryBlock().getTerminator(),
+                cmp_of(
+                    ICMP_EQ,
+                    direct_call_of(negate, call_arg(cmp_of(ICMP_EQ, constant(true), direct_call_of(f1)), zext)),
+                    direct_call_of(negate, call_arg(cmp_of(ICMP_EQ, direct_call_of(f1), constant(true)), zext)))));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("f6");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(is_i32, "x", sext)}, is_i1, zext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(
+            is_return_of(
+                f->getEntryBlock().getTerminator(),
+                cmp_of(ICMP_EQ, constant(1), exactly(f->getArg(0ul)))));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("f7");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(is_i32, "x", zext)}, is_i1, zext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(
+            is_return_of(
+                f->getEntryBlock().getTerminator(),
+                cmp_of(ICMP_EQ, exactly(f->getArg(0ul)), constant(2))));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("f8");
+        BOOST_TEST_REQUIRE(
+            is_function_of(f, std::tuple{arg_of(is_i8, "x", sext), arg_of(is_i8, "y", sext)}, is_i1, zext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(
+            is_return_of(
+                f->getEntryBlock().getTerminator(),
+                cmp_of(ICMP_EQ, exactly(f->getArg(0ul)), exactly(f->getArg(1ul)))));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("f9");
+        BOOST_TEST_REQUIRE(
+            is_function_of(f, std::tuple{arg_of(is_i32, "x", sext), arg_of(is_i32, "y", sext)}, is_i1, zext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        auto const x = f->getArg(0ul);
+        auto const y = f->getArg(1ul);
+        BOOST_TEST(
+            is_return_of(
+                f->getEntryBlock().getTerminator(),
+                cmp_of(ICMP_EQ, exactly(x), add_of(exactly(x), exactly(y)))));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("f10");
+        BOOST_TEST_REQUIRE(
+            is_function_of(f, std::tuple{arg_of(is_i32, "x", zext), arg_of(is_i32, "y", zext)}, is_i1, zext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        auto const x = f->getArg(0ul);
+        auto const y = f->getArg(1ul);
+        BOOST_TEST(
+            is_return_of(
+                f->getEntryBlock().getTerminator(),
+                cmp_of(
+                    ICMP_EQ,
+                    add_of(exactly(x), exactly(y)),
+                    add_of(exactly(x), exactly(y)))));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("f11");
+        BOOST_TEST_REQUIRE(
+            is_function_of(f, std::tuple{arg_of(is_i8, "x", zext), arg_of(is_i8, "y", zext)}, is_i1, zext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        auto const x = f->getArg(0ul);
+        auto const y = f->getArg(1ul);
+        BOOST_TEST(
+            is_return_of(
+                f->getEntryBlock().getTerminator(),
+                cmp_of(
+                    ICMP_EQ,
+                    add_of(exactly(x), exactly(y)),
+                    exactly(x))));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("f12");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(pointer_to(is_i1), "xs", nonnull)}, is_i1, zext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        auto const xs = f->getArg(0ul);
+        BOOST_TEST(
+            is_return_of(
+                f->getEntryBlock().getTerminator(),
+                cmp_of(
+                    ICMP_EQ,
+                    cmp_of(
+                        ICMP_EQ,
+                        load_of(is_i1, gep_of(is_i1, exactly(xs), constant(0)), align_of(1)),
+                        load_of(is_i1, gep_of(is_i1, exactly(xs), constant(1)), align_of(1))),
+                    load_of(is_i1, gep_of(is_i1, exactly(xs), constant(2)), align_of(1)))));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("f13");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(pointer_to(is_i1), "xs", nonnull)}, is_i1, zext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        auto const xs = f->getArg(0ul);
+        BOOST_TEST(
+            is_return_of(
+                f->getEntryBlock().getTerminator(),
+                cmp_of(
+                    ICMP_EQ,
+                    load_of(is_i1, gep_of(is_i1, exactly(xs), constant(0)), align_of(1)),
+                    cmp_of(
+                        ICMP_EQ,
+                        load_of(is_i1, gep_of(is_i1, exactly(xs), constant(1)), align_of(1)),
+                        load_of(is_i1, gep_of(is_i1, exactly(xs), constant(2)), align_of(1))))));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("f14");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(pointer_to(is_i32), "xs", nonnull)}, is_i1, zext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        auto const xs = f->getArg(0ul);
+        BOOST_TEST(
+            is_return_of(
+                f->getEntryBlock().getTerminator(),
+                cmp_of(
+                    ICMP_EQ,
+                    add_of(
+                        load_of(is_i32, gep_of(is_i32, exactly(xs), constant(0)), align_of(4)),
+                        load_of(is_i32, gep_of(is_i32, exactly(xs), constant(1)), align_of(4))),
+                    add_of(
+                        load_of(is_i32, gep_of(is_i32, exactly(xs), constant(1)), align_of(4)),
+                        load_of(is_i32, gep_of(is_i32, exactly(xs), constant(2)), align_of(4))))));
     }
 }
 

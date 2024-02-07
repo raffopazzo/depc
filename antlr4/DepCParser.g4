@@ -70,6 +70,7 @@ expr:
     | 'not' expr # notExpr
     | lhs=expr '+' rhs=expr # plusExpr
     | lhs=expr op=('<' | '<=' | '>' | '>=') rhs=expr # relationExpr
+    | lhs=expr '==' rhs=expr # equalityExpr
     | lhs=expr 'xor' rhs=expr # xorExpr
     | lhs=expr 'and' rhs=expr # andExpr
     | lhs=expr 'or' rhs=expr # orExpr

@@ -34,6 +34,7 @@ ARROW: '->';
 COMMA: ',';
 ELLIPSIS: '...';
 EQ: '=';
+EQ2: '==';
 GT: '>';
 GTE: '>=';
 LBRACK: '[';

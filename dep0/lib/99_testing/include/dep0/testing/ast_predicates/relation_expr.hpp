@@ -11,6 +11,31 @@
 namespace dep0::testing {
 
 template <ast::Properties P, Predicate<ast::expr_t<P>> F1, Predicate<ast::expr_t<P>> F2>
+boost::test_tools::predicate_result is_eq(ast::expr_t<P> const& expr, F1&& f1, F2&& f2)
+{
+    auto const* x = std::get_if<typename ast::expr_t<P>::relation_expr_t>(&expr.value);
+    if (not x)
+        return failure("expression is not relation_expr_t but ", pretty_name(expr.value));
+    auto const eq = std::get_if<typename ast::expr_t<P>::relation_expr_t::eq_t>(&x->value);
+    if (not eq)
+        return failure("relation not eq but ", pretty_name(x->value));
+    if (auto const result = std::forward<F1>(f1)(eq->lhs.get()); not result)
+        return failure("on the left-hand side: ", result.message());
+    if (auto const result = std::forward<F2>(f2)(eq->rhs.get()); not result)
+        return failure("on the right-hand side: ", result.message());
+    return true;
+}
+
+template <ast::Properties P, Predicate<ast::expr_t<P>> F1, Predicate<ast::expr_t<P>> F2>
+constexpr auto eq(F1&& f1, F2&& f2)
+{
+    return [f1=std::forward<F1>(f1), f2=std::forward<F2>(f2)] (ast::expr_t<P> const& x)
+    {
+        return is_eq(x, f1, f2);
+    };
+}
+
+template <ast::Properties P, Predicate<ast::expr_t<P>> F1, Predicate<ast::expr_t<P>> F2>
 boost::test_tools::predicate_result is_gt(ast::expr_t<P> const& expr, F1&& f1, F2&& f2)
 {
     auto const* x = std::get_if<typename ast::expr_t<P>::relation_expr_t>(&expr.value);

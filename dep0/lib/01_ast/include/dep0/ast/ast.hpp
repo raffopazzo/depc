@@ -88,6 +88,11 @@ struct expr_t
     };
     struct relation_expr_t
     {
+        struct eq_t
+        {
+            rec_t lhs;
+            rec_t rhs;
+        };
         struct gt_t
         {
             rec_t lhs;
@@ -108,7 +113,7 @@ struct expr_t
             rec_t lhs;
             rec_t rhs;
         };
-        using value_t = std::variant<gt_t, gte_t, lt_t, lte_t>;
+        using value_t = std::variant<eq_t, gt_t, gte_t, lt_t, lte_t>;
         value_t value;
     };
     struct arith_expr_t

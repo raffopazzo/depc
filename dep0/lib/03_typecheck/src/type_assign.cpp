@@ -168,6 +168,13 @@ expected<expr_t> type_assign(context_t const& ctx, parser::expr_t const& expr)
                                             std::move(*lhs),
                                             std::move(*rhs)}};
                                 },
+                                [&] (boost::hana::type<parser::expr_t::relation_expr_t::neq_t>)
+                                {
+                                    return expr_t::relation_expr_t{
+                                        expr_t::relation_expr_t::neq_t{
+                                            std::move(*lhs),
+                                            std::move(*rhs)}};
+                                },
                                 [&] (boost::hana::type<parser::expr_t::relation_expr_t::gt_t>)
                                 {
                                     return expr_t::relation_expr_t{

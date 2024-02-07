@@ -270,10 +270,9 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         auto const loc = get_loc(src, *ctx);
         return expr_t{
             loc,
-            expr_t::relation_expr_t{
-                expr_t::relation_expr_t::eq_t{
-                    visitExpr(ctx->lhs),
-                    visitExpr(ctx->rhs)}}};
+            ctx->EQ2()
+                ? expr_t::relation_expr_t{expr_t::relation_expr_t::eq_t{visitExpr(ctx->lhs), visitExpr(ctx->rhs)}}
+                : expr_t::relation_expr_t{expr_t::relation_expr_t::neq_t{visitExpr(ctx->lhs), visitExpr(ctx->rhs)}}};
     }
 
     virtual std::any visitRelationExpr(DepCParser::RelationExprContext* ctx) override

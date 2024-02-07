@@ -193,6 +193,10 @@ llvm::Value* gen_val(
                             {
                                 return ICMP_EQ;
                             },
+                            [] (boost::hana::type<typecheck::expr_t::relation_expr_t::neq_t>)
+                            {
+                                return ICMP_NE;
+                            },
                             [sign] (boost::hana::type<typecheck::expr_t::relation_expr_t::gt_t>)
                             {
                                 return sign == signed_v ? ICMP_SGT : ICMP_UGT;

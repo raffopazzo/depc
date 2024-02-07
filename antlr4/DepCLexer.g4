@@ -43,6 +43,7 @@ LPAREN: '(';
 LT: '<';
 LTE: '<=';
 MINUS: '-';
+NEQ: '!=';
 PLUS: '+';
 RBRACK: ']';
 RCURLY: '}';

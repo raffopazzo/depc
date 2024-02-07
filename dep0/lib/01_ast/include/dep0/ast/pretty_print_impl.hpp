@@ -324,6 +324,11 @@ std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::relation_expr_t
             detail::maybe_with_paranthesis(os, x.lhs.get(), indent);
             detail::maybe_with_paranthesis(os << " == ", x.rhs.get(), indent);
         },
+        [&] (typename expr_t<P>::relation_expr_t::neq_t const& x)
+        {
+            detail::maybe_with_paranthesis(os, x.lhs.get(), indent);
+            detail::maybe_with_paranthesis(os << " != ", x.rhs.get(), indent);
+        },
         [&] (typename expr_t<P>::relation_expr_t::gt_t const& x)
         {
             detail::maybe_with_paranthesis(os, x.lhs.get(), indent);

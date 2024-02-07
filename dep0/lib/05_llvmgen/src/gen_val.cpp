@@ -189,6 +189,14 @@ llvm::Value* gen_val(
                             [] (auto const&) { return dep0::ast::sign_t::signed_v; });
                     auto const op =
                         boost::hana::overload(
+                            [] (boost::hana::type<typecheck::expr_t::relation_expr_t::eq_t>)
+                            {
+                                return ICMP_EQ;
+                            },
+                            [] (boost::hana::type<typecheck::expr_t::relation_expr_t::neq_t>)
+                            {
+                                return ICMP_NE;
+                            },
                             [sign] (boost::hana::type<typecheck::expr_t::relation_expr_t::gt_t>)
                             {
                                 return sign == signed_v ? ICMP_SGT : ICMP_UGT;

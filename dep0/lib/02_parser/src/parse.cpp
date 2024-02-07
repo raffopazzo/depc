@@ -262,6 +262,19 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         throw error_t("unexpected alternative when parsing BodyOrStmtContext", loc);
     }
 
+    virtual std::any visitEqualityExpr(DepCParser::EqualityExprContext* ctx) override
+    {
+        assert(ctx);
+        assert(ctx->lhs);
+        assert(ctx->rhs);
+        auto const loc = get_loc(src, *ctx);
+        return expr_t{
+            loc,
+            ctx->EQ2()
+                ? expr_t::relation_expr_t{expr_t::relation_expr_t::eq_t{visitExpr(ctx->lhs), visitExpr(ctx->rhs)}}
+                : expr_t::relation_expr_t{expr_t::relation_expr_t::neq_t{visitExpr(ctx->lhs), visitExpr(ctx->rhs)}}};
+    }
+
     virtual std::any visitRelationExpr(DepCParser::RelationExprContext* ctx) override
     {
         assert(ctx);
@@ -444,6 +457,8 @@ struct parse_visitor_t : dep0::DepCParserVisitor
             return std::any_cast<expr_t>(visitPlusExpr(p));
         if (auto const p = dynamic_cast<DepCParser::RelationExprContext*>(ctx))
             return std::any_cast<expr_t>(visitRelationExpr(p));
+        if (auto const p = dynamic_cast<DepCParser::EqualityExprContext*>(ctx))
+            return std::any_cast<expr_t>(visitEqualityExpr(p));
         if (auto const p = dynamic_cast<DepCParser::XorExprContext*>(ctx))
             return std::any_cast<expr_t>(visitXorExpr(p));
         if (auto const p = dynamic_cast<DepCParser::AndExprContext*>(ctx))

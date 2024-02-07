@@ -324,6 +324,14 @@ bool beta_normalize(expr_t<P>& expr)
                             changed = true;
                             bool const c =
                                 boost::hana::overload(
+                                    [&] (boost::hana::type<typename expr_t<P>::relation_expr_t::eq_t>)
+                                    {
+                                        return a->value == b->value;
+                                    },
+                                    [&] (boost::hana::type<typename expr_t<P>::relation_expr_t::neq_t>)
+                                    {
+                                        return a->value != b->value;
+                                    },
                                     [&] (boost::hana::type<typename expr_t<P>::relation_expr_t::gt_t>)
                                     {
                                         return a->value > b->value;

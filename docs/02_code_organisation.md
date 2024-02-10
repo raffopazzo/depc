@@ -30,7 +30,7 @@ The source tree is organised as follows:
     the transformation stage along with some transformations
     that can be applied on a legal AST,
     i.e. an AST that typechecks correctly.
-  * `lib/04_llvmgen/` contains the entry point of
+  * `lib/05_llvmgen/` contains the entry point of
     the LLVM IR code-gen stage.
   * `lib/99_testing/` contains general purpose testing facilities,
     among all

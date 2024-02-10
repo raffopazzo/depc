@@ -111,7 +111,7 @@ bool delta_reduce(context_t<P> const& ctx, typename expr_t<P>::arith_expr_t& x)
 template <Properties P>
 bool delta_reduce(context_t<P> const&, typename expr_t<P>::var_t&)
 {
-    // We only want to perform a "simplied" one-step delta-reduction,
+    // We only want to perform a "simplified" one-step delta-reduction,
     // so ignore variable experssions that appear on their own.
     return false;
 }

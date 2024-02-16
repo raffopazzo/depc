@@ -150,16 +150,12 @@ BOOST_AUTO_TEST_CASE(pass_003)
         BOOST_TEST(is_arg(f.value.args[0ul], is_bool, "x"));
         BOOST_TEST(is_bool(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_if_else(f.value.body.stmts[0ul], [] (dep0::parser::stmt_t::if_else_t const& if_)
-        {
-            BOOST_TEST(is_var(if_.cond, "x"));
-            BOOST_TEST_REQUIRE(if_.true_branch.stmts.size() == 1ul);
-            BOOST_TEST_REQUIRE(if_.false_branch.has_value());
-            BOOST_TEST_REQUIRE(if_.false_branch->stmts.size() == 1ul);
-            BOOST_TEST(is_return_of(if_.true_branch.stmts[0], constant(false)));
-            BOOST_TEST(is_return_of(if_.false_branch->stmts[0], constant(true)));
-            return boost::test_tools::predicate_result(true);
-        }));
+        BOOST_TEST(
+            is_if_else(
+                f.value.body.stmts[0ul],
+                var("x"),
+                std::tuple{return_of(constant(false))},
+                std::tuple{return_of(constant(true))}));
     }
     {
         auto const& f = pass_result->func_defs[1ul];
@@ -177,16 +173,12 @@ BOOST_AUTO_TEST_CASE(pass_003)
         BOOST_TEST(is_arg(f.value.args[0], is_bool, "which"));
         BOOST_TEST(is_typename(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_if_else(f.value.body.stmts[0ul], [] (dep0::parser::stmt_t::if_else_t const& if_)
-        {
-            BOOST_TEST(is_var(if_.cond, "which"));
-            BOOST_TEST_REQUIRE(if_.true_branch.stmts.size() == 1ul);
-            BOOST_TEST_REQUIRE(if_.false_branch.has_value());
-            BOOST_TEST_REQUIRE(if_.false_branch->stmts.size() == 1ul);
-            BOOST_TEST(is_return_of(if_.true_branch.stmts[0], is_i32));
-            BOOST_TEST(is_return_of(if_.false_branch->stmts[0], is_bool));
-            return boost::test_tools::predicate_result(true);
-        }));
+        BOOST_TEST(
+            is_if_else(
+                f.value.body.stmts[0ul],
+                var("which"),
+                std::tuple{return_of(is_i32)},
+                std::tuple{return_of(is_bool)}));
     }
     {
         auto const& f = pass_result->func_defs[3ul];
@@ -199,16 +191,12 @@ BOOST_AUTO_TEST_CASE(pass_003)
                 std::tuple{arg_of(app_of(var("int_or_bool"), var("which")))},
                 app_of(var("int_or_bool"), var("which"))));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_if_else(f.value.body.stmts[0ul], [] (dep0::parser::stmt_t::if_else_t const& if_)
-        {
-            BOOST_TEST(is_var(if_.cond, "which"));
-            BOOST_TEST_REQUIRE(if_.true_branch.stmts.size() == 1ul);
-            BOOST_TEST_REQUIRE(if_.false_branch.has_value());
-            BOOST_TEST_REQUIRE(if_.false_branch->stmts.size() == 1ul);
-            BOOST_TEST(is_return_of(if_.true_branch.stmts[0], var("plus_1")));
-            BOOST_TEST(is_return_of(if_.false_branch->stmts[0], var("negate")));
-            return boost::test_tools::predicate_result(true);
-        }));
+        BOOST_TEST(
+            is_if_else(
+                f.value.body.stmts[0ul],
+                var("which"),
+                std::tuple{return_of(var("plus_1"))},
+                std::tuple{return_of(var("negate"))}));
     }
     {
         auto const& f = pass_result->func_defs[4ul];
@@ -262,14 +250,11 @@ BOOST_AUTO_TEST_CASE(pass_003)
                 std::tuple{arg_of(app_of(var("int_or_bool"), var("which")))},
                 app_of(var("int_or_bool"), var("which"))));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 2ul);
-        BOOST_TEST(is_if_else(f.value.body.stmts[0ul], [] (dep0::parser::stmt_t::if_else_t const& if_)
-        {
-            BOOST_TEST(is_var(if_.cond, "which"));
-            BOOST_TEST_REQUIRE(if_.true_branch.stmts.size() == 1ul);
-            BOOST_TEST(is_return_of(if_.true_branch.stmts[0], var("plus_1")));
-            BOOST_TEST(not if_.false_branch.has_value());
-            return boost::test_tools::predicate_result(true);
-        }));
+        BOOST_TEST(
+            is_if_else(
+                f.value.body.stmts[0ul],
+                var("which"),
+                std::tuple{return_of(var("plus_1"))}));
         BOOST_TEST(is_return_of(f.value.body.stmts[1ul], var("negate")));
     }
     {
@@ -315,16 +300,12 @@ BOOST_AUTO_TEST_CASE(pass_004)
         BOOST_TEST(is_arg(f.value.args[0ul], is_bool, "x"));
         BOOST_TEST(is_bool(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_if_else(f.value.body.stmts[0ul], [] (dep0::parser::stmt_t::if_else_t const& if_)
-        {
-            BOOST_TEST(is_var(if_.cond, "x"));
-            BOOST_TEST_REQUIRE(if_.true_branch.stmts.size() == 1ul);
-            BOOST_TEST_REQUIRE(if_.false_branch.has_value());
-            BOOST_TEST_REQUIRE(if_.false_branch->stmts.size() == 1ul);
-            BOOST_TEST(is_return_of(if_.true_branch.stmts[0], constant(false)));
-            BOOST_TEST(is_return_of(if_.false_branch->stmts[0], constant(true)));
-            return boost::test_tools::predicate_result(true);
-        }));
+        BOOST_TEST(
+            is_if_else(
+                f.value.body.stmts[0ul],
+                var("x"),
+                std::tuple{return_of(constant(false))},
+                std::tuple{return_of(constant(true))}));
     }
     {
         auto const& f = pass_result->func_defs[1ul];
@@ -333,16 +314,12 @@ BOOST_AUTO_TEST_CASE(pass_004)
         BOOST_TEST(is_arg(f.value.args[0], is_bool, "which"));
         BOOST_TEST(is_typename(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_if_else(f.value.body.stmts[0ul], [] (dep0::parser::stmt_t::if_else_t const& if_)
-        {
-            BOOST_TEST(is_var(if_.cond, "which"));
-            BOOST_TEST_REQUIRE(if_.true_branch.stmts.size() == 1ul);
-            BOOST_TEST_REQUIRE(if_.false_branch.has_value());
-            BOOST_TEST_REQUIRE(if_.false_branch->stmts.size() == 1ul);
-            BOOST_TEST(is_return_of(if_.true_branch.stmts[0], is_i32));
-            BOOST_TEST(is_return_of(if_.false_branch->stmts[0], is_bool));
-            return boost::test_tools::predicate_result(true);
-        }));
+        BOOST_TEST(
+            is_if_else(
+                f.value.body.stmts[0ul],
+                var("which"),
+                std::tuple{return_of(is_i32)},
+                std::tuple{return_of(is_bool)}));
     }
     {
         auto const& f = pass_result->func_defs[2ul];
@@ -373,16 +350,12 @@ BOOST_AUTO_TEST_CASE(pass_004)
                 std::tuple{arg_of(app_of(var("int_or_bool"), var("which")))},
                 app_of(var("int_or_bool"), app_of(var("negate"), var("which")))));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_if_else(f.value.body.stmts[0ul], [] (dep0::parser::stmt_t::if_else_t const& if_)
-        {
-            BOOST_TEST(is_var(if_.cond, "which"));
-            BOOST_TEST_REQUIRE(if_.true_branch.stmts.size() == 1ul);
-            BOOST_TEST_REQUIRE(if_.false_branch.has_value());
-            BOOST_TEST_REQUIRE(if_.false_branch->stmts.size() == 1ul);
-            BOOST_TEST(is_return_of(if_.true_branch.stmts[0], var("to_bool")));
-            BOOST_TEST(is_return_of(if_.false_branch->stmts[0], var("to_int")));
-            return boost::test_tools::predicate_result(true);
-        }));
+        BOOST_TEST(
+            is_if_else(
+                f.value.body.stmts[0ul],
+                var("which"),
+                std::tuple{return_of(var("to_bool"))},
+                std::tuple{return_of(var("to_int"))}));
     }
     {
         auto const& f = pass_result->func_defs[5ul];
@@ -398,16 +371,12 @@ BOOST_AUTO_TEST_CASE(pass_004)
         BOOST_TEST(is_arg(f.value.args[2ul], app_of(var("int_or_bool"), var("which")), "x"));
         BOOST_TEST(is_i32(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_if_else(f.value.body.stmts[0ul], [] (dep0::parser::stmt_t::if_else_t const& if_)
-        {
-            BOOST_TEST(is_var(if_.cond, "which"));
-            BOOST_TEST_REQUIRE(if_.true_branch.stmts.size() == 1ul);
-            BOOST_TEST_REQUIRE(if_.false_branch.has_value());
-            BOOST_TEST_REQUIRE(if_.false_branch->stmts.size() == 1ul);
-            BOOST_TEST(is_return_of(if_.true_branch.stmts[0], var("x")));
-            BOOST_TEST(is_return_of(if_.false_branch->stmts[0], app_of(var("f"), var("x"))));
-            return boost::test_tools::predicate_result(true);
-        }));
+        BOOST_TEST(
+            is_if_else(
+                f.value.body.stmts[0ul],
+                var("which"),
+                std::tuple{return_of(var("x"))},
+                std::tuple{return_of(app_of(var("f"), var("x")))}));
     }
     {
         auto const& f = pass_result->func_defs[6ul];
@@ -452,16 +421,12 @@ BOOST_AUTO_TEST_CASE(pass_005)
         BOOST_TEST(is_arg(f.value.args[0], is_bool, "which"));
         BOOST_TEST(is_typename(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_if_else(f.value.body.stmts[0ul], [] (dep0::parser::stmt_t::if_else_t const& if_)
-        {
-            BOOST_TEST(is_var(if_.cond, "which"));
-            BOOST_TEST_REQUIRE(if_.true_branch.stmts.size() == 1ul);
-            BOOST_TEST_REQUIRE(if_.false_branch.has_value());
-            BOOST_TEST_REQUIRE(if_.false_branch->stmts.size() == 1ul);
-            BOOST_TEST(is_return_of(if_.true_branch.stmts[0], is_i32));
-            BOOST_TEST(is_return_of(if_.false_branch->stmts[0], is_bool));
-            return boost::test_tools::predicate_result(true);
-        }));
+        BOOST_TEST(
+            is_if_else(
+                f.value.body.stmts[0ul],
+                var("which"),
+                std::tuple{return_of(is_i32)},
+                std::tuple{return_of(is_bool)}));
     }
     {
         auto const& f = pass_result->func_defs[1ul];
@@ -470,16 +435,12 @@ BOOST_AUTO_TEST_CASE(pass_005)
         BOOST_TEST(is_arg(f.value.args[0], is_bool, "which"));
         BOOST_TEST(is_app_of(f.value.ret_type.get(), var("int_or_bool"), var("which")));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_if_else(f.value.body.stmts[0ul], [] (dep0::parser::stmt_t::if_else_t const& if_)
-        {
-            BOOST_TEST(is_var(if_.cond, "which"));
-            BOOST_TEST_REQUIRE(if_.true_branch.stmts.size() == 1ul);
-            BOOST_TEST_REQUIRE(if_.false_branch.has_value());
-            BOOST_TEST_REQUIRE(if_.false_branch->stmts.size() == 1ul);
-            BOOST_TEST(is_return_of(if_.true_branch.stmts[0], constant(0)));
-            BOOST_TEST(is_return_of(if_.false_branch->stmts[0], constant(false)));
-            return boost::test_tools::predicate_result(true);
-        }));
+        BOOST_TEST(
+            is_if_else(
+                f.value.body.stmts[0ul],
+                var("which"),
+                std::tuple{return_of(constant(0))},
+                std::tuple{return_of(constant(false))}));
     }
     {
         auto const& f = pass_result->func_defs[2ul];
@@ -488,14 +449,11 @@ BOOST_AUTO_TEST_CASE(pass_005)
         BOOST_TEST(is_arg(f.value.args[0], is_bool, "which"));
         BOOST_TEST(is_app_of(f.value.ret_type.get(), var("int_or_bool"), var("which")));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 2ul);
-        BOOST_TEST(is_if_else(f.value.body.stmts[0ul], [] (dep0::parser::stmt_t::if_else_t const& if_)
-        {
-            BOOST_TEST(is_var(if_.cond, "which"));
-            BOOST_TEST_REQUIRE(if_.true_branch.stmts.size() == 1ul);
-            BOOST_TEST(is_return_of(if_.true_branch.stmts[0], constant(0)));
-            BOOST_TEST(not if_.false_branch.has_value());
-            return boost::test_tools::predicate_result(true);
-        }));
+        BOOST_TEST(
+            is_if_else(
+                f.value.body.stmts[0ul],
+                var("which"),
+                std::tuple{return_of(constant(0))}));
         BOOST_TEST(is_return_of(f.value.body.stmts[1ul], constant(false)));
     }
     {
@@ -619,7 +577,7 @@ BOOST_AUTO_TEST_CASE(pass_008)
         auto const& f = pass_result->func_defs[1ul];
         BOOST_TEST(f.name == "g");
         BOOST_TEST_REQUIRE(f.value.args.size() == 1ul);
-        BOOST_TEST(is_arg(f.value.args[0], app_of(global("f")), std::nullopt));
+        BOOST_TEST(is_arg(f.value.args[0], app_of(var("f")), std::nullopt));
         BOOST_TEST(is_typename(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
         BOOST_TEST(is_return_of(f.value.body.stmts[0ul], is_u64));
@@ -629,7 +587,7 @@ BOOST_AUTO_TEST_CASE(pass_008)
         BOOST_TEST(f.name == "h");
         BOOST_TEST_REQUIRE(f.value.args.size() == 2ul);
         BOOST_TEST(is_arg(f.value.args[0], pi_of(std::tuple{}, is_typename), "f"));
-        BOOST_TEST(is_arg(f.value.args[1], app_of(global("g"), constant(0)), std::nullopt));
+        BOOST_TEST(is_arg(f.value.args[1], app_of(var("g"), constant(0)), std::nullopt));
         BOOST_TEST(is_unit(f.value.ret_type.get()));
         BOOST_TEST(f.value.body.stmts.size() == 0ul);
     }
@@ -657,8 +615,8 @@ BOOST_AUTO_TEST_CASE(pass_009)
         auto const& f = pass_result->func_defs[1ul];
         BOOST_TEST(f.name == "g");
         BOOST_TEST_REQUIRE(f.value.args.size() == 2ul);
-        BOOST_TEST(is_arg(f.value.args[0], is_bool, "which"));
-        BOOST_TEST(is_arg(f.value.args[1], app_of(global("f"), var("x")), std::nullopt));
+        BOOST_TEST(is_arg(f.value.args[0], is_bool, "x"));
+        BOOST_TEST(is_arg(f.value.args[1], app_of(var("f"), var("x")), std::nullopt));
         BOOST_TEST(is_typename(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
         BOOST_TEST(is_return_of(f.value.body.stmts[0ul], is_u64));
@@ -668,7 +626,7 @@ BOOST_AUTO_TEST_CASE(pass_009)
         BOOST_TEST(f.name == "h");
         BOOST_TEST_REQUIRE(f.value.args.size() == 2ul);
         BOOST_TEST(is_arg(f.value.args[0], pi_of(std::tuple{arg_of(is_bool)}, is_typename), "f"));
-        BOOST_TEST(is_arg(f.value.args[1], app_of(global("g"), constant(true), constant(0)), std::nullopt));
+        BOOST_TEST(is_arg(f.value.args[1], app_of(var("g"), constant(true), constant(0)), std::nullopt));
         BOOST_TEST(is_unit(f.value.ret_type.get()));
         BOOST_TEST(f.value.body.stmts.size() == 0ul);
     }

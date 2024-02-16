@@ -19,7 +19,7 @@ bool beta_delta_normalize(module_t& m)
     {
         changed |= beta_delta_normalize(env, def);
         // store the result in env, so future look-ups of this definition will find the normalized version
-        auto const ok = env.try_emplace(expr_t::global_t{def.name}, std::nullopt, def);
+        auto const ok = env.try_emplace(expr_t::global_t{def.name}, def);
         assert(ok.has_value());
     }
     return changed;
@@ -34,7 +34,7 @@ bool beta_delta_normalize(environment_t const& env, func_def_t& def)
         changed |= beta_delta_normalize(env, ctx, arg.type);
         if (arg.var)
         {
-            auto const ok = ctx.try_emplace(*arg.var, std::nullopt, make_legal_expr(arg.type, *arg.var));
+            auto const ok = ctx.try_emplace(*arg.var, arg.properties.origin, make_legal_expr(arg.type, *arg.var));
             assert(ok.has_value());
         }
     }

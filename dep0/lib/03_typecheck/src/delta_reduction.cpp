@@ -109,13 +109,10 @@ bool delta_reduce(environment_t const& env, context_t const& ctx, expr_t::app_t&
 {
     if (auto const global = std::get_if<expr_t::global_t>(&app.func.get().value))
     {
-        if (auto const def = env[*global])
+        if (auto const func_def = std::get_if<func_def_t>(env[*global]))
         {
-            if (auto const func_def = std::get_if<func_def_t>(&def->value))
-            {
-                app.func.get().value = func_def->value;
-                return true;
-            }
+            app.func.get().value = func_def->value;
+            return true;
         }
     }
     if (delta_reduce(env, ctx, app.func.get()))
@@ -135,7 +132,7 @@ bool delta_reduce(environment_t const& env, context_t const& ctx, expr_t::abs_t&
             return true;
         if (arg.var)
         {
-            auto const inserted = ctx2.try_emplace(*arg.var, std::nullopt, make_legal_expr(arg.type, *arg.var));
+            auto const inserted = ctx2.try_emplace(*arg.var, arg.properties.origin, make_legal_expr(arg.type, *arg.var));
             assert(inserted.has_value());
         }
     }
@@ -153,7 +150,7 @@ bool delta_reduce(environment_t const& env, context_t const& ctx, expr_t::pi_t& 
             return true;
         if (arg.var)
         {
-            auto const inserted = ctx2.try_emplace(*arg.var, std::nullopt, make_legal_expr(arg.type, *arg.var));
+            auto const inserted = ctx2.try_emplace(*arg.var, arg.properties.origin, make_legal_expr(arg.type, *arg.var));
             assert(inserted.has_value());
         }
     }

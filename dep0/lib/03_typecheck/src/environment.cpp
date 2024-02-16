@@ -26,12 +26,10 @@ environment_t::value_type const* environment_t::operator[](expr_t::global_t cons
 // non-const member functions
 
 dep0::expected<environment_t::const_iterator>
-environment_t::try_emplace(
-    expr_t::global_t global,
-    std::optional<source_loc_t> const loc,
-    std::variant<func_def_t, type_def_t> v)
+environment_t::try_emplace(expr_t::global_t global, std::variant<func_def_t, type_def_t> v)
 {
-    auto const res = m_values.try_emplace(std::move(global), loc, std::move(v));
+    auto const loc = match(v, [] (auto const& x) { return x.properties.origin; }); // take copy before moving v
+    auto const res = m_values.try_emplace(std::move(global), std::move(v));
     if (res.second)
     {
         return dep0::expected<const_iterator>(res.first);
@@ -41,12 +39,10 @@ environment_t::try_emplace(
         auto const& prev = res.first->second;
         std::ostringstream err;
         pretty_print<properties_t>(err << "cannot redefine `", global) << '`';
-        err << ", previously defined ";
-        if (prev.origin)
-            err << "at " << prev.origin->line << ':' << prev.origin->col << " ";
-        err << "as `";
+        auto const origin = match(prev, [] (auto const& x) { return x.properties.origin; });
+        err << ", previously defined at " << origin.line << ':' << origin.col << ", as `";
         match(
-            prev.value,
+            prev,
             [&] (func_def_t const& x) { pretty_print(err, x.properties.sort.get()); },
             [&] (type_def_t const& x) { pretty_print(err, x); });
         err << '`';

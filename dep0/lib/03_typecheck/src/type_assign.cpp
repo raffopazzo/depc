@@ -258,7 +258,7 @@ expected<expr_t> type_assign(environment_t const& env, context_t const& ctx, par
                 if (auto const def = env[global])
                     return make_legal_expr(
                         match(
-                            def->value,
+                            *def,
                             [] (func_def_t const& x) -> sort_t { return x.properties.sort.get(); },
                             [] (type_def_t const&) -> sort_t { return derivation_rules::make_typename(); }),
                         std::move(global));
@@ -300,8 +300,11 @@ expected<expr_t> type_assign(environment_t const& env, context_t const& ctx, par
                     kind_t{}, // TODO need to add a test to make sure this is correct
                     expr_t::pi_t{
                         std::vector{
-                            make_legal_func_arg(derivation_rules::make_typename()),
-                            make_legal_func_arg(derivation_rules::make_u64())
+                            // Using loc here is arguably wrong, but also irrelevant because the location of arguments
+                            // is used mainly to keep track of the origin of binding variables in some context.
+                            // But these two will never go in a context; they don't even have a name!
+                            make_legal_func_arg(loc, derivation_rules::make_typename()),
+                            make_legal_func_arg(loc, derivation_rules::make_u64())
                         },
                         derivation_rules::make_typename()}),
                 expr_t::array_t{});

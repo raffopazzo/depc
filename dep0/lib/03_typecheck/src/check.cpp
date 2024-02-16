@@ -45,8 +45,11 @@ expected<type_def_t> check_type_def(environment_t& env, parser::type_def_t const
         [&] (parser::type_def_t::integer_t const& x) -> expected<type_def_t>
         {
             // TODO should check that max_abs_value fits inside width
-            auto const result = make_legal_type_def(type_def_t::integer_t{x.name, x.sign, x.width, x.max_abs_value});
-            if (auto ok = env.try_emplace(expr_t::global_t{x.name}, type_def.properties, result); not ok)
+            auto const result =
+                make_legal_type_def(
+                    type_def.properties,
+                    type_def_t::integer_t{x.name, x.sign, x.width, x.max_abs_value});
+            if (auto ok = env.try_emplace(expr_t::global_t{x.name}, result); not ok)
                 return error_t::from_error(std::move(ok.error()));
             return result;
         });
@@ -60,10 +63,11 @@ expected<func_def_t> check_func_def(environment_t& env, parser::func_def_t const
         return std::move(abs.error());
     auto result =
         make_legal_func_def(
+            f.properties,
             abs->properties.sort.get(),
             f.name,
             std::move(std::get<expr_t::abs_t>(abs->value)));
-    if (auto ok = env.try_emplace(expr_t::global_t{f.name}, f.properties, result); not ok)
+    if (auto ok = env.try_emplace(expr_t::global_t{f.name}, result); not ok)
         return error_t::from_error(std::move(ok.error()));
     return result;
 }
@@ -216,7 +220,7 @@ check_numeric_expr(
             auto const def = env[global];
             assert(def and "unknown type variable despite typecheck succeeded for the expected type");
             return match(
-                def->value,
+                *def,
                 [&] (type_def_t const& t) -> expected<expr_t>
                 {
                     return match(
@@ -394,7 +398,7 @@ expected<expr_t> check_pi_type(
             if (var)
                 if (auto ok = ctx.try_emplace(*var, arg_loc, make_legal_expr(*type, *var)); not ok)
                     return error_t::from_error(std::move(ok.error()));
-            return make_legal_func_arg(std::move(*type), std::move(var));
+            return make_legal_func_arg(arg_loc, std::move(*type), std::move(var));
         });
     if (not args)
         return std::move(args.error());

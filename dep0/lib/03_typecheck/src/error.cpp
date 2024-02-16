@@ -1,6 +1,7 @@
 #include "dep0/typecheck/error.hpp"
 
-#include "dep0/ast/beta_delta_reduction.hpp"
+#include "dep0/typecheck/beta_delta_reduction.hpp"
+
 #include "dep0/ast/pretty_print.hpp"
 
 #include <algorithm>
@@ -44,7 +45,8 @@ std::ostream& pretty_print(std::ostream& os, error_t const& err)
                 err.context->second,
                 [&] (expr_t type)
                 {
-                    ast::beta_delta_normalize(err.context->first.delta_reduction_context(), type);
+                    // TODO should error store the environment too?
+                    beta_delta_normalize(environment_t{}, err.context->first, type);
                     pretty_print(buf2, type);
                 },
                 [&] (kind_t)

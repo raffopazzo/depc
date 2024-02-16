@@ -38,6 +38,7 @@ template <Properties P> bool beta_normalize(typename expr_t<P>::u64_t&);
 template <Properties P> bool beta_normalize(typename expr_t<P>::boolean_constant_t&);
 template <Properties P> bool beta_normalize(typename expr_t<P>::numeric_constant_t&);
 template <Properties P> bool beta_normalize(typename expr_t<P>::var_t&);
+template <Properties P> bool beta_normalize(typename expr_t<P>::global_t&);
 template <Properties P> bool beta_normalize(typename expr_t<P>::app_t&);
 template <Properties P> bool beta_normalize(typename expr_t<P>::abs_t&);
 template <Properties P> bool beta_normalize(typename expr_t<P>::pi_t&);
@@ -75,6 +76,7 @@ template <Properties P> bool beta_normalize(typename expr_t<P>::boolean_constant
 template <Properties P> bool beta_normalize(typename expr_t<P>::numeric_constant_t&) { return false; }
 
 template <Properties P> bool beta_normalize(typename expr_t<P>::var_t&) { return false; }
+template <Properties P> bool beta_normalize(typename expr_t<P>::global_t&) { return false; }
 
 template <Properties P>
 bool beta_normalize(typename expr_t<P>::app_t& app)

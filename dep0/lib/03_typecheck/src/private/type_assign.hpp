@@ -1,6 +1,7 @@
 #pragma once
 
 #include "dep0/typecheck/context.hpp"
+#include "dep0/typecheck/environment.hpp"
 #include "dep0/typecheck/error.hpp"
 
 #include "dep0/parser/ast.hpp"
@@ -15,7 +16,11 @@ namespace dep0::typecheck {
  * 
  * @return The new expression with its type assigned in the properties field.
  */
-expected<expr_t> type_assign(context_t const&, parser::expr_t const&);
+expected<expr_t>
+type_assign(
+    environment_t const&,
+    context_t const&,
+    parser::expr_t const&);
 
 /**
  * Assign a type to a function application in the given context.
@@ -25,7 +30,12 @@ expected<expr_t> type_assign(context_t const&, parser::expr_t const&);
  *
  * @return The new expression with its type assigned in the properties field.
  */
-expected<expr_t> type_assign_app(context_t const&, parser::expr_t::app_t const&, source_loc_t const& loc);
+expected<expr_t>
+type_assign_app(
+    environment_t const&,
+    context_t const&,
+    parser::expr_t::app_t const&,
+    source_loc_t const& loc);
 
 /**
  * Assign a type to an abstraction in the given context.
@@ -38,6 +48,7 @@ expected<expr_t> type_assign_app(context_t const&, parser::expr_t::app_t const&,
  */
 expected<expr_t>
 type_assign_abs(
+    environment_t const&,
     context_t const&,
     parser::expr_t::abs_t const&,
     source_loc_t const& loc,

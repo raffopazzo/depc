@@ -66,7 +66,7 @@ BOOST_AUTO_TEST_CASE(pass_000)
     {
         auto const& f = pass_result->func_defs[10ul];
         BOOST_TEST(f.name == "apply_h");
-        BOOST_TEST(is_var(f.value.ret_type.get(), "int"));
+        BOOST_TEST(is_global(f.value.ret_type.get(), "int"));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
         BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(var("apply"), var("int"), var("h"), constant(1))));
     }
@@ -188,7 +188,7 @@ BOOST_AUTO_TEST_CASE(pass_001)
         auto const& g = pass_result->func_defs[1ul];
         BOOST_TEST(g.name == "g");
         BOOST_TEST(g.value.args.empty());
-        BOOST_TEST(is_var(g.value.ret_type.get(), "int"));
+        BOOST_TEST(is_global(g.value.ret_type.get(), "int"));
         BOOST_TEST_REQUIRE(g.value.body.stmts.size() == 1ul);
         BOOST_TEST(is_return_of(g.value.body.stmts[0ul], app_of(var("f"), var("int"), is_i32, constant(0))));
     }

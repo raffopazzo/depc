@@ -16,51 +16,72 @@
 
 #pragma once
 
-#include "dep0/ast/ast.hpp"
+#include "dep0/typecheck/ast.hpp"
+#include "dep0/typecheck/context.hpp"
+#include "dep0/typecheck/environment.hpp"
 
-#include "dep0/scope_map.hpp"
-
-namespace dep0::ast {
-
-namespace delta_reduction {
-    template <Properties P>
-    using context_t =
-        scope_map<
-            typename expr_t<P>::var_t,
-            std::variant<
-                typename expr_t<P>::abs_t,
-                struct something_else_t>>;
-    struct something_else_t{};
-}
+#if 1
+namespace dep0::typecheck {
 
 /**
  * Performs a "simplified" one-step delta-reduction inside a function definition, @see delta_reduction.hpp.
  *
  * @return True if one step of delta-reduction was performed, false otherwise.
  */
-template <Properties P> bool delta_reduce(delta_reduction::context_t<P> const&, func_def_t<P>&);
+bool delta_reduce(environment_t const&, func_def_t&);
 
 /**
  * Performs a "simplified" one-step delta-reduction inside a body, @see delta_reduction.hpp.
  *
  * @return True if one step of delta-reduction was performed, false otherwise.
  */
-template <Properties P> bool delta_reduce(delta_reduction::context_t<P> const&, body_t<P>&);
+bool delta_reduce(environment_t const&, context_t const&, body_t&);
 
 /**
  * Performs a "simplified" one-step delta-reduction inside a statement, @see delta_reduction.hpp.
  *
  * @return True if one step of delta-reduction was performed, false otherwise.
  */
-template <Properties P> bool delta_reduce(delta_reduction::context_t<P> const&, stmt_t<P>&);
+bool delta_reduce(environment_t const&, context_t const&, stmt_t&);
 
 /**
  * Performs a "simplified" one-step delta-reduction inside an expression, @see delta_reduction.hpp.
  *
  * @return True if one step of delta-reduction was performed, false otherwise.
  */
-template <Properties P> bool delta_reduce(delta_reduction::context_t<P> const&, expr_t<P>&);
+bool delta_reduce(environment_t const&, context_t const&, expr_t&);
 
-} // namespace dep0::ast
+} // namespace dep0::typecheck
+#else
+namespace dep0::typecheck {
 
-#include "dep0/ast/delta_reduction_impl.hpp"
+/**
+ * Performs a "simplified" one-step delta-reduction inside a function definition, @see delta_reduction.hpp.
+ *
+ * @return True if one step of delta-reduction was performed, false otherwise.
+ */
+bool delta_reduce(func_def_t&);
+
+/**
+ * Performs a "simplified" one-step delta-reduction inside a body, @see delta_reduction.hpp.
+ *
+ * @return True if one step of delta-reduction was performed, false otherwise.
+ */
+bool delta_reduce(body_t&);
+
+/**
+ * Performs a "simplified" one-step delta-reduction inside a statement, @see delta_reduction.hpp.
+ *
+ * @return True if one step of delta-reduction was performed, false otherwise.
+ */
+bool delta_reduce(stmt_t&);
+
+/**
+ * Performs a "simplified" one-step delta-reduction inside an expression, @see delta_reduction.hpp.
+ *
+ * @return True if one step of delta-reduction was performed, false otherwise.
+ */
+bool delta_reduce(expr_t&);
+
+} // namespace dep0::typecheck
+#endif

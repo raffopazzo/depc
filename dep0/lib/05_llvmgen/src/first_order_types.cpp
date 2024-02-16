@@ -33,7 +33,8 @@ bool is_first_order_type(typecheck::expr_t const& type)
         [] (typecheck::expr_t::boolean_expr_t const&) { return false; },
         [] (typecheck::expr_t::relation_expr_t const&) { return false; },
         [] (typecheck::expr_t::arith_expr_t const&) { return false; },
-        [] (typecheck::expr_t::var_t const&) { return true; }, // caller must call only if expr is a type
+        [] (typecheck::expr_t::var_t const&) { return false; },
+        [] (typecheck::expr_t::global_t const&) { return true; }, // caller must call only if expr is a type
         [] (typecheck::expr_t::app_t const& x)
         {
             // `array_t(type, size)` is a 1st order type if `type` is of 1st order,

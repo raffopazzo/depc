@@ -105,6 +105,10 @@ std::size_t max_index(expr_t<P> const& x)
         {
             return x.idx;
         },
+        [] (expr_t<P>::global_t const&)
+        {
+            return 0ul;
+        },
         [] (expr_t<P>::app_t const& x)
         {
             return max_index<P>(x);

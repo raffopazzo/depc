@@ -178,10 +178,10 @@ llvm::Value* gen_val(
                             [] (typecheck::expr_t::u16_t const&) { return dep0::ast::sign_t::unsigned_v; },
                             [] (typecheck::expr_t::u32_t const&) { return dep0::ast::sign_t::unsigned_v; },
                             [] (typecheck::expr_t::u64_t const&) { return dep0::ast::sign_t::unsigned_v; },
-                            [&local] (typecheck::expr_t::var_t const& var)
+                            [&global] (typecheck::expr_t::global_t const& g)
                             {
-                                auto const type_def = std::get_if<typecheck::type_def_t>(local[var]);
-                                assert(type_def and "unknown variable or not a typedef");
+                                auto const type_def = std::get_if<typecheck::type_def_t>(global[g]);
+                                assert(type_def and "unknown global or not a typedef");
                                 return match(
                                     type_def->value,
                                     [] (typecheck::type_def_t::integer_t const& integer) { return integer.sign; });
@@ -231,11 +231,32 @@ llvm::Value* gen_val(
         },
         [&] (typecheck::expr_t::var_t const& var) -> llvm::Value*
         {
-            auto const val = local[var];
-            assert(val and "unknown variable");
+            // TODO find a better way and remove this hack:
+            // essentially, when typechecking recursive functions, we treat the global name as a local binder;
+            // so here we might not find a local value and should look for one in the global values
+            // one way to fix this might be to introduce `func_decl_t`
+            if (auto const val = local[var])
+                return storeOrReturn(match(
+                    *val,
+                    [] (llvm::Value* const p) { return p; },
+                    [] (llvm_func_t const& c) { return c.func; }));
+            if (auto const val = global[typecheck::expr_t::global_t{var.name}])
+                return storeOrReturn(match(
+                    *val,
+                    [] (llvm_func_t const& c) { return c.func; },
+                    [] (typecheck::type_def_t const&) -> llvm::Value*
+                    {
+                        assert(false and "found a typedef but was expecting a value");
+                        __builtin_unreachable();
+                    }));
+            assert(false and "unknown variable");
+        },
+        [&] (typecheck::expr_t::global_t const& g) -> llvm::Value*
+        {
+            auto const val = global[g];
+            assert(val and "unknown global");
             return storeOrReturn(match(
                 *val,
-                [] (llvm::Value* const p) { return p; },
                 [] (llvm_func_t const& c) { return c.func; },
                 [] (typecheck::type_def_t const&) -> llvm::Value*
                 {
@@ -381,7 +402,7 @@ llvm::Value* gen_func_call(
         for (auto const i: std::views::iota(0ul, app.args.size()))
         {
             auto const& arg_type = std::get<typecheck::expr_t>(app.args[i].properties.sort.get());
-            if (auto const attr = get_sign_ext_attribute(local, arg_type); attr != llvm::Attribute::None)
+            if (auto const attr = get_sign_ext_attribute(global, arg_type); attr != llvm::Attribute::None)
                 call->addParamAttr(i + arg_offset, attr);
         }
         return call;

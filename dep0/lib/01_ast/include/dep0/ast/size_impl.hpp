@@ -122,7 +122,8 @@ std::size_t size(expr_t<P> const& x)
         {
             return 1ul + match(x.value, [] (auto const& x) { return std::max(size(x.lhs.get()), size(x.rhs.get())); });
         },
-        [] (expr_t<P>::var_t const& x) { return 0ul; },
+        [] (expr_t<P>::var_t const&) { return 0ul; },
+        [] (expr_t<P>::global_t const&) { return 0ul; },
         [] (expr_t<P>::app_t const& x) { return impl::size<P>(x); },
         [] (expr_t<P>::abs_t const& x)
         {

@@ -23,7 +23,7 @@ expected<unique_ref<llvm::Module>>
     for (auto const& def: m.type_defs)
     {
         auto const& name = match(def.value, [] (auto const& x) -> auto const& { return x.name; });
-        bool const inserted = local.try_emplace(typecheck::expr_t::var_t{name}, def).second;
+        bool const inserted = global.try_emplace(typecheck::expr_t::global_t{name}, def).second;
         assert(inserted);
     }
     for (auto const& def: m.func_defs)
@@ -33,7 +33,7 @@ expected<unique_ref<llvm::Module>>
         // also note that we could in theory check `def.properites.sort` as a pi-type instead of using `from_abs()` but
         // currently beta-delta normalization operates on the templated AST, so it does not reduce inside `properties`
         if (auto proto = llvm_func_proto_t::from_abs(def.value))
-            gen_func(global, local, def.name, *proto, def.value);
+            gen_func(global, local, typecheck::expr_t::global_t{def.name}, *proto, def.value);
     }
     std::string err;
     llvm::raw_string_ostream ostream(err);

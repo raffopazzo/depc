@@ -9,7 +9,7 @@
 namespace dep0::typecheck {
 
 /**
- * Assign a type to the given expression in the given context.
+ * Assign a type to the given expression in the given environment and context.
  * 
  * Not all expressions can be assigned a type when taken in isolation;
  * for example numerical expressions and initializer lists.
@@ -23,7 +23,7 @@ type_assign(
     parser::expr_t const&);
 
 /**
- * Assign a type to a function application in the given context.
+ * Assign a type to a function application in the given environment and context.
  * 
  * @param loc The location in the source file where the expression was found.
  *            If type-assignment fails, it will be copied in the error message.
@@ -38,7 +38,7 @@ type_assign_app(
     source_loc_t const& loc);
 
 /**
- * Assign a type to an abstraction in the given context.
+ * Assign a type to an abstraction in the given environment and context.
  *
  * @param loc   The location in the source file where the expression was found.
  *              If type-assignment fails, it will be copied in the error message.

@@ -20,8 +20,10 @@
 namespace dep0::typecheck {
 
 /**
- * Assign a type to a pair of exprassions that are connected by a binary relation or operator, eg `x+1` or `1 < x`.
+ * Assign a type to a pair of expressions that are connected by a binary relation or operator, eg `x+1` or `1 < x`.
+ *
  * In this example `1` on its own cannot be assigned a unique type, but if `x` can, then `1` must have the same type.
+ *
  * @return The result of each individual type-assignment; either one or both might have either failed or succeded.
  */
 static

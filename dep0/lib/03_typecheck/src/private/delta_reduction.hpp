@@ -20,7 +20,6 @@
 #include "dep0/typecheck/context.hpp"
 #include "dep0/typecheck/environment.hpp"
 
-#if 1
 namespace dep0::typecheck {
 
 /**
@@ -52,36 +51,3 @@ bool delta_reduce(environment_t const&, context_t const&, stmt_t&);
 bool delta_reduce(environment_t const&, context_t const&, expr_t&);
 
 } // namespace dep0::typecheck
-#else
-namespace dep0::typecheck {
-
-/**
- * Performs a "simplified" one-step delta-reduction inside a function definition, @see delta_reduction.hpp.
- *
- * @return True if one step of delta-reduction was performed, false otherwise.
- */
-bool delta_reduce(func_def_t&);
-
-/**
- * Performs a "simplified" one-step delta-reduction inside a body, @see delta_reduction.hpp.
- *
- * @return True if one step of delta-reduction was performed, false otherwise.
- */
-bool delta_reduce(body_t&);
-
-/**
- * Performs a "simplified" one-step delta-reduction inside a statement, @see delta_reduction.hpp.
- *
- * @return True if one step of delta-reduction was performed, false otherwise.
- */
-bool delta_reduce(stmt_t&);
-
-/**
- * Performs a "simplified" one-step delta-reduction inside an expression, @see delta_reduction.hpp.
- *
- * @return True if one step of delta-reduction was performed, false otherwise.
- */
-bool delta_reduce(expr_t&);
-
-} // namespace dep0::typecheck
-#endif

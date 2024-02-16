@@ -5,7 +5,6 @@
 #include "dep0/match.hpp"
 
 #include <cassert>
-#include <ranges>
 
 namespace dep0::typecheck {
 

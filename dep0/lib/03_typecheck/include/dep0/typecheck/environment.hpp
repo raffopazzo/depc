@@ -5,7 +5,6 @@
 #include "dep0/error.hpp"
 #include "dep0/scope_map.hpp"
 
-#include <optional>
 #include <variant>
 
 namespace dep0::typecheck {

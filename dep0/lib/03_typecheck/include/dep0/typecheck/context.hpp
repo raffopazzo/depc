@@ -5,11 +5,8 @@
 #include "dep0/error.hpp"
 #include "dep0/scope_map.hpp"
 
-#include <cassert>
-#include <optional>
 #include <ostream>
 #include <set>
-#include <vector>
 
 namespace dep0::typecheck {
 

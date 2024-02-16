@@ -1,11 +1,11 @@
 #pragma once
 
+#include "private/llvm_func.hpp"
+
 #include "dep0/typecheck/ast.hpp"
 
 #include "dep0/scope_map.hpp"
 
-#include <llvm/IR/DerivedTypes.h>
-#include <llvm/IR/Function.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Value.h>
@@ -13,20 +13,6 @@
 #include <variant>
 
 namespace dep0::llvmgen {
-
-/**
- * Like `llvm::FunctionCallee`, it represents a callable function together with its type.
- * But unlike it, this allows access to the two fields via const-ref.
- * If upstream fixes their API, we can remove this and use theirs instead.
- */
-struct llvm_func_t
-{
-    llvm::FunctionType* type;
-    llvm::Value* func;
-
-    explicit llvm_func_t(llvm::Function*);
-    llvm_func_t(llvm::FunctionType*, llvm::Value*);
-};
 
 /**
  * Holds together things that have global visibility during IR codegen.

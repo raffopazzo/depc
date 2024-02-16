@@ -38,14 +38,4 @@ local_context_t::value_t const* local_context_t::operator[](typecheck::expr_t::v
     return values[k];
 }
 
-llvm_func_t::llvm_func_t(llvm::Function* const f) :
-    type(f->getFunctionType()),
-    func(f)
-{ }
-
-llvm_func_t::llvm_func_t(llvm::FunctionType* const type, llvm::Value* const func) :
-    type(type),
-    func(func)
-{ }
-
 } // namespace dep0::llvmgen

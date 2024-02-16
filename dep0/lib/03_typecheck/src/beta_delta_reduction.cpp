@@ -1,9 +1,8 @@
 #include "dep0/typecheck/beta_delta_reduction.hpp"
 
+#include "private/beta_reduction.hpp"
 #include "private/delta_reduction.hpp"
 #include "private/derivation_rules.hpp"
-
-#include "dep0/ast/beta_reduction.hpp"
 
 #include "dep0/match.hpp"
 
@@ -45,19 +44,11 @@ bool beta_delta_normalize(environment_t const& env, func_def_t& def)
 
 bool beta_delta_normalize(environment_t const& env, context_t const& ctx, body_t& body)
 {
-    bool changed = false;
-    for (auto& s: body.stmts)
-        changed |= beta_delta_normalize(env, ctx, s);
-    return changed;
-}
-
-bool beta_delta_normalize(environment_t const& env, context_t const& ctx, stmt_t& x)
-{
-    bool changed = beta_normalize(x);
-    while (delta_reduce(env, ctx, x))
+    bool changed = beta_normalize(body);
+    while (delta_reduce(env, ctx, body))
     {
         changed = true;
-        beta_normalize(x);
+        beta_normalize(body);
     }
     return changed;
 }

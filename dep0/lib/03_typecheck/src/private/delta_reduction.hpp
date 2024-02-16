@@ -37,13 +37,6 @@ bool delta_reduce(environment_t const&, func_def_t&);
 bool delta_reduce(environment_t const&, context_t const&, body_t&);
 
 /**
- * Performs a "simplified" one-step delta-reduction inside a statement, @see delta_reduction.hpp.
- *
- * @return True if one step of delta-reduction was performed, false otherwise.
- */
-bool delta_reduce(environment_t const&, context_t const&, stmt_t&);
-
-/**
  * Performs a "simplified" one-step delta-reduction inside an expression, @see delta_reduction.hpp.
  *
  * @return True if one step of delta-reduction was performed, false otherwise.

@@ -270,6 +270,12 @@ llvm::Value* gen_val(
                 if (x.args.empty())
                 {
                     // found an immediately-invoked-lambda: inline it!
+                    if (abs->body.stmts.empty())
+                        // if body is empty, gen_body() would produce an open block,
+                        // which would then break MergeBlockIntoPredecessor();
+                        // but this is only possible if the lambda has return type unit_t,
+                        // so can just generate the unit value
+                        return storeOrReturn(builder.getInt8(0));
                     auto const current_func = builder.GetInsertBlock()->getParent();
                     auto const gen_inlined_body = [&] (llvm::Value* const inlined_result)
                     {

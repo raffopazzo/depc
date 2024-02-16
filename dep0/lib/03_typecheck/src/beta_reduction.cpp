@@ -1,6 +1,5 @@
-#pragma once
+#include "private/beta_reduction.hpp"
 
-#include "dep0/ast/beta_reduction.hpp"
 #include "dep0/ast/substitute.hpp"
 
 #include "dep0/match.hpp"
@@ -11,7 +10,7 @@
 #include <cassert>
 #include <ranges>
 
-namespace dep0::ast {
+namespace dep0::typecheck {
 
 namespace impl {
 
@@ -22,31 +21,42 @@ void destructive_self_assign(T& x, T&& y)
     x = std::move(tmp);
 }
 
-template <Properties P> bool beta_normalize(typename stmt_t<P>::if_else_t&);
-template <Properties P> bool beta_normalize(typename stmt_t<P>::return_t&);
-template <Properties P> bool beta_normalize(typename expr_t<P>::typename_t&);
-template <Properties P> bool beta_normalize(typename expr_t<P>::bool_t&);
-template <Properties P> bool beta_normalize(typename expr_t<P>::unit_t&);
-template <Properties P> bool beta_normalize(typename expr_t<P>::i8_t&);
-template <Properties P> bool beta_normalize(typename expr_t<P>::i16_t&);
-template <Properties P> bool beta_normalize(typename expr_t<P>::i32_t&);
-template <Properties P> bool beta_normalize(typename expr_t<P>::i64_t&);
-template <Properties P> bool beta_normalize(typename expr_t<P>::u8_t&);
-template <Properties P> bool beta_normalize(typename expr_t<P>::u16_t&);
-template <Properties P> bool beta_normalize(typename expr_t<P>::u32_t&);
-template <Properties P> bool beta_normalize(typename expr_t<P>::u64_t&);
-template <Properties P> bool beta_normalize(typename expr_t<P>::boolean_constant_t&);
-template <Properties P> bool beta_normalize(typename expr_t<P>::numeric_constant_t&);
-template <Properties P> bool beta_normalize(typename expr_t<P>::var_t&);
-template <Properties P> bool beta_normalize(typename expr_t<P>::global_t&);
-template <Properties P> bool beta_normalize(typename expr_t<P>::app_t&);
-template <Properties P> bool beta_normalize(typename expr_t<P>::abs_t&);
-template <Properties P> bool beta_normalize(typename expr_t<P>::pi_t&);
-template <Properties P> bool beta_normalize(typename expr_t<P>::array_t&);
-template <Properties P> bool beta_normalize(typename expr_t<P>::init_list_t&);
+static bool beta_normalize(func_def_t&);
+static bool beta_normalize(stmt_t&);
+static bool beta_normalize(stmt_t::if_else_t&);
+static bool beta_normalize(stmt_t::return_t&);
+static bool beta_normalize(expr_t::typename_t&);
+static bool beta_normalize(expr_t::bool_t&);
+static bool beta_normalize(expr_t::unit_t&);
+static bool beta_normalize(expr_t::i8_t&);
+static bool beta_normalize(expr_t::i16_t&);
+static bool beta_normalize(expr_t::i32_t&);
+static bool beta_normalize(expr_t::i64_t&);
+static bool beta_normalize(expr_t::u8_t&);
+static bool beta_normalize(expr_t::u16_t&);
+static bool beta_normalize(expr_t::u32_t&);
+static bool beta_normalize(expr_t::u64_t&);
+static bool beta_normalize(expr_t::boolean_constant_t&);
+static bool beta_normalize(expr_t::numeric_constant_t&);
+static bool beta_normalize(expr_t::var_t&);
+static bool beta_normalize(expr_t::global_t&);
+static bool beta_normalize(expr_t::app_t&);
+static bool beta_normalize(expr_t::abs_t&);
+static bool beta_normalize(expr_t::pi_t&);
+static bool beta_normalize(expr_t::array_t&);
+static bool beta_normalize(expr_t::init_list_t&);
 
-template <Properties P>
-bool beta_normalize(typename stmt_t<P>::if_else_t& if_)
+bool beta_normalize(func_def_t& def)
+{
+    return impl::beta_normalize(def.value);
+}
+
+bool beta_normalize(stmt_t& stmt)
+{
+    return match(stmt.value, [&] (auto& x) { return impl::beta_normalize(x); });
+}
+
+bool beta_normalize(stmt_t::if_else_t& if_)
 {
     bool changed = beta_normalize(if_.cond);
     changed |= beta_normalize(if_.true_branch);
@@ -55,31 +65,28 @@ bool beta_normalize(typename stmt_t<P>::if_else_t& if_)
     return changed;
 }
 
-template <Properties P>
-bool beta_normalize(typename stmt_t<P>::return_t& ret)
+bool beta_normalize(stmt_t::return_t& ret)
 {
     return ret.expr and beta_normalize(*ret.expr);
 }
 
-template <Properties P> bool beta_normalize(typename expr_t<P>::typename_t&) { return false; }
-template <Properties P> bool beta_normalize(typename expr_t<P>::bool_t&) { return false; }
-template <Properties P> bool beta_normalize(typename expr_t<P>::unit_t&) { return false; }
-template <Properties P> bool beta_normalize(typename expr_t<P>::i8_t&) { return false; }
-template <Properties P> bool beta_normalize(typename expr_t<P>::i16_t&) { return false; }
-template <Properties P> bool beta_normalize(typename expr_t<P>::i32_t&) { return false; }
-template <Properties P> bool beta_normalize(typename expr_t<P>::i64_t&) { return false; }
-template <Properties P> bool beta_normalize(typename expr_t<P>::u8_t&) { return false; }
-template <Properties P> bool beta_normalize(typename expr_t<P>::u16_t&) { return false; }
-template <Properties P> bool beta_normalize(typename expr_t<P>::u32_t&) { return false; }
-template <Properties P> bool beta_normalize(typename expr_t<P>::u64_t&) { return false; }
-template <Properties P> bool beta_normalize(typename expr_t<P>::boolean_constant_t&) { return false; }
-template <Properties P> bool beta_normalize(typename expr_t<P>::numeric_constant_t&) { return false; }
+bool beta_normalize(expr_t::typename_t&) { return false; }
+bool beta_normalize(expr_t::bool_t&) { return false; }
+bool beta_normalize(expr_t::unit_t&) { return false; }
+bool beta_normalize(expr_t::i8_t&) { return false; }
+bool beta_normalize(expr_t::i16_t&) { return false; }
+bool beta_normalize(expr_t::i32_t&) { return false; }
+bool beta_normalize(expr_t::i64_t&) { return false; }
+bool beta_normalize(expr_t::u8_t&) { return false; }
+bool beta_normalize(expr_t::u16_t&) { return false; }
+bool beta_normalize(expr_t::u32_t&) { return false; }
+bool beta_normalize(expr_t::u64_t&) { return false; }
+bool beta_normalize(expr_t::boolean_constant_t&) { return false; }
+bool beta_normalize(expr_t::numeric_constant_t&) { return false; }
+bool beta_normalize(expr_t::var_t&) { return false; }
+bool beta_normalize(expr_t::global_t&) { return false; }
 
-template <Properties P> bool beta_normalize(typename expr_t<P>::var_t&) { return false; }
-template <Properties P> bool beta_normalize(typename expr_t<P>::global_t&) { return false; }
-
-template <Properties P>
-bool beta_normalize(typename expr_t<P>::app_t& app)
+bool beta_normalize(expr_t::app_t& app)
 {
     // Technically, this classifies as applicative-order-reduction;
     // as such, if the abstraction discards some/all arguments we might waste time reducing those arguments.
@@ -87,15 +94,11 @@ bool beta_normalize(typename expr_t<P>::app_t& app)
     bool changed = beta_normalize(app.func.get());
     for (auto& arg: app.args)
         changed |= beta_normalize(arg);
-    // In case you wonder whether we should also reduce application of pi-expr,
-    // beta-reduction is not defined for them and it's not even typeable;
-    // we only really care about beta-reducing legal terms.
-    if (auto* const abs = std::get_if<typename expr_t<P>::abs_t>(&app.func.get().value))
+    if (auto* const abs = std::get_if<expr_t::abs_t>(&app.func.get().value))
     {
         if (abs->args.size() > 0ul)
         {
-            if (abs->args.size() != app.args.size()) // always false when beta-normalizing legal terms
-                return changed;
+            assert(abs->args.size() == app.args.size()); // always true when beta-normalizing legal terms
             for (auto const i: std::views::iota(0ul, abs->args.size()))
             {
                 auto const& arg = abs->args[i];
@@ -109,7 +112,9 @@ bool beta_normalize(typename expr_t<P>::app_t& app)
                         &abs->body);
             }
             // at this point all arguments of the abstraction have been substituted,
-            // so we can remove them and normalize the new body
+            // so we can remove them and normalize the new body;
+            // also note that now the function type becomes a pi-type with no arguments
+            std::get<expr_t::pi_t>(std::get<expr_t>(app.func.get().properties.sort.get()).value).args.clear();
             app.args.clear();
             abs->args.clear();
             changed = true;
@@ -119,8 +124,7 @@ bool beta_normalize(typename expr_t<P>::app_t& app)
     return changed;
 }
 
-template <Properties P>
-bool beta_normalize(typename expr_t<P>::abs_t& abs)
+bool beta_normalize(expr_t::abs_t& abs)
 {
     bool changed = false;
     for (auto& arg: abs.args)
@@ -130,8 +134,7 @@ bool beta_normalize(typename expr_t<P>::abs_t& abs)
     return changed;
 }
 
-template <Properties P>
-bool beta_normalize(typename expr_t<P>::pi_t& pi)
+bool beta_normalize(expr_t::pi_t& pi)
 {
     bool changed = false;
     for (auto& arg: pi.args)
@@ -140,14 +143,9 @@ bool beta_normalize(typename expr_t<P>::pi_t& pi)
     return changed;
 }
 
-template <Properties P>
-bool beta_normalize(typename expr_t<P>::array_t&)
-{
-    return false;
-}
+bool beta_normalize(expr_t::array_t&) { return false; }
 
-template <Properties P>
-bool beta_normalize(typename expr_t<P>::init_list_t& init_list)
+bool beta_normalize(expr_t::init_list_t& init_list)
 {
     bool changed = false;
     for (auto& v: init_list.values)
@@ -157,30 +155,22 @@ bool beta_normalize(typename expr_t<P>::init_list_t& init_list)
 
 } // namespace impl
 
-template <Properties P>
-bool beta_normalize(module_t<P>& m)
+bool beta_normalize(module_t& m)
 {
     bool changed = false;
     for (auto& def: m.func_defs)
-        changed |= beta_normalize(def);
+        changed |= impl::beta_normalize(def);
     return changed;
 }
 
-template <Properties P>
-bool beta_normalize(func_def_t<P>& def)
+bool beta_normalize(body_t& body)
 {
-    return impl::beta_normalize<P>(def.value);
-}
-
-template <Properties P>
-bool beta_normalize(body_t<P>& body)
-{
-    auto const is_return = [] (stmt_t<P> const& x)
+    auto const is_return = [] (stmt_t const& x)
     {
-        return std::holds_alternative<typename stmt_t<P>::return_t>(x.value);
+        return std::holds_alternative<stmt_t::return_t>(x.value);
     };
     // NB taking `stmts` by value because we are about to perform a destructive self-assignment
-    auto replace_with = [&] (std::vector<stmt_t<P>>::iterator it, std::vector<stmt_t<P>> stmts)
+    auto replace_with = [&] (std::vector<stmt_t>::iterator it, std::vector<stmt_t> stmts)
     {
         // If there is nothing to replace `it` with, then just remove it;
         // otherwise we need to splice all the replacing statements in place of `it`,
@@ -205,17 +195,17 @@ bool beta_normalize(body_t<P>& body)
     auto it = body.stmts.begin();
     while (it != body.stmts.end())
     {
-        changed |= beta_normalize(*it);
+        changed |= impl::beta_normalize(*it);
         it = match(
             it->value,
-            [&] (typename expr_t<P>::app_t& app)
+            [&] (expr_t::app_t& app)
             {
                 // if immediately-invoked lambda we can extract the body,
                 // but have to suppress return statements from the invoked lambda,
                 // otherwise they would become early returns from the parent function
                 // TODO blindly suppressing return of the invoked lambda will be wrong once we have side-effects
                 if (app.args.empty())
-                    if (auto* const abs = std::get_if<typename expr_t<P>::abs_t>(&app.func.get().value))
+                    if (auto* const abs = std::get_if<expr_t::abs_t>(&app.func.get().value))
                     {
                         changed = true;
                         // TODO fix this: if body contains 2 return statements, all others in between must be dropped
@@ -224,9 +214,9 @@ bool beta_normalize(body_t<P>& body)
                     }
                 return std::next(it);
             },
-            [&] (typename stmt_t<P>::if_else_t& if_)
+            [&] (stmt_t::if_else_t& if_)
             {
-                if (auto const c = std::get_if<typename expr_t<P>::boolean_constant_t>(&if_.cond.value))
+                if (auto const c = std::get_if<expr_t::boolean_constant_t>(&if_.cond.value))
                 {
                     changed = true;
                     if (c->value)
@@ -239,30 +229,23 @@ bool beta_normalize(body_t<P>& body)
                 else
                     return std::next(it);
             },
-            [&] (typename stmt_t<P>::return_t const&) { return std::next(it); });
+            [&] (stmt_t::return_t const&) { return std::next(it); });
     }
     return changed;
 }
 
-template <Properties P>
-bool beta_normalize(stmt_t<P>& stmt)
-{
-    return match(stmt.value, [&] (auto& x) { return impl::beta_normalize<P>(x); });
-}
-
-template <Properties P>
-bool beta_normalize(expr_t<P>& expr)
+bool beta_normalize(expr_t& expr)
 {
     return match(
         expr.value,
-        [&] (typename expr_t<P>::app_t& app)
+        [&] (expr_t::app_t& app)
         {
-            bool changed = impl::beta_normalize<P>(app);
+            bool changed = impl::beta_normalize(app);
             // if this reduced to a parameterless single return statement, we can extract the returned expression
             if (app.args.empty())
-                if (auto* const abs = std::get_if<typename expr_t<P>::abs_t>(&app.func.get().value))
+                if (auto* const abs = std::get_if<expr_t::abs_t>(&app.func.get().value))
                     if (abs->body.stmts.size() == 1ul)
-                        if (auto* const ret = std::get_if<typename stmt_t<P>::return_t>(&abs->body.stmts[0].value))
+                        if (auto* const ret = std::get_if<stmt_t::return_t>(&abs->body.stmts[0].value))
                             if (ret->expr)
                             {
                                 changed = true;
@@ -270,18 +253,18 @@ bool beta_normalize(expr_t<P>& expr)
                             }
             return changed;
         },
-        [&] (typename expr_t<P>::boolean_expr_t& x)
+        [&] (expr_t::boolean_expr_t& x)
         {
             return match(
                 x.value,
-                [&] (typename expr_t<P>::boolean_expr_t::not_t& x)
+                [&] (expr_t::boolean_expr_t::not_t& x)
                 {
                     bool changed = beta_normalize(x.expr.get());
-                    if (auto const c = std::get_if<typename expr_t<P>::boolean_constant_t>(&x.expr.get().value))
+                    if (auto const c = std::get_if<expr_t::boolean_constant_t>(&x.expr.get().value))
                     {
                         changed = true;
                         bool const value = not c->value; // compute result before destructive self assignment
-                        expr.value.template emplace<typename expr_t<P>::boolean_constant_t>(value);
+                        expr.value.template emplace<expr_t::boolean_constant_t>(value);
                     }
                     return changed;
                 },
@@ -289,30 +272,30 @@ bool beta_normalize(expr_t<P>& expr)
                 {
                     bool changed = beta_normalize(x.lhs.get());
                     changed |= beta_normalize(x.rhs.get());
-                    if (auto const a = std::get_if<typename expr_t<P>::boolean_constant_t>(&x.lhs.get().value))
-                        if (auto const b = std::get_if<typename expr_t<P>::boolean_constant_t>(&x.rhs.get().value))
+                    if (auto const a = std::get_if<expr_t::boolean_constant_t>(&x.lhs.get().value))
+                        if (auto const b = std::get_if<expr_t::boolean_constant_t>(&x.rhs.get().value))
                         {
                             changed = true;
                             bool const c =
                                 boost::hana::overload(
-                                    [&] (boost::hana::type<typename expr_t<P>::boolean_expr_t::and_t>)
+                                    [&] (boost::hana::type<expr_t::boolean_expr_t::and_t>)
                                     {
                                         return a->value and b->value;
                                     },
-                                    [&] (boost::hana::type<typename expr_t<P>::boolean_expr_t::or_t>)
+                                    [&] (boost::hana::type<expr_t::boolean_expr_t::or_t>)
                                     {
                                         return a->value or b->value;
                                     },
-                                    [&] (boost::hana::type<typename expr_t<P>::boolean_expr_t::xor_t>)
+                                    [&] (boost::hana::type<expr_t::boolean_expr_t::xor_t>)
                                     {
                                         return a->value xor b->value;
                                     })(boost::hana::type_c<T>);
-                            expr.value.template emplace<typename expr_t<P>::boolean_constant_t>(c);
+                            expr.value.template emplace<expr_t::boolean_constant_t>(c);
                         }
                     return changed;
                 });
         },
-        [&] (typename expr_t<P>::relation_expr_t& x)
+        [&] (expr_t::relation_expr_t& x)
         {
             return match(
                 x.value,
@@ -320,68 +303,68 @@ bool beta_normalize(expr_t<P>& expr)
                 {
                     bool changed = beta_normalize(x.lhs.get());
                     changed |= beta_normalize(x.rhs.get());
-                    if (auto const a = std::get_if<typename expr_t<P>::boolean_constant_t>(&x.lhs.get().value))
-                        if (auto const b = std::get_if<typename expr_t<P>::boolean_constant_t>(&x.rhs.get().value))
+                    if (auto const a = std::get_if<expr_t::boolean_constant_t>(&x.lhs.get().value))
+                        if (auto const b = std::get_if<expr_t::boolean_constant_t>(&x.rhs.get().value))
                         {
                             changed = true;
                             bool const c =
                                 boost::hana::overload(
-                                    [&] (boost::hana::type<typename expr_t<P>::relation_expr_t::eq_t>)
+                                    [&] (boost::hana::type<expr_t::relation_expr_t::eq_t>)
                                     {
                                         return a->value == b->value;
                                     },
-                                    [&] (boost::hana::type<typename expr_t<P>::relation_expr_t::neq_t>)
+                                    [&] (boost::hana::type<expr_t::relation_expr_t::neq_t>)
                                     {
                                         return a->value != b->value;
                                     },
-                                    [&] (boost::hana::type<typename expr_t<P>::relation_expr_t::gt_t>)
+                                    [&] (boost::hana::type<expr_t::relation_expr_t::gt_t>)
                                     {
                                         return a->value > b->value;
                                     },
-                                    [&] (boost::hana::type<typename expr_t<P>::relation_expr_t::gte_t>)
+                                    [&] (boost::hana::type<expr_t::relation_expr_t::gte_t>)
                                     {
                                         return a->value >= b->value;
                                     },
-                                    [&] (boost::hana::type<typename expr_t<P>::relation_expr_t::lt_t>)
+                                    [&] (boost::hana::type<expr_t::relation_expr_t::lt_t>)
                                     {
                                         return a->value < b->value;
                                     },
-                                    [&] (boost::hana::type<typename expr_t<P>::relation_expr_t::lte_t>)
+                                    [&] (boost::hana::type<expr_t::relation_expr_t::lte_t>)
                                     {
                                         return a->value <= b->value;
                                     })(boost::hana::type_c<T>);
-                            expr.value.template emplace<typename expr_t<P>::boolean_constant_t>(c);
+                            expr.value.template emplace<expr_t::boolean_constant_t>(c);
                         }
                     return changed;
                 });
         },
-        [&] (typename expr_t<P>::arith_expr_t& x)
+        [&] (expr_t::arith_expr_t& x)
         {
             return match(
                 x.value,
-                [&] (typename expr_t<P>::arith_expr_t::plus_t& x)
+                [&] (expr_t::arith_expr_t::plus_t& x)
                 {
                     bool changed = beta_normalize(x.lhs.get());
                     changed |= beta_normalize(x.rhs.get());
-                    if (auto const n = std::get_if<typename expr_t<P>::numeric_constant_t>(&x.lhs.get().value))
-                        if (auto const m = std::get_if<typename expr_t<P>::numeric_constant_t>(&x.rhs.get().value))
+                    if (auto const n = std::get_if<expr_t::numeric_constant_t>(&x.lhs.get().value))
+                        if (auto const m = std::get_if<expr_t::numeric_constant_t>(&x.rhs.get().value))
                         {
                             changed = true;
                             impl::destructive_self_assign(
                                 expr.value,
-                                typename expr_t<P>::value_t{
-                                    typename expr_t<P>::numeric_constant_t{n->value + m->value}
+                                expr_t::value_t{
+                                    expr_t::numeric_constant_t{n->value + m->value}
                                 });
                         }
                     return changed;
                 });
         },
-        [&] (typename expr_t<P>::subscript_t& subscript)
+        [&] (expr_t::subscript_t& subscript)
         {
             bool changed = beta_normalize(subscript.array.get());
             changed |= beta_normalize(subscript.index.get());
-            if (auto const init_list = std::get_if<typename expr_t<P>::init_list_t>(&subscript.array.get().value))
-                if (auto const i = std::get_if<typename expr_t<P>::numeric_constant_t>(&subscript.index.get().value))
+            if (auto const init_list = std::get_if<expr_t::init_list_t>(&subscript.array.get().value))
+                if (auto const i = std::get_if<expr_t::numeric_constant_t>(&subscript.index.get().value))
                     if (i->value <= std::numeric_limits<std::size_t>::max())
                     {
                         changed = true;
@@ -390,8 +373,8 @@ bool beta_normalize(expr_t<P>& expr)
                     }
             return changed;
         },
-        [&] (auto& x) { return impl::beta_normalize<P>(x); });
+        [&] (auto& x) { return impl::beta_normalize(x); });
 }
 
-} // namespace dep0::ast
+} // namespace dep0::typecheck
 

@@ -228,6 +228,30 @@ BOOST_AUTO_TEST_CASE(pass_009)
     BOOST_TEST(pass_result.value()->getNumNamedValues() == 0ul);
 }
 
+BOOST_AUTO_TEST_CASE(pass_010)
+{
+    apply_beta_delta_normalization = true;
+    BOOST_TEST_REQUIRE(pass("0006_kinds/pass_010.depc"));
+    {
+        auto const f = pass_result.value()->getFunction("z");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i8));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(0)));
+    }
+}
+
+BOOST_AUTO_TEST_CASE(pass_011)
+{
+    apply_beta_delta_normalization = true;
+    BOOST_TEST_REQUIRE(pass("0006_kinds/pass_011.depc"));
+    {
+        auto const f = pass_result.value()->getFunction("z");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i8));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(0)));
+    }
+}
+
 // BOOST_AUTO_TEST_CASE(typecheck_error_000)
 // BOOST_AUTO_TEST_CASE(typecheck_error_001)
 // BOOST_AUTO_TEST_CASE(typecheck_error_002)

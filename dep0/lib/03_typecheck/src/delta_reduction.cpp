@@ -10,6 +10,7 @@ namespace dep0::typecheck {
 
 namespace impl {
 
+static bool delta_reduce(environment_t const&, context_t const&, stmt_t&);
 static bool delta_reduce(environment_t const&, context_t const&, stmt_t::if_else_t&);
 static bool delta_reduce(environment_t const&, context_t const&, stmt_t::return_t&);
 static bool delta_reduce(environment_t const&, context_t const&, expr_t::typename_t&);
@@ -35,6 +36,11 @@ static bool delta_reduce(environment_t const&, context_t const&, expr_t::pi_t&);
 static bool delta_reduce(environment_t const&, context_t const&, expr_t::array_t&);
 static bool delta_reduce(environment_t const&, context_t const&, expr_t::init_list_t&);
 static bool delta_reduce(environment_t const&, context_t const&, expr_t::subscript_t&);
+
+bool delta_reduce(environment_t const& env, context_t const& ctx, stmt_t& stmt)
+{
+    return match(stmt.value, [&] (auto& x) { return impl::delta_reduce(env, ctx, x); });
+}
 
 bool delta_reduce(environment_t const& env, context_t const& ctx, stmt_t::if_else_t& if_)
 {
@@ -186,14 +192,9 @@ bool delta_reduce(environment_t const& env, func_def_t& def)
 bool delta_reduce(environment_t const& env, context_t const& ctx, body_t& body)
 {
     for (auto& stmt: body.stmts)
-        if (delta_reduce(env, ctx, stmt))
+        if (impl::delta_reduce(env, ctx, stmt))
             return true;
     return false;
-}
-
-bool delta_reduce(environment_t const& env, context_t const& ctx, stmt_t& stmt)
-{
-    return match(stmt.value, [&] (auto& x) { return impl::delta_reduce(env, ctx, x); });
 }
 
 bool delta_reduce(environment_t const& env, context_t const& ctx, expr_t& expr)

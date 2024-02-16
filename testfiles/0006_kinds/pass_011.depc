@@ -1,0 +1,8 @@
+auto f(bool which) -> typename
+{
+    if (which) return i32_t;
+    else return bool;
+}
+auto g() -> (bool)->typename { return f; }
+unit_t h((bool) -> typename f, g()(true)) { }
+unit_t z() { return h(f, 0); }

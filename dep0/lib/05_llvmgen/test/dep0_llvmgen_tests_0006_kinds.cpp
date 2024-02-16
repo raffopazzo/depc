@@ -214,6 +214,20 @@ BOOST_AUTO_TEST_CASE(pass_007)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_008)
+{
+    apply_beta_delta_normalization = true;
+    BOOST_TEST_REQUIRE(pass("0006_kinds/pass_008.depc"));
+    BOOST_TEST(pass_result.value()->getNumNamedValues() == 0ul);
+}
+
+BOOST_AUTO_TEST_CASE(pass_009)
+{
+    apply_beta_delta_normalization = true;
+    BOOST_TEST_REQUIRE(pass("0006_kinds/pass_009.depc"));
+    BOOST_TEST(pass_result.value()->getNumNamedValues() == 0ul);
+}
+
 // BOOST_AUTO_TEST_CASE(typecheck_error_000)
 // BOOST_AUTO_TEST_CASE(typecheck_error_001)
 // BOOST_AUTO_TEST_CASE(typecheck_error_002)

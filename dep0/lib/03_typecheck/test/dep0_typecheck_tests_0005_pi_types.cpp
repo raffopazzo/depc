@@ -24,13 +24,13 @@ BOOST_AUTO_TEST_CASE(pass_000)
         auto const& f = pass_result->func_defs[1ul];
         BOOST_TEST(f.name == "f");
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(var("id"), is_i32, var("x"))));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(global("id"), is_i32, var("x"))));
     }
     {
         auto const& f = pass_result->func_defs[3ul];
         BOOST_TEST(f.name == "h");
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(var("id"), var("int"), var("x"))));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(global("id"), global("int"), var("x"))));
     }
     {
         auto const& f = pass_result->func_defs[7ul];
@@ -47,7 +47,7 @@ BOOST_AUTO_TEST_CASE(pass_000)
         BOOST_TEST(is_return_of(f.value.body.stmts[0ul], [] (dep0::typecheck::expr_t const& expr)
         {
             BOOST_TEST(is_expr_of(expr.properties.sort.get(), is_i32));
-            BOOST_TEST_REQUIRE(is_app_of(expr, var("apply"), is_i32, var("f"), constant(-1)));
+            BOOST_TEST_REQUIRE(is_app_of(expr, global("apply"), is_i32, global("f"), constant(-1)));
             auto const& app = std::get<dep0::typecheck::expr_t::app_t>(expr.value);
             BOOST_TEST_REQUIRE(app.args.size() == 3ul);
             BOOST_TEST(is_expr_of(app.args[0ul].properties.sort.get(), is_typename));
@@ -61,14 +61,14 @@ BOOST_AUTO_TEST_CASE(pass_000)
         BOOST_TEST(f.name == "apply_g");
         BOOST_TEST(is_u32(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(var("apply"), is_u32, var("g"), constant(1))));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(global("apply"), is_u32, global("g"), constant(1))));
     }
     {
         auto const& f = pass_result->func_defs[10ul];
         BOOST_TEST(f.name == "apply_h");
         BOOST_TEST(is_global(f.value.ret_type.get(), "int"));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(var("apply"), var("int"), var("h"), constant(1))));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(global("apply"), global("int"), global("h"), constant(1))));
     }
     {
         auto const& f = pass_result->func_defs[11ul];
@@ -105,7 +105,7 @@ BOOST_AUTO_TEST_CASE(pass_000)
         BOOST_TEST(f.value.args.size() == 0ul);
         BOOST_TEST(is_u32(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(var("discard_v1"), is_u32, var("id"), constant(0))));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(global("discard_v1"), is_u32, global("id"), constant(0))));
     }
     {
         auto const& f = pass_result->func_defs[15ul];
@@ -113,7 +113,7 @@ BOOST_AUTO_TEST_CASE(pass_000)
         BOOST_TEST(f.value.args.size() == 0ul);
         BOOST_TEST(is_u32(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(var("discard_v2"), is_u32, var("id"), constant(0))));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(global("discard_v2"), is_u32, global("id"), constant(0))));
     }
     {
         auto const& f = pass_result->func_defs[17ul];
@@ -133,7 +133,7 @@ BOOST_AUTO_TEST_CASE(pass_000)
         BOOST_TEST_REQUIRE(if_1->false_branch->stmts.size() == 1ul);
         auto const if_2 = std::get_if<dep0::typecheck::stmt_t::if_else_t>(&if_1->false_branch->stmts[0ul].value);
         BOOST_TEST_REQUIRE(if_2);
-        BOOST_TEST(is_app_of(if_2->cond, var("int_to_bool"), app_of(var("f"), var("int"), constant(0))));
+        BOOST_TEST(is_app_of(if_2->cond, global("int_to_bool"), app_of(var("f"), global("int"), constant(0))));
         BOOST_TEST_REQUIRE(if_2->false_branch.has_value());
         BOOST_TEST_REQUIRE(if_2->false_branch->stmts.size() == 1ul);
         BOOST_TEST(is_return_of(if_2->false_branch->stmts[0], app_of(var("f"), var("t"), var("z"))));
@@ -144,7 +144,7 @@ BOOST_AUTO_TEST_CASE(pass_000)
         BOOST_TEST(f.value.args.size() == 0ul);
         BOOST_TEST(is_pi_of(f.value.ret_type.get(), std::tuple{typename_("t"), arg_of(var("t"))}, var("t")));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], var("id")));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], global("id")));
     }
     {
         auto const& f = pass_result->func_defs[22ul];
@@ -190,7 +190,7 @@ BOOST_AUTO_TEST_CASE(pass_001)
         BOOST_TEST(g.value.args.empty());
         BOOST_TEST(is_global(g.value.ret_type.get(), "int"));
         BOOST_TEST_REQUIRE(g.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(g.value.body.stmts[0ul], app_of(var("f"), var("int"), is_i32, constant(0))));
+        BOOST_TEST(is_return_of(g.value.body.stmts[0ul], app_of(global("f"), global("int"), is_i32, constant(0))));
     }
 }
 
@@ -216,7 +216,7 @@ BOOST_AUTO_TEST_CASE(pass_002)
         BOOST_TEST(is_arg(f.value.args[1ul], is_i32, "y"));
         BOOST_TEST(is_i32(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(var("f"), var("y"), constant(2))));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(global("f"), var("y"), constant(2))));
     }
     {
         auto const& f = pass_result->func_defs[2ul];
@@ -224,7 +224,7 @@ BOOST_AUTO_TEST_CASE(pass_002)
         BOOST_TEST(f.value.args.empty());
         BOOST_TEST(is_i32(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(var("g"), constant(1), constant(0))));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(global("g"), constant(1), constant(0))));
     }
 }
 
@@ -247,7 +247,7 @@ BOOST_AUTO_TEST_CASE(pass_003)
         BOOST_TEST(f.value.args.size() == 0ul);
         BOOST_TEST(is_i32(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(var("f"), is_u32)));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(global("f"), is_u32)));
     }
 }
 
@@ -279,7 +279,7 @@ BOOST_AUTO_TEST_CASE(pass_004)
         BOOST_TEST(f.value.args.size() == 0ul);
         BOOST_TEST(is_i32(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(var("g"), var("f"))));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(global("g"), global("f"))));
     }
 }
 
@@ -311,7 +311,7 @@ BOOST_AUTO_TEST_CASE(pass_005)
         BOOST_TEST(f.value.args.size() == 0ul);
         BOOST_TEST(is_i32(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(var("g"), var("f"))));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(global("g"), global("f"))));
     }
 }
 
@@ -342,7 +342,7 @@ BOOST_AUTO_TEST_CASE(pass_006)
         BOOST_TEST(f.value.args.size() == 0ul);
         BOOST_TEST(is_i32(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(var("g"), var("zero"))));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(global("g"), global("zero"))));
     }
 }
 

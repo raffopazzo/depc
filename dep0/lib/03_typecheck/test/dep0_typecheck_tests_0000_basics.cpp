@@ -39,7 +39,7 @@ BOOST_AUTO_TEST_CASE(pass_014)
         BOOST_TEST(f.value.args.size() == 0ul);
         BOOST_TEST(is_unit(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(var("unit"))));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(global("unit"))));
     }
 }
 

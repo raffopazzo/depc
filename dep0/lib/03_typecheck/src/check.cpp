@@ -158,7 +158,7 @@ expected<stmt_t> check_stmt(environment_t const& env, proof_state_t& state, pars
                 {
                     std::ostringstream err;
                     pretty_print(err << "expecting expression of type `", state.goal) << '`';
-                    return error_t::from_error(dep0::error_t(err.str(), s.properties), state.context, state.goal);
+                    return error_t::from_error(dep0::error_t(err.str(), s.properties), env, state.context, state.goal);
                 }
             }
             else if (auto expr = check_expr(env, state.context, *x.expr, state.goal))
@@ -178,7 +178,7 @@ check_numeric_expr(
 {
     auto const error = [&] (std::string msg) -> expected<expr_t>
     {
-        return error_t::from_error(dep0::error_t(std::move(msg), loc), ctx, expected_type);
+        return error_t::from_error(dep0::error_t(std::move(msg), loc), env, ctx, expected_type);
     };
     auto const check_integer = [&] (
         std::string_view const type_name,
@@ -268,7 +268,9 @@ check_expr(
         std::ostringstream err;
         pretty_print(err << "type mismatch between expression of type `", actual_type) << '`';
         pretty_print(err << " and expected type `", expected_type) << '`';
-        return error_t::from_error(dep0::error_t(err.str(), loc, std::vector{std::move(reason)}), ctx, expected_type);
+        return error_t::from_error(
+            dep0::error_t(err.str(), loc, std::vector{std::move(reason)}),
+            env, ctx, expected_type);
     };
     return match(
         x.value,
@@ -286,7 +288,7 @@ check_expr(
                 {
                     std::ostringstream err;
                     pretty_print(err << "type mismatch between numeric constant and `", kind_t{}) << '`';
-                    return error_t::from_error(dep0::error_t(err.str(), loc), ctx, expected_type);
+                    return error_t::from_error(dep0::error_t(err.str(), loc), env, ctx, expected_type);
                 });
         },
         [&] (parser::expr_t::arith_expr_t const& x) -> expected<expr_t>
@@ -321,21 +323,21 @@ check_expr(
                     {
                         std::ostringstream err;
                         pretty_print(err << "type mismatch between initializer list and `", expected_type) << '`';
-                        return error_t::from_error(dep0::error_t(err.str(), loc), ctx, expected_type);
+                        return error_t::from_error(dep0::error_t(err.str(), loc), env, ctx, expected_type);
                     }
                     auto const n = std::get_if<expr_t::numeric_constant_t>(&app->args.at(1ul).value);
                     if (not n)
                     {
                         std::ostringstream err;
                         pretty_print(err << "type mismatch between initializer list and `", expected_type) << '`';
-                        return error_t::from_error(dep0::error_t(err.str(), loc), ctx, expected_type);
+                        return error_t::from_error(dep0::error_t(err.str(), loc), env, ctx, expected_type);
                     }
                     if (n->value != init_list.values.size())
                     {
                         std::ostringstream err;
                         err << "initializer list has " << init_list.values.size() << " elements but was expecting ";
                         pretty_print<properties_t>(err, *n);
-                        return error_t::from_error(dep0::error_t(err.str(), loc), ctx, expected_type);
+                        return error_t::from_error(dep0::error_t(err.str(), loc), env, ctx, expected_type);
                     }
                     auto values =
                         fmap_or_error(
@@ -352,7 +354,7 @@ check_expr(
                 {
                     std::ostringstream err;
                     pretty_print(err << "type mismatch between initializer list and `", kind_t{}) << '`';
-                    return error_t::from_error(dep0::error_t(err.str(), loc), ctx, expected_type);
+                    return error_t::from_error(dep0::error_t(err.str(), loc), env, ctx, expected_type);
                 });
         },
         [&] (auto const&) -> expected<expr_t>

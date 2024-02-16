@@ -353,7 +353,7 @@ BOOST_AUTO_TEST_CASE(typecheck_error_000)
     BOOST_TEST(fail_result->location.has_value());
     BOOST_TEST_REQUIRE(fail_result->context.has_value());
     std::ostringstream tgt;
-    pretty_print(tgt, fail_result->context->second);
+    pretty_print(tgt, std::get<2>(*fail_result->context));
     BOOST_TEST(tgt.str() == "t");
 }
 BOOST_AUTO_TEST_CASE(typecheck_error_001) { BOOST_TEST(fail("0005_pi_types/typecheck_error_001.depc")); }

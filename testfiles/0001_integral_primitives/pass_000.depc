@@ -4,7 +4,7 @@ i8_t  f2() { return 117; }
 i8_t  f3() { return 126; }
 i8_t  f4() { return 99; }
 i8_t  f5() { return 0; }
-i8_t  f6() { return -127; }
+i8_t  f6() { return -128; }
 i8_t  f7() { return -027; }
 i8_t  f8() { return -117; }
 i8_t  f9() { return -126; }
@@ -24,7 +24,7 @@ i16_t f22() { return 32757; }
 i16_t f23() { return 32766; }
 i16_t f24() { return 9999; }
 i16_t f25() { return 0; }
-i16_t f26() { return -32767; }
+i16_t f26() { return -32768; }
 i16_t f27() { return -22767; }
 i16_t f28() { return -31767; }
 i16_t f29() { return -32667; }
@@ -53,7 +53,7 @@ i32_t f51() { return 2147483627; }
 i32_t f52() { return 2147483646; }
 i32_t f53() { return 999999999; }
 i32_t f54() { return 0; }
-i32_t f55() { return -2147483647; }
+i32_t f55() { return -2147483648; }
 i32_t f56() { return -1147483647; }
 i32_t f57() { return -2047483647; }
 i32_t f58() { return -2137483647; }
@@ -99,7 +99,7 @@ i64_t f97() { return 9223372036854775707; }
 i64_t f98() { return 9223372036854775806; }
 i64_t f99() { return 999999999999999999; }
 i64_t f100() { return 0; }
-i64_t f101() { return -9223372036854775807; }
+i64_t f101() { return -9223372036854775808; }
 i64_t f102() { return -8223372036854775807; }
 i64_t f103() { return -9123372036854775807; }
 i64_t f104() { return -9213372036854775807; }

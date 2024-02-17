@@ -3,10 +3,6 @@ add_library(dep0_ast_lib
     include/dep0/ast/alpha_equivalence.hpp
     include/dep0/ast/alpha_equivalence_impl.hpp
     include/dep0/ast/ast.hpp
-    include/dep0/ast/beta_delta_reduction.hpp
-    include/dep0/ast/beta_delta_reduction_impl.hpp
-    include/dep0/ast/beta_reduction.hpp
-    include/dep0/ast/beta_reduction_impl.hpp
     include/dep0/ast/concepts.hpp
     include/dep0/ast/max_index.hpp
     include/dep0/ast/max_index_impl.hpp
@@ -24,8 +20,6 @@ add_library(dep0_ast_lib
     include/dep0/ast/substitute_impl.hpp
     src/alpha_equivalence.cpp
     src/ast.cpp
-    src/beta_delta_reduction.cpp
-    src/beta_reduction.cpp
     src/concepts.cpp
     src/max_index.cpp
     src/occurs_in.cpp

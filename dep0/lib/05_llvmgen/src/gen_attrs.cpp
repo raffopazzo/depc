@@ -4,7 +4,7 @@
 
 namespace dep0::llvmgen {
 
-llvm::Attribute::AttrKind get_sign_ext_attribute(local_context_t const& local, typecheck::expr_t const& type)
+llvm::Attribute::AttrKind get_sign_ext_attribute(global_context_t const& global, typecheck::expr_t const& type)
 {
     return match(
         type.value,
@@ -25,17 +25,13 @@ llvm::Attribute::AttrKind get_sign_ext_attribute(local_context_t const& local, t
         [] (typecheck::expr_t::boolean_expr_t const&) { return llvm::Attribute::None; },
         [] (typecheck::expr_t::relation_expr_t const&) { return llvm::Attribute::None; },
         [] (typecheck::expr_t::arith_expr_t const&) { return llvm::Attribute::None; },
-        [&] (typecheck::expr_t::var_t const& var)
+        [] (typecheck::expr_t::var_t const&) { return llvm::Attribute::None; },
+        [&] (typecheck::expr_t::global_t const& g)
         {
-            auto const val = local[var];
+            auto const val = global[g];
             assert(val and "unknown type");
             return match(
                 *val,
-                [] (llvm::Value*) -> llvm::Attribute::AttrKind
-                {
-                    assert(false and "found a value but was expecting a type");
-                    __builtin_unreachable();
-                },
                 [] (llvm_func_t const&) -> llvm::Attribute::AttrKind
                 {
                     assert(false and "found a function but was expecting a type");

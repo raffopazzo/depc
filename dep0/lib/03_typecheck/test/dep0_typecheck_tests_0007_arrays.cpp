@@ -46,7 +46,7 @@ BOOST_AUTO_TEST_CASE(pass_001)
         BOOST_TEST(f.value.args.size() == 0ul);
         BOOST_TEST(is_array_of(f.value.ret_type.get(), is_i32, constant(0)));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(var("empty_of"), is_i32)));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(global("empty_of"), is_i32)));
     }
     {
         auto const& f = pass_result->func_defs[2ul];
@@ -55,7 +55,7 @@ BOOST_AUTO_TEST_CASE(pass_001)
         BOOST_TEST(f.value.args.size() == 0ul);
         BOOST_TEST(is_array_of(f.value.ret_type.get(), is_bool, constant(0)));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(var("empty_of"), is_bool)));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(global("empty_of"), is_bool)));
     }
 }
 
@@ -83,7 +83,7 @@ BOOST_AUTO_TEST_CASE(pass_002)
         BOOST_TEST(f.value.args.size() == 0ul);
         BOOST_TEST(is_unit(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(var("discard"), constant(0), init_list_of())));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(global("discard"), constant(0), init_list_of())));
     }
 }
 
@@ -198,7 +198,7 @@ BOOST_AUTO_TEST_CASE(pass_006)
         auto const three = constant(3);
         auto const five = constant(5);
         auto const seven = constant(7);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(var("sum"), init_list_of(three, five, seven))));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(global("sum"), init_list_of(three, five, seven))));
     }
 }
 
@@ -221,7 +221,7 @@ BOOST_AUTO_TEST_CASE(pass_007)
         BOOST_TEST(f.value.args.size() == 0ul);
         BOOST_TEST(is_array_of(f.value.ret_type.get(), is_unit, constant(3)));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        auto const unit = app_of(var("unit"));
+        auto const unit = app_of(global("unit"));
         BOOST_TEST(is_return_of(f.value.body.stmts[0ul], init_list_of(unit, unit, unit)));
     }
 }
@@ -252,9 +252,9 @@ BOOST_AUTO_TEST_CASE(pass_008)
         BOOST_TEST(
             is_expr_of(
                 f.properties.sort.get(),
-                pi_of(std::tuple{}, app_of(var("matrix"), constant(3), constant(2)))));
+                pi_of(std::tuple{}, app_of(global("matrix"), constant(3), constant(2)))));
         BOOST_TEST(f.value.args.size() == 0ul);
-        BOOST_TEST(is_app_of(f.value.ret_type.get(), var("matrix"), constant(3), constant(2)));
+        BOOST_TEST(is_app_of(f.value.ret_type.get(), global("matrix"), constant(3), constant(2)));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
         BOOST_TEST(
             is_return_of(
@@ -270,10 +270,10 @@ BOOST_AUTO_TEST_CASE(pass_008)
             is_expr_of(
                 f.properties.sort.get(),
                 pi_of(
-                    std::tuple{arg_of(app_of(var("matrix"), constant(3), constant(2)), "m")},
+                    std::tuple{arg_of(app_of(global("matrix"), constant(3), constant(2)), "m")},
                     is_i32)));
         BOOST_TEST(f.value.args.size() == 1ul);
-        BOOST_TEST(is_arg(f.value.args[0ul], app_of(var("matrix"), constant(3), constant(2)), "m"));
+        BOOST_TEST(is_arg(f.value.args[0ul], app_of(global("matrix"), constant(3), constant(2)), "m"));
         BOOST_TEST(is_i32(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
         BOOST_TEST(
@@ -327,7 +327,7 @@ BOOST_AUTO_TEST_CASE(pass_009)
         BOOST_TEST(
             is_return_of(
                 f.value.body.stmts[0ul],
-                app_of(var("sum"), subscript_of(var("m"), constant(2)))));
+                app_of(global("sum"), subscript_of(var("m"), constant(2)))));
     }
     {
         auto const& f = pass_result->func_defs[2ul];
@@ -348,10 +348,10 @@ BOOST_AUTO_TEST_CASE(pass_009)
                 plus(
                     plus(
                         plus(
-                            app_of(var("sum"), subscript_of(var("m"), constant(0))),
-                            app_of(var("sum"), subscript_of(var("m"), constant(1)))),
-                        app_of(var("sum"), subscript_of(var("m"), constant(2)))),
-                    app_of(var("sum"), subscript_of(var("m"), constant(3))))));
+                            app_of(global("sum"), subscript_of(var("m"), constant(0))),
+                            app_of(global("sum"), subscript_of(var("m"), constant(1)))),
+                        app_of(global("sum"), subscript_of(var("m"), constant(2)))),
+                    app_of(global("sum"), subscript_of(var("m"), constant(3))))));
     }
 }
 
@@ -388,9 +388,9 @@ BOOST_AUTO_TEST_CASE(pass_010)
                 f.value.body.stmts[0ul],
                 plus(
                     plus(
-                        subscript_of(app_of(var("values")), constant(0)),
-                        subscript_of(app_of(var("values")), constant(1))),
-                    subscript_of(app_of(var("values")), constant(2)))));
+                        subscript_of(app_of(global("values")), constant(0)),
+                        subscript_of(app_of(global("values")), constant(1))),
+                    subscript_of(app_of(global("values")), constant(2)))));
     }
 }
 
@@ -470,9 +470,9 @@ BOOST_AUTO_TEST_CASE(pass_011)
             is_return_of(
                 f.value.body.stmts[0ul],
                 app_of(
-                    var("transform_add"),
+                    global("transform_add"),
                     init_list_of(constant(3), constant(5), constant(7)),
-                    init_list_of(var("identity"), var("plus_one"), var("plus_two")))));
+                    init_list_of(global("identity"), global("plus_one"), global("plus_two")))));
     }
 }
 
@@ -530,8 +530,8 @@ BOOST_AUTO_TEST_CASE(pass_012)
             is_if_else(
                 f.value.body.stmts[0ul],
                 var("which"),
-                std::tuple{return_of(var("f"))},
-                std::tuple{return_of(var("g"))}));
+                std::tuple{return_of(global("f"))},
+                std::tuple{return_of(global("g"))}));
     }
     {
         auto const& f = pass_result->func_defs[4ul];
@@ -550,8 +550,8 @@ BOOST_AUTO_TEST_CASE(pass_012)
             is_return_of(
                 f.value.body.stmts[0ul],
                 init_list_of(
-                    app_of(var("select"), var("which")),
-                    app_of(var("select"), app_of(var("negate"), var("which"))))));
+                    app_of(global("select"), var("which")),
+                    app_of(global("select"), app_of(global("negate"), var("which"))))));
     }
 }
 
@@ -583,18 +583,18 @@ BOOST_AUTO_TEST_CASE(pass_013)
                 pi_of(
                     std::tuple{
                         arg_of(is_bool, "signed"),
-                        arg_of(array_of(app_of(var("signed_or_unsigned"), var("signed")), constant(3)), "xs")},
-                    app_of(var("signed_or_unsigned"), var("signed")))));
+                        arg_of(array_of(app_of(global("signed_or_unsigned"), var("signed")), constant(3)), "xs")},
+                    app_of(global("signed_or_unsigned"), var("signed")))));
         BOOST_TEST_REQUIRE(f.value.args.size() == 2ul);
         BOOST_TEST(is_arg(f.value.args[0ul], is_bool, "signed"));
         BOOST_TEST(
             is_arg(
                 f.value.args[1ul],
                 array_of(
-                    app_of(var("signed_or_unsigned"), var("signed")),
+                    app_of(global("signed_or_unsigned"), var("signed")),
                     constant(3)),
                 "xs"));
-        BOOST_TEST(is_app_of(f.value.ret_type.get(), var("signed_or_unsigned"), var("signed")));
+        BOOST_TEST(is_app_of(f.value.ret_type.get(), global("signed_or_unsigned"), var("signed")));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
         BOOST_TEST(is_return_of(f.value.body.stmts[0ul], subscript_of(var("xs"), constant(0))));
     }
@@ -609,7 +609,7 @@ BOOST_AUTO_TEST_CASE(pass_013)
             is_return_of(
                 f.value.body.stmts[0ul],
                 app_of(
-                    var("first"),
+                    global("first"),
                     constant(true),
                     init_list_of(constant(-1), constant(-2), constant(-3)))));
     }
@@ -638,7 +638,7 @@ BOOST_AUTO_TEST_CASE(pass_014)
         BOOST_TEST(f.value.args.size() == 0ul);
         BOOST_TEST(is_array_of(f.value.ret_type.get(), is_i32, constant(3)));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(var("zeros"))));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(global("zeros"))));
     }
     {
         auto const& f = pass_result->func_defs[2ul];
@@ -657,7 +657,7 @@ BOOST_AUTO_TEST_CASE(pass_014)
             is_if_else(
                 f.value.body.stmts[0ul],
                 var("which"),
-                std::tuple{return_of(app_of(var("zeros")))},
+                std::tuple{return_of(app_of(global("zeros")))},
                 std::tuple{return_of(init_list_of(constant(1), constant(2), constant(3)))}));
     }
     {
@@ -680,7 +680,7 @@ BOOST_AUTO_TEST_CASE(pass_014)
             is_if_else(
                 f.value.body.stmts[0ul],
                 var("which"),
-                std::tuple{return_of(app_of(var("zeros")))},
+                std::tuple{return_of(app_of(global("zeros")))},
                 std::tuple{return_of(var("xs"))}));
     }
     {
@@ -762,7 +762,7 @@ BOOST_AUTO_TEST_CASE(pass_015)
         BOOST_TEST(
             is_return_of(
                 f.value.body.stmts[0ul],
-                app_of(var("xs_or_ys"), var("which"), constant(2), var("xs"), var("ys"))));
+                app_of(global("xs_or_ys"), var("which"), constant(2), var("xs"), var("ys"))));
     }
 }
 
@@ -817,9 +817,9 @@ BOOST_AUTO_TEST_CASE(pass_016)
             is_return_of(
                 f.value.body.stmts[0],
                 app_of(
-                    var("last"),
+                    global("last"),
                     app_of(
-                        var("count_3"),
+                        global("count_3"),
                         var("start_from_zero")))));
     }
 }
@@ -913,9 +913,9 @@ BOOST_AUTO_TEST_CASE(pass_018)
     {
         auto const& f = pass_result->func_defs[1ul];
         BOOST_TEST(f.name == "id_matrix");
-        BOOST_TEST(is_expr_of(f.properties.sort.get(), pi_of(std::tuple{}, app_of(var("sq_matrix"), constant(2)))));
+        BOOST_TEST(is_expr_of(f.properties.sort.get(), pi_of(std::tuple{}, app_of(global("sq_matrix"), constant(2)))));
         BOOST_TEST(f.value.args.size() == 0ul);
-        BOOST_TEST(is_app_of(f.value.ret_type.get(), var("sq_matrix"), constant(2)));
+        BOOST_TEST(is_app_of(f.value.ret_type.get(), global("sq_matrix"), constant(2)));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
         BOOST_TEST(
             is_return_of(
@@ -927,9 +927,9 @@ BOOST_AUTO_TEST_CASE(pass_018)
     {
         auto const& f = pass_result->func_defs[2ul];
         BOOST_TEST(f.name == "anti_id_matrix");
-        BOOST_TEST(is_expr_of(f.properties.sort.get(), pi_of(std::tuple{}, app_of(var("sq_matrix"), constant(2)))));
+        BOOST_TEST(is_expr_of(f.properties.sort.get(), pi_of(std::tuple{}, app_of(global("sq_matrix"), constant(2)))));
         BOOST_TEST(f.value.args.size() == 0ul);
-        BOOST_TEST(is_app_of(f.value.ret_type.get(), var("sq_matrix"), constant(2)));
+        BOOST_TEST(is_app_of(f.value.ret_type.get(), global("sq_matrix"), constant(2)));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
         BOOST_TEST(
             is_return_of(
@@ -944,17 +944,17 @@ BOOST_AUTO_TEST_CASE(pass_018)
         BOOST_TEST(
             is_expr_of(
                 f.properties.sort.get(),
-                pi_of(std::tuple{arg_of(is_bool, "which")}, app_of(var("sq_matrix"), constant(2)))));
+                pi_of(std::tuple{arg_of(is_bool, "which")}, app_of(global("sq_matrix"), constant(2)))));
         BOOST_TEST_REQUIRE(f.value.args.size() == 1ul);
         BOOST_TEST(is_arg(f.value.args[0ul], is_bool, "which"));
-        BOOST_TEST(is_app_of(f.value.ret_type.get(), var("sq_matrix"), constant(2)));
+        BOOST_TEST(is_app_of(f.value.ret_type.get(), global("sq_matrix"), constant(2)));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
         BOOST_TEST(
             is_if_else(
                 f.value.body.stmts[0ul],
                 var("which"),
-                std::tuple{return_of(app_of(var("id_matrix")))},
-                std::tuple{return_of(app_of(var("anti_id_matrix")))}));
+                std::tuple{return_of(app_of(global("id_matrix")))},
+                std::tuple{return_of(app_of(global("anti_id_matrix")))}));
     }
     {
         auto const& f = pass_result->func_defs[4ul];
@@ -962,9 +962,9 @@ BOOST_AUTO_TEST_CASE(pass_018)
         BOOST_TEST(
             is_expr_of(
                 f.properties.sort.get(),
-                pi_of(std::tuple{arg_of(app_of(var("sq_matrix"), constant(2)), "m")}, is_i32)));
+                pi_of(std::tuple{arg_of(app_of(global("sq_matrix"), constant(2)), "m")}, is_i32)));
         BOOST_TEST_REQUIRE(f.value.args.size() == 1ul);
-        BOOST_TEST(is_arg(f.value.args[0ul], app_of(var("sq_matrix"), constant(2)), "m"));
+        BOOST_TEST(is_arg(f.value.args[0ul], app_of(global("sq_matrix"), constant(2)), "m"));
         BOOST_TEST(is_i32(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
         BOOST_TEST(
@@ -980,9 +980,9 @@ BOOST_AUTO_TEST_CASE(pass_018)
         BOOST_TEST(
             is_expr_of(
                 f.properties.sort.get(),
-                pi_of(std::tuple{arg_of(app_of(var("sq_matrix"), constant(2)), "m")}, is_i32)));
+                pi_of(std::tuple{arg_of(app_of(global("sq_matrix"), constant(2)), "m")}, is_i32)));
         BOOST_TEST_REQUIRE(f.value.args.size() == 1ul);
-        BOOST_TEST(is_arg(f.value.args[0ul], app_of(var("sq_matrix"), constant(2)), "m"));
+        BOOST_TEST(is_arg(f.value.args[0ul], app_of(global("sq_matrix"), constant(2)), "m"));
         BOOST_TEST(is_i32(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
         BOOST_TEST(
@@ -1000,17 +1000,17 @@ BOOST_AUTO_TEST_CASE(pass_018)
                 f.properties.sort.get(),
                 pi_of(
                     std::tuple{arg_of(is_bool, "which")},
-                    pi_of(std::tuple{arg_of(app_of(var("sq_matrix"), constant(2)))}, is_i32))));
+                    pi_of(std::tuple{arg_of(app_of(global("sq_matrix"), constant(2)))}, is_i32))));
         BOOST_TEST_REQUIRE(f.value.args.size() == 1ul);
         BOOST_TEST(is_arg(f.value.args[0ul], is_bool, "which"));
-        BOOST_TEST(is_pi_of(f.value.ret_type.get(), std::tuple{arg_of(app_of(var("sq_matrix"), constant(2)))}, is_i32));
+        BOOST_TEST(is_pi_of(f.value.ret_type.get(), std::tuple{arg_of(app_of(global("sq_matrix"), constant(2)))}, is_i32));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
         BOOST_TEST(
             is_if_else(
                 f.value.body.stmts[0ul],
                 var("which"),
-                std::tuple{return_of(var("trace"))},
-                std::tuple{return_of(var("anti_trace"))}));
+                std::tuple{return_of(global("trace"))},
+                std::tuple{return_of(global("anti_trace"))}));
     }
     {
         auto const& f = pass_result->func_defs[7ul];
@@ -1024,8 +1024,8 @@ BOOST_AUTO_TEST_CASE(pass_018)
             is_return_of(
                 f.value.body.stmts[0ul],
                 app_of(
-                    app_of(var("select_fn"), var("which")),
-                    app_of(var("select_matrix"), var("which")))));
+                    app_of(global("select_fn"), var("which")),
+                    app_of(global("select_matrix"), var("which")))));
     }
 }
 

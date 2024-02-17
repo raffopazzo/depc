@@ -94,6 +94,9 @@ template <Properties P>
 std::ostream& pretty_print(std::ostream&, typename expr_t<P>::var_t const&, std::size_t indent = 0ul);
 
 template <Properties P>
+std::ostream& pretty_print(std::ostream&, typename expr_t<P>::global_t const&, std::size_t indent = 0ul);
+
+template <Properties P>
 std::ostream& pretty_print(std::ostream&, typename expr_t<P>::app_t const&, std::size_t indent = 0ul);
 
 template <Properties P>

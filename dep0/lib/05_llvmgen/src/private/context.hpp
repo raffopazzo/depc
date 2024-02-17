@@ -1,11 +1,11 @@
 #pragma once
 
+#include "private/llvm_func.hpp"
+
 #include "dep0/typecheck/ast.hpp"
 
 #include "dep0/scope_map.hpp"
 
-#include <llvm/IR/DerivedTypes.h>
-#include <llvm/IR/Function.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Value.h>
@@ -17,14 +17,14 @@ namespace dep0::llvmgen {
 /**
  * Holds together things that have global visibility during IR codegen.
  */
-class global_context_t
+struct global_context_t
 {
-    /**
-     * Holds the next unique ID that will be assigned by `get_next_id()`.
-     */
-    std::size_t next_id = 0ul;
+    using value_t =
+        std::variant<
+            llvm_func_t,
+            typecheck::type_def_t
+        >;
 
-public:
     /**
      * The LLVM Context being used during IR codegen.
      */
@@ -46,20 +46,26 @@ public:
     global_context_t(global_context_t&&) = delete;
     global_context_t& operator=(global_context_t const&) = delete;
     global_context_t& operator=(global_context_t&&) = delete;
-};
 
-/**
- * Like `llvm::FunctionCallee`, it represents a callable function together with its type.
- * But unlike it, this allows access to the two fields via const-ref.
- * If upstream fixes their API, we can remove this and use theirs instead.
- */
-struct llvm_func_t
-{
-    llvm::FunctionType* type;
-    llvm::Value* func;
+    value_t* operator[](typecheck::expr_t::global_t const&);
+    value_t const* operator[](typecheck::expr_t::global_t const&) const;
 
-    explicit llvm_func_t(llvm::Function*);
-    llvm_func_t(llvm::FunctionType*, llvm::Value*);
+    template <typename... Args>
+    auto try_emplace(typecheck::expr_t::global_t name, Args&&... args)
+    {
+        return values.try_emplace(std::move(name), std::forward<Args>(args)...);
+    }
+
+private:
+    /**
+     * Holds the next unique ID that will be assigned by `get_next_id()`.
+     */
+    std::size_t next_id = 0ul;
+
+    /**
+     * Holds global objects, for example functions and type-defs.
+     */
+    scope_map<typecheck::expr_t::global_t, value_t> values;
 };
 
 /**
@@ -73,8 +79,7 @@ struct local_context_t
     using value_t =
         std::variant<
             llvm::Value*,
-            llvm_func_t,
-            typecheck::type_def_t
+            llvm_func_t
         >;
 
     local_context_t() = default;

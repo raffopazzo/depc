@@ -9,6 +9,16 @@ global_context_t::global_context_t(llvm::Module& m) :
 
 std::size_t global_context_t::get_next_id() { return next_id++; }
 
+global_context_t::value_t* global_context_t::operator[](typecheck::expr_t::global_t const& k)
+{
+    return values[k];
+}
+
+global_context_t::value_t const* global_context_t::operator[](typecheck::expr_t::global_t const& k) const
+{
+    return values[k];
+}
+
 local_context_t::local_context_t(scope_map<typecheck::expr_t::var_t, value_t> values) :
     values(std::move(values))
 { }
@@ -27,15 +37,5 @@ local_context_t::value_t const* local_context_t::operator[](typecheck::expr_t::v
 {
     return values[k];
 }
-
-llvm_func_t::llvm_func_t(llvm::Function* const f) :
-    type(f->getFunctionType()),
-    func(f)
-{ }
-
-llvm_func_t::llvm_func_t(llvm::FunctionType* const type, llvm::Value* const func) :
-    type(type),
-    func(func)
-{ }
 
 } // namespace dep0::llvmgen

@@ -13,8 +13,8 @@
 
 namespace dep0::llvmgen {
 
-static void gen_func_args(local_context_t&, llvm_func_proto_t const&, llvm::Function*);
-static void gen_func_attributes(local_context_t const&, llvm_func_proto_t const&, llvm::Function*);
+static void gen_func_args(global_context_t const&, local_context_t&, llvm_func_proto_t const&, llvm::Function*);
+static void gen_func_attributes(global_context_t const&, llvm_func_proto_t const&, llvm::Function*);
 static void gen_func_body(
     global_context_t&,
     local_context_t const&,
@@ -22,7 +22,11 @@ static void gen_func_body(
     typecheck::body_t const&,
     llvm::Function*);
 
-void gen_func_args(local_context_t& local, llvm_func_proto_t const& proto, llvm::Function* const llvm_f)
+void gen_func_args(
+    global_context_t const& global,
+    local_context_t& local,
+    llvm_func_proto_t const& proto,
+    llvm::Function* const llvm_f)
 {
     auto llvm_arg_it = llvm_f->arg_begin();
     if (is_alloca_needed(proto.ret_type()))
@@ -37,7 +41,7 @@ void gen_func_args(local_context_t& local, llvm_func_proto_t const& proto, llvm:
     for (auto const& arg: proto.args())
     {
         auto& llvm_arg = *llvm_arg_it++;
-        if (auto const attr = get_sign_ext_attribute(local, arg.type); attr != llvm::Attribute::None)
+        if (auto const attr = get_sign_ext_attribute(global, arg.type); attr != llvm::Attribute::None)
             llvm_arg.addAttr(attr);
         if (is_alloca_needed(arg.type))
             // TODO should we also set noalias, byval, etc? maybe for the return argument too?
@@ -61,9 +65,9 @@ void gen_func_args(local_context_t& local, llvm_func_proto_t const& proto, llvm:
     }
 }
 
-void gen_func_attributes(local_context_t const& local, llvm_func_proto_t const& proto, llvm::Function* const llvm_f)
+void gen_func_attributes(global_context_t const& global, llvm_func_proto_t const& proto, llvm::Function* const llvm_f)
 {
-    if (auto const attr = get_sign_ext_attribute(local, proto.ret_type()); attr != llvm::Attribute::None)
+    if (auto const attr = get_sign_ext_attribute(global, proto.ret_type()); attr != llvm::Attribute::None)
         llvm_f->addAttribute(llvm::AttributeList::ReturnIndex, attr);
 }
 
@@ -98,8 +102,8 @@ llvm::Value* gen_func(
             name,
             global.llvm_module);
     auto f_ctx = local.extend();
-    gen_func_args(f_ctx, proto, llvm_f);
-    gen_func_attributes(f_ctx, proto, llvm_f);
+    gen_func_args(global, f_ctx, proto, llvm_f);
+    gen_func_attributes(global, proto, llvm_f);
     gen_func_body(global, f_ctx, proto, f.body, llvm_f);
     return llvm_f;
 }
@@ -107,7 +111,7 @@ llvm::Value* gen_func(
 void gen_func(
     global_context_t& global,
     local_context_t& local,
-    source_text const& name,
+    typecheck::expr_t::global_t const& name,
     llvm_func_proto_t const& proto,
     typecheck::expr_t::abs_t const& f)
 {
@@ -115,14 +119,14 @@ void gen_func(
         llvm::Function::Create(
             gen_func_type(global, local, proto),
             llvm::Function::ExternalLinkage,
-            name.view(),
+            name.name.view(),
             global.llvm_module);
     // add function to the parent context; but generation must happen in the function context
-    bool const inserted = local.try_emplace(typecheck::expr_t::var_t{name}, llvm_func_t(llvm_f)).second;
+    bool const inserted = global.try_emplace(name, llvm_func_t(llvm_f)).second;
     assert(inserted);
     auto f_ctx = local.extend();
-    gen_func_args(f_ctx, proto, llvm_f);
-    gen_func_attributes(f_ctx, proto, llvm_f);
+    gen_func_args(global, f_ctx, proto, llvm_f);
+    gen_func_attributes(global, proto, llvm_f);
     gen_func_body(global, f_ctx, proto, f.body, llvm_f);
 }
 

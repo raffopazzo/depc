@@ -27,15 +27,6 @@ boost::test_tools::predicate_result is_func_call_of(ast::stmt_t<P> const& stmt, 
         return true;
 }
 
-template <ast::Properties P, Predicate<typename ast::stmt_t<P>::if_else_t> F>
-boost::test_tools::predicate_result is_if_else(ast::stmt_t<P> const& stmt, F&& f)
-{
-    auto const if_ = std::get_if<typename ast::stmt_t<P>::if_else_t>(&stmt.value);
-    if (not if_)
-        return failure("statement is not if-else but ", pretty_name(stmt.value));
-    return std::forward<F>(f)(*if_);
-}
-
 template <
     ast::Properties P,
     Predicate<ast::expr_t<P>> F_cond,

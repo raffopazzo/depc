@@ -1,18 +1,26 @@
 #include "private/beta_delta_equivalence.hpp"
 
+#include "dep0/typecheck/beta_delta_reduction.hpp"
+
 #include "dep0/ast/alpha_equivalence.hpp"
-#include "dep0/ast/beta_delta_reduction.hpp"
 #include "dep0/ast/pretty_print.hpp"
 
 #include <sstream>
 
 namespace dep0::typecheck {
 
-dep0::expected<std::true_type> is_beta_delta_equivalent(context_t const& ctx, sort_t const& x, sort_t const& y)
+dep0::expected<std::true_type>
+is_beta_delta_equivalent(
+    environment_t const& env,
+    context_t const& ctx,
+    sort_t const& x,
+    sort_t const& y)
 {
     struct visitor
     {
+        environment_t const& env;
         context_t const& ctx;
+
         dep0::expected<std::true_type> operator()(expr_t const& x, expr_t const& y) const
         {
             // Try without normalizing first, under the assumptions that:
@@ -24,8 +32,8 @@ dep0::expected<std::true_type> is_beta_delta_equivalent(context_t const& ctx, so
             {
                 auto x2 = x;
                 auto y2 = y;
-                beta_delta_normalize(ctx.delta_reduction_context(), x2);
-                beta_delta_normalize(ctx.delta_reduction_context(), y2);
+                beta_delta_normalize(env, ctx, x2);
+                beta_delta_normalize(env, ctx, y2);
                 eq = is_alpha_equivalent(x2, y2);
             }
             return eq;
@@ -47,7 +55,7 @@ dep0::expected<std::true_type> is_beta_delta_equivalent(context_t const& ctx, so
             return dep0::error_t(err.str());
         }
     };
-    return std::visit(visitor{ctx}, x, y);
+    return std::visit(visitor{env, ctx}, x, y);
 }
 
 } // namespace dep0::typecheck

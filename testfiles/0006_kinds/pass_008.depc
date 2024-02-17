@@ -1,0 +1,3 @@
+auto f() -> typename { return i32_t; }
+auto g(f()) -> typename { return u64_t; }
+unit_t h(() -> typename f, g(0)) { }

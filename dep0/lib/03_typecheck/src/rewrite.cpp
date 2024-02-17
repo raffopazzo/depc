@@ -193,6 +193,7 @@ std::optional<expr_t> rewrite(expr_t const& from, expr_t const& to, expr_t const
                     });
             },
             [] (expr_t::var_t const&) { },
+            [] (expr_t::global_t const&) { },
             [&] (expr_t::app_t const& x)
             {
                 if (auto new_app = rewrite(from, to, x))

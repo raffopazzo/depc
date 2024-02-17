@@ -81,8 +81,8 @@ BOOST_AUTO_TEST_CASE(pass_004)
             is_return_of(
                 f.value.body.stmts[0ul],
                 plus(
-                    app_of(var("one")),
-                    app_of(var("two")))));
+                    app_of(global("one")),
+                    app_of(global("two")))));
     }
     {
         auto const& f = pass_result->func_defs[3ul];
@@ -94,7 +94,7 @@ BOOST_AUTO_TEST_CASE(pass_004)
             is_return_of(
                 f.value.body.stmts[0ul],
                 plus(
-                    app_of(var("three")),
+                    app_of(global("three")),
                     constant(1))));
     }
     {
@@ -108,7 +108,7 @@ BOOST_AUTO_TEST_CASE(pass_004)
                 f.value.body.stmts[0ul],
                 plus(
                     constant(2),
-                    app_of(var("three")))));
+                    app_of(global("three")))));
     }
     {
         auto const& f = pass_result->func_defs[5ul];
@@ -121,7 +121,7 @@ BOOST_AUTO_TEST_CASE(pass_004)
                 f.value.body.stmts[0ul],
                 plus(
                     constant(3),
-                    app_of(var("three")))));
+                    app_of(global("three")))));
     }
     {
         auto const& f = pass_result->func_defs[6ul];
@@ -135,7 +135,7 @@ BOOST_AUTO_TEST_CASE(pass_004)
                 plus(
                     plus(
                         constant(1),
-                        app_of(var("six"))),
+                        app_of(global("six"))),
                     constant(2))));
     }
     {
@@ -149,7 +149,7 @@ BOOST_AUTO_TEST_CASE(pass_004)
                 f.value.body.stmts[0ul],
                 plus(
                     constant(-1),
-                    app_of(var("nine")))));
+                    app_of(global("nine")))));
     }
     {
         auto const& f = pass_result->func_defs[8ul];
@@ -161,7 +161,7 @@ BOOST_AUTO_TEST_CASE(pass_004)
             is_return_of(
                 f.value.body.stmts[0ul],
                 plus(
-                    app_of(var("eight")),
+                    app_of(global("eight")),
                     constant(-1))));
     }
     {
@@ -174,7 +174,7 @@ BOOST_AUTO_TEST_CASE(pass_004)
             is_return_of(
                 f.value.body.stmts[0ul],
                 plus(
-                    app_of(var("seven")),
+                    app_of(global("seven")),
                     constant(3))));
     }
     {
@@ -190,8 +190,8 @@ BOOST_AUTO_TEST_CASE(pass_004)
                     plus(
                         plus(
                             constant(-1),
-                            app_of(var("one"))),
-                        app_of(var("one"))),
+                            app_of(global("one"))),
+                        app_of(global("one"))),
                     constant(-1))));
     }
     {
@@ -206,9 +206,9 @@ BOOST_AUTO_TEST_CASE(pass_004)
                 plus(
                     plus(
                         plus(
-                            app_of(var("one")),
+                            app_of(global("one")),
                             constant(-1)),
-                        app_of(var("one"))),
+                        app_of(global("one"))),
                     constant(-1))));
     }
     {
@@ -223,8 +223,8 @@ BOOST_AUTO_TEST_CASE(pass_004)
                 plus(
                     plus(
                         plus(
-                            app_of(var("one")),
-                            app_of(var("one"))),
+                            app_of(global("one")),
+                            app_of(global("one"))),
                         constant(-1)),
                     constant(-1))));
     }
@@ -237,7 +237,7 @@ BOOST_AUTO_TEST_CASE(typecheck_error_000)
     BOOST_TEST(fail_result->location.has_value());
     BOOST_TEST_REQUIRE(fail_result->context.has_value());
     std::ostringstream tgt;
-    pretty_print(tgt, fail_result->context->second);
+    pretty_print(tgt, std::get<2>(*fail_result->context));
     BOOST_TEST(tgt.str() == "u32_t");
 }
 

@@ -87,8 +87,8 @@ BOOST_AUTO_TEST_CASE(pass_000)
             is_return_of(
                 f.value.body.stmts[0ul],
                 lt(
-                    app_of(var("negate"), lt(constant(true), app_of(var("f1")))),
-                    app_of(var("negate"), lt(app_of(var("f1")), constant(true))))));
+                    app_of(global("negate"), lt(constant(true), app_of(global("f1")))),
+                    app_of(global("negate"), lt(app_of(global("f1")), constant(true))))));
     }
     {
         auto const& f = pass_result->func_defs[5ul];
@@ -116,10 +116,10 @@ BOOST_AUTO_TEST_CASE(pass_000)
         BOOST_TEST(
             is_expr_of(
                 f.properties.sort.get(),
-                pi_of(std::tuple{arg_of(var("sign_t"), "x"), arg_of(var("sign_t"), "y")}, is_bool)));
+                pi_of(std::tuple{arg_of(global("sign_t"), "x"), arg_of(global("sign_t"), "y")}, is_bool)));
         BOOST_TEST_REQUIRE(f.value.args.size() == 2ul);
-        BOOST_TEST(is_arg(f.value.args[0], var("sign_t"), "x"));
-        BOOST_TEST(is_arg(f.value.args[1], var("sign_t"), "y"));
+        BOOST_TEST(is_arg(f.value.args[0], global("sign_t"), "x"));
+        BOOST_TEST(is_arg(f.value.args[1], global("sign_t"), "y"));
         BOOST_TEST(is_bool(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
         BOOST_TEST(is_return_of(f.value.body.stmts[0ul], lt(var("x"), var("y"))));
@@ -158,10 +158,10 @@ BOOST_AUTO_TEST_CASE(pass_000)
         BOOST_TEST(
             is_expr_of(
                 f.properties.sort.get(),
-                pi_of(std::tuple{arg_of(var("hours_t"), "x"), arg_of(var("hours_t"), "y")}, is_bool)));
+                pi_of(std::tuple{arg_of(global("hours_t"), "x"), arg_of(global("hours_t"), "y")}, is_bool)));
         BOOST_TEST_REQUIRE(f.value.args.size() == 2ul);
-        BOOST_TEST(is_arg(f.value.args[0], var("hours_t"), "x"));
-        BOOST_TEST(is_arg(f.value.args[1], var("hours_t"), "y"));
+        BOOST_TEST(is_arg(f.value.args[0], global("hours_t"), "x"));
+        BOOST_TEST(is_arg(f.value.args[1], global("hours_t"), "y"));
         BOOST_TEST(is_bool(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
         BOOST_TEST(is_return_of(f.value.body.stmts[0ul], lt(plus(var("x"), var("y")), var("x"))));
@@ -298,8 +298,8 @@ BOOST_AUTO_TEST_CASE(pass_001)
             is_return_of(
                 f.value.body.stmts[0ul],
                 gt(
-                    app_of(var("negate"), gt(constant(true), app_of(var("f1")))),
-                    app_of(var("negate"), gt(app_of(var("f1")), constant(true))))));
+                    app_of(global("negate"), gt(constant(true), app_of(global("f1")))),
+                    app_of(global("negate"), gt(app_of(global("f1")), constant(true))))));
     }
     {
         auto const& f = pass_result->func_defs[5ul];
@@ -327,10 +327,10 @@ BOOST_AUTO_TEST_CASE(pass_001)
         BOOST_TEST(
             is_expr_of(
                 f.properties.sort.get(),
-                pi_of(std::tuple{arg_of(var("sign_t"), "x"), arg_of(var("sign_t"), "y")}, is_bool)));
+                pi_of(std::tuple{arg_of(global("sign_t"), "x"), arg_of(global("sign_t"), "y")}, is_bool)));
         BOOST_TEST_REQUIRE(f.value.args.size() == 2ul);
-        BOOST_TEST(is_arg(f.value.args[0], var("sign_t"), "x"));
-        BOOST_TEST(is_arg(f.value.args[1], var("sign_t"), "y"));
+        BOOST_TEST(is_arg(f.value.args[0], global("sign_t"), "x"));
+        BOOST_TEST(is_arg(f.value.args[1], global("sign_t"), "y"));
         BOOST_TEST(is_bool(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
         BOOST_TEST(is_return_of(f.value.body.stmts[0ul], gt(var("x"), var("y"))));
@@ -369,10 +369,10 @@ BOOST_AUTO_TEST_CASE(pass_001)
         BOOST_TEST(
             is_expr_of(
                 f.properties.sort.get(),
-                pi_of(std::tuple{arg_of(var("hours_t"), "x"), arg_of(var("hours_t"), "y")}, is_bool)));
+                pi_of(std::tuple{arg_of(global("hours_t"), "x"), arg_of(global("hours_t"), "y")}, is_bool)));
         BOOST_TEST_REQUIRE(f.value.args.size() == 2ul);
-        BOOST_TEST(is_arg(f.value.args[0], var("hours_t"), "x"));
-        BOOST_TEST(is_arg(f.value.args[1], var("hours_t"), "y"));
+        BOOST_TEST(is_arg(f.value.args[0], global("hours_t"), "x"));
+        BOOST_TEST(is_arg(f.value.args[1], global("hours_t"), "y"));
         BOOST_TEST(is_bool(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
         BOOST_TEST(is_return_of(f.value.body.stmts[0ul], gt(plus(var("x"), var("y")), var("x"))));
@@ -509,8 +509,8 @@ BOOST_AUTO_TEST_CASE(pass_002)
             is_return_of(
                 f.value.body.stmts[0ul],
                 lte(
-                    app_of(var("negate"), lte(constant(true), app_of(var("f1")))),
-                    app_of(var("negate"), lte(app_of(var("f1")), constant(true))))));
+                    app_of(global("negate"), lte(constant(true), app_of(global("f1")))),
+                    app_of(global("negate"), lte(app_of(global("f1")), constant(true))))));
     }
     {
         auto const& f = pass_result->func_defs[5ul];
@@ -538,10 +538,10 @@ BOOST_AUTO_TEST_CASE(pass_002)
         BOOST_TEST(
             is_expr_of(
                 f.properties.sort.get(),
-                pi_of(std::tuple{arg_of(var("sign_t"), "x"), arg_of(var("sign_t"), "y")}, is_bool)));
+                pi_of(std::tuple{arg_of(global("sign_t"), "x"), arg_of(global("sign_t"), "y")}, is_bool)));
         BOOST_TEST_REQUIRE(f.value.args.size() == 2ul);
-        BOOST_TEST(is_arg(f.value.args[0], var("sign_t"), "x"));
-        BOOST_TEST(is_arg(f.value.args[1], var("sign_t"), "y"));
+        BOOST_TEST(is_arg(f.value.args[0], global("sign_t"), "x"));
+        BOOST_TEST(is_arg(f.value.args[1], global("sign_t"), "y"));
         BOOST_TEST(is_bool(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
         BOOST_TEST(is_return_of(f.value.body.stmts[0ul], lte(var("x"), var("y"))));
@@ -580,10 +580,10 @@ BOOST_AUTO_TEST_CASE(pass_002)
         BOOST_TEST(
             is_expr_of(
                 f.properties.sort.get(),
-                pi_of(std::tuple{arg_of(var("hours_t"), "x"), arg_of(var("hours_t"), "y")}, is_bool)));
+                pi_of(std::tuple{arg_of(global("hours_t"), "x"), arg_of(global("hours_t"), "y")}, is_bool)));
         BOOST_TEST_REQUIRE(f.value.args.size() == 2ul);
-        BOOST_TEST(is_arg(f.value.args[0], var("hours_t"), "x"));
-        BOOST_TEST(is_arg(f.value.args[1], var("hours_t"), "y"));
+        BOOST_TEST(is_arg(f.value.args[0], global("hours_t"), "x"));
+        BOOST_TEST(is_arg(f.value.args[1], global("hours_t"), "y"));
         BOOST_TEST(is_bool(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
         BOOST_TEST(is_return_of(f.value.body.stmts[0ul], lte(plus(var("x"), var("y")), var("x"))));
@@ -720,8 +720,8 @@ BOOST_AUTO_TEST_CASE(pass_003)
             is_return_of(
                 f.value.body.stmts[0ul],
                 gte(
-                    app_of(var("negate"), gte(constant(true), app_of(var("f1")))),
-                    app_of(var("negate"), gte(app_of(var("f1")), constant(true))))));
+                    app_of(global("negate"), gte(constant(true), app_of(global("f1")))),
+                    app_of(global("negate"), gte(app_of(global("f1")), constant(true))))));
     }
     {
         auto const& f = pass_result->func_defs[5ul];
@@ -749,10 +749,10 @@ BOOST_AUTO_TEST_CASE(pass_003)
         BOOST_TEST(
             is_expr_of(
                 f.properties.sort.get(),
-                pi_of(std::tuple{arg_of(var("sign_t"), "x"), arg_of(var("sign_t"), "y")}, is_bool)));
+                pi_of(std::tuple{arg_of(global("sign_t"), "x"), arg_of(global("sign_t"), "y")}, is_bool)));
         BOOST_TEST_REQUIRE(f.value.args.size() == 2ul);
-        BOOST_TEST(is_arg(f.value.args[0], var("sign_t"), "x"));
-        BOOST_TEST(is_arg(f.value.args[1], var("sign_t"), "y"));
+        BOOST_TEST(is_arg(f.value.args[0], global("sign_t"), "x"));
+        BOOST_TEST(is_arg(f.value.args[1], global("sign_t"), "y"));
         BOOST_TEST(is_bool(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
         BOOST_TEST(is_return_of(f.value.body.stmts[0ul], gte(var("x"), var("y"))));
@@ -791,10 +791,10 @@ BOOST_AUTO_TEST_CASE(pass_003)
         BOOST_TEST(
             is_expr_of(
                 f.properties.sort.get(),
-                pi_of(std::tuple{arg_of(var("hours_t"), "x"), arg_of(var("hours_t"), "y")}, is_bool)));
+                pi_of(std::tuple{arg_of(global("hours_t"), "x"), arg_of(global("hours_t"), "y")}, is_bool)));
         BOOST_TEST_REQUIRE(f.value.args.size() == 2ul);
-        BOOST_TEST(is_arg(f.value.args[0], var("hours_t"), "x"));
-        BOOST_TEST(is_arg(f.value.args[1], var("hours_t"), "y"));
+        BOOST_TEST(is_arg(f.value.args[0], global("hours_t"), "x"));
+        BOOST_TEST(is_arg(f.value.args[1], global("hours_t"), "y"));
         BOOST_TEST(is_bool(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
         BOOST_TEST(is_return_of(f.value.body.stmts[0ul], gte(plus(var("x"), var("y")), var("x"))));
@@ -1771,10 +1771,10 @@ BOOST_AUTO_TEST_CASE(pass_008)
         BOOST_TEST(
             is_expr_of(
                 f.properties.sort.get(),
-                pi_of(std::tuple{arg_of(var("sign_t"), "x"), arg_of(var("sign_t"), "y")}, is_bool)));
+                pi_of(std::tuple{arg_of(global("sign_t"), "x"), arg_of(global("sign_t"), "y")}, is_bool)));
         BOOST_TEST_REQUIRE(f.value.args.size() == 2ul);
-        BOOST_TEST(is_arg(f.value.args[0], var("sign_t"), "x"));
-        BOOST_TEST(is_arg(f.value.args[1], var("sign_t"), "y"));
+        BOOST_TEST(is_arg(f.value.args[0], global("sign_t"), "x"));
+        BOOST_TEST(is_arg(f.value.args[1], global("sign_t"), "y"));
         BOOST_TEST(is_bool(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
         BOOST_TEST(is_return_of(f.value.body.stmts[0ul], eq(var("x"), var("y"))));
@@ -1813,10 +1813,10 @@ BOOST_AUTO_TEST_CASE(pass_008)
         BOOST_TEST(
             is_expr_of(
                 f.properties.sort.get(),
-                pi_of(std::tuple{arg_of(var("hours_t"), "x"), arg_of(var("hours_t"), "y")}, is_bool)));
+                pi_of(std::tuple{arg_of(global("hours_t"), "x"), arg_of(global("hours_t"), "y")}, is_bool)));
         BOOST_TEST_REQUIRE(f.value.args.size() == 2ul);
-        BOOST_TEST(is_arg(f.value.args[0], var("hours_t"), "x"));
-        BOOST_TEST(is_arg(f.value.args[1], var("hours_t"), "y"));
+        BOOST_TEST(is_arg(f.value.args[0], global("hours_t"), "x"));
+        BOOST_TEST(is_arg(f.value.args[1], global("hours_t"), "y"));
         BOOST_TEST(is_bool(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
         BOOST_TEST(is_return_of(f.value.body.stmts[0ul], eq(plus(var("x"), var("y")), var("x"))));
@@ -1970,10 +1970,10 @@ BOOST_AUTO_TEST_CASE(pass_009)
         BOOST_TEST(
             is_expr_of(
                 f.properties.sort.get(),
-                pi_of(std::tuple{arg_of(var("sign_t"), "x"), arg_of(var("sign_t"), "y")}, is_bool)));
+                pi_of(std::tuple{arg_of(global("sign_t"), "x"), arg_of(global("sign_t"), "y")}, is_bool)));
         BOOST_TEST_REQUIRE(f.value.args.size() == 2ul);
-        BOOST_TEST(is_arg(f.value.args[0], var("sign_t"), "x"));
-        BOOST_TEST(is_arg(f.value.args[1], var("sign_t"), "y"));
+        BOOST_TEST(is_arg(f.value.args[0], global("sign_t"), "x"));
+        BOOST_TEST(is_arg(f.value.args[1], global("sign_t"), "y"));
         BOOST_TEST(is_bool(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
         BOOST_TEST(is_return_of(f.value.body.stmts[0ul], neq(var("x"), var("y"))));
@@ -2012,10 +2012,10 @@ BOOST_AUTO_TEST_CASE(pass_009)
         BOOST_TEST(
             is_expr_of(
                 f.properties.sort.get(),
-                pi_of(std::tuple{arg_of(var("hours_t"), "x"), arg_of(var("hours_t"), "y")}, is_bool)));
+                pi_of(std::tuple{arg_of(global("hours_t"), "x"), arg_of(global("hours_t"), "y")}, is_bool)));
         BOOST_TEST_REQUIRE(f.value.args.size() == 2ul);
-        BOOST_TEST(is_arg(f.value.args[0], var("hours_t"), "x"));
-        BOOST_TEST(is_arg(f.value.args[1], var("hours_t"), "y"));
+        BOOST_TEST(is_arg(f.value.args[0], global("hours_t"), "x"));
+        BOOST_TEST(is_arg(f.value.args[1], global("hours_t"), "y"));
         BOOST_TEST(is_bool(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
         BOOST_TEST(is_return_of(f.value.body.stmts[0ul], neq(plus(var("x"), var("y")), var("x"))));

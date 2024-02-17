@@ -152,6 +152,14 @@ struct alpha_equivalence_visitor
             return not_alpha_equivalent(x, y);
     }
 
+    result_t operator()(typename expr_t<P>::global_t const& x, typename expr_t<P>::global_t const& y) const
+    {
+        if (x == y)
+            return std::true_type{};
+        else
+            return not_alpha_equivalent(x, y);
+    }
+
     result_t operator()(typename expr_t<P>::app_t& x, typename expr_t<P>::app_t& y) const
     {
         return is_alpha_equivalent_impl<P>(x, y);

@@ -112,17 +112,17 @@ llvm::Type* gen_type(global_context_t& global, local_context_t const& local, typ
             assert(false and "cannot generate a type for an arithmetic expression");
             __builtin_unreachable();
         },
-        [&] (typecheck::expr_t::var_t const& var) -> llvm::Type*
+        [] (typecheck::expr_t::var_t const&) -> llvm::Type*
         {
-            auto const val = local[var];
+            assert(false and "found a value but was expecting a type");
+            __builtin_unreachable();
+        },
+        [&] (typecheck::expr_t::global_t const& g) -> llvm::Type*
+        {
+            auto const val = global[g];
             assert(val and "unknown type");
             return match(
                 *val,
-                [] (llvm::Value*) -> llvm::Type*
-                {
-                    assert(false and "found a value but was expecting a type");
-                    __builtin_unreachable();
-                },
                 [] (llvm_func_t const&) -> llvm::Type*
                 {
                     assert(false and "found a function but was expecting a type");

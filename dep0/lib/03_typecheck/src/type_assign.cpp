@@ -5,8 +5,10 @@
 #include "private/derivation_rules.hpp"
 #include "private/returns_from_all_branches.hpp"
 
-#include "dep0/ast/beta_delta_reduction.hpp"
+#include "dep0/typecheck/beta_delta_reduction.hpp"
+
 #include "dep0/ast/pretty_print.hpp"
+#include "dep0/ast/substitute.hpp"
 
 #include "dep0/match.hpp"
 
@@ -18,23 +20,30 @@
 namespace dep0::typecheck {
 
 /**
- * Assign a type to a pair of exprassions that are connected by a binary relation or operator, eg `x+1` or `1 < x`.
+ * Assign a type to a pair of expressions that are connected by a binary relation or operator, eg `x+1` or `1 < x`.
+ *
  * In this example `1` on its own cannot be assigned a unique type, but if `x` can, then `1` must have the same type.
+ *
  * @return The result of each individual type-assignment; either one or both might have either failed or succeded.
  */
-static std::pair<expected<expr_t>, expected<expr_t>>
-    type_assign_pair(context_t const& ctx, parser::expr_t const& lhs, parser::expr_t const& rhs)
+static
+std::pair<expected<expr_t>, expected<expr_t>>
+type_assign_pair(
+    environment_t const& env,
+    context_t const& ctx,
+    parser::expr_t const& lhs,
+    parser::expr_t const& rhs)
 {
-    auto a = type_assign(ctx, lhs);
+    auto a = type_assign(env, ctx, lhs);
     auto b = a
-        ? check_expr(ctx, rhs, a->properties.sort.get())
-        : type_assign(ctx, rhs);
+        ? check_expr(env, ctx, rhs, a->properties.sort.get())
+        : type_assign(env, ctx, rhs);
     if (b and not a)
-        a = check_expr(ctx, lhs, b->properties.sort.get());
+        a = check_expr(env, ctx, lhs, b->properties.sort.get());
     return std::pair{std::move(a), std::move(b)};
 }
 
-expected<expr_t> type_assign(context_t const& ctx, parser::expr_t const& expr)
+expected<expr_t> type_assign(environment_t const& env, context_t const& ctx, parser::expr_t const& expr)
 {
     auto const loc = expr.properties;
     return match(
@@ -89,11 +98,6 @@ expected<expr_t> type_assign(context_t const& ctx, parser::expr_t const& expr)
         },
         [&] (parser::expr_t::numeric_constant_t const& x) -> expected<expr_t>
         {
-            // One might argue that it is possible to type assign a numerical constant if,
-            // in the current context, there is only 1 viable type in which the numerical constant would fit,
-            // eg max of u64, provided the user did not define their own 64 bits integer;
-            // but having this kind of context-sensitivity is also a bit suprising, so not really great;
-            // therefore the decision is to always fail type-assignment of numerical constants;
             std::ostringstream err;
             err << "cannot assign a unique type to numeric constant without being context-sensitive";
             return error_t::from_error(dep0::error_t(err.str(), loc));
@@ -104,7 +108,7 @@ expected<expr_t> type_assign(context_t const& ctx, parser::expr_t const& expr)
                 x.value,
                 [&] (parser::expr_t::boolean_expr_t::not_t const& x) -> expected<expr_t>
                 {
-                    if (auto expr = check_expr(ctx, x.expr.get(), derivation_rules::make_bool()))
+                    if (auto expr = check_expr(env, ctx, x.expr.get(), derivation_rules::make_bool()))
                         return make_legal_expr(
                             derivation_rules::make_bool(),
                             expr_t::boolean_expr_t{
@@ -115,10 +119,10 @@ expected<expr_t> type_assign(context_t const& ctx, parser::expr_t const& expr)
                 },
                 [&] <typename T> (T const& x) -> expected<expr_t>
                 {
-                    auto lhs = check_expr(ctx, x.lhs.get(), derivation_rules::make_bool());
+                    auto lhs = check_expr(env, ctx, x.lhs.get(), derivation_rules::make_bool());
                     if (not lhs)
                         return std::move(lhs.error());
-                    auto rhs = check_expr(ctx, x.rhs.get(), derivation_rules::make_bool());
+                    auto rhs = check_expr(env, ctx, x.rhs.get(), derivation_rules::make_bool());
                     if (not rhs)
                         return std::move(rhs.error());
                     return make_legal_expr(
@@ -156,7 +160,7 @@ expected<expr_t> type_assign(context_t const& ctx, parser::expr_t const& expr)
                 x.value,
                 [&] <typename T> (T const& x) -> expected<expr_t>
                 {
-                    auto [lhs, rhs] = type_assign_pair(ctx, x.lhs.get(), x.rhs.get());
+                    auto [lhs, rhs] = type_assign_pair(env, ctx, x.lhs.get(), x.rhs.get());
                     if (lhs and rhs)
                         return make_legal_expr(
                             derivation_rules::make_bool(),
@@ -220,7 +224,7 @@ expected<expr_t> type_assign(context_t const& ctx, parser::expr_t const& expr)
                 x.value,
                 [&] (parser::expr_t::arith_expr_t::plus_t const& x) -> expected<expr_t>
                 {
-                    auto [lhs, rhs] = type_assign_pair(ctx, x.lhs.get(), x.rhs.get());
+                    auto [lhs, rhs] = type_assign_pair(env, ctx, x.lhs.get(), x.rhs.get());
                     if (lhs and rhs)
                     {
                         auto type = lhs->properties.sort.get(); // about to move from lhs, take a copy
@@ -244,33 +248,43 @@ expected<expr_t> type_assign(context_t const& ctx, parser::expr_t const& expr)
         },
         [&] (parser::expr_t::var_t const& x) -> expected<expr_t>
         {
-            auto const var = expr_t::var_t{x.name};
-            auto const val = ctx[var];
-            if (not val)
             {
-                std::ostringstream err;
-                pretty_print<properties_t>(err << "unknown variable `", var) << '`';
-                return error_t::from_error(dep0::error_t(err.str(), loc));
+                auto var = expr_t::var_t{x.name};
+                if (auto const expr = ctx[var])
+                    return make_legal_expr(expr->value.properties.sort.get(), std::move(var));
             }
-            return make_legal_expr(
-                match(
-                    val->value,
-                    [&] (type_def_t const&) -> sort_t { return derivation_rules::make_typename(); },
-                    [&] (expr_t const& expr) -> sort_t { return expr.properties.sort.get(); }),
-                var);
+            {
+                auto global = expr_t::global_t{x.name};
+                if (auto const def = env[global])
+                    return make_legal_expr(
+                        match(
+                            *def,
+                            [] (func_def_t const& x) -> sort_t { return x.properties.sort.get(); },
+                            [] (type_def_t const&) -> sort_t { return derivation_rules::make_typename(); }),
+                        std::move(global));
+            }
+            std::ostringstream err;
+            pretty_print<parser::properties_t>(err << "unknown variable `", x) << '`';
+            return error_t::from_error(dep0::error_t(err.str(), loc));
+        },
+        [&] (parser::expr_t::global_t const& x) -> expected<expr_t>
+        {
+            std::ostringstream err;
+            err << "unexpected global name from parser: " << x.name;
+            return error_t::from_error(dep0::error_t(err.str(), loc));
         },
         [&] (parser::expr_t::app_t const& x) -> expected<expr_t>
         {
-            return type_assign_app(ctx, x, loc);
+            return type_assign_app(env, ctx, x, loc);
         },
         [&] (parser::expr_t::abs_t const& f) -> expected<expr_t>
         {
-            return type_assign_abs(ctx, f, loc, std::nullopt);
+            return type_assign_abs(env, ctx, f, loc, std::nullopt);
         },
         [&] (parser::expr_t::pi_t const& pi) -> expected<expr_t>
         {
             auto pi_ctx = ctx.extend();
-            return check_pi_type(pi_ctx, pi.args, pi.ret_type.get());
+            return check_pi_type(env, pi_ctx, pi.args, pi.ret_type.get());
         },
         [&] (parser::expr_t::array_t const&) -> expected<expr_t>
         {
@@ -286,8 +300,11 @@ expected<expr_t> type_assign(context_t const& ctx, parser::expr_t const& expr)
                     kind_t{}, // TODO need to add a test to make sure this is correct
                     expr_t::pi_t{
                         std::vector{
-                            make_legal_func_arg(derivation_rules::make_typename()),
-                            make_legal_func_arg(derivation_rules::make_u64())
+                            // Using loc here is arguably wrong, but also irrelevant because the location of arguments
+                            // is used mainly to keep track of the origin of binding variables in some context.
+                            // But these two will never go in a context; they don't even have a name!
+                            make_legal_func_arg(loc, derivation_rules::make_typename()),
+                            make_legal_func_arg(loc, derivation_rules::make_u64())
                         },
                         derivation_rules::make_typename()}),
                 expr_t::array_t{});
@@ -300,14 +317,14 @@ expected<expr_t> type_assign(context_t const& ctx, parser::expr_t const& expr)
         },
         [&] (parser::expr_t::subscript_t const& subscript) -> expected<expr_t>
         {
-            auto array = type_assign(ctx, subscript.array.get());
+            auto array = type_assign(env, ctx, subscript.array.get());
             if (not array)
                 return std::move(array.error());
             return match(
                 array->properties.sort.get(),
                 [&] (expr_t& t) -> expected<expr_t>
                 {
-                    ast::beta_delta_normalize(ctx.delta_reduction_context(), t);
+                    beta_delta_normalize(env, ctx, t);
                     auto const app = get_if_app_of_array(t);
                     if (not app)
                     {
@@ -315,10 +332,10 @@ expected<expr_t> type_assign(context_t const& ctx, parser::expr_t const& expr)
                         pretty_print(err << "cannot index into non-array expression of type `", t) << '`';
                         return error_t::from_error(dep0::error_t(err.str(), loc));
                     }
-                    auto index = check_expr(ctx, subscript.index.get(), derivation_rules::make_u64());
+                    auto index = check_expr(env, ctx, subscript.index.get(), derivation_rules::make_u64());
                     if (not index)
                         return std::move(index.error());
-                    ast::beta_delta_normalize(ctx.delta_reduction_context(), *index);
+                    beta_delta_normalize(env, ctx, *index);
                     if (auto const i = std::get_if<expr_t::numeric_constant_t>(&index->value))
                         if (auto const n = std::get_if<expr_t::numeric_constant_t>(&app->args.at(1ul).value))
                             if (i->value < n->value)
@@ -351,20 +368,25 @@ expected<expr_t> type_assign(context_t const& ctx, parser::expr_t const& expr)
         });
 }
 
-expected<expr_t> type_assign_app(context_t const& ctx, parser::expr_t::app_t const& app, source_loc_t const& loc)
+expected<expr_t>
+type_assign_app(
+    environment_t const& env,
+    context_t const& ctx,
+    parser::expr_t::app_t const& app,
+    source_loc_t const& loc)
 {
     auto const error = [&] (std::string msg)
     {
         return error_t::from_error(dep0::error_t(std::move(msg), loc));
     };
-    auto func = type_assign(ctx, app.func.get());
+    auto func = type_assign(env, ctx, app.func.get());
     if (not func)
         return std::move(func.error());
     auto func_type = [&] () -> expected<expr_t::pi_t>
     {
         if (auto* const type = std::get_if<expr_t>(&func->properties.sort.get()))
         {
-            ast::beta_delta_normalize(ctx.delta_reduction_context(), *type);
+            beta_delta_normalize(env, ctx, *type);
             if (auto const pi = std::get_if<expr_t::pi_t>(&type->value))
                 return *pi;
         }
@@ -383,7 +405,7 @@ expected<expr_t> type_assign_app(context_t const& ctx, parser::expr_t::app_t con
     std::vector<expr_t> args;
     for (auto const i: std::views::iota(0ul, func_type->args.size()))
     {
-        auto arg = check_expr(ctx, app.args[i], func_type->args[i].type);
+        auto arg = check_expr(env, ctx, app.args[i], func_type->args[i].type);
         if (not arg)
             return std::move(arg.error());
         if (func_type->args[i].var)
@@ -396,17 +418,20 @@ expected<expr_t> type_assign_app(context_t const& ctx, parser::expr_t::app_t con
                 nullptr);
         args.push_back(std::move(*arg));
     }
-    return make_legal_expr(std::move(func_type->ret_type.get()), expr_t::app_t{std::move(*func), std::move(args)});
+    return make_legal_expr(
+        std::move(func_type->ret_type.get()),
+        expr_t::app_t{std::move(*func), std::move(args)});
 }
 
 expected<expr_t> type_assign_abs(
+    environment_t const& env,
     context_t const& ctx,
     parser::expr_t::abs_t const& f,
     source_loc_t const& location,
     std::optional<source_text> const& name)
 {
     auto f_ctx = ctx.extend();
-    auto func_type = check_pi_type(f_ctx, f.args, f.ret_type.get());
+    auto func_type = check_pi_type(env, f_ctx, f.args, f.ret_type.get());
     if (not func_type)
         return std::move(func_type.error());
     // if a function has a name it can call itself recursively;
@@ -418,14 +443,14 @@ expected<expr_t> type_assign_abs(
             return error_t::from_error(std::move(ok.error()));
     }
     auto [arg_types, ret_type] = std::get<expr_t::pi_t>(func_type->value);
-    auto body = check_body(proof_state_t(f_ctx, ret_type.get()), f.body);
+    auto body = check_body(env, proof_state_t(f_ctx, ret_type.get()), f.body);
     if (not body)
         return std::move(body.error());
     // so far so good, but we now need to make sure that all branches contain a return statement,
     // with the only exception of functions returning `unit_t` because the return statement is optional;
     if (not returns_from_all_branches(*body))
     {
-        if (not is_beta_delta_equivalent(f_ctx, ret_type.get(), derivation_rules::make_unit()))
+        if (not is_beta_delta_equivalent(env, f_ctx, ret_type.get(), derivation_rules::make_unit()))
         {
             std::ostringstream err;
             if (name)

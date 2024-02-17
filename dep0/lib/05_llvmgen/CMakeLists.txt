@@ -14,6 +14,7 @@ add_library(dep0_llvmgen_lib
     src/private/gen_func.hpp
     src/private/gen_type.hpp
     src/private/gen_val.hpp
+    src/private/llvm_func.hpp
     src/private/proto.hpp
     # src files
     src/context.cpp
@@ -26,6 +27,7 @@ add_library(dep0_llvmgen_lib
     src/gen_func.cpp
     src/gen_type.cpp
     src/gen_val.cpp
+    src/llvm_func.cpp
     src/proto.cpp
     )
 add_library(DepC::Dep0::LLVMGen ALIAS dep0_llvmgen_lib)

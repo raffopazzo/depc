@@ -103,6 +103,9 @@ void substitute(typename expr_t<P>::var_t const& var, expr_t<P> const& expr, exp
             if (v == var)
                 x = expr;
         },
+        [] (typename expr_t<P>::global_t&)
+        {
+        },
         [&] (typename expr_t<P>::app_t& x)
         {
             substitute(var, expr, x);
@@ -115,7 +118,7 @@ void substitute(typename expr_t<P>::var_t const& var, expr_t<P> const& expr, exp
         {
             substitute<P>(var, expr, x.args.begin(), x.args.end(), x.ret_type.get(), nullptr);
         },
-        [&] (typename expr_t<P>::array_t&)
+        [] (typename expr_t<P>::array_t&)
         {
         },
         [&] (typename expr_t<P>::init_list_t& x)

@@ -29,7 +29,7 @@ llvm::Value* gen_func(
 void gen_func(
     global_context_t&,
     local_context_t&,
-    source_text const& name,
+    typecheck::expr_t::global_t const& name,
     llvm_func_proto_t const&,
     typecheck::expr_t::abs_t const&);
 

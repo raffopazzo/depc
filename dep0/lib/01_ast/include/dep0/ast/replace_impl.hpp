@@ -100,6 +100,9 @@ void replace(typename expr_t<P>::var_t const& from, typename expr_t<P>::var_t co
             if (v == from)
                 v = to;
         },
+        [] (typename expr_t<P>::global_t& v)
+        {
+        },
         [&] (typename expr_t<P>::app_t& app)
         {
             return replace<P>(from, to, app);
@@ -112,7 +115,7 @@ void replace(typename expr_t<P>::var_t const& from, typename expr_t<P>::var_t co
         {
             replace<P>(from, to, pi.args.begin(), pi.args.end(), pi.ret_type.get(), nullptr);
         },
-        [&] (typename expr_t<P>::array_t&)
+        [] (typename expr_t<P>::array_t&)
         {
         },
         [&] (typename expr_t<P>::init_list_t& init_list)

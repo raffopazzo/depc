@@ -16,7 +16,7 @@ Here I will cover the very basics and very quickly, in particular:
 * [Kinds](#kinds)
 * [Dependent Types](#dependent-types)
 * [Everything Together](#everything-together)
-* [Definitions and Delta-Reduction](#definitions-and-delta-reduction)
+* [Definitions, Environments and Delta-Reduction](#definitions-environments-and-delta-reduction)
 
 ## Simply-Typed Lambda Calculus
 
@@ -344,13 +344,9 @@ In C++ you can do `std::array<int, 3>`.
 In some sense, this is already a type that depends on a term, `3` in this case.
 But you cannot generalize this to, say, `auto f(int n) -> std::array<int, n>`.
 
-With types depending on terms you can write such an `f`, i.e.
-`lambda n:int . array int n`.
+With types depending on terms you can write such an `f`.
 So what is its type?
-It takes an `int` and returns a type, so you could say its type is `int -> *`.
-But in this case, not only it returns a `*`,
-but it also uses the value of `n` to compute such type.
-So we have to reintroduce Pi-types.
+We have to reintroduce Pi-types.
 Its type is, in fact, `Pi n:int . array int n`.
 Note that now the body of the Pi-type contains
 a whole expression, not just an arrow.
@@ -465,22 +461,30 @@ is that there is no distinction between types and expressions.
 This is reflected in the AST where only the node for
 expressions exists and there is no node for types.
 
-## Definitions and Delta-Reduction
+## Definitions, Environments and Delta-Reduction
 
 In any programming language you can define a top-level function
 and give it a name, say `f`. You can later call that function from
 within another one, say from `g`.
 With dependent types it also means that you
-may call to that function from within a type expression,
+may call that function from within a type expression,
 eg `lambda x:f(int) . g(x)`.
-If the body of the top-level function `f` is visible,
-you can expand the expression `f(int)` by substituting `f` for its body.
+These top-level functions are stored in a so-called *Environment*,
+which you can think of as "the global scope".
+With shadowing, an identifier `f` may refer to either a variable
+in the "local" *Context* or a definition in the "global" *Environment*.
+If the body of the top-level function `f` from the "global" *Environment* is visible,
+you can expand an expression `f(int)` by substituting `f` for its body.
 This operation is called Delta-Reduction.
 
 Delta and Beta reductions can be combined into a Beta-Delta reduction.
 Here the reduction proceeds by sequencing beta and delta reduction
 steps in any order, either at will or as necessary.
 
-This means that the conversion rule needs to be slightly altered;
-instead of the constraint "if B and B' are beta-equivalent" it
-should now read "if B and B' are beta-delta-equivalent".
+All the typing rules need to be slightly tweaked; in particular:
+  - all rules should now include an environment *E* along the context *C*,
+    i.e `E, C |- ...`
+  - the Var rule now needs to account for the fact that `f`
+    might be found in the environment E rather than context C
+  - the constraint in the conversion rule "if B and B' are beta-equivalent"
+    should now read "if B and B' are beta-delta-equivalent".

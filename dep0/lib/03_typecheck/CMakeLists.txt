@@ -3,13 +3,17 @@ add_subdirectory(test)
 add_library(dep0_typecheck_lib
   # public headers
   include/dep0/typecheck/ast.hpp
+  include/dep0/typecheck/beta_delta_reduction.hpp
   include/dep0/typecheck/check.hpp
   include/dep0/typecheck/context.hpp
   include/dep0/typecheck/derivation.hpp
+  include/dep0/typecheck/environment.hpp
   include/dep0/typecheck/error.hpp
   # private headers
   src/private/beta_delta_equivalence.hpp
+  src/private/beta_reduction.hpp
   src/private/check.hpp
+  src/private/delta_reduction.hpp
   src/private/derivation_rules.hpp
   src/private/proof_state.hpp
   src/private/returns_from_all_branches.hpp
@@ -18,10 +22,14 @@ add_library(dep0_typecheck_lib
   # source files
   src/ast.cpp
   src/beta_delta_equivalence.cpp
+  src/beta_delta_reduction.cpp
+  src/beta_reduction.cpp
   src/check.cpp
   src/context.cpp
+  src/delta_reduction.cpp
   src/derivation.cpp
   src/derivation_rules.cpp
+  src/environment.cpp
   src/error.cpp
   src/proof_state.cpp
   src/returns_from_all_branches.cpp

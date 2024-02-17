@@ -27,7 +27,7 @@ BOOST_AUTO_TEST_CASE(pass_001)
     BOOST_TEST(f.name == "main");
     BOOST_TEST(is_i32(f.value.ret_type.get()));
     BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-    BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(var("id"), constant(0))));
+    BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(global("id"), constant(0))));
 }
 
 BOOST_AUTO_TEST_CASE(pass_002)
@@ -38,7 +38,7 @@ BOOST_AUTO_TEST_CASE(pass_002)
     BOOST_TEST(f.name == "main");
     BOOST_TEST(is_i32(f.value.ret_type.get()));
     BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-    BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(var("first"), constant(0), constant(1))));
+    BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(global("first"), constant(0), constant(1))));
 }
 
 BOOST_AUTO_TEST_CASE(pass_003)
@@ -49,7 +49,7 @@ BOOST_AUTO_TEST_CASE(pass_003)
     BOOST_TEST(f.name == "main");
     BOOST_TEST(is_i32(f.value.ret_type.get()));
     BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 2ul);
-    BOOST_TEST(is_func_call_of(f.value.body.stmts[0ul], var("first"), constant(0), constant(1)));
+    BOOST_TEST(is_func_call_of(f.value.body.stmts[0ul], global("first"), constant(0), constant(1)));
     BOOST_TEST(is_return_of(f.value.body.stmts[1ul], constant(0)));
 }
 
@@ -81,7 +81,7 @@ BOOST_AUTO_TEST_CASE(pass_004)
         BOOST_TEST(is_expr_of(f.properties.sort.get(), pi_of(std::tuple{}, is_unit)));
         BOOST_TEST(is_unit(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(var("f1"), app_of(var("unit")))));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(global("f1"), app_of(global("unit")))));
     }
     {
         auto const& f = pass_result->func_defs[3];
@@ -100,7 +100,7 @@ BOOST_AUTO_TEST_CASE(pass_004)
         BOOST_TEST(f.value.args.size() == 0ul);
         BOOST_TEST(is_unit(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(var("f2"), app_of(var("unit")))));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(global("f2"), app_of(global("unit")))));
     }
 }
 

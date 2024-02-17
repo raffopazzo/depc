@@ -5,6 +5,8 @@
 #include "dep0/ast/ast.hpp"
 #include "dep0/ast/concepts.hpp"
 
+#include "dep0/source.hpp"
+
 #include <boost/variant/recursive_wrapper.hpp>
 
 #include <optional>
@@ -54,12 +56,14 @@ struct legal_module_t
 
 struct legal_type_def_t
 {
+    source_loc_t origin;
     derivation_t<type_def_t> derivation;
     bool operator==(legal_type_def_t const&) const = default;
 };
 
 struct legal_func_def_t
 {
+    source_loc_t origin;
     derivation_t<func_def_t> derivation;
     boost::recursive_wrapper<sort_t> sort;
     bool operator==(legal_func_def_t const&) const = default;
@@ -67,6 +71,7 @@ struct legal_func_def_t
 
 struct legal_func_arg_t
 {
+    source_loc_t origin;
     derivation_t<func_arg_t> derivation;
     bool operator==(legal_func_arg_t const&) const = default;
 };

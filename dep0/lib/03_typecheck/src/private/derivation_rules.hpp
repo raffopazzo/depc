@@ -34,21 +34,21 @@ module_t make_legal_module(Args&&... args)
 }
 
 template <typename... Args>
-type_def_t make_legal_type_def(Args&&... args)
+type_def_t make_legal_type_def(source_loc_t const origin, Args&&... args)
 {
-    return type_def_t{derivation_rules::make_derivation<type_def_t>(), std::forward<Args>(args)...};
+    return type_def_t{origin, derivation_rules::make_derivation<type_def_t>(), std::forward<Args>(args)...};
 }
 
 template <typename... Args>
-func_def_t make_legal_func_def(sort_t sort, Args&&... args)
+func_def_t make_legal_func_def(source_loc_t const origin, sort_t sort, Args&&... args)
 {
-    return func_def_t{derivation_rules::make_derivation<func_def_t>(), std::move(sort), std::forward<Args>(args)...};
+    return func_def_t{origin, derivation_rules::make_derivation<func_def_t>(), std::move(sort), std::forward<Args>(args)...};
 }
 
 template <typename... Args>
-func_arg_t make_legal_func_arg(Args&&... args)
+func_arg_t make_legal_func_arg(source_loc_t const origin, Args&&... args)
 {
-    return func_arg_t{derivation_rules::make_derivation<func_arg_t>(), std::forward<Args>(args)...};
+    return func_arg_t{origin, derivation_rules::make_derivation<func_arg_t>(), std::forward<Args>(args)...};
 }
 
 template <typename... Args>

@@ -104,6 +104,10 @@ bool occurs_in(typename expr_t<P>::var_t const& var, expr_t<P> const& x, occurre
         {
             return x == var;
         },
+        [] (expr_t<P>::global_t const&)
+        {
+            return false;
+        },
         [&] (expr_t<P>::app_t const& x)
         {
             return impl::occurs_in<P>(var, x, style);

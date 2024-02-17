@@ -344,13 +344,9 @@ In C++ you can do `std::array<int, 3>`.
 In some sense, this is already a type that depends on a term, `3` in this case.
 But you cannot generalize this to, say, `auto f(int n) -> std::array<int, n>`.
 
-With types depending on terms you can write such an `f`, i.e.
-`lambda n:int . array int n`.
+With types depending on terms you can write such an `f`.
 So what is its type?
-It takes an `int` and returns a type, so you could say its type is `int -> *`.
-But in this case, not only it returns a `*`,
-but it also uses the value of `n` to compute such type.
-So we have to reintroduce Pi-types.
+We have to reintroduce Pi-types.
 Its type is, in fact, `Pi n:int . array int n`.
 Note that now the body of the Pi-type contains
 a whole expression, not just an arrow.

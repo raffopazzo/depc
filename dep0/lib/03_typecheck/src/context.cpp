@@ -75,7 +75,7 @@ context_t::try_emplace(expr_t::var_t name, source_loc_t const loc, expr_t v)
         auto const& prev = res.first->second;
         std::ostringstream err;
         pretty_print<properties_t>(err << "cannot redefine `", name) << '`';
-        err << ", previously defined at ", prev.origin.line << ':' << prev.origin.col;
+        err << ", previously defined at " << prev.origin.line << ':' << prev.origin.col;
         pretty_print(err << ", as `", prev.value.properties.sort.get()) << '`';
         return dep0::error_t(err.str(), loc);
     }

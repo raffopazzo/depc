@@ -26,7 +26,7 @@ environment_t::value_type const* environment_t::operator[](expr_t::global_t cons
 // non-const member functions
 
 dep0::expected<environment_t::const_iterator>
-environment_t::try_emplace(expr_t::global_t global, std::variant<func_def_t, type_def_t> v)
+environment_t::try_emplace(expr_t::global_t global, value_type v)
 {
     auto const loc = match(v, [] (auto const& x) { return x.properties.origin; }); // take copy before moving v
     auto const res = m_values.try_emplace(std::move(global), std::move(v));
@@ -43,8 +43,9 @@ environment_t::try_emplace(expr_t::global_t global, std::variant<func_def_t, typ
         err << ", previously defined at " << origin.line << ':' << origin.col << ", as `";
         match(
             prev,
-            [&] (func_def_t const& x) { pretty_print(err, x.properties.sort.get()); },
-            [&] (type_def_t const& x) { pretty_print(err, x); });
+            [&] (type_def_t const& x) { pretty_print(err, x); },
+            [&] (func_decl_t const& x) { pretty_print(err, x.properties.sort.get()); },
+            [&] (func_def_t const& x) { pretty_print(err, x.properties.sort.get()); });
         err << '`';
         return dep0::error_t(err.str(), loc);
     }

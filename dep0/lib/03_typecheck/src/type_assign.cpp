@@ -259,8 +259,9 @@ expected<expr_t> type_assign(environment_t const& env, context_t const& ctx, par
                     return make_legal_expr(
                         match(
                             *def,
-                            [] (func_def_t const& x) -> sort_t { return x.properties.sort.get(); },
-                            [] (type_def_t const&) -> sort_t { return derivation_rules::make_typename(); }),
+                            [] (type_def_t const&) -> sort_t { return derivation_rules::make_typename(); },
+                            [] (func_decl_t const& x) -> sort_t { return x.properties.sort.get(); },
+                            [] (func_def_t const& x) -> sort_t { return x.properties.sort.get(); }),
                         std::move(global));
             }
             std::ostringstream err;
@@ -434,16 +435,23 @@ expected<expr_t> type_assign_abs(
     auto func_type = check_pi_type(env, f_ctx, f.args, f.ret_type.get());
     if (not func_type)
         return std::move(func_type.error());
-    // if a function has a name it can call itself recursively;
-    // to typecheck recursive functions we need to add them to the current function context before checking the body
+    // If a function has a name it can call itself recursively;
+    // to typecheck recursive functions we need to add them to the current environment or context,
+    // depending on whether they are global or local functions;
+    // but we cannot check the body yet, so the best we can do is to add a function declaration;
+    // currently we only support global functions, so we add the declaration to an extended environment.
+    auto f_env = env.extend();
     if (name)
     {
-        auto const func_name = expr_t::var_t{*name};
-        if (auto ok = f_ctx.try_emplace(func_name, location, make_legal_expr(*func_type, func_name)); not ok)
+        auto ok =
+            f_env.try_emplace(
+                expr_t::global_t{*name},
+                make_legal_func_decl(location, *func_type, *name, std::get<expr_t::pi_t>(func_type->value)));
+        if (not ok)
             return error_t::from_error(std::move(ok.error()));
     }
     auto [arg_types, ret_type] = std::get<expr_t::pi_t>(func_type->value);
-    auto body = check_body(env, proof_state_t(f_ctx, ret_type.get()), f.body);
+    auto body = check_body(f_env, proof_state_t(f_ctx, ret_type.get()), f.body);
     if (not body)
         return std::move(body.error());
     // so far so good, but we now need to make sure that all branches contain a return statement,

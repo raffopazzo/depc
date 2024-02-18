@@ -18,6 +18,7 @@ namespace dep0::ast {
 
 template <Properties P> struct module_t;
 template <Properties P> struct type_def_t;
+template <Properties P> struct func_decl_t;
 template <Properties P> struct func_def_t;
 template <Properties P> struct func_arg_t;
 template <Properties P> struct body_t;
@@ -401,6 +402,23 @@ struct type_def_t
     using value_t = std::variant<integer_t>;
     properties_t properties;
     value_t value;
+};
+
+/**
+ * Represents a global function declaration,
+ * which is comprised of a name and a Pi-type for its signature and return type.
+ *
+ * @param <P>   Trait-type specifying the properties of this AST node for the current pipeline stage.
+ *              See `docs/03_dep0.md` for more details.
+ */
+template <Properties P>
+struct func_decl_t
+{
+    using properties_t = typename P::func_decl_properties_type;
+
+    properties_t properties;
+    source_text name;
+    expr_t<P>::pi_t signature;
 };
 
 /**

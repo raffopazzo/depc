@@ -845,7 +845,7 @@ BOOST_AUTO_TEST_CASE(pass_017)
             is_return_of(
                 f.value.body.stmts[0ul],
                 app_of(
-                    var("f"),
+                    global("f"),
                     init_list_of(
                         subscript_of(var("xs"), constant(1)),
                         subscript_of(var("xs"), constant(0))))));
@@ -867,7 +867,7 @@ BOOST_AUTO_TEST_CASE(pass_017)
             is_return_of(
                 f.value.body.stmts[0ul],
                 app_of(
-                    var("g"),
+                    global("g"),
                     init_list_of(
                         subscript_of(var("xs"), constant(1)),
                         subscript_of(var("xs"), constant(0))))));
@@ -889,7 +889,7 @@ BOOST_AUTO_TEST_CASE(pass_017)
             is_return_of(
                 f.value.body.stmts[0ul],
                 app_of(
-                    var("h"),
+                    global("h"),
                     init_list_of(
                         subscript_of(var("xs"), constant(1)),
                         subscript_of(var("xs"), constant(0))))));

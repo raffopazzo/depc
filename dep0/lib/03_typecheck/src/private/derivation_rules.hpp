@@ -40,9 +40,25 @@ type_def_t make_legal_type_def(source_loc_t const origin, Args&&... args)
 }
 
 template <typename... Args>
+func_decl_t make_legal_func_decl(source_loc_t const origin, sort_t sort, Args&&... args)
+{
+    return func_decl_t{
+        origin,
+        derivation_rules::make_derivation<func_decl_t>(),
+        std::move(sort),
+        std::forward<Args>(args)...
+    };
+}
+
+template <typename... Args>
 func_def_t make_legal_func_def(source_loc_t const origin, sort_t sort, Args&&... args)
 {
-    return func_def_t{origin, derivation_rules::make_derivation<func_def_t>(), std::move(sort), std::forward<Args>(args)...};
+    return func_def_t{
+        origin,
+        derivation_rules::make_derivation<func_def_t>(),
+        std::move(sort),
+        std::forward<Args>(args)...
+    };
 }
 
 template <typename... Args>

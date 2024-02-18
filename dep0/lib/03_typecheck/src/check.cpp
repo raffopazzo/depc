@@ -244,6 +244,12 @@ check_numeric_expr(
                                 }()));
                         });
                 },
+                [&] (func_decl_t const& func_decl) -> expected<expr_t>
+                {
+                    std::ostringstream err;
+                    err << "type mismatch between numeric constant and `" << func_decl.name << '`';
+                    return error(err.str());
+                },
                 [&] (func_def_t const& func_def) -> expected<expr_t>
                 {
                     std::ostringstream err;

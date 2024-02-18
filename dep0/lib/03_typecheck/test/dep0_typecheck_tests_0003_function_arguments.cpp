@@ -104,6 +104,20 @@ BOOST_AUTO_TEST_CASE(pass_004)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_005)
+{
+    BOOST_TEST_REQUIRE(pass("0003_function_arguments/pass_005.depc"));
+    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 1ul);
+    auto const& f = pass_result->func_defs[0];
+    BOOST_TEST(f.name == "f");
+    BOOST_TEST_REQUIRE(is_expr_of(f.properties.sort.get(), pi_of(std::tuple{arg_of(is_bool, "f")}, is_bool)));
+    BOOST_TEST_REQUIRE(f.value.args.size() == 1ul);
+    BOOST_TEST(is_arg(f.value.args[0], is_bool, "f"));
+    BOOST_TEST(is_bool(f.value.ret_type.get()));
+    BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+    BOOST_TEST(is_return_of(f.value.body.stmts[0ul], var("f")));
+}
+
 BOOST_AUTO_TEST_CASE(typecheck_error_000) { BOOST_TEST(fail("0003_function_arguments/typecheck_error_000.depc")); }
 BOOST_AUTO_TEST_CASE(typecheck_error_001) { BOOST_TEST(fail("0003_function_arguments/typecheck_error_001.depc")); }
 

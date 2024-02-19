@@ -14,6 +14,13 @@ bool beta_delta_normalize(module_t& m)
 {
     environment_t env;
     bool changed = beta_normalize(m);
+    for (auto& decl: m.func_decls)
+    {
+        changed |= beta_delta_normalize(env, decl);
+        // store the result in env, so future look-ups of this declaration will find the normalized version
+        auto const ok = env.try_emplace(expr_t::global_t{decl.name}, decl);
+        assert(ok.has_value());
+    }
     for (auto& def: m.func_defs)
     {
         changed |= beta_delta_normalize(env, def);
@@ -21,6 +28,23 @@ bool beta_delta_normalize(module_t& m)
         auto const ok = env.try_emplace(expr_t::global_t{def.name}, def);
         assert(ok.has_value());
     }
+    return changed;
+}
+
+bool beta_delta_normalize(environment_t const& env, func_decl_t& decl)
+{
+    context_t ctx;
+    bool changed = false;
+    for (auto& arg: decl.signature.args)
+    {
+        changed |= beta_delta_normalize(env, ctx, arg.type);
+        if (arg.var)
+        {
+            auto const ok = ctx.try_emplace(*arg.var, arg.properties.origin, make_legal_expr(arg.type, *arg.var));
+            assert(ok.has_value());
+        }
+    }
+    changed |= beta_delta_normalize(env, ctx, decl.signature.ret_type.get());
     return changed;
 }
 

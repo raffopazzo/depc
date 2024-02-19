@@ -129,7 +129,7 @@ llvm::Value* gen_val(
             // so it does not reduce inside `properties.sort`, which means we might fail to generate a type;
             // we should in fact check all usages of `properties.sort`
             auto const& type = std::get<typecheck::expr_t>(expr.properties.sort.get());
-            auto const llvm_type = cast<llvm::IntegerType>(gen_type(global, local, type));
+            auto const llvm_type = cast<llvm::IntegerType>(gen_type(global, type));
             assert(llvm_type);
             return storeOrReturn(llvm::ConstantInt::get(llvm_type, x.value.str(), 10));
         },
@@ -303,7 +303,7 @@ llvm::Value* gen_val(
                     }
                     else
                     {
-                        auto const inlined_type = gen_type(global, local, abs->ret_type.get());
+                        auto const inlined_type = gen_type(global, abs->ret_type.get());
                         auto const inlined_result = builder.CreateAlloca(inlined_type, builder.getInt32(1));
                         move_to_entry_block(inlined_result, current_func);
                         gen_inlined_body(inlined_result);
@@ -316,7 +316,7 @@ llvm::Value* gen_val(
         {
             auto const proto = llvm_func_proto_t::from_abs(abs);
             assert(proto and "can only generate a value for a 1st order function type");
-            return storeOrReturn(gen_func(global, local, *proto, abs));
+            return storeOrReturn(gen_func(global, *proto, abs));
         },
         [&] (typecheck::expr_t::pi_t const&) -> llvm::Value*
         {
@@ -334,7 +334,7 @@ llvm::Value* gen_val(
             auto const dest2 = dest ? dest : [&]
             {
                 auto const total_size = gen_array_total_size(global, local, builder, properties);
-                auto const element_type = gen_type(global, local, properties.element_type);
+                auto const element_type = gen_type(global, properties.element_type);
                 return builder.CreateAlloca(element_type, total_size);
             }();
             auto const type = dest2->getType()->getPointerElementType();
@@ -354,7 +354,7 @@ llvm::Value* gen_val(
             auto const& array = subscript.array.get();
             auto const properties = get_array_properties(std::get<typecheck::expr_t>(array.properties.sort.get()));
             auto const stride_size = gen_stride_size_if_needed(global, local, builder, properties);
-            auto const type = gen_type(global, local, properties.element_type);
+            auto const type = gen_type(global, properties.element_type);
             auto const base = gen_val(global, local, builder, subscript.array.get(), nullptr);
             auto const index = gen_val(global, local, builder, subscript.index.get(), nullptr);
             auto const offset = stride_size ? builder.CreateMul(stride_size, index) : index;
@@ -394,7 +394,7 @@ llvm::Value* gen_func_call(
         assert(proto and "can only generate a function call for 1st order function type");
         return std::move(proto.value());
     }();
-    auto const llvm_func_type = gen_func_type(global, local, proto);
+    auto const llvm_func_type = gen_func_type(global, proto);
     auto const llvm_func = gen_val(global, local, builder, app.func.get(), nullptr);
     std::vector<llvm::Value*> llvm_args; // modifiable before generating the call
     auto const has_ret_arg = is_alloca_needed(proto.ret_type());

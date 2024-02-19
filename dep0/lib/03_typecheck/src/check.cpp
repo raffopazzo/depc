@@ -30,10 +30,13 @@ expected<module_t> check(parser::module_t const& x) noexcept
     auto type_defs = fmap_or_error(x.type_defs, [&] (parser::type_def_t const& t) { return check_type_def(env, t); });
     if (not type_defs)
         return std::move(type_defs.error());
+    auto func_decls = fmap_or_error(x.func_decls, [&] (parser::func_decl_t const& x) { return check_func_decl(env, x); });
+    if (not func_decls)
+        return std::move(func_decls.error());
     auto func_defs = fmap_or_error(x.func_defs, [&] (parser::func_def_t const& f) { return check_func_def(env, f); });
     if (not func_defs)
         return std::move(func_defs.error());
-    return make_legal_module(std::move(*type_defs), std::move(*func_defs));
+    return make_legal_module(std::move(*type_defs), std::move(*func_decls), std::move(*func_defs));
 }
 
 // implementation of private functions
@@ -53,6 +56,18 @@ expected<type_def_t> check_type_def(environment_t& env, parser::type_def_t const
                 return error_t::from_error(std::move(ok.error()));
             return result;
         });
+}
+
+expected<func_decl_t> check_func_decl(environment_t& env, parser::func_decl_t const& decl)
+{
+    context_t ctx;
+    auto pi_type = check_pi_type(env, ctx, decl.signature.args, decl.signature.ret_type.get());
+    if (not pi_type)
+        return std::move(pi_type.error());
+    auto result = make_legal_func_decl(decl.properties, *pi_type, decl.name, std::get<expr_t::pi_t>(pi_type->value));
+    if (auto ok = env.try_emplace(expr_t::global_t{decl.name}, result); not ok)
+        return error_t::from_error(std::move(ok.error()));
+    return result;
 }
 
 expected<func_def_t> check_func_def(environment_t& env, parser::func_def_t const& f)

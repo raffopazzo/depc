@@ -27,6 +27,14 @@ namespace dep0::typecheck {
 expected<type_def_t> check_type_def(environment_t&, parser::type_def_t const&);
 
 /**
+ * Checks whether a function declaration is legal;
+ * if it is, the declaration is stored in the given environment.
+ *
+ * @return A legal function declaration or an error.
+ */
+expected<func_decl_t> check_func_decl(environment_t&, parser::func_decl_t const&);
+
+/**
  * Checks whether a function definition is legal;
  * if it is, the function is stored in the given environment.
  *

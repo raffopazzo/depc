@@ -451,10 +451,12 @@ struct module_t
 {
     using properties_t = typename P::module_properties_type;
     using type_def_t = ast::type_def_t<P>;
+    using func_decl_t = ast::func_decl_t<P>;
     using func_def_t = ast::func_def_t<P>;
 
     properties_t properties;
     std::vector<type_def_t> type_defs;
+    std::vector<func_decl_t> func_decls;
     std::vector<func_def_t> func_defs;
 };
 

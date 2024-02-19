@@ -99,10 +99,12 @@ template <Properties P>
 std::ostream& pretty_print(std::ostream& os, module_t<P> const& module, std::size_t const indent)
 {
     bool first = true;
-    for (auto const& type_def: module.type_defs)
-        pretty_print(std::exchange(first, false) ? os : detail::new_line(os, indent), type_def, indent);
-    for (auto const& func_def: module.func_defs)
-        pretty_print(std::exchange(first, false) ? os : detail::new_line(os, indent), func_def, indent);
+    for (auto const& x: module.type_defs)
+        pretty_print(std::exchange(first, false) ? os : detail::new_line(os, indent), x, indent);
+    for (auto const& x: module.func_decls)
+        pretty_print(std::exchange(first, false) ? os : detail::new_line(os, indent), x, indent);
+    for (auto const& x: module.func_defs)
+        pretty_print(std::exchange(first, false) ? os : detail::new_line(os, indent), x, indent);
     return os;
 }
 
@@ -132,6 +134,15 @@ std::ostream& pretty_print(std::ostream& os, type_def_t<P> const& type_def, std:
             os << ';';
         });
     return os;
+}
+
+template <Properties P>
+std::ostream& pretty_print(std::ostream& os, func_decl_t<P> const& func_decl, std::size_t const indent)
+{
+    os << "auto " << func_decl.name;
+    auto const& signature = func_decl.signature;
+    pretty_print(os, signature.args.begin(), signature.args.end(), signature.ret_type.get(), indent);
+    return os << ';';
 }
 
 template <Properties P>

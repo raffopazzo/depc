@@ -21,6 +21,7 @@ void destructive_self_assign(T& x, T&& y)
     x = std::move(tmp);
 }
 
+static bool beta_normalize(func_decl_t&);
 static bool beta_normalize(func_def_t&);
 static bool beta_normalize(stmt_t&);
 static bool beta_normalize(stmt_t::if_else_t&);
@@ -45,6 +46,11 @@ static bool beta_normalize(expr_t::abs_t&);
 static bool beta_normalize(expr_t::pi_t&);
 static bool beta_normalize(expr_t::array_t&);
 static bool beta_normalize(expr_t::init_list_t&);
+
+bool beta_normalize(func_decl_t& decl)
+{
+    return impl::beta_normalize(decl.signature);
+}
 
 bool beta_normalize(func_def_t& def)
 {
@@ -158,6 +164,8 @@ bool beta_normalize(expr_t::init_list_t& init_list)
 bool beta_normalize(module_t& m)
 {
     bool changed = false;
+    for (auto& decl: m.func_decls)
+        changed |= impl::beta_normalize(decl);
     for (auto& def: m.func_defs)
         changed |= impl::beta_normalize(def);
     return changed;

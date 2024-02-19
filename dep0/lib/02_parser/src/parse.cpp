@@ -63,6 +63,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         return module_t{
             get_loc(src, *ctx),
             fmap(ctx->typeDef(), [this] (auto* x) { return std::any_cast<type_def_t>(visitTypeDef(x)); }),
+            fmap(ctx->funcDecl(), [this] (auto* x) { return std::any_cast<func_decl_t>(visitFuncDecl(x)); }),
             fmap(ctx->funcDef(), [this] (auto* x) { return std::any_cast<func_def_t>(visitFuncDef(x)); })
         };
     }
@@ -109,13 +110,31 @@ struct parse_visitor_t : dep0::DepCParserVisitor
             return type_def_t{loc, type_def_t::integer_t{name, ast::sign_t::signed_v, w, std::nullopt}};
     }
 
+    virtual std::any visitFuncDecl(DepCParser::FuncDeclContext* ctx) override
+    {
+        assert(ctx);
+        assert(ctx->name);
+        auto const loc = get_loc(src, *ctx);
+        auto const name = get_text(src, *ctx->name);
+        auto const ret_type = [&]
+        {
+            return
+                ctx->primitiveRetType ? std::any_cast<expr_t>(visitPrimitiveType(ctx->primitiveRetType)) :
+                ctx->simpleRetType ? std::any_cast<expr_t>(visitTypeVar(ctx->simpleRetType)) :
+                ctx->complexRetType ? visitExpr(ctx->complexRetType) :
+                ctx->KW_TYPENAME() ? visitTypename(ctx->KW_TYPENAME())
+                : throw error_t("unexpected alternative when parsing FuncDeclContext", loc);
+        };
+        return func_decl_t{loc, name, expr_t::pi_t{visitFuncArgs(ctx->funcArg()), ret_type()}};
+    }
+
     virtual std::any visitFuncDef(DepCParser::FuncDefContext* ctx) override
     {
         assert(ctx);
         assert(ctx->name);
         assert(ctx->body());
         auto const loc = get_loc(src, *ctx);
-        auto const name = [&] { return get_text(src, *ctx->name); };
+        auto const name = get_text(src, *ctx->name);
         auto const body = [&] { return std::any_cast<body_t>(visitBody(ctx->body())); };
         auto const ret_type = [&]
         {
@@ -126,7 +145,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
                 ctx->KW_TYPENAME() ? visitTypename(ctx->KW_TYPENAME())
                 : throw error_t("unexpected alternative when parsing FuncDefContext", loc);
         };
-        return func_def_t{loc, name(), expr_t::abs_t{visitFuncArgs(ctx->funcArg()), ret_type(), body()}};
+        return func_def_t{loc, name, expr_t::abs_t{visitFuncArgs(ctx->funcArg()), ret_type(), body()}};
     }
 
     virtual std::any visitType(DepCParser::TypeContext* ctx) override

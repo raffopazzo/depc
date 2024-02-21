@@ -127,7 +127,6 @@ struct parse_visitor_t : dep0::DepCParserVisitor
 
     struct func_sig_t
     {
-        source_loc_t loc;
         source_text name;
         std::vector<func_arg_t> args;
         expr_t ret_type;
@@ -137,18 +136,18 @@ struct parse_visitor_t : dep0::DepCParserVisitor
     {
         assert(ctx);
         assert(ctx->name);
-        auto const loc = get_loc(src, *ctx);
-        auto const name = get_text(src, *ctx->name);
-        auto const ret_type = [&]
-        {
-            return
-                ctx->primitiveRetType ? std::any_cast<expr_t>(visitPrimitiveType(ctx->primitiveRetType)) :
-                ctx->simpleRetType ? std::any_cast<expr_t>(visitTypeVar(ctx->simpleRetType)) :
-                ctx->complexRetType ? visitExpr(ctx->complexRetType) :
-                ctx->KW_TYPENAME() ? visitTypename(ctx->KW_TYPENAME())
-                : throw error_t("unexpected alternative when parsing FuncDeclContext", loc);
-        };
-        return func_sig_t{loc, name, visitFuncArgs(ctx->funcArg()), ret_type()};
+        return func_sig_t{
+            get_text(src, *ctx->name),
+            visitFuncArgs(ctx->funcArg()),
+            [&]
+            {
+                return
+                    ctx->primitiveRetType ? std::any_cast<expr_t>(visitPrimitiveType(ctx->primitiveRetType)) :
+                    ctx->simpleRetType ? std::any_cast<expr_t>(visitTypeVar(ctx->simpleRetType)) :
+                    ctx->complexRetType ? visitExpr(ctx->complexRetType) :
+                    ctx->KW_TYPENAME() ? visitTypename(ctx->KW_TYPENAME())
+                    : throw error_t("unexpected alternative when parsing FuncDeclContext", get_loc(src, *ctx));
+            }()};
     }
 
     virtual std::any visitFuncDecl(DepCParser::FuncDeclContext* ctx) override
@@ -157,7 +156,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         assert(ctx->funcSig());
         auto sig = std::any_cast<func_sig_t>(visitFuncSig(ctx->funcSig()));
         return func_decl_t{
-            std::move(sig.loc),
+            get_loc(src, *ctx),
             std::move(sig.name),
             expr_t::pi_t{
                 std::move(sig.args),
@@ -172,7 +171,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         assert(ctx->body());
         auto sig = std::any_cast<func_sig_t>(visitFuncSig(ctx->funcSig()));
         return func_def_t{
-            get_loc(src, *ctx), // for a function definition we want the whole body, not just the signature
+            get_loc(src, *ctx),
             std::move(sig.name),
             expr_t::abs_t{
                 std::move(sig.args),

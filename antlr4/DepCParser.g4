@@ -31,11 +31,7 @@ options { tokenVocab=DepCLexer; }
 
 // Module and top level expressions
 module: moduleEntry* EOF;
-moduleEntry:
-    typeDef
-    | funcDecl
-    | funcDef
-    ;
+moduleEntry: typeDef | funcDecl | funcDef;
 funcSig: (primitiveRetType=primitiveType | simpleRetType=typeVar) name=ID '(' (funcArg (',' funcArg)*)? ')'
     | 'auto' name=ID '(' (funcArg (',' funcArg)*)? ')' '->' ('typename' | complexRetType=expr)
     ;

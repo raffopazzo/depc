@@ -125,7 +125,15 @@ struct parse_visitor_t : dep0::DepCParserVisitor
             return type_def_t{loc, type_def_t::integer_t{name, ast::sign_t::signed_v, w, std::nullopt}};
     }
 
-    virtual std::any visitFuncDecl(DepCParser::FuncDeclContext* ctx) override
+    struct func_sig_t
+    {
+        source_loc_t loc;
+        source_text name;
+        std::vector<func_arg_t> args;
+        expr_t ret_type;
+    };
+
+    virtual std::any visitFuncSig(DepCParser::FuncSigContext* ctx) override
     {
         assert(ctx);
         assert(ctx->name);
@@ -140,27 +148,37 @@ struct parse_visitor_t : dep0::DepCParserVisitor
                 ctx->KW_TYPENAME() ? visitTypename(ctx->KW_TYPENAME())
                 : throw error_t("unexpected alternative when parsing FuncDeclContext", loc);
         };
-        return func_decl_t{loc, name, expr_t::pi_t{visitFuncArgs(ctx->funcArg()), ret_type()}};
+        return func_sig_t{loc, name, visitFuncArgs(ctx->funcArg()), ret_type()};
+    }
+
+    virtual std::any visitFuncDecl(DepCParser::FuncDeclContext* ctx) override
+    {
+        assert(ctx);
+        assert(ctx->funcSig());
+        auto sig = std::any_cast<func_sig_t>(visitFuncSig(ctx->funcSig()));
+        return func_decl_t{
+            std::move(sig.loc),
+            std::move(sig.name),
+            expr_t::pi_t{
+                std::move(sig.args),
+                std::move(sig.ret_type)
+            }};
     }
 
     virtual std::any visitFuncDef(DepCParser::FuncDefContext* ctx) override
     {
         assert(ctx);
-        assert(ctx->name);
+        assert(ctx->funcSig());
         assert(ctx->body());
-        auto const loc = get_loc(src, *ctx);
-        auto const name = get_text(src, *ctx->name);
-        auto const body = [&] { return std::any_cast<body_t>(visitBody(ctx->body())); };
-        auto const ret_type = [&]
-        {
-            return
-                ctx->primitiveRetType ? std::any_cast<expr_t>(visitPrimitiveType(ctx->primitiveRetType)) :
-                ctx->simpleRetType ? std::any_cast<expr_t>(visitTypeVar(ctx->simpleRetType)) :
-                ctx->complexRetType ? visitExpr(ctx->complexRetType) :
-                ctx->KW_TYPENAME() ? visitTypename(ctx->KW_TYPENAME())
-                : throw error_t("unexpected alternative when parsing FuncDefContext", loc);
-        };
-        return func_def_t{loc, name, expr_t::abs_t{visitFuncArgs(ctx->funcArg()), ret_type(), body()}};
+        auto sig = std::any_cast<func_sig_t>(visitFuncSig(ctx->funcSig()));
+        return func_def_t{
+            get_loc(src, *ctx), // for a function definition we want the whole body, not just the signature
+            std::move(sig.name),
+            expr_t::abs_t{
+                std::move(sig.args),
+                std::move(sig.ret_type),
+                std::any_cast<body_t>(visitBody(ctx->body()))
+            }};
     }
 
     virtual std::any visitType(DepCParser::TypeContext* ctx) override

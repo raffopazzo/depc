@@ -36,12 +36,11 @@ moduleEntry:
     | funcDecl
     | funcDef
     ;
-funcDecl: (primitiveRetType=primitiveType | simpleRetType=typeVar) name=ID '(' (funcArg (',' funcArg)*)? ')' ';'
-    | 'auto' name=ID '(' (funcArg (',' funcArg)*)? ')' '->' ('typename' | complexRetType=expr) ';'
+funcSig: (primitiveRetType=primitiveType | simpleRetType=typeVar) name=ID '(' (funcArg (',' funcArg)*)? ')'
+    | 'auto' name=ID '(' (funcArg (',' funcArg)*)? ')' '->' ('typename' | complexRetType=expr)
     ;
-funcDef: (primitiveRetType=primitiveType | simpleRetType=typeVar) name=ID '(' (funcArg (',' funcArg)*)? ')' body
-    | 'auto' name=ID '(' (funcArg (',' funcArg)*)? ')' '->' ('typename' | complexRetType=expr) body
-    ;
+funcDecl: funcSig ';';
+funcDef: funcSig body;
 typeDef:
     'typedef' name=ID '='
     {one_of("signed", "unsigned")}? sign=ID

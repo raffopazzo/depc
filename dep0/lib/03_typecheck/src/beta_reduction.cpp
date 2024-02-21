@@ -164,10 +164,12 @@ bool beta_normalize(expr_t::init_list_t& init_list)
 bool beta_normalize(module_t& m)
 {
     bool changed = false;
-    for (auto& decl: m.func_decls)
-        changed |= impl::beta_normalize(decl);
-    for (auto& def: m.func_defs)
-        changed |= impl::beta_normalize(def);
+    for (auto& x: m.entries)
+        changed |= match(
+            x,
+            [] (type_def_t const&) { return false; },
+            [] (func_decl_t& decl) { return impl::beta_normalize(decl); },
+            [] (func_def_t& def) { return impl::beta_normalize(def); });
     return changed;
 }
 

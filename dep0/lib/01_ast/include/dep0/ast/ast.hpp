@@ -30,9 +30,6 @@ template <Properties P> struct expr_t;
 /**
  * Represents a sequence of one or more statements,
  * for example the body of a function or of an if-else branch.
- *
- * @param <P>   Trait-type specifying the properties of this AST node for the current pipeline stage.
- *              See `docs/03_dep0.md` for more details.
  */
 template <Properties P>
 struct body_t
@@ -49,9 +46,6 @@ struct body_t
  * and with extensions specific to DepC.
  *
  * See `docs/01_type_theory.md` for more details on Type Theory.
- *
- * @param <P>   Trait-type specifying the properties of this AST node for the current pipeline stage.
- *              See `docs/03_dep0.md` for more details.
  */
 template <Properties P>
 struct expr_t
@@ -315,9 +309,6 @@ typename expr_t<P>::app_t const* get_if_app_of_array(expr_t<P> const& x)
  * This can be used inside:
  *   - function definitions, for example `i32_t f(i32_t, i32_t x) { ... }`
  *   - function types, for example `(i32_t, i32_t x) -> i32_t`
- *
- * @param <P>   Trait-type specifying the properties of this AST node for the current pipeline stage.
- *              See `docs/03_dep0.md` for more details.
  */
 template <Properties P>
 struct func_arg_t
@@ -334,9 +325,6 @@ struct func_arg_t
  * Represents a statement inside a body,
  * for example a function call (presumably with side effects),
  * an `if-else` statement, a `return` statement, etc.
- *
- * @param <P>   Trait-type specifying the properties of this AST node for the current pipeline stage.
- *              See `docs/03_dep0.md` for more details.
  */
 template <Properties P>
 struct stmt_t
@@ -383,9 +371,6 @@ enum class width_t { _8, _16, _32, _64 };
  *
  * At the moment only integral types can be defined,
  * but it's possible to imagine extending this for structs too.
- *
- * @param <P>   Trait-type specifying the properties of this AST node for the current pipeline stage.
- *              See `docs/03_dep0.md` for more details.
  */
 template <Properties P>
 struct type_def_t
@@ -407,9 +392,6 @@ struct type_def_t
 /**
  * Represents a global function declaration,
  * which is comprised of a name and a Pi-type for its signature and return type.
- *
- * @param <P>   Trait-type specifying the properties of this AST node for the current pipeline stage.
- *              See `docs/03_dep0.md` for more details.
  */
 template <Properties P>
 struct func_decl_t
@@ -424,9 +406,6 @@ struct func_decl_t
 /**
  * Represents a global function definition,
  * which is comprised of a name and a "lambda abstraction" within it.
- *
- * @param <P>   Trait-type specifying the properties of this AST node for the current pipeline stage.
- *              See `docs/03_dep0.md` for more details.
  */
 template <Properties P>
 struct func_def_t
@@ -439,12 +418,10 @@ struct func_def_t
 };
 
 /**
- * Represents an entire module of DepC code, made of both type and function definitions.
+ * Represents an entire module of DepC code,
+ * made of type definitions, function definitions, function declarations, etc.
  *
- * In future this might be extended to include imported modules, etc.
- *
- * @param <P>   Trait-type specifying the properties of this AST node for the current pipeline stage.
- *              See `docs/03_dep0.md` for more details.
+ * In future this might be extended to include imported modules.
  */
 template <Properties P>
 struct module_t
@@ -453,11 +430,10 @@ struct module_t
     using type_def_t = ast::type_def_t<P>;
     using func_decl_t = ast::func_decl_t<P>;
     using func_def_t = ast::func_def_t<P>;
+    using entry_t = std::variant<type_def_t, func_decl_t, func_def_t>;
 
     properties_t properties;
-    std::vector<type_def_t> type_defs;
-    std::vector<func_decl_t> func_decls;
-    std::vector<func_def_t> func_defs;
+    std::vector<entry_t> entries;
 };
 
 } // namespace dep0::ast

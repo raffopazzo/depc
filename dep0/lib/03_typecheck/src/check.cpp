@@ -26,17 +26,21 @@ namespace dep0::typecheck {
 expected<module_t> check(parser::module_t const& x) noexcept
 {
     environment_t env;
-    // TODO maybe one day typedefs can depend on function definitions? if so we will need 2 passes
-    auto type_defs = fmap_or_error(x.type_defs, [&] (parser::type_def_t const& t) { return check_type_def(env, t); });
-    if (not type_defs)
-        return std::move(type_defs.error());
-    auto func_decls = fmap_or_error(x.func_decls, [&] (parser::func_decl_t const& x) { return check_func_decl(env, x); });
-    if (not func_decls)
-        return std::move(func_decls.error());
-    auto func_defs = fmap_or_error(x.func_defs, [&] (parser::func_def_t const& f) { return check_func_def(env, f); });
-    if (not func_defs)
-        return std::move(func_defs.error());
-    return make_legal_module(std::move(*type_defs), std::move(*func_decls), std::move(*func_defs));
+    auto entries =
+        fmap_or_error(
+            x.entries,
+            [&] (parser::module_t::entry_t const& v)
+            {
+                using entry_t = typecheck::module_t::entry_t;
+                return match(
+                    v,
+                    [&] (parser::type_def_t const& t) -> expected<entry_t> { return check_type_def(env, t); },
+                    [&] (parser::func_decl_t const& x) -> expected<entry_t> { return check_func_decl(env, x); },
+                    [&] (parser::func_def_t const& f) -> expected<entry_t> { return check_func_def(env, f); });
+            });
+    if (not entries)
+        return std::move(entries.error());
+    return make_legal_module(std::move(*entries));
 }
 
 // implementation of private functions
@@ -61,7 +65,7 @@ expected<type_def_t> check_type_def(environment_t& env, parser::type_def_t const
 expected<func_decl_t> check_func_decl(environment_t& env, parser::func_decl_t const& decl)
 {
     context_t ctx;
-    auto pi_type = check_pi_type(env, ctx, decl.signature.args, decl.signature.ret_type.get());
+    auto pi_type = check_pi_type(env, ctx, decl.properties, decl.signature.args, decl.signature.ret_type.get());
     if (not pi_type)
         return std::move(pi_type.error());
     auto result = make_legal_func_decl(decl.properties, *pi_type, decl.name, std::get<expr_t::pi_t>(pi_type->value));
@@ -97,11 +101,9 @@ expected<expr_t> check_type(environment_t const& env, context_t const& ctx, pars
     auto as_kind = check_expr(env, ctx, type, kind_t{});
     if (as_kind)
         return as_kind;
-    std::ostringstream err;
-    pretty_print(err << "expression `", type) << "` cannot be assigned to neither types nor kinds";
     return error_t::from_error(
         dep0::error_t(
-            err.str(),
+            "expression cannot be assigned to neither types nor kinds",
             type.properties,
             as_type.error() == as_kind.error() // please don't print stupid duplicate error messages...
                 ? std::vector<dep0::error_t>{std::move(as_type.error())}
@@ -396,6 +398,7 @@ check_expr(
 expected<expr_t> check_pi_type(
     environment_t const& env,
     context_t& ctx,
+    source_loc_t const& loc,
     std::vector<parser::func_arg_t> const& parser_args,
     parser::expr_t const& parser_ret_type)
 {
@@ -414,7 +417,7 @@ expected<expr_t> check_pi_type(
                     pretty_print<properties_t>(err << "cannot typecheck function argument `", *var) << '`';
                 else
                     err << "cannot typecheck function argument at index " << arg_index;
-                return error_t::from_error(dep0::error_t(err.str(), arg_loc, {std::move(type.error())}));
+                return error_t::from_error(dep0::error_t(err.str(), loc, {std::move(type.error())}));
             }
             if (var)
                 if (auto ok = ctx.try_emplace(*var, arg_loc, make_legal_expr(*type, *var)); not ok)
@@ -425,11 +428,8 @@ expected<expr_t> check_pi_type(
         return std::move(args.error());
     auto const ret_type = check_type(env, ctx, parser_ret_type);
     if (not ret_type)
-    {
-        std::ostringstream err;
-        err << "cannot typecheck function return type";
-        return error_t::from_error(dep0::error_t(err.str(), parser_ret_type.properties, {std::move(ret_type.error())}));
-    }
+        return error_t::from_error(
+            dep0::error_t("cannot typecheck function return type", loc, {std::move(ret_type.error())}));
     return make_legal_expr(ret_type->properties.sort.get(), expr_t::pi_t{std::move(*args), *ret_type});
 }
 

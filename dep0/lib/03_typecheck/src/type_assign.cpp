@@ -264,9 +264,7 @@ expected<expr_t> type_assign(environment_t const& env, context_t const& ctx, par
                             [] (func_def_t const& x) -> sort_t { return x.properties.sort.get(); }),
                         std::move(global));
             }
-            std::ostringstream err;
-            pretty_print<parser::properties_t>(err << "unknown variable `", x) << '`';
-            return error_t::from_error(dep0::error_t(err.str(), loc));
+            return error_t::from_error(dep0::error_t("unknown variable", loc));
         },
         [&] (parser::expr_t::global_t const& x) -> expected<expr_t>
         {
@@ -285,7 +283,7 @@ expected<expr_t> type_assign(environment_t const& env, context_t const& ctx, par
         [&] (parser::expr_t::pi_t const& pi) -> expected<expr_t>
         {
             auto pi_ctx = ctx.extend();
-            return check_pi_type(env, pi_ctx, pi.args, pi.ret_type.get());
+            return check_pi_type(env, pi_ctx, loc, pi.args, pi.ret_type.get());
         },
         [&] (parser::expr_t::array_t const&) -> expected<expr_t>
         {
@@ -432,7 +430,7 @@ expected<expr_t> type_assign_abs(
     std::optional<source_text> const& name)
 {
     auto f_ctx = ctx.extend();
-    auto func_type = check_pi_type(env, f_ctx, f.args, f.ret_type.get());
+    auto func_type = check_pi_type(env, f_ctx, location, f.args, f.ret_type.get());
     if (not func_type)
         return std::move(func_type.error());
     // If a function has a name it can call itself recursively;

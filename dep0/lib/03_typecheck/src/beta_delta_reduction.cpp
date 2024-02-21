@@ -14,20 +14,25 @@ bool beta_delta_normalize(module_t& m)
 {
     environment_t env;
     bool changed = beta_normalize(m);
-    for (auto& decl: m.func_decls)
-    {
-        changed |= beta_delta_normalize(env, decl);
-        // store the result in env, so future look-ups of this declaration will find the normalized version
-        auto const ok = env.try_emplace(expr_t::global_t{decl.name}, decl);
-        assert(ok.has_value());
-    }
-    for (auto& def: m.func_defs)
-    {
-        changed |= beta_delta_normalize(env, def);
-        // store the result in env, so future look-ups of this definition will find the normalized version
-        auto const ok = env.try_emplace(expr_t::global_t{def.name}, def);
-        assert(ok.has_value());
-    }
+    for (auto& x: m.entries)
+        // normalize first and then store in env, so future look-ups will find the normalized term
+        changed |= match(
+            x,
+            [] (type_def_t const&) { return false; },
+            [&] (func_decl_t& decl)
+            {
+                bool const result = beta_delta_normalize(env, decl);
+                auto const ok = env.try_emplace(expr_t::global_t{decl.name}, decl);
+                assert(ok.has_value());
+                return result;
+            },
+            [&] (func_def_t& def)
+            {
+                bool const result = beta_delta_normalize(env, def);
+                auto const ok = env.try_emplace(expr_t::global_t{def.name}, def);
+                assert(ok.has_value());
+                return result;
+            });
     return changed;
 }
 

@@ -13,7 +13,6 @@ auto not_of(F&& f)
     return xor_of(std::forward<F>(f), constant(true));
 }
 
-static auto const nonnull = std::vector{llvm::Attribute::NonNull};
 static auto const sext = std::vector{llvm::Attribute::SExt};
 static auto const zext = std::vector{llvm::Attribute::ZExt};
 
@@ -26,6 +25,17 @@ BOOST_AUTO_TEST_CASE(pass_000)
     {
         auto const f = pass_result.value()->getFunction("f1");
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i1, zext));
+        BOOST_TEST(f->size() == 0ul);
+    }
+}
+
+BOOST_AUTO_TEST_CASE(pass_001)
+{
+    apply_beta_delta_normalization = true;
+    BOOST_TEST_REQUIRE(pass("0009_func_decl/pass_001.depc"));
+    {
+        auto const f = pass_result.value()->getFunction("f");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(is_i32, std::nullopt, sext)}, is_i1, zext));
         BOOST_TEST(f->size() == 0ul);
     }
 }

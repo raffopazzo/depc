@@ -62,10 +62,25 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         assert(ctx);
         return module_t{
             get_loc(src, *ctx),
-            fmap(ctx->typeDef(), [this] (auto* x) { return std::any_cast<type_def_t>(visitTypeDef(x)); }),
-            fmap(ctx->funcDecl(), [this] (auto* x) { return std::any_cast<func_decl_t>(visitFuncDecl(x)); }),
-            fmap(ctx->funcDef(), [this] (auto* x) { return std::any_cast<func_def_t>(visitFuncDef(x)); })
+            fmap(
+                ctx->moduleEntry(),
+                [&] (DepCParser::ModuleEntryContext* x)
+                {
+                    return std::any_cast<module_t::entry_t>(visitModuleEntry(x));
+                })
         };
+    }
+
+    virtual std::any visitModuleEntry(DepCParser::ModuleEntryContext* ctx) override
+    {
+        assert(ctx);
+        if (ctx->typeDef())
+            return module_t::entry_t{std::any_cast<type_def_t>(visitTypeDef(ctx->typeDef()))};
+        if (ctx->funcDecl())
+            return module_t::entry_t{std::any_cast<func_decl_t>(visitFuncDecl(ctx->funcDecl()))};
+        if (ctx->funcDef())
+            return module_t::entry_t{std::any_cast<func_def_t>(visitFuncDef(ctx->funcDef()))};
+        throw error_t("unexpected alternative when parsing ModuleEntryContext", get_loc(src, *ctx));
     }
 
     virtual std::any visitTypeDef(DepCParser::TypeDefContext* ctx) override

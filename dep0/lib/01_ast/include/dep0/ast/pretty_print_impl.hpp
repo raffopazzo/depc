@@ -99,12 +99,13 @@ template <Properties P>
 std::ostream& pretty_print(std::ostream& os, module_t<P> const& module, std::size_t const indent)
 {
     bool first = true;
-    for (auto const& x: module.type_defs)
-        pretty_print(std::exchange(first, false) ? os : detail::new_line(os, indent), x, indent);
-    for (auto const& x: module.func_decls)
-        pretty_print(std::exchange(first, false) ? os : detail::new_line(os, indent), x, indent);
-    for (auto const& x: module.func_defs)
-        pretty_print(std::exchange(first, false) ? os : detail::new_line(os, indent), x, indent);
+    for (auto const& x: module.entries)
+        match(
+            x,
+            [&] (auto const& x)
+            {
+                pretty_print(std::exchange(first, false) ? os : detail::new_line(os, indent), x, indent);
+            });
     return os;
 }
 

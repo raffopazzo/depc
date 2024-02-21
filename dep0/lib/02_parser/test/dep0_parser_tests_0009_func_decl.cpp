@@ -76,5 +76,42 @@ BOOST_AUTO_TEST_CASE(pass_000)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_001)
+{
+    BOOST_TEST_REQUIRE(pass("0009_func_decl/pass_001.depc"));
+    BOOST_TEST_REQUIRE(pass_result->entries.size() == 3ul);
+    BOOST_TEST(pass_result->entries[0].index() == 1ul);
+    BOOST_TEST(pass_result->entries[1].index() == 2ul);
+    BOOST_TEST(pass_result->entries[2].index() == 1ul);
+    {
+        auto const& f = pass_result->func_decls[0ul];
+        BOOST_TEST(f.name == "f");
+        BOOST_TEST_REQUIRE(f.signature.args.size() == 1ul);
+        BOOST_TEST(is_arg(f.signature.args[0], is_i32, std::nullopt));
+        BOOST_TEST(is_bool(f.signature.ret_type.get()));
+    }
+    {
+        auto const& f = pass_result->func_decls[1ul];
+        BOOST_TEST(f.name == "h");
+        BOOST_TEST_REQUIRE(f.signature.args.size() == 1ul);
+        BOOST_TEST(is_arg(f.signature.args[0], is_i32, "x"));
+        BOOST_TEST(is_app_of(f.signature.ret_type.get(), var("g"), var("x")));
+    }
+    {
+        auto const& f = pass_result->func_defs[0ul];
+        BOOST_TEST(f.name == "g");
+        BOOST_TEST_REQUIRE(f.value.args.size() == 1ul);
+        BOOST_TEST(is_arg(f.value.args[0], is_i32, "x"));
+        BOOST_TEST(is_typename(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(
+            is_if_else(
+                f.value.body.stmts[0],
+                app_of(var("f"), var("x")),
+                std::tuple{return_of(is_i32)},
+                std::tuple{return_of(is_bool)}));
+    }
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 

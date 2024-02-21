@@ -30,10 +30,13 @@ options { tokenVocab=DepCLexer; }
 }
 
 // Module and top level expressions
-module: (typeDef | funcDef)* EOF;
-funcDef: (primitiveRetType=primitiveType | simpleRetType=typeVar) name=ID '(' (funcArg (',' funcArg)*)? ')' body
-    | 'auto' name=ID '(' (funcArg (',' funcArg)*)? ')' '->' ('typename' | complexRetType=expr) body
+module: moduleEntry* EOF;
+moduleEntry: typeDef | funcDecl | funcDef;
+funcSig: (primitiveRetType=primitiveType | simpleRetType=typeVar) name=ID '(' (funcArg (',' funcArg)*)? ')'
+    | 'auto' name=ID '(' (funcArg (',' funcArg)*)? ')' '->' ('typename' | complexRetType=expr)
     ;
+funcDecl: funcSig ';';
+funcDef: funcSig body;
 typeDef:
     'typedef' name=ID '='
     {one_of("signed", "unsigned")}? sign=ID

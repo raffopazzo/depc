@@ -26,6 +26,7 @@ struct ParserTestsFixture
      * This arguably incurs unnecessary copies but the result
      * is also more ergonomic even for new tests that only have
      * function definitions, since they are all in `func_defs`.
+     * See https://github.com/raffopazzo/depc/pull/29
      */
     struct pass_result_t
     {

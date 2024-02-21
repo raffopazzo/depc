@@ -7,12 +7,6 @@
 using namespace dep0::llvmgen::testing;
 using enum llvm::CmpInst::Predicate;
 
-template <Predicate<llvm::Value> F>
-auto not_of(F&& f)
-{
-    return xor_of(std::forward<F>(f), constant(true));
-}
-
 static auto const sext = std::vector{llvm::Attribute::SExt};
 static auto const zext = std::vector{llvm::Attribute::ZExt};
 

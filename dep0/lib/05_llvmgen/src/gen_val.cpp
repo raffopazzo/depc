@@ -231,25 +231,12 @@ llvm::Value* gen_val(
         },
         [&] (typecheck::expr_t::var_t const& var) -> llvm::Value*
         {
-            // TODO find a better way and remove this hack:
-            // essentially, when typechecking recursive functions, we treat the global name as a local binder;
-            // so here we might not find a local value and should look for one in the global values
-            // one way to fix this might be to introduce `func_decl_t`
-            if (auto const val = local[var])
-                return storeOrReturn(match(
-                    *val,
-                    [] (llvm::Value* const p) { return p; },
-                    [] (llvm_func_t const& c) { return c.func; }));
-            if (auto const val = global[typecheck::expr_t::global_t{var.name}])
-                return storeOrReturn(match(
-                    *val,
-                    [] (llvm_func_t const& c) { return c.func; },
-                    [] (typecheck::type_def_t const&) -> llvm::Value*
-                    {
-                        assert(false and "found a typedef but was expecting a value");
-                        __builtin_unreachable();
-                    }));
-            assert(false and "unknown variable");
+            auto const val = local[var];
+            assert(val and "unknown variable");
+            return storeOrReturn(match(
+                *val,
+                [] (llvm::Value* const p) { return p; },
+                [] (llvm_func_t const& c) { return c.func; }));
         },
         [&] (typecheck::expr_t::global_t const& g) -> llvm::Value*
         {

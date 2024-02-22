@@ -70,5 +70,13 @@ BOOST_AUTO_TEST_CASE(pass_002)
 // BOOST_AUTO_TEST_CASE(parse_error_010)
 
 // BOOST_AUTO_TEST_CASE(typecheck_error_000)
+// BOOST_AUTO_TEST_CASE(typecheck_error_001)
+// BOOST_AUTO_TEST_CASE(typecheck_error_002)
+// BOOST_AUTO_TEST_CASE(typecheck_error_003)
+// BOOST_AUTO_TEST_CASE(typecheck_error_004)
+// BOOST_AUTO_TEST_CASE(typecheck_error_005)
+// BOOST_AUTO_TEST_CASE(typecheck_error_006)
+// BOOST_AUTO_TEST_CASE(typecheck_error_007)
+// BOOST_AUTO_TEST_CASE(typecheck_error_008)
 
 BOOST_AUTO_TEST_SUITE_END()

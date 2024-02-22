@@ -1,0 +1,2 @@
+// typcheck error: max value does not fit inside signed 64 bit
+typedef sign_t = signed 64 bit integer from -9223372036854775808 to 9223372036854775808;

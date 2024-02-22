@@ -16,7 +16,7 @@ boost::test_tools::predicate_result is_integer_def(
     std::string_view const name,
     dep0::ast::sign_t const sign,
     dep0::ast::width_t const width,
-    std::optional<int> max_abs_value)
+    std::optional<boost::multiprecision::cpp_int> max_abs_value)
 {
     auto const integer = std::get_if<typename ast::type_def_t<P>::integer_t>(&t.value);
     if (not integer)
@@ -40,10 +40,17 @@ boost::test_tools::predicate_result is_integer_def(
     }
     if (max_abs_value)
     {
-        if (integer->max_abs_value != *max_abs_value)
+        if (not integer->max_abs_value.has_value())
         {
             result = false;
-            result.message().stream() << " has wrong max abs value";
+            result.message().stream() << " has no max abs value but it should have " << *max_abs_value;
+        }
+        else if (*integer->max_abs_value != *max_abs_value)
+        {
+            result = false;
+            result.message().stream()
+                << " has wrong max abs value: "
+                << *integer->max_abs_value << " != " << *max_abs_value;
         }
     }
     else if (integer->max_abs_value)

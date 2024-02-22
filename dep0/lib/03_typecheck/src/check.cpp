@@ -2,6 +2,7 @@
 
 #include "private/beta_delta_equivalence.hpp"
 #include "private/check.hpp"
+#include "private/cpp_int_limits.hpp"
 #include "private/derivation_rules.hpp"
 #include "private/returns_from_all_branches.hpp"
 #include "private/type_assign.hpp"
@@ -51,7 +52,11 @@ expected<type_def_t> check_type_def(environment_t& env, parser::type_def_t const
         type_def.value,
         [&] (parser::type_def_t::integer_t const& x) -> expected<type_def_t>
         {
-            // TODO should check that max_abs_value fits inside width
+            if (x.max_abs_value and *x.max_abs_value > cpp_int_max(x.sign, x.width))
+                return error_t::from_error(
+                    dep0::error_t(
+                        "upper/lower bounds do not fit inside bit width",
+                        type_def.properties));
             auto const result =
                 make_legal_type_def(
                     type_def.properties,

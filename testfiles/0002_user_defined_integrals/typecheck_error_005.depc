@@ -1,0 +1,2 @@
+// typcheck error: max value does not fit inside signed 32 bit
+typedef sign_t = signed 32 bit integer from -2147483648 to 2147483648;

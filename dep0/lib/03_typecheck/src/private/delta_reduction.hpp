@@ -12,6 +12,9 @@
  * because this expansion will never be followed by a beta-reduction.
  * In fact, it may even have negative value, because during LLVM codegen we might end up
  * generating an anonymous private function when we could just refer to `f` by name.
+ *
+ * Delta-reduction also applies to "primitive definitions",
+ * for example `3 + 5` reduces to `8` by some primitive definition of the function `+`.
  */
 
 #pragma once

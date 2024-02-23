@@ -30,16 +30,23 @@ struct TypecheckTestsFixture
      * function definitions, since they are all in `func_defs`.
      * See https://github.com/raffopazzo/depc/pull/29
      */
-    struct pass_result_t
+    struct pass_result_t : dep0::typecheck::module_t
     {
-        std::vector<dep0::typecheck::module_t::entry_t> entries;
         std::vector<dep0::typecheck::type_def_t> type_defs;
         std::vector<dep0::typecheck::func_decl_t> func_decls;
         std::vector<dep0::typecheck::func_def_t> func_defs;
 
         explicit pass_result_t(dep0::typecheck::module_t m)
-            : entries(std::move(m.entries))
+            : dep0::typecheck::module_t(std::move(m))
         {
+            reset();
+        }
+
+        void reset()
+        {
+            type_defs.clear();
+            func_decls.clear();
+            func_defs.clear();
             for (auto const& x: entries)
                 dep0::match(
                     x,

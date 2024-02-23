@@ -356,16 +356,6 @@ bool beta_normalize(expr_t& expr)
                 {
                     bool changed = beta_normalize(x.lhs.get());
                     changed |= beta_normalize(x.rhs.get());
-                    if (auto const n = std::get_if<expr_t::numeric_constant_t>(&x.lhs.get().value))
-                        if (auto const m = std::get_if<expr_t::numeric_constant_t>(&x.rhs.get().value))
-                        {
-                            changed = true;
-                            impl::destructive_self_assign(
-                                expr.value,
-                                expr_t::value_t{
-                                    expr_t::numeric_constant_t{n->value + m->value}
-                                });
-                        }
                     return changed;
                 });
         },

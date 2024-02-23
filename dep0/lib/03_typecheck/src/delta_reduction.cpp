@@ -1,5 +1,6 @@
 #include "private/delta_reduction.hpp"
 
+#include "private/cpp_int_add.hpp"
 #include "private/derivation_rules.hpp"
 
 #include "dep0/match.hpp"
@@ -199,7 +200,57 @@ bool delta_reduce(environment_t const& env, context_t const& ctx, body_t& body)
 
 bool delta_reduce(environment_t const& env, context_t const& ctx, expr_t& expr)
 {
-    return match(expr.value, [&] (auto& x) { return impl::delta_reduce(env, ctx, x); });
+    return match(
+        expr.value,
+        [&] (expr_t::arith_expr_t& x)
+        {
+            // before unfolding anything else, prefer reducing primitive expressions
+            bool changed = false;
+            match(
+                x.value,
+                [&] (expr_t::arith_expr_t::plus_t& x)
+                {
+                    if (auto const n = std::get_if<expr_t::numeric_constant_t>(&x.lhs.get().value))
+                        if (auto const m = std::get_if<expr_t::numeric_constant_t>(&x.rhs.get().value))
+                        {
+                            changed = true;
+                            expr.value =
+                                expr_t::numeric_constant_t{
+                                    match(
+                                        // TODO should perform beta-delta-normalization in the type as well
+                                        std::get<expr_t>(x.lhs.get().properties.sort.get()).value,
+                                        [&] (expr_t::i8_t) { return cpp_int_add_signed<8>(n->value, m->value); },
+                                        [&] (expr_t::i16_t) { return cpp_int_add_signed<16>(n->value, m->value); },
+                                        [&] (expr_t::i32_t) { return cpp_int_add_signed<32>(n->value, m->value); },
+                                        [&] (expr_t::i64_t) { return cpp_int_add_signed<64>(n->value, m->value); },
+                                        [&] (expr_t::u8_t) { return cpp_int_add_unsigned<8>(n->value, m->value); },
+                                        [&] (expr_t::u16_t) { return cpp_int_add_unsigned<16>(n->value, m->value); },
+                                        [&] (expr_t::u32_t) { return cpp_int_add_unsigned<32>(n->value, m->value); },
+                                        [&] (expr_t::u64_t) { return cpp_int_add_unsigned<64>(n->value, m->value); },
+                                        [&] (expr_t::global_t const& g)
+                                        {
+                                            auto const type_def = std::get_if<type_def_t>(env[g]);
+                                            assert(type_def and "unknown global or not a typedef");
+                                            return match(
+                                                type_def->value,
+                                                [&] (type_def_t::integer_t const& integer)
+                                                {
+                                                    return cpp_int_add(integer.sign, integer.width, n->value, m->value);
+                                                });
+                                        },
+                                        [&] (auto const&) -> boost::multiprecision::cpp_int
+                                        {
+                                            assert(false and "unexpected type for plus expr");
+                                            __builtin_unreachable();
+                                        })};
+                        }
+                });
+            return changed or impl::delta_reduce(env, ctx, x);
+        },
+        [&] (auto& x)
+        {
+            return impl::delta_reduce(env, ctx, x);
+        });
 }
 
 } // namespace dep0::typecheck

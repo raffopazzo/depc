@@ -3,9 +3,40 @@
 
 #include "parser_tests_fixture.hpp"
 
+using namespace dep0::testing;
+
 BOOST_FIXTURE_TEST_SUITE(dep0_parser_tests_0001_integral_primitives, ParserTestsFixture)
 
 BOOST_AUTO_TEST_CASE(pass_000) { BOOST_TEST(pass("0001_integral_primitives/pass_000.depc")); }
+BOOST_AUTO_TEST_CASE(pass_001)
+{
+    BOOST_TEST_REQUIRE(pass("0001_integral_primitives/pass_001.depc"));
+    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 3ul);
+    {
+        auto const& f = pass_result->func_defs[0ul];
+        BOOST_TEST(f.name == "f");
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_i8(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], constant(1)));
+    }
+    {
+        auto const& f = pass_result->func_defs[1ul];
+        BOOST_TEST(f.name == "g");
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_i8(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], constant(127)));
+    }
+    {
+        auto const& f = pass_result->func_defs[2ul];
+        BOOST_TEST(f.name == "h");
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_i8(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], plus(app_of(var("f")), app_of(var("g")))));
+    }
+}
 
 BOOST_AUTO_TEST_CASE(parse_error_000) { BOOST_TEST(fail("0001_integral_primitives/parse_error_000.depc")); }
 

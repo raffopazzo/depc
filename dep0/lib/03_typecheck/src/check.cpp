@@ -251,7 +251,7 @@ check_numeric_expr(
                             auto const& [name, sign, width, max_abs_value] = integer;
                             if (sign == ast::sign_t::signed_v)
                                 return max_abs_value
-                                    ? check_int(integer.name, -*max_abs_value, *max_abs_value)
+                                    ? check_int(name, -*max_abs_value, *max_abs_value)
                                     : check_int(name, cpp_int_min_signed(width), cpp_int_max_signed(width));
                             else
                                 return max_abs_value

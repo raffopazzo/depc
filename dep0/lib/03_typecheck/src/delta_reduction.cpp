@@ -236,6 +236,7 @@ bool delta_reduce(environment_t const& env, context_t const& ctx, expr_t& expr)
                                                 [&] (type_def_t::integer_t const& integer)
                                                 {
                                                     auto const& [name, sign, width, max_abs_value] = integer;
+                                                    boost::ignore_unused(name);
                                                     auto result = cpp_int_add(sign, width, n->value, m->value);
                                                     if (max_abs_value and result > *max_abs_value)
                                                     {

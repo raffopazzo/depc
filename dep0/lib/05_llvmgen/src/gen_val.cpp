@@ -230,6 +230,7 @@ llvm::Value* gen_val(
                     auto const lhs = gen_val(global, local, builder, x.lhs.get(), nullptr);
                     auto const rhs = gen_val(global, local, builder, x.rhs.get(), nullptr);
                     auto result = builder.CreateAdd(lhs, rhs);
+                    // for user-defined integrals we might have to manually wrap around
                     match(
                         std::get<typecheck::expr_t>(x.lhs.get().properties.sort.get()).value,
                         [&] (typecheck::expr_t::global_t const& g)

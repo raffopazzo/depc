@@ -8,13 +8,14 @@ using namespace dep0::testing;
 BOOST_FIXTURE_TEST_SUITE(dep0_parser_tests_0001_integral_primitives, ParserTestsFixture)
 
 BOOST_AUTO_TEST_CASE(pass_000) { BOOST_TEST(pass("0001_integral_primitives/pass_000.depc")); }
+
 BOOST_AUTO_TEST_CASE(pass_001)
 {
     BOOST_TEST_REQUIRE(pass("0001_integral_primitives/pass_001.depc"));
-    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 3ul);
+    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 24ul);
     {
         auto const& f = pass_result->func_defs[0ul];
-        BOOST_TEST(f.name == "f");
+        BOOST_TEST(f.name == "one_i8");
         BOOST_TEST(f.value.args.size() == 0ul);
         BOOST_TEST(is_i8(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
@@ -22,19 +23,187 @@ BOOST_AUTO_TEST_CASE(pass_001)
     }
     {
         auto const& f = pass_result->func_defs[1ul];
-        BOOST_TEST(f.name == "g");
+        BOOST_TEST(f.name == "one_i16");
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_i16(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], constant(1)));
+    }
+    {
+        auto const& f = pass_result->func_defs[2ul];
+        BOOST_TEST(f.name == "one_i32");
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_i32(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], constant(1)));
+    }
+    {
+        auto const& f = pass_result->func_defs[3ul];
+        BOOST_TEST(f.name == "one_i64");
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_i64(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], constant(1)));
+    }
+    {
+        auto const& f = pass_result->func_defs[4ul];
+        BOOST_TEST(f.name == "one_u8");
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_u8(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], constant(1)));
+    }
+    {
+        auto const& f = pass_result->func_defs[5ul];
+        BOOST_TEST(f.name == "one_u16");
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_u16(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], constant(1)));
+    }
+    {
+        auto const& f = pass_result->func_defs[6ul];
+        BOOST_TEST(f.name == "one_u32");
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_u32(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], constant(1)));
+    }
+    {
+        auto const& f = pass_result->func_defs[7ul];
+        BOOST_TEST(f.name == "one_u64");
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_u64(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], constant(1)));
+    }
+    {
+        auto const& f = pass_result->func_defs[8ul];
+        BOOST_TEST(f.name == "max_i8");
         BOOST_TEST(f.value.args.size() == 0ul);
         BOOST_TEST(is_i8(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
         BOOST_TEST(is_return_of(f.value.body.stmts[0ul], constant(127)));
     }
     {
-        auto const& f = pass_result->func_defs[2ul];
-        BOOST_TEST(f.name == "h");
+        auto const& f = pass_result->func_defs[9ul];
+        BOOST_TEST(f.name == "max_i16");
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_i16(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], constant(32767)));
+    }
+    {
+        auto const& f = pass_result->func_defs[10ul];
+        BOOST_TEST(f.name == "max_i32");
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_i32(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], constant(2147483647)));
+    }
+    {
+        auto const& f = pass_result->func_defs[11ul];
+        BOOST_TEST(f.name == "max_i64");
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_i64(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], constant("9223372036854775807")));
+    }
+    {
+        auto const& f = pass_result->func_defs[12ul];
+        BOOST_TEST(f.name == "max_u8");
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_u8(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], constant(255)));
+    }
+    {
+        auto const& f = pass_result->func_defs[13ul];
+        BOOST_TEST(f.name == "max_u16");
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_u16(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], constant(65535)));
+    }
+    {
+        auto const& f = pass_result->func_defs[14ul];
+        BOOST_TEST(f.name == "max_u32");
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_u32(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], constant("4294967295")));
+    }
+    {
+        auto const& f = pass_result->func_defs[15ul];
+        BOOST_TEST(f.name == "max_u64");
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_u64(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], constant("18446744073709551615")));
+    }
+    {
+        auto const& f = pass_result->func_defs[16ul];
+        BOOST_TEST(f.name == "min_i8");
         BOOST_TEST(f.value.args.size() == 0ul);
         BOOST_TEST(is_i8(f.value.ret_type.get()));
         BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], plus(app_of(var("f")), app_of(var("g")))));
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], plus(app_of(var("max_i8")), app_of(var("one_i8")))));
+    }
+    {
+        auto const& f = pass_result->func_defs[17ul];
+        BOOST_TEST(f.name == "min_i16");
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_i16(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], plus(app_of(var("max_i16")), app_of(var("one_i16")))));
+    }
+    {
+        auto const& f = pass_result->func_defs[18ul];
+        BOOST_TEST(f.name == "min_i32");
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_i32(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], plus(app_of(var("max_i32")), app_of(var("one_i32")))));
+    }
+    {
+        auto const& f = pass_result->func_defs[19ul];
+        BOOST_TEST(f.name == "min_i64");
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_i64(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], plus(app_of(var("max_i64")), app_of(var("one_i64")))));
+    }
+    {
+        auto const& f = pass_result->func_defs[20ul];
+        BOOST_TEST(f.name == "min_u8");
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_u8(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], plus(app_of(var("max_u8")), app_of(var("one_u8")))));
+    }
+    {
+        auto const& f = pass_result->func_defs[21ul];
+        BOOST_TEST(f.name == "min_u16");
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_u16(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], plus(app_of(var("max_u16")), app_of(var("one_u16")))));
+    }
+    {
+        auto const& f = pass_result->func_defs[22ul];
+        BOOST_TEST(f.name == "min_u32");
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_u32(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], plus(app_of(var("max_u32")), app_of(var("one_u32")))));
+    }
+    {
+        auto const& f = pass_result->func_defs[23ul];
+        BOOST_TEST(f.name == "min_u64");
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_u64(f.value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], plus(app_of(var("max_u64")), app_of(var("one_u64")))));
     }
 }
 

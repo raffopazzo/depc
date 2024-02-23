@@ -18,6 +18,7 @@
 namespace dep0::typecheck {
 
 bool beta_delta_normalize(module_t&);
+bool beta_delta_normalize(environment_t const&, func_decl_t&);
 bool beta_delta_normalize(environment_t const&, func_def_t&);
 bool beta_delta_normalize(environment_t const&, context_t const&, body_t&);
 bool beta_delta_normalize(environment_t const&, context_t const&, expr_t&);

@@ -52,7 +52,7 @@ llvm::Instruction* gen_alloca_if_needed(
         [&] (needs_alloca_result::array_t const& array) -> llvm::Instruction*
         {
             auto const total_size = gen_array_total_size(global, local, builder, array.properties);
-            auto const type = gen_type(global, local, array.properties.element_type);
+            auto const type = gen_type(global, array.properties.element_type);
             return builder.CreateAlloca(type, total_size);
         });
 }

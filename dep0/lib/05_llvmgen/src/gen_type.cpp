@@ -11,7 +11,6 @@ namespace dep0::llvmgen {
 
 llvm::FunctionType* gen_func_type(
     global_context_t& global,
-    local_context_t const& local,
     llvm_func_proto_t const& proto)
 {
     bool constexpr is_var_arg = false;
@@ -21,20 +20,20 @@ llvm::FunctionType* gen_func_type(
             needs_alloca(proto.ret_type()),
             [&] (needs_alloca_result::no_t)
             {
-                return gen_type(global, local, proto.ret_type());
+                return gen_type(global, proto.ret_type());
             },
             [&] (needs_alloca_result::array_t const& array)
             {
-                arg_types.push_back(gen_type(global, local, array.properties.element_type)->getPointerTo());
+                arg_types.push_back(gen_type(global, array.properties.element_type)->getPointerTo());
                 return llvm::Type::getVoidTy(global.llvm_ctx);
             });
     arg_types.reserve(arg_types.size() + proto.args().size());
     for (typecheck::func_arg_t const& arg: proto.args())
-        arg_types.push_back(gen_type(global, local, arg.type));
+        arg_types.push_back(gen_type(global, arg.type));
     return llvm::FunctionType::get(ret_type, std::move(arg_types), is_var_arg);
 }
 
-llvm::Type* gen_type(global_context_t& global, local_context_t const& local, typecheck::expr_t const& x)
+llvm::Type* gen_type(global_context_t& global, typecheck::expr_t const& x)
 {
     return match(
         x.value,
@@ -148,7 +147,7 @@ llvm::Type* gen_type(global_context_t& global, local_context_t const& local, typ
         [&] (typecheck::expr_t::app_t const&) -> llvm::Type*
         {
             auto const properties = get_array_properties(x);
-            return gen_type(global, local, properties.element_type)->getPointerTo();
+            return gen_type(global, properties.element_type)->getPointerTo();
         },
         [&] (typecheck::expr_t::abs_t const&) -> llvm::Type*
         {
@@ -159,7 +158,7 @@ llvm::Type* gen_type(global_context_t& global, local_context_t const& local, typ
         {
             auto proto = llvm_func_proto_t::from_pi(x);
             assert(proto and "can only generate an llvm type for 1st order function types");
-            return gen_func_type(global, local, *proto)->getPointerTo();
+            return gen_func_type(global, *proto)->getPointerTo();
         },
         [&] (typecheck::expr_t::array_t const&) -> llvm::Type*
         {

@@ -1,0 +1,2 @@
+// typcheck error: max value does not fit inside unsigned 64 bit integer
+typedef unsign_t = unsigned 64 bit integer from 0 to 18446744073709551616;

@@ -90,4 +90,100 @@ BOOST_AUTO_TEST_CASE(parse_error_010) { BOOST_TEST(fail("0002_user_defined_integ
 
 BOOST_AUTO_TEST_CASE(typecheck_error_000) { BOOST_TEST(pass("0002_user_defined_integrals/typecheck_error_000.depc")); }
 
+BOOST_AUTO_TEST_CASE(typecheck_error_001)
+{
+    BOOST_TEST_REQUIRE(pass("0002_user_defined_integrals/typecheck_error_001.depc"));
+    BOOST_TEST_REQUIRE(pass_result->type_defs.size() == 1ul);
+    BOOST_TEST(is_integer_def(
+        pass_result->type_defs[0],
+        "sign_t",
+        dep0::ast::sign_t::signed_v,
+        dep0::ast::width_t::_8,
+        128));
+}
+
+BOOST_AUTO_TEST_CASE(typecheck_error_002)
+{
+    BOOST_TEST_REQUIRE(pass("0002_user_defined_integrals/typecheck_error_002.depc"));
+    BOOST_TEST_REQUIRE(pass_result->type_defs.size() == 1ul);
+    BOOST_TEST(is_integer_def(
+        pass_result->type_defs[0],
+        "unsign_t",
+        dep0::ast::sign_t::unsigned_v,
+        dep0::ast::width_t::_8,
+        256));
+}
+
+BOOST_AUTO_TEST_CASE(typecheck_error_003)
+{
+    BOOST_TEST_REQUIRE(pass("0002_user_defined_integrals/typecheck_error_003.depc"));
+    BOOST_TEST_REQUIRE(pass_result->type_defs.size() == 1ul);
+    BOOST_TEST(is_integer_def(
+        pass_result->type_defs[0],
+        "sign_t",
+        dep0::ast::sign_t::signed_v,
+        dep0::ast::width_t::_16,
+        32768));
+}
+
+BOOST_AUTO_TEST_CASE(typecheck_error_004)
+{
+    BOOST_TEST_REQUIRE(pass("0002_user_defined_integrals/typecheck_error_004.depc"));
+    BOOST_TEST_REQUIRE(pass_result->type_defs.size() == 1ul);
+    BOOST_TEST(is_integer_def(
+        pass_result->type_defs[0],
+        "unsign_t",
+        dep0::ast::sign_t::unsigned_v,
+        dep0::ast::width_t::_16,
+        65536));
+}
+
+BOOST_AUTO_TEST_CASE(typecheck_error_005)
+{
+    BOOST_TEST_REQUIRE(pass("0002_user_defined_integrals/typecheck_error_005.depc"));
+    BOOST_TEST_REQUIRE(pass_result->type_defs.size() == 1ul);
+    BOOST_TEST(is_integer_def(
+        pass_result->type_defs[0],
+        "sign_t",
+        dep0::ast::sign_t::signed_v,
+        dep0::ast::width_t::_32,
+        2147483648ul));
+}
+
+BOOST_AUTO_TEST_CASE(typecheck_error_006)
+{
+    BOOST_TEST_REQUIRE(pass("0002_user_defined_integrals/typecheck_error_006.depc"));
+    BOOST_TEST_REQUIRE(pass_result->type_defs.size() == 1ul);
+    BOOST_TEST(is_integer_def(
+        pass_result->type_defs[0],
+        "unsign_t",
+        dep0::ast::sign_t::unsigned_v,
+        dep0::ast::width_t::_32,
+        4294967296ul));
+}
+
+BOOST_AUTO_TEST_CASE(typecheck_error_007)
+{
+    BOOST_TEST_REQUIRE(pass("0002_user_defined_integrals/typecheck_error_007.depc"));
+    BOOST_TEST_REQUIRE(pass_result->type_defs.size() == 1ul);
+    BOOST_TEST(is_integer_def(
+        pass_result->type_defs[0],
+        "sign_t",
+        dep0::ast::sign_t::signed_v,
+        dep0::ast::width_t::_64,
+        9223372036854775808ul));
+}
+
+BOOST_AUTO_TEST_CASE(typecheck_error_008)
+{
+    BOOST_TEST_REQUIRE(pass("0002_user_defined_integrals/typecheck_error_008.depc"));
+    BOOST_TEST_REQUIRE(pass_result->type_defs.size() == 1ul);
+    BOOST_TEST(is_integer_def(
+        pass_result->type_defs[0],
+        "unsign_t",
+        dep0::ast::sign_t::unsigned_v,
+        dep0::ast::width_t::_64,
+        boost::multiprecision::cpp_int("18446744073709551616")));
+}
+
 BOOST_AUTO_TEST_SUITE_END()

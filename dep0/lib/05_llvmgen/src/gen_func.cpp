@@ -88,46 +88,61 @@ void gen_func_body(
     }
 }
 
+llvm::Value* gen_func_decl(
+    global_context_t& global,
+    typecheck::expr_t::global_t const& name,
+    llvm_func_proto_t const& proto)
+{
+    auto const llvm_f =
+        llvm::Function::Create(
+            gen_func_type(global, proto),
+            llvm::Function::ExternalLinkage,
+            name.name.view(),
+            global.llvm_module);
+    local_context_t local;
+    gen_func_args(global, local, proto, llvm_f);
+    gen_func_attributes(global, proto, llvm_f);
+    return llvm_f;
+}
+
 llvm::Value* gen_func(
     global_context_t& global,
-    local_context_t const& local,
     llvm_func_proto_t const& proto,
     typecheck::expr_t::abs_t const& f)
 {
     auto const name = std::string{"$_func_"} + std::to_string(global.get_next_id());
     auto const llvm_f =
         llvm::Function::Create(
-            gen_func_type(global, local, proto),
+            gen_func_type(global, proto),
             llvm::Function::PrivateLinkage,
             name,
             global.llvm_module);
-    auto f_ctx = local.extend();
-    gen_func_args(global, f_ctx, proto, llvm_f);
+    local_context_t local;
+    gen_func_args(global, local, proto, llvm_f);
     gen_func_attributes(global, proto, llvm_f);
-    gen_func_body(global, f_ctx, proto, f.body, llvm_f);
+    gen_func_body(global, local, proto, f.body, llvm_f);
     return llvm_f;
 }
 
 void gen_func(
     global_context_t& global,
-    local_context_t& local,
     typecheck::expr_t::global_t const& name,
     llvm_func_proto_t const& proto,
     typecheck::expr_t::abs_t const& f)
 {
     auto const llvm_f =
         llvm::Function::Create(
-            gen_func_type(global, local, proto),
+            gen_func_type(global, proto),
             llvm::Function::ExternalLinkage,
             name.name.view(),
             global.llvm_module);
     // add function to the parent context; but generation must happen in the function context
     bool const inserted = global.try_emplace(name, llvm_func_t(llvm_f)).second;
     assert(inserted);
-    auto f_ctx = local.extend();
-    gen_func_args(global, f_ctx, proto, llvm_f);
+    local_context_t local;
+    gen_func_args(global, local, proto, llvm_f);
     gen_func_attributes(global, proto, llvm_f);
-    gen_func_body(global, f_ctx, proto, f.body, llvm_f);
+    gen_func_body(global, local, proto, f.body, llvm_f);
 }
 
 } // namespace dep0::llvmgen

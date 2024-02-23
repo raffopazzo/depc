@@ -27,6 +27,14 @@ namespace dep0::typecheck {
 expected<type_def_t> check_type_def(environment_t&, parser::type_def_t const&);
 
 /**
+ * Checks whether a function declaration is legal;
+ * if it is, the declaration is stored in the given environment.
+ *
+ * @return A legal function declaration or an error.
+ */
+expected<func_decl_t> check_func_decl(environment_t&, parser::func_decl_t const&);
+
+/**
  * Checks whether a function definition is legal;
  * if it is, the function is stored in the given environment.
  *
@@ -93,16 +101,19 @@ expected<expr_t> check_numeric_expr(
 /**
  * Checks whether the given function arguments and return type form a legal Pi-type.
  *
- * @param ctx    The context in which type-checking will be performed;
- *               it will be modified to store the expressions introduced by the function arguments.
- * @param args   The arguments of the Pi-type.
- * @param ret_ty The return type of the Pi-type.
+ * @param ctx       The context in which type-checking will be performed;
+ *                  it will be modified to store the expressions introduced by the function arguments.
+ * @param loc       The location in the source file where the expression was found.
+ *                  If type-checking fails, it will be copied in the error message.
+ * @param args      The arguments of the Pi-type.
+ * @param ret_ty    The return type of the Pi-type.
  *
  * @return A legal Pi-type or an error.
  */
 expected<expr_t> check_pi_type(
     environment_t const&,
     context_t& ctx,
+    source_loc_t const& loc,
     std::vector<parser::func_arg_t> const& args,
     parser::expr_t const& ret_ty);
 

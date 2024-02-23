@@ -1,0 +1,9 @@
+bool f1();
+bool f2(i32_t);
+bool f3(i32_t, u32_t);
+auto g1() -> typename;
+auto g2(i32_t) -> typename;
+auto g3(i32_t, u32_t) -> typename;
+auto h1() -> g1();
+auto h2(i32_t x) -> g2(x);
+auto h3(i32_t x, u32_t y) -> g3(x, y);

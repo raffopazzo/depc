@@ -5,6 +5,8 @@
 
 #include "dep0/match.hpp"
 
+#include <boost/core/ignore_unused.hpp>
+
 #include <cassert>
 
 namespace dep0::typecheck {

@@ -57,6 +57,59 @@ BOOST_AUTO_TEST_CASE(pass_002)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_003)
+{
+    BOOST_TEST_REQUIRE(pass("0002_user_defined_integrals/pass_003.depc"));
+    {
+        auto const f = pass_result.value()->getFunction("negative");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i8, sext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(-1)));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("zero");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i8, sext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(0)));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("max_sign");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i8, sext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(1)));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("min_sign");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i8, sext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        auto const inst = get_instructions(f->getEntryBlock());
+        BOOST_TEST_REQUIRE(inst.size() == 5ul);
+        BOOST_TEST(is_direct_call(inst[0], exactly(pass_result.value()->getFunction("max_sign"))));
+        BOOST_TEST(is_add_of(inst[1], exactly(inst[0]), constant(1)));
+        BOOST_TEST(is_cmp(inst[2], llvm::CmpInst::ICMP_SGT, exactly(inst[1]), constant(1)));
+        BOOST_TEST(is_select_of(inst[3], exactly(inst[2]), constant(-1), exactly(inst[1])));
+        BOOST_TEST(is_return_of(inst[4], exactly(inst[3])));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("max_hour");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i8, zext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(23)));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("min_hour");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i8, zext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        auto const inst = get_instructions(f->getEntryBlock());
+        BOOST_TEST_REQUIRE(inst.size() == 5ul);
+        BOOST_TEST(is_direct_call(inst[0], exactly(pass_result.value()->getFunction("max_hour"))));
+        BOOST_TEST(is_add_of(inst[1], exactly(inst[0]), constant(1)));
+        BOOST_TEST(is_cmp(inst[2], llvm::CmpInst::ICMP_UGT, exactly(inst[1]), constant(23)));
+        BOOST_TEST(is_select_of(inst[3], exactly(inst[2]), constant(0), exactly(inst[1])));
+        BOOST_TEST(is_return_of(inst[4], exactly(inst[3])));
+    }
+}
+
 // BOOST_AUTO_TEST_CASE(parse_error_000)
 // BOOST_AUTO_TEST_CASE(parse_error_001)
 // BOOST_AUTO_TEST_CASE(parse_error_002)

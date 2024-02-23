@@ -76,6 +76,73 @@ BOOST_AUTO_TEST_CASE(pass_000)
 BOOST_AUTO_TEST_CASE(pass_001) { BOOST_TEST(pass("0002_user_defined_integrals/pass_001.depc")); }
 BOOST_AUTO_TEST_CASE(pass_002) { BOOST_TEST(pass("0002_user_defined_integrals/pass_002.depc")); }
 
+BOOST_AUTO_TEST_CASE(pass_003)
+{
+    BOOST_TEST_REQUIRE(pass("0002_user_defined_integrals/pass_003.depc"));
+    BOOST_TEST_REQUIRE(pass_result->type_defs.size() == 2ul);
+    BOOST_TEST(is_integer_def(
+        pass_result->type_defs[0],
+        "sign_t",
+        dep0::ast::sign_t::signed_v,
+        dep0::ast::width_t::_8,
+        1));
+    BOOST_TEST(is_integer_def(
+        pass_result->type_defs[1],
+        "hour_t",
+        dep0::ast::sign_t::unsigned_v,
+        dep0::ast::width_t::_8,
+        23));
+    BOOST_TEST(pass_result->func_defs.size() == 6ul);
+    {
+        auto const& f = pass_result->func_defs[0ul];
+        BOOST_TEST(f.name == "negative");
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_var(f.value.ret_type.get(), "sign_t"));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], constant(-1)));
+    }
+    {
+        auto const& f = pass_result->func_defs[1ul];
+        BOOST_TEST(f.name == "zero");
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_var(f.value.ret_type.get(), "sign_t"));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], constant(0)));
+    }
+    {
+        auto const& f = pass_result->func_defs[2ul];
+        BOOST_TEST(f.name == "max_sign");
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_var(f.value.ret_type.get(), "sign_t"));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], constant(1)));
+    }
+    {
+        auto const& f = pass_result->func_defs[3ul];
+        BOOST_TEST(f.name == "min_sign");
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_var(f.value.ret_type.get(), "sign_t"));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], plus(app_of(var("max_sign")), constant(1))));
+    }
+    {
+        auto const& f = pass_result->func_defs[4ul];
+        BOOST_TEST(f.name == "max_hour");
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_var(f.value.ret_type.get(), "hour_t"));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], constant(23)));
+    }
+    {
+        auto const& f = pass_result->func_defs[5ul];
+        BOOST_TEST(f.name == "min_hour");
+        BOOST_TEST(f.value.args.size() == 0ul);
+        BOOST_TEST(is_var(f.value.ret_type.get(), "hour_t"));
+        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], plus(app_of(var("max_hour")), constant(1))));
+    }
+}
+
 BOOST_AUTO_TEST_CASE(parse_error_000) { BOOST_TEST(fail("0002_user_defined_integrals/parse_error_000.depc")); }
 BOOST_AUTO_TEST_CASE(parse_error_001) { BOOST_TEST(fail("0002_user_defined_integrals/parse_error_001.depc")); }
 BOOST_AUTO_TEST_CASE(parse_error_002) { BOOST_TEST(fail("0002_user_defined_integrals/parse_error_002.depc")); }

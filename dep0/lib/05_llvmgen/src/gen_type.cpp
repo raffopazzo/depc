@@ -33,6 +33,18 @@ llvm::FunctionType* gen_func_type(
     return llvm::FunctionType::get(ret_type, std::move(arg_types), is_var_arg);
 }
 
+llvm::IntegerType* gen_type(global_context_t& global, ast::width_t const width)
+{
+    switch (width)
+    {
+    case ast::width_t::_8: return llvm::Type::getInt8Ty(global.llvm_ctx);
+    case ast::width_t::_16: return llvm::Type::getInt16Ty(global.llvm_ctx);
+    case ast::width_t::_32: return llvm::Type::getInt32Ty(global.llvm_ctx);
+    case ast::width_t::_64: return llvm::Type::getInt64Ty(global.llvm_ctx);
+    default: __builtin_unreachable();
+    }
+}
+
 llvm::Type* gen_type(global_context_t& global, typecheck::expr_t const& x)
 {
     return match(
@@ -133,14 +145,7 @@ llvm::Type* gen_type(global_context_t& global, typecheck::expr_t const& x)
                         t.value,
                         [&] (typecheck::type_def_t::integer_t const& integer) -> llvm::Type*
                         {
-                            switch (integer.width)
-                            {
-                            case ast::width_t::_8: return llvm::Type::getInt8Ty(global.llvm_ctx);
-                            case ast::width_t::_16: return llvm::Type::getInt16Ty(global.llvm_ctx);
-                            case ast::width_t::_32: return llvm::Type::getInt32Ty(global.llvm_ctx);
-                            case ast::width_t::_64: return llvm::Type::getInt64Ty(global.llvm_ctx);
-                            default: __builtin_unreachable();
-                            }
+                            return gen_type(global, integer.width);
                         });
                 });
         },

@@ -18,7 +18,14 @@ bool beta_delta_normalize(module_t& m)
         // normalize first and then store in env, so future look-ups will find the normalized term
         changed |= match(
             x,
-            [] (type_def_t const&) { return false; },
+            [&] (type_def_t const& def)
+            {
+                // nothing to normalize but still need to add the definition in the environment
+                auto const& name = match(def.value, [&] (auto const& x) { return x.name; });
+                auto const ok = env.try_emplace(expr_t::global_t{name}, def);
+                assert(ok.has_value());
+                return false;
+            },
             [&] (func_decl_t& decl)
             {
                 bool const result = beta_delta_normalize(env, decl);

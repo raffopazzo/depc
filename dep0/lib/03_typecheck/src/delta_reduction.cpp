@@ -235,7 +235,16 @@ bool delta_reduce(environment_t const& env, context_t const& ctx, expr_t& expr)
                                                 type_def->value,
                                                 [&] (type_def_t::integer_t const& integer)
                                                 {
-                                                    return cpp_int_add(integer.sign, integer.width, n->value, m->value);
+                                                    auto const& [name, sign, width, max_abs_value] = integer;
+                                                    auto result = cpp_int_add(sign, width, n->value, m->value);
+                                                    if (max_abs_value and result > *max_abs_value)
+                                                    {
+                                                        if (sign == ast::sign_t::signed_v)
+                                                            result = -*max_abs_value;
+                                                        else
+                                                            result = 0;
+                                                    }
+                                                    return result;
                                                 });
                                         },
                                         [&] (auto const&) -> boost::multiprecision::cpp_int

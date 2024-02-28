@@ -1,0 +1,32 @@
+typedef sign_t = signed 8 bit integer from -1 to 1;
+typedef hour_t = unsigned 8 bit integer from 0 to 23;
+
+auto which(bool x) -> typename
+{
+    if (x) return hour_t;
+    else return sign_t;
+}
+
+auto one_of(bool x) -> which(x)
+{
+    if (x)
+        return 1;
+    else
+        return 1;
+}
+
+auto max_of(bool x) -> which(x)
+{
+    if (x)
+        return 23;
+    else
+        return 1;
+}
+
+auto min_of(bool x) -> which(x)
+{
+    return max_of(x) + one_of(x);
+}
+
+hour_t min_hour() { return min_of(true); }
+sign_t min_sign() { return min_of(false); }

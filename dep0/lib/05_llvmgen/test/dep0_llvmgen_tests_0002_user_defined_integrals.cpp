@@ -110,6 +110,24 @@ BOOST_AUTO_TEST_CASE(pass_003)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_004)
+{
+    apply_beta_delta_normalization = true;
+    BOOST_TEST_REQUIRE(pass("0002_user_defined_integrals/pass_004.depc"));
+    {
+        auto const f = pass_result.value()->getFunction("min_hour");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i8, zext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(0)));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("min_sign");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i8, sext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(-1)));
+    }
+}
+
 // BOOST_AUTO_TEST_CASE(parse_error_000)
 // BOOST_AUTO_TEST_CASE(parse_error_001)
 // BOOST_AUTO_TEST_CASE(parse_error_002)

@@ -1,6 +1,7 @@
 #include "dep0/typecheck/beta_delta_reduction.hpp"
 
 #include "private/cpp_int_add.hpp"
+#include "private/delta_unfold.hpp"
 #include "private/derivation_rules.hpp"
 #include "private/substitute.hpp"
 
@@ -58,8 +59,6 @@ static bool beta_delta_normalize(environment_t const&, context_t const&, expr_t:
 static bool beta_delta_normalize(environment_t const&, context_t const&, expr_t::pi_t&);
 static bool beta_delta_normalize(environment_t const&, context_t const&, expr_t::array_t&);
 static bool beta_delta_normalize(environment_t const&, context_t const&, expr_t::init_list_t&);
-
-static bool delta_unfold(environment_t const&, context_t const&, expr_t&);
 
 bool beta_delta_normalize(environment_t const& env, func_decl_t& decl)
 {
@@ -301,17 +300,6 @@ bool beta_delta_normalize(environment_t const& env, context_t const& ctx, expr_t
     for (auto& v: init_list.values)
         changed |= beta_delta_normalize(env, ctx, v);
     return changed;
-}
-
-bool delta_unfold(environment_t const& env, context_t const& ctx, expr_t& x)
-{
-    if (auto const global = std::get_if<expr_t::global_t>(&x.value))
-        if (auto const func_def = std::get_if<func_def_t>(env[*global]))
-        {
-            x.value = func_def->value;
-            return true;
-        }
-    return false;
 }
 
 } // namespace impl

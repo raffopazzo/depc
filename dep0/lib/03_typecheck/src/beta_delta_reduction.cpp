@@ -353,7 +353,7 @@ bool beta_delta_normalize(environment_t const& env, context_t const& ctx, expr_t
                             if (ret->expr)
                             {
                                 changed = true;
-                                impl::destructive_self_assign(expr, std::move(*ret->expr));
+                                impl::destructive_self_assign(expr.value, std::move(ret->expr->value));
                             }
             return changed;
         },
@@ -507,7 +507,7 @@ bool beta_delta_normalize(environment_t const& env, context_t const& ctx, expr_t
                     {
                         changed = true;
                         auto const i_ = i->value.template convert_to<std::size_t>();
-                        impl::destructive_self_assign(expr, std::move(init_list->values[i_]));
+                        impl::destructive_self_assign(expr.value, std::move(init_list->values[i_].value));
                     }
             return changed;
         },

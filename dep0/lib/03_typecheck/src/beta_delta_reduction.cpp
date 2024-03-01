@@ -31,9 +31,9 @@ void destructive_self_assign(T& x, T&& y)
 static bool beta_delta_normalize(environment_t const&, func_decl_t&);
 static bool beta_delta_normalize(environment_t const&, func_def_t&);
 
-static bool beta_delta_normalize(environment_t const&, context_t const&, body_t&);
-
 static bool beta_delta_normalize(environment_t const&, context_t const&, sort_t&);
+
+static bool beta_delta_normalize(environment_t const&, context_t const&, body_t&);
 
 static bool beta_delta_normalize(environment_t const&, context_t const&, stmt_t&);
 static bool beta_delta_normalize(environment_t const&, context_t const&, stmt_t::if_else_t&);
@@ -95,6 +95,14 @@ bool beta_delta_normalize(environment_t const& env, func_def_t& def)
     changed |= beta_delta_normalize(env, ctx, def.value.body);
     changed |= beta_delta_normalize(env, ctx, def.properties.sort.get());
     return changed;
+}
+
+bool beta_delta_normalize(environment_t const& env, context_t const& ctx, sort_t& sort)
+{
+    return match(
+        sort,
+        [&] (expr_t& type) { return beta_delta_normalize(env, ctx, type); },
+        [] (kind_t const&) { return false; });
 }
 
 bool beta_delta_normalize(environment_t const& env, context_t const& ctx, body_t& body)
@@ -169,14 +177,6 @@ bool beta_delta_normalize(environment_t const& env, context_t const& ctx, body_t
     return changed;
 }
 
-bool beta_delta_normalize(environment_t const& env, context_t const& ctx, sort_t& sort)
-{
-    return match(
-        sort,
-        [&] (expr_t& type) { return beta_delta_normalize(env, ctx, type); },
-        [] (kind_t const&) { return false; });
-}
-
 bool beta_delta_normalize(environment_t const& env, context_t const& ctx, stmt_t& stmt)
 {
     return match(stmt.value, [&] (auto& x) { return beta_delta_normalize(env, ctx, x); });
@@ -213,8 +213,10 @@ bool beta_delta_normalize(environment_t const&, context_t const&, expr_t::var_t&
 
 bool beta_delta_normalize(environment_t const&, context_t const&, expr_t::global_t&)
 {
-    // We only want to perform a "simplified" one-step delta-reduction,
-    // so ignore variable experssions that appear on their own.
+    // We only perform delta-unfolding inside a direct application,
+    // eg `f(x)` for some global function `f`, but not everywhere, eg `return f`.
+    // The reason for this is that we are interested in delta-unfolding only as
+    // a way to extend beta normalization as far as possible.
     return false;
 }
 
@@ -224,18 +226,16 @@ bool beta_delta_normalize(environment_t const& env, context_t const& ctx, expr_t
     // as such, if the abstraction discards some/all arguments we might waste time reducing those arguments.
     // Currently it doesn't matter; we can reassess in future.
     bool changed = beta_delta_normalize(env, ctx, app.func.get());
-    changed |= delta_unfold(env, ctx, app.func.get());
     for (auto& arg: app.args)
         changed |= beta_delta_normalize(env, ctx, arg);
+    changed |= delta_unfold(env, ctx, app.func.get());
     if (auto* const abs = std::get_if<expr_t::abs_t>(&app.func.get().value))
     {
         if (abs->args.size() > 0ul)
         {
-            assert(abs->args.size() == app.args.size()); // always true when beta-normalizing legal terms
+            assert(abs->args.size() == app.args.size()); // always true for legal terms
             for (auto const i: std::views::iota(0ul, abs->args.size()))
-            {
-                auto const& arg = abs->args[i];
-                if (arg.var)
+                if (auto const& arg = abs->args[i]; arg.var)
                     substitute(
                         *arg.var,
                         app.args[i],
@@ -243,10 +243,10 @@ bool beta_delta_normalize(environment_t const& env, context_t const& ctx, expr_t
                         abs->args.end(),
                         abs->ret_type.get(),
                         &abs->body);
-            }
             // at this point all arguments of the abstraction have been substituted,
             // so we can remove them and normalize the new body;
             // also note that now the function type becomes a pi-type with no arguments
+            // TODO we should also perform substitution inside the function type but we need a test first
             std::get<expr_t::pi_t>(std::get<expr_t>(app.func.get().properties.sort.get()).value).args.clear();
             app.args.clear();
             abs->args.clear();

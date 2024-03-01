@@ -407,6 +407,7 @@ bool beta_delta_normalize(environment_t const& env, context_t const& ctx, expr_t
                 {
                     bool changed = beta_delta_normalize(env, ctx, x.lhs.get());
                     changed |= beta_delta_normalize(env, ctx, x.rhs.get());
+                    // TODO numeric constants too
                     if (auto const a = std::get_if<expr_t::boolean_constant_t>(&x.lhs.get().value))
                         if (auto const b = std::get_if<expr_t::boolean_constant_t>(&x.rhs.get().value))
                         {
@@ -453,46 +454,45 @@ bool beta_delta_normalize(environment_t const& env, context_t const& ctx, expr_t
                     if (auto const n = std::get_if<expr_t::numeric_constant_t>(&x.lhs.get().value))
                         if (auto const m = std::get_if<expr_t::numeric_constant_t>(&x.rhs.get().value))
                         {
-                            changed = true;
-                            expr.value =
-                                expr_t::numeric_constant_t{
-                                    match(
-                                        std::get<expr_t>(x.lhs.get().properties.sort.get()).value,
-                                        [&] (expr_t::i8_t) { return cpp_int_add_signed<8>(n->value, m->value); },
-                                        [&] (expr_t::i16_t) { return cpp_int_add_signed<16>(n->value, m->value); },
-                                        [&] (expr_t::i32_t) { return cpp_int_add_signed<32>(n->value, m->value); },
-                                        [&] (expr_t::i64_t) { return cpp_int_add_signed<64>(n->value, m->value); },
-                                        [&] (expr_t::u8_t) { return cpp_int_add_unsigned<8>(n->value, m->value); },
-                                        [&] (expr_t::u16_t) { return cpp_int_add_unsigned<16>(n->value, m->value); },
-                                        [&] (expr_t::u32_t) { return cpp_int_add_unsigned<32>(n->value, m->value); },
-                                        [&] (expr_t::u64_t) { return cpp_int_add_unsigned<64>(n->value, m->value); },
-                                        [&] (expr_t::global_t const& g)
-                                        {
-                                            auto const type_def = std::get_if<type_def_t>(env[g]);
-                                            // TODO: remove assert
-                                            assert(type_def and "unknown global or not a typedef");
-                                            return match(
-                                                type_def->value,
-                                                [&] (type_def_t::integer_t const& integer)
+                            std::optional<boost::multiprecision::cpp_int> result;
+                            match(
+                                std::get<expr_t>(x.lhs.get().properties.sort.get()).value,
+                                [&] (expr_t::i8_t) { result = cpp_int_add_signed<8>(n->value, m->value); },
+                                [&] (expr_t::i16_t) { result = cpp_int_add_signed<16>(n->value, m->value); },
+                                [&] (expr_t::i32_t) { result = cpp_int_add_signed<32>(n->value, m->value); },
+                                [&] (expr_t::i64_t) { result = cpp_int_add_signed<64>(n->value, m->value); },
+                                [&] (expr_t::u8_t) { result = cpp_int_add_unsigned<8>(n->value, m->value); },
+                                [&] (expr_t::u16_t) { result = cpp_int_add_unsigned<16>(n->value, m->value); },
+                                [&] (expr_t::u32_t) { result = cpp_int_add_unsigned<32>(n->value, m->value); },
+                                [&] (expr_t::u64_t) { result = cpp_int_add_unsigned<64>(n->value, m->value); },
+                                [&] (expr_t::global_t const& g)
+                                {
+                                    if (auto const type_def = std::get_if<type_def_t>(env[g]))
+                                        match(
+                                            type_def->value,
+                                            [&] (type_def_t::integer_t const& integer)
+                                            {
+                                                auto const& [name, sign, width, max_abs_value] = integer;
+                                                boost::ignore_unused(name);
+                                                result = cpp_int_add(sign, width, n->value, m->value);
+                                                if (max_abs_value and *result > *max_abs_value)
                                                 {
-                                                    auto const& [name, sign, width, max_abs_value] = integer;
-                                                    boost::ignore_unused(name);
-                                                    auto result = cpp_int_add(sign, width, n->value, m->value);
-                                                    if (max_abs_value and result > *max_abs_value)
-                                                    {
-                                                        if (sign == ast::sign_t::signed_v)
-                                                            result = -*max_abs_value;
-                                                        else
-                                                            result = 0;
-                                                    }
-                                                    return result;
-                                                });
-                                        },
-                                        [&] (auto const&) -> boost::multiprecision::cpp_int
-                                        {
-                                            assert(false and "unexpected type for plus expr");
-                                            __builtin_unreachable();
-                                        })};
+                                                    if (sign == ast::sign_t::signed_v)
+                                                        result.emplace(-*max_abs_value);
+                                                    else
+                                                        result.emplace(0);
+                                                }
+                                            });
+                                },
+                                [&] (auto const&)
+                                {
+                                    assert(false and "unexpected type for plus expr");
+                                });
+                            if (result)
+                            {
+                                changed = true;
+                                expr.value = expr_t::numeric_constant_t{std::move(*result)};
+                            }
                         }
                     return changed;
                 });

@@ -24,6 +24,11 @@ void destructive_self_assign(T& x, T&& y)
     x = std::move(tmp);
 }
 
+static bool beta_delta_normalize(environment_t const&, func_decl_t&);
+static bool beta_delta_normalize(environment_t const&, func_def_t&);
+
+static bool beta_delta_normalize(environment_t const&, context_t const&, body_t&);
+
 static bool beta_delta_normalize(environment_t const&, context_t const&, sort_t&);
 
 static bool beta_delta_normalize(environment_t const&, context_t const&, stmt_t&);
@@ -52,6 +57,115 @@ static bool beta_delta_normalize(environment_t const&, context_t const&, expr_t:
 static bool beta_delta_normalize(environment_t const&, context_t const&, expr_t::init_list_t&);
 
 static bool delta_unfold(environment_t const&, context_t const&, expr_t&);
+
+bool beta_delta_normalize(environment_t const& env, func_decl_t& decl)
+{
+    context_t ctx;
+    bool changed = false;
+    for (func_arg_t& arg: decl.signature.args)
+    {
+        changed |= beta_delta_normalize(env, ctx, arg.type);
+        if (arg.var)
+        {
+            auto const ok = ctx.try_emplace(*arg.var, arg.properties.origin, make_legal_expr(arg.type, *arg.var));
+            assert(ok.has_value());
+        }
+    }
+    changed |= beta_delta_normalize(env, ctx, decl.signature.ret_type.get());
+    changed |= beta_delta_normalize(env, ctx, decl.properties.sort.get());
+    return changed;
+}
+
+bool beta_delta_normalize(environment_t const& env, func_def_t& def)
+{
+    context_t ctx;
+    bool changed = false;
+    for (func_arg_t& arg: def.value.args)
+    {
+        changed |= beta_delta_normalize(env, ctx, arg.type);
+        if (arg.var)
+        {
+            auto const ok = ctx.try_emplace(*arg.var, arg.properties.origin, make_legal_expr(arg.type, *arg.var));
+            assert(ok.has_value());
+        }
+    }
+    changed |= beta_delta_normalize(env, ctx, def.value.ret_type.get());
+    changed |= beta_delta_normalize(env, ctx, def.value.body);
+    changed |= beta_delta_normalize(env, ctx, def.properties.sort.get());
+    return changed;
+}
+
+bool beta_delta_normalize(environment_t const& env, context_t const& ctx, body_t& body)
+{
+    auto const is_return = [] (stmt_t const& x)
+    {
+        return std::holds_alternative<stmt_t::return_t>(x.value);
+    };
+    // NB taking `stmts` by value because we are about to perform a destructive self-assignment
+    auto replace_with = [&] (std::vector<stmt_t>::iterator it, std::vector<stmt_t> stmts)
+    {
+        // If there is nothing to replace `it` with, then just remove it;
+        // otherwise we need to splice all the replacing statements in place of `it`,
+        // which can be done efficiently by replacing `it` with the first statement, and insert the rest after it.
+        // Finally, if the new statements contain a return statment, any other statement after that can be dropped.
+        if (stmts.empty())
+            return body.stmts.erase(it);
+        auto const index_of_ret = [&]
+        {
+            auto const j = std::ranges::find_if(stmts, is_return);
+            return j == stmts.end() ? std::nullopt : std::optional{std::distance(stmts.begin(), j)};
+        }();
+        auto j = stmts.begin();
+        *it++ = std::move(*j++);
+        it = body.stmts.insert(it, std::make_move_iterator(j), std::make_move_iterator(stmts.end()));
+        if (index_of_ret)
+            // if you were expecting a `+1` here, the reason it's missing is because we manually incremented `it` once
+            body.stmts.erase(it + *index_of_ret, body.stmts.end());
+        return it;
+    };
+    bool changed = false;
+    auto it = body.stmts.begin();
+    while (it != body.stmts.end())
+    {
+        changed |= beta_delta_normalize(env, ctx, *it);
+        it = match(
+            it->value,
+            [&] (expr_t::app_t& app)
+            {
+                // if immediately-invoked lambda we can extract the body,
+                // but have to suppress return statements from the invoked lambda,
+                // otherwise they would become early returns from the parent function
+                // TODO blindly suppressing return of the invoked lambda will be wrong once we have side-effects
+                if (app.args.empty())
+                    if (auto* const abs = std::get_if<expr_t::abs_t>(&app.func.get().value))
+                    {
+                        changed = true;
+                        // TODO fix this: if body contains 2 return statements, all others in between must be dropped
+                        std::erase_if(abs->body.stmts, is_return);
+                        return replace_with(it, std::move(abs->body.stmts));
+                    }
+                return std::next(it);
+            },
+            [&] (stmt_t::if_else_t& if_)
+            {
+                // this step is arguably iota-reduction
+                if (auto const c = std::get_if<expr_t::boolean_constant_t>(&if_.cond.value))
+                {
+                    changed = true;
+                    if (c->value)
+                        return replace_with(it, std::move(if_.true_branch.stmts));
+                    else if (if_.false_branch)
+                        return replace_with(it, std::move(if_.false_branch->stmts));
+                    else
+                        return body.stmts.erase(it);
+                }
+                else
+                    return std::next(it);
+            },
+            [&] (stmt_t::return_t const&) { return std::next(it); });
+    }
+    return changed;
+}
 
 bool beta_delta_normalize(environment_t const& env, context_t const& ctx, sort_t& sort)
 {
@@ -217,126 +331,18 @@ bool beta_delta_normalize(module_t& m)
             },
             [&] (func_decl_t& decl)
             {
-                bool const result = beta_delta_normalize(env, decl);
+                bool const result = impl::beta_delta_normalize(env, decl);
                 auto const ok = env.try_emplace(expr_t::global_t{decl.name}, decl);
                 assert(ok.has_value());
                 return result;
             },
             [&] (func_def_t& def)
             {
-                bool const result = beta_delta_normalize(env, def);
+                bool const result = impl::beta_delta_normalize(env, def);
                 auto const ok = env.try_emplace(expr_t::global_t{def.name}, def);
                 assert(ok.has_value());
                 return result;
             });
-    return changed;
-}
-
-bool beta_delta_normalize(environment_t const& env, func_decl_t& decl)
-{
-    context_t ctx;
-    bool changed = false;
-    for (func_arg_t& arg: decl.signature.args)
-    {
-        changed |= beta_delta_normalize(env, ctx, arg.type);
-        if (arg.var)
-        {
-            auto const ok = ctx.try_emplace(*arg.var, arg.properties.origin, make_legal_expr(arg.type, *arg.var));
-            assert(ok.has_value());
-        }
-    }
-    changed |= beta_delta_normalize(env, ctx, decl.signature.ret_type.get());
-    changed |= impl::beta_delta_normalize(env, ctx, decl.properties.sort.get());
-    return changed;
-}
-
-bool beta_delta_normalize(environment_t const& env, func_def_t& def)
-{
-    context_t ctx;
-    bool changed = false;
-    for (func_arg_t& arg: def.value.args)
-    {
-        changed |= beta_delta_normalize(env, ctx, arg.type);
-        if (arg.var)
-        {
-            auto const ok = ctx.try_emplace(*arg.var, arg.properties.origin, make_legal_expr(arg.type, *arg.var));
-            assert(ok.has_value());
-        }
-    }
-    changed |= beta_delta_normalize(env, ctx, def.value.ret_type.get());
-    changed |= beta_delta_normalize(env, ctx, def.value.body);
-    changed |= impl::beta_delta_normalize(env, ctx, def.properties.sort.get());
-    return changed;
-}
-
-bool beta_delta_normalize(environment_t const& env, context_t const& ctx, body_t& body)
-{
-    auto const is_return = [] (stmt_t const& x)
-    {
-        return std::holds_alternative<stmt_t::return_t>(x.value);
-    };
-    // NB taking `stmts` by value because we are about to perform a destructive self-assignment
-    auto replace_with = [&] (std::vector<stmt_t>::iterator it, std::vector<stmt_t> stmts)
-    {
-        // If there is nothing to replace `it` with, then just remove it;
-        // otherwise we need to splice all the replacing statements in place of `it`,
-        // which can be done efficiently by replacing `it` with the first statement, and insert the rest after it.
-        // Finally, if the new statements contain a return statment, any other statement after that can be dropped.
-        if (stmts.empty())
-            return body.stmts.erase(it);
-        auto const index_of_ret = [&]
-        {
-            auto const j = std::ranges::find_if(stmts, is_return);
-            return j == stmts.end() ? std::nullopt : std::optional{std::distance(stmts.begin(), j)};
-        }();
-        auto j = stmts.begin();
-        *it++ = std::move(*j++);
-        it = body.stmts.insert(it, std::make_move_iterator(j), std::make_move_iterator(stmts.end()));
-        if (index_of_ret)
-            // if you were expecting a `+1` here, the reason it's missing is because we manually incremented `it` once
-            body.stmts.erase(it + *index_of_ret, body.stmts.end());
-        return it;
-    };
-    bool changed = false;
-    auto it = body.stmts.begin();
-    while (it != body.stmts.end())
-    {
-        changed |= impl::beta_delta_normalize(env, ctx, *it);
-        it = match(
-            it->value,
-            [&] (expr_t::app_t& app)
-            {
-                // if immediately-invoked lambda we can extract the body,
-                // but have to suppress return statements from the invoked lambda,
-                // otherwise they would become early returns from the parent function
-                // TODO blindly suppressing return of the invoked lambda will be wrong once we have side-effects
-                if (app.args.empty())
-                    if (auto* const abs = std::get_if<expr_t::abs_t>(&app.func.get().value))
-                    {
-                        changed = true;
-                        // TODO fix this: if body contains 2 return statements, all others in between must be dropped
-                        std::erase_if(abs->body.stmts, is_return);
-                        return replace_with(it, std::move(abs->body.stmts));
-                    }
-                return std::next(it);
-            },
-            [&] (stmt_t::if_else_t& if_)
-            {
-                if (auto const c = std::get_if<expr_t::boolean_constant_t>(&if_.cond.value))
-                {
-                    changed = true;
-                    if (c->value)
-                        return replace_with(it, std::move(if_.true_branch.stmts));
-                    else if (if_.false_branch)
-                        return replace_with(it, std::move(if_.false_branch->stmts));
-                    else
-                        return body.stmts.erase(it);
-                }
-                else
-                    return std::next(it);
-            },
-            [&] (stmt_t::return_t const&) { return std::next(it); });
-    }
     return changed;
 }
 

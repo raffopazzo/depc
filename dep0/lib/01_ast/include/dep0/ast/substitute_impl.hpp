@@ -49,6 +49,9 @@ void substitute(typename expr_t<P>::var_t const& var, expr_t<P> const& expr, bod
 template <Properties P>
 void substitute(typename expr_t<P>::var_t const& var, expr_t<P> const& expr, expr_t<P>& x)
 {
+    if constexpr (requires { x.properties.sort.get(); })
+        if (auto const type = std::get_if<expr_t<P>>(&x.properties.sort.get()))
+            substitute(var, expr, *type);
     match(
         x.value,
         [] (typename expr_t<P>::typename_t const&) {},

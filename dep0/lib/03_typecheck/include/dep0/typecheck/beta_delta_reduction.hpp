@@ -2,11 +2,10 @@
  * @file beta_delta_reduction.hpp
  * @brief A family of functions that perform a combined beta-delta normalization.
  *
- * The normalization strategy is to first apply a full beta-normalization,
- * which should help in reducing the size of the AST.
- * If no more beta-normalizations are possible, try to perform a single one-step delta-reduction,
- * (arguably it should be called a delta-expansion) which might unblock further beta-normalizations.
- * If delta-reduction was unsuccessful, then we have reached a beta-delta normal-form.
+ * Note that delta-unfolding is only performed inside a direct application,
+ * eg `f(x)` for some global function `f`, but not everywhere, eg `return f`.
+ * The reason for this is that we are interested in delta-unfolding only as
+ * a way to extend beta normalization as far as possible.
  */
 
 #pragma once

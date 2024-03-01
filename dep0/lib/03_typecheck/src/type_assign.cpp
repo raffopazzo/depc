@@ -17,6 +17,8 @@
 #include <ranges>
 #include <sstream>
 
+#include <iostream>
+
 namespace dep0::typecheck {
 
 /**
@@ -46,7 +48,7 @@ type_assign_pair(
 expected<expr_t> type_assign(environment_t const& env, context_t const& ctx, parser::expr_t const& expr)
 {
     auto const loc = expr.properties;
-    return match(
+    auto result = match(
         expr.value,
         [&] (parser::expr_t::typename_t) -> expected<expr_t>
         {
@@ -365,6 +367,16 @@ expected<expr_t> type_assign(environment_t const& env, context_t const& ctx, par
                     return error_t::from_error(dep0::error_t(err.str(), loc));
                 });
         });
+//  if (result)
+//  {
+//      match(
+//          result->properties.sort.get(),
+//          [&] (expr_t& type) { beta_delta_normalize(env, ctx, type); },
+//          [] (kind_t const&) { });
+//      pretty_print(std::cout << "type_assign(", expr) << ')' << std::endl;
+//      pretty_print(std::cout << "    = ", result->properties.sort.get()) << std::endl;
+//  }
+    return result;
 }
 
 expected<expr_t>

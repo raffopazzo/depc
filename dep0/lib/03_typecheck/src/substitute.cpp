@@ -1,6 +1,4 @@
-#pragma once
-
-#include "dep0/ast/substitute.hpp"
+#include "private/substitute.hpp"
 
 #include "dep0/ast/occurs_in.hpp"
 #include "dep0/ast/rename.hpp"
@@ -9,69 +7,61 @@
 
 #include <algorithm>
 
-namespace dep0::ast {
+namespace dep0::typecheck {
 
 namespace impl {
 
-template <Properties P>
-void substitute(typename expr_t<P>::var_t const&, expr_t<P> const&, body_t<P>&);
+static void substitute(expr_t::var_t const&, expr_t const&, body_t&);
+static void substitute(expr_t::var_t const&, expr_t const&, expr_t&);
+static void substitute(expr_t::var_t const&, expr_t const&, expr_t::app_t&);
 
-template <Properties P>
-void substitute(typename expr_t<P>::var_t const&, expr_t<P> const&, expr_t<P>&);
-
-template <Properties P>
-void substitute(typename expr_t<P>::var_t const&, expr_t<P> const&, typename expr_t<P>::app_t&);
-
-template <Properties P>
-void substitute(typename expr_t<P>::var_t const& var, expr_t<P> const& expr, body_t<P>& body)
+void substitute(expr_t::var_t const& var, expr_t const& expr, body_t& body)
 {
     for (auto& stmt: body.stmts)
         match(
             stmt.value,
-            [&] (typename expr_t<P>::app_t& app)
+            [&] (expr_t::app_t& app)
             {
                 substitute(var, expr, app);
             },
-            [&] (typename stmt_t<P>::if_else_t& if_)
+            [&] (stmt_t::if_else_t& if_)
             {
                 substitute(var, expr, if_.cond);
                 substitute(var, expr, if_.true_branch);
                 if (if_.false_branch)
                     substitute(var, expr, *if_.false_branch);
             },
-            [&] (typename stmt_t<P>::return_t& ret)
+            [&] (stmt_t::return_t& ret)
             {
                 if (ret.expr)
                     substitute(var, expr, *ret.expr);
             });
 }
 
-template <Properties P>
-void substitute(typename expr_t<P>::var_t const& var, expr_t<P> const& expr, expr_t<P>& x)
+void substitute(expr_t::var_t const& var, expr_t const& expr, expr_t& x)
 {
-    if constexpr (requires { x.properties.sort.get(); })
-        if (auto const type = std::get_if<expr_t<P>>(&x.properties.sort.get()))
-            substitute(var, expr, *type);
+    if (auto const type = std::get_if<expr_t>(&x.properties.sort.get()))
+        substitute(var, expr, *type);
     match(
         x.value,
-        [] (typename expr_t<P>::typename_t const&) {},
-        [] (typename expr_t<P>::bool_t const&) {},
-        [] (typename expr_t<P>::unit_t const&) {},
-        [] (typename expr_t<P>::i8_t const&) {},
-        [] (typename expr_t<P>::i16_t const&) {},
-        [] (typename expr_t<P>::i32_t const&) {},
-        [] (typename expr_t<P>::i64_t const&) {},
-        [] (typename expr_t<P>::u8_t const&) {},
-        [] (typename expr_t<P>::u16_t const&) {},
-        [] (typename expr_t<P>::u32_t const&) {},
-        [] (typename expr_t<P>::u64_t const&) {},
-        [] (typename expr_t<P>::boolean_constant_t&) { },
-        [] (typename expr_t<P>::numeric_constant_t&) { },
-        [&] (typename expr_t<P>::boolean_expr_t& x)
+        [] (expr_t::typename_t const&) {},
+        [] (expr_t::bool_t const&) {},
+        [] (expr_t::unit_t const&) {},
+        [] (expr_t::i8_t const&) {},
+        [] (expr_t::i16_t const&) {},
+        [] (expr_t::i32_t const&) {},
+        [] (expr_t::i64_t const&) {},
+        [] (expr_t::u8_t const&) {},
+        [] (expr_t::u16_t const&) {},
+        [] (expr_t::u32_t const&) {},
+        [] (expr_t::u64_t const&) {},
+        [] (expr_t::boolean_constant_t&) { },
+        [] (expr_t::numeric_constant_t&) { },
+        [&] (expr_t::boolean_expr_t& x)
         {
             match(
                 x.value,
-                [&] (typename expr_t<P>::boolean_expr_t::not_t& x)
+                [&] (expr_t::boolean_expr_t::not_t& x)
                 {
                     substitute(var, expr, x.expr.get());
                 },
@@ -81,7 +71,7 @@ void substitute(typename expr_t<P>::var_t const& var, expr_t<P> const& expr, exp
                     substitute(var, expr, x.rhs.get());
                 });
         },
-        [&] (typename expr_t<P>::relation_expr_t& x)
+        [&] (expr_t::relation_expr_t& x)
         {
             match(
                 x.value,
@@ -91,53 +81,52 @@ void substitute(typename expr_t<P>::var_t const& var, expr_t<P> const& expr, exp
                     substitute(var, expr, x.rhs.get());
                 });
         },
-        [&] (typename expr_t<P>::arith_expr_t& x)
+        [&] (expr_t::arith_expr_t& x)
         {
             match(
                 x.value,
-                [&] (typename expr_t<P>::arith_expr_t::plus_t& x)
+                [&] (expr_t::arith_expr_t::plus_t& x)
                 {
                     substitute(var, expr, x.lhs.get());
                     substitute(var, expr, x.rhs.get());
                 });
         },
-        [&] (typename expr_t<P>::var_t& v)
+        [&] (expr_t::var_t& v)
         {
             if (v == var)
                 x = expr;
         },
-        [] (typename expr_t<P>::global_t&)
+        [] (expr_t::global_t&)
         {
         },
-        [&] (typename expr_t<P>::app_t& x)
+        [&] (expr_t::app_t& x)
         {
             substitute(var, expr, x);
         },
-        [&] (typename expr_t<P>::abs_t& x)
+        [&] (expr_t::abs_t& x)
         {
             substitute(var, expr, x.args.begin(), x.args.end(), x.ret_type.get(), &x.body);
         },
-        [&] (typename expr_t<P>::pi_t& x)
+        [&] (expr_t::pi_t& x)
         {
-            substitute<P>(var, expr, x.args.begin(), x.args.end(), x.ret_type.get(), nullptr);
+            substitute(var, expr, x.args.begin(), x.args.end(), x.ret_type.get(), nullptr);
         },
-        [] (typename expr_t<P>::array_t&)
+        [] (expr_t::array_t&)
         {
         },
-        [&] (typename expr_t<P>::init_list_t& x)
+        [&] (expr_t::init_list_t& x)
         {
             for (auto& v: x.values)
                 substitute(var, expr, v);
         },
-        [&] (typename expr_t<P>::subscript_t& x)
+        [&] (expr_t::subscript_t& x)
         {
             substitute(var, expr, x.array.get());
             substitute(var, expr, x.index.get());
         });
 }
 
-template <Properties P>
-void substitute(typename expr_t<P>::var_t const& var, expr_t<P> const& expr, typename expr_t<P>::app_t& app)
+void substitute(expr_t::var_t const& var, expr_t const& expr, expr_t::app_t& app)
 {
     substitute(var, expr, app.func.get());
     for (auto& arg: app.args)
@@ -146,14 +135,13 @@ void substitute(typename expr_t<P>::var_t const& var, expr_t<P> const& expr, typ
 
 } // namespace impl
 
-template <Properties P>
 void substitute(
-    typename expr_t<P>::var_t const& var,
-    expr_t<P> const& y,
-    typename std::vector<func_arg_t<P>>::iterator it,
-    typename std::vector<func_arg_t<P>>::iterator const end,
-    expr_t<P>& ret_type,
-    body_t<P>* body)
+    expr_t::var_t const& var,
+    expr_t const& y,
+    std::vector<func_arg_t>::iterator it,
+    std::vector<func_arg_t>::iterator const end,
+    expr_t& ret_type,
+    body_t* body)
 {
     for (; it != end; ++it)
     {
@@ -173,12 +161,12 @@ void substitute(
         // `(typename t:1) -> (typename t) -> t`, making it obvious to see which `t` is binding.
         // Also note that we are modifying the elements of the very vector we are iterating on,
         // but we are only modifying the values, no the vector; so iteration is safe.
-        if (arg.var and occurs_in(*arg.var, y, occurrence_style::anywhere))
-            arg.var = rename<P>(*arg.var, std::next(it), end, ret_type, body);
+        if (arg.var and ast::occurs_in(*arg.var, y, ast::occurrence_style::anywhere))
+            arg.var = ast::rename(*arg.var, std::next(it), end, ret_type, body);
     }
     impl::substitute(var, y, ret_type);
     if (body)
         impl::substitute(var, y, *body);
 }
 
-} // namespace dep0::ast
+} // namespace dep0::typecheck

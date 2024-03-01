@@ -10,7 +10,6 @@
 #include "dep0/typecheck/beta_delta_reduction.hpp"
 
 #include "dep0/ast/pretty_print.hpp"
-#include "dep0/ast/substitute.hpp"
 
 #include "dep0/fmap.hpp"
 #include "dep0/match.hpp"

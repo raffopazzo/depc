@@ -2,8 +2,7 @@
 
 #include "private/cpp_int_add.hpp"
 #include "private/derivation_rules.hpp"
-
-#include "dep0/ast/substitute.hpp"
+#include "private/substitute.hpp"
 
 #include "dep0/match.hpp"
 

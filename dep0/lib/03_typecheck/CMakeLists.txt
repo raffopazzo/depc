@@ -18,6 +18,7 @@ add_library(dep0_typecheck_lib
   src/private/proof_state.hpp
   src/private/returns_from_all_branches.hpp
   src/private/rewrite.hpp
+  src/private/substitute.hpp
   src/private/type_assign.hpp
   # source files
   src/ast.cpp
@@ -34,6 +35,7 @@ add_library(dep0_typecheck_lib
   src/proof_state.cpp
   src/returns_from_all_branches.cpp
   src/rewrite.cpp
+  src/substitute.cpp
   src/type_assign.cpp
   )
 add_library(DepC::Dep0::TypeCheck ALIAS dep0_typecheck_lib)

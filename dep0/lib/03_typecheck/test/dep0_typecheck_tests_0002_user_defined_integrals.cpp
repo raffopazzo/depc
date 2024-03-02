@@ -178,10 +178,21 @@ BOOST_AUTO_TEST_CASE(pass_004)
         BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(global("min_of"), constant(false))));
     }
     // normalization should handle integer signed/unsigned wrapping
+    // and compute the correct type for the numeric constant
     BOOST_TEST(dep0::typecheck::beta_delta_normalize(*pass_result));
     pass_result->reset();
-    BOOST_TEST(is_return_of(pass_result->func_defs[4].value.body.stmts[0ul], constant(0)));
-    BOOST_TEST(is_return_of(pass_result->func_defs[5].value.body.stmts[0ul], constant(-1)));
+    {
+        auto const& stmt = pass_result->func_defs[4ul].value.body.stmts[0ul];
+        BOOST_TEST_REQUIRE(is_return_of(stmt, constant(0)));
+        auto const ret = std::get<dep0::typecheck::stmt_t::return_t>(stmt.value);
+        BOOST_TEST(is_global(std::get<dep0::typecheck::expr_t>(ret.expr->properties.sort.get()), "hour_t"));
+    }
+    {
+        auto const& stmt = pass_result->func_defs[5ul].value.body.stmts[0ul];
+        BOOST_TEST_REQUIRE(is_return_of(stmt, constant(-1)));
+        auto const ret = std::get<dep0::typecheck::stmt_t::return_t>(stmt.value);
+        BOOST_TEST(is_global(std::get<dep0::typecheck::expr_t>(ret.expr->properties.sort.get()), "sign_t"));
+    }
 }
 
 // BOOST_AUTO_TEST_CASE(parse_error_000)

@@ -12,210 +12,265 @@ BOOST_AUTO_TEST_CASE(pass_000) { BOOST_TEST(pass("0001_integral_primitives/pass_
 BOOST_AUTO_TEST_CASE(pass_001)
 {
     BOOST_TEST_REQUIRE(pass("0001_integral_primitives/pass_001.depc"));
-    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 24ul);
+    BOOST_TEST_REQUIRE(pass_result->entries.size() == 24ul);
     {
-        auto const& f = pass_result->func_defs[0ul];
-        BOOST_TEST(f.name == "one_i8");
-        BOOST_TEST(f.value.args.size() == 0ul);
-        BOOST_TEST(is_i8(f.value.ret_type.get()));
-        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], constant(1)));
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[0ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "one_i8");
+        BOOST_TEST(f->value.args.size() == 0ul);
+        BOOST_TEST(is_i8(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant(1)));
     }
     {
-        auto const& f = pass_result->func_defs[1ul];
-        BOOST_TEST(f.name == "one_i16");
-        BOOST_TEST(f.value.args.size() == 0ul);
-        BOOST_TEST(is_i16(f.value.ret_type.get()));
-        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], constant(1)));
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[1ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "one_i16");
+        BOOST_TEST(f->value.args.size() == 0ul);
+        BOOST_TEST(is_i16(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant(1)));
     }
     {
-        auto const& f = pass_result->func_defs[2ul];
-        BOOST_TEST(f.name == "one_i32");
-        BOOST_TEST(f.value.args.size() == 0ul);
-        BOOST_TEST(is_i32(f.value.ret_type.get()));
-        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], constant(1)));
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[2ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "one_i32");
+        BOOST_TEST(f->value.args.size() == 0ul);
+        BOOST_TEST(is_i32(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant(1)));
     }
     {
-        auto const& f = pass_result->func_defs[3ul];
-        BOOST_TEST(f.name == "one_i64");
-        BOOST_TEST(f.value.args.size() == 0ul);
-        BOOST_TEST(is_i64(f.value.ret_type.get()));
-        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], constant(1)));
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[3ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "one_i64");
+        BOOST_TEST(f->value.args.size() == 0ul);
+        BOOST_TEST(is_i64(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant(1)));
     }
     {
-        auto const& f = pass_result->func_defs[4ul];
-        BOOST_TEST(f.name == "one_u8");
-        BOOST_TEST(f.value.args.size() == 0ul);
-        BOOST_TEST(is_u8(f.value.ret_type.get()));
-        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], constant(1)));
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[4ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "one_u8");
+        BOOST_TEST(f->value.args.size() == 0ul);
+        BOOST_TEST(is_u8(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant(1)));
     }
     {
-        auto const& f = pass_result->func_defs[5ul];
-        BOOST_TEST(f.name == "one_u16");
-        BOOST_TEST(f.value.args.size() == 0ul);
-        BOOST_TEST(is_u16(f.value.ret_type.get()));
-        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], constant(1)));
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[5ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "one_u16");
+        BOOST_TEST(f->value.args.size() == 0ul);
+        BOOST_TEST(is_u16(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant(1)));
     }
     {
-        auto const& f = pass_result->func_defs[6ul];
-        BOOST_TEST(f.name == "one_u32");
-        BOOST_TEST(f.value.args.size() == 0ul);
-        BOOST_TEST(is_u32(f.value.ret_type.get()));
-        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], constant(1)));
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[6ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "one_u32");
+        BOOST_TEST(f->value.args.size() == 0ul);
+        BOOST_TEST(is_u32(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant(1)));
     }
     {
-        auto const& f = pass_result->func_defs[7ul];
-        BOOST_TEST(f.name == "one_u64");
-        BOOST_TEST(f.value.args.size() == 0ul);
-        BOOST_TEST(is_u64(f.value.ret_type.get()));
-        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], constant(1)));
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[7ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "one_u64");
+        BOOST_TEST(f->value.args.size() == 0ul);
+        BOOST_TEST(is_u64(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant(1)));
     }
     {
-        auto const& f = pass_result->func_defs[8ul];
-        BOOST_TEST(f.name == "max_i8");
-        BOOST_TEST(f.value.args.size() == 0ul);
-        BOOST_TEST(is_i8(f.value.ret_type.get()));
-        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], constant(127)));
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[8ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "max_i8");
+        BOOST_TEST(f->value.args.size() == 0ul);
+        BOOST_TEST(is_i8(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant(127)));
     }
     {
-        auto const& f = pass_result->func_defs[9ul];
-        BOOST_TEST(f.name == "max_i16");
-        BOOST_TEST(f.value.args.size() == 0ul);
-        BOOST_TEST(is_i16(f.value.ret_type.get()));
-        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], constant(32767)));
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[9ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "max_i16");
+        BOOST_TEST(f->value.args.size() == 0ul);
+        BOOST_TEST(is_i16(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant(32767)));
     }
     {
-        auto const& f = pass_result->func_defs[10ul];
-        BOOST_TEST(f.name == "max_i32");
-        BOOST_TEST(f.value.args.size() == 0ul);
-        BOOST_TEST(is_i32(f.value.ret_type.get()));
-        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], constant(2147483647)));
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[10ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "max_i32");
+        BOOST_TEST(f->value.args.size() == 0ul);
+        BOOST_TEST(is_i32(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant(2147483647)));
     }
     {
-        auto const& f = pass_result->func_defs[11ul];
-        BOOST_TEST(f.name == "max_i64");
-        BOOST_TEST(f.value.args.size() == 0ul);
-        BOOST_TEST(is_i64(f.value.ret_type.get()));
-        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], constant("9223372036854775807")));
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[11ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "max_i64");
+        BOOST_TEST(f->value.args.size() == 0ul);
+        BOOST_TEST(is_i64(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant("9223372036854775807")));
     }
     {
-        auto const& f = pass_result->func_defs[12ul];
-        BOOST_TEST(f.name == "max_u8");
-        BOOST_TEST(f.value.args.size() == 0ul);
-        BOOST_TEST(is_u8(f.value.ret_type.get()));
-        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], constant(255)));
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[12ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "max_u8");
+        BOOST_TEST(f->value.args.size() == 0ul);
+        BOOST_TEST(is_u8(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant(255)));
     }
     {
-        auto const& f = pass_result->func_defs[13ul];
-        BOOST_TEST(f.name == "max_u16");
-        BOOST_TEST(f.value.args.size() == 0ul);
-        BOOST_TEST(is_u16(f.value.ret_type.get()));
-        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], constant(65535)));
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[13ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "max_u16");
+        BOOST_TEST(f->value.args.size() == 0ul);
+        BOOST_TEST(is_u16(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant(65535)));
     }
     {
-        auto const& f = pass_result->func_defs[14ul];
-        BOOST_TEST(f.name == "max_u32");
-        BOOST_TEST(f.value.args.size() == 0ul);
-        BOOST_TEST(is_u32(f.value.ret_type.get()));
-        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], constant("4294967295")));
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[14ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "max_u32");
+        BOOST_TEST(f->value.args.size() == 0ul);
+        BOOST_TEST(is_u32(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant("4294967295")));
     }
     {
-        auto const& f = pass_result->func_defs[15ul];
-        BOOST_TEST(f.name == "max_u64");
-        BOOST_TEST(f.value.args.size() == 0ul);
-        BOOST_TEST(is_u64(f.value.ret_type.get()));
-        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], constant("18446744073709551615")));
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[15ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "max_u64");
+        BOOST_TEST(f->value.args.size() == 0ul);
+        BOOST_TEST(is_u64(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant("18446744073709551615")));
     }
     {
-        auto const& f = pass_result->func_defs[16ul];
-        BOOST_TEST(f.name == "min_i8");
-        BOOST_TEST(f.value.args.size() == 0ul);
-        BOOST_TEST(is_i8(f.value.ret_type.get()));
-        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], plus(app_of(global("max_i8")), app_of(global("one_i8")))));
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[16ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "min_i8");
+        BOOST_TEST(f->value.args.size() == 0ul);
+        BOOST_TEST(is_i8(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], plus(app_of(global("max_i8")), app_of(global("one_i8")))));
     }
     {
-        auto const& f = pass_result->func_defs[17ul];
-        BOOST_TEST(f.name == "min_i16");
-        BOOST_TEST(f.value.args.size() == 0ul);
-        BOOST_TEST(is_i16(f.value.ret_type.get()));
-        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], plus(app_of(global("max_i16")), app_of(global("one_i16")))));
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[17ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "min_i16");
+        BOOST_TEST(f->value.args.size() == 0ul);
+        BOOST_TEST(is_i16(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], plus(app_of(global("max_i16")), app_of(global("one_i16")))));
     }
     {
-        auto const& f = pass_result->func_defs[18ul];
-        BOOST_TEST(f.name == "min_i32");
-        BOOST_TEST(f.value.args.size() == 0ul);
-        BOOST_TEST(is_i32(f.value.ret_type.get()));
-        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], plus(app_of(global("max_i32")), app_of(global("one_i32")))));
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[18ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "min_i32");
+        BOOST_TEST(f->value.args.size() == 0ul);
+        BOOST_TEST(is_i32(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], plus(app_of(global("max_i32")), app_of(global("one_i32")))));
     }
     {
-        auto const& f = pass_result->func_defs[19ul];
-        BOOST_TEST(f.name == "min_i64");
-        BOOST_TEST(f.value.args.size() == 0ul);
-        BOOST_TEST(is_i64(f.value.ret_type.get()));
-        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], plus(app_of(global("max_i64")), app_of(global("one_i64")))));
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[19ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "min_i64");
+        BOOST_TEST(f->value.args.size() == 0ul);
+        BOOST_TEST(is_i64(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], plus(app_of(global("max_i64")), app_of(global("one_i64")))));
     }
     {
-        auto const& f = pass_result->func_defs[20ul];
-        BOOST_TEST(f.name == "min_u8");
-        BOOST_TEST(f.value.args.size() == 0ul);
-        BOOST_TEST(is_u8(f.value.ret_type.get()));
-        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], plus(app_of(global("max_u8")), app_of(global("one_u8")))));
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[20ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "min_u8");
+        BOOST_TEST(f->value.args.size() == 0ul);
+        BOOST_TEST(is_u8(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], plus(app_of(global("max_u8")), app_of(global("one_u8")))));
     }
     {
-        auto const& f = pass_result->func_defs[21ul];
-        BOOST_TEST(f.name == "min_u16");
-        BOOST_TEST(f.value.args.size() == 0ul);
-        BOOST_TEST(is_u16(f.value.ret_type.get()));
-        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], plus(app_of(global("max_u16")), app_of(global("one_u16")))));
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[21ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "min_u16");
+        BOOST_TEST(f->value.args.size() == 0ul);
+        BOOST_TEST(is_u16(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], plus(app_of(global("max_u16")), app_of(global("one_u16")))));
     }
     {
-        auto const& f = pass_result->func_defs[22ul];
-        BOOST_TEST(f.name == "min_u32");
-        BOOST_TEST(f.value.args.size() == 0ul);
-        BOOST_TEST(is_u32(f.value.ret_type.get()));
-        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], plus(app_of(global("max_u32")), app_of(global("one_u32")))));
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[22ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "min_u32");
+        BOOST_TEST(f->value.args.size() == 0ul);
+        BOOST_TEST(is_u32(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], plus(app_of(global("max_u32")), app_of(global("one_u32")))));
     }
     {
-        auto const& f = pass_result->func_defs[23ul];
-        BOOST_TEST(f.name == "min_u64");
-        BOOST_TEST(f.value.args.size() == 0ul);
-        BOOST_TEST(is_u64(f.value.ret_type.get()));
-        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], plus(app_of(global("max_u64")), app_of(global("one_u64")))));
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[23ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "min_u64");
+        BOOST_TEST(f->value.args.size() == 0ul);
+        BOOST_TEST(is_u64(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], plus(app_of(global("max_u64")), app_of(global("one_u64")))));
     }
     // normalization should handle integer signed/unsigned wrapping
     BOOST_TEST(dep0::typecheck::beta_delta_normalize(*pass_result));
-    pass_result->reset();
-    BOOST_TEST(is_return_of(pass_result->func_defs[16].value.body.stmts[0ul], constant(-128)));
-    BOOST_TEST(is_return_of(pass_result->func_defs[17].value.body.stmts[0ul], constant(-32768)));
-    BOOST_TEST(is_return_of(pass_result->func_defs[18].value.body.stmts[0ul], constant("-2147483648")));
-    BOOST_TEST(is_return_of(pass_result->func_defs[19].value.body.stmts[0ul], constant("-9223372036854775808")));
-    BOOST_TEST(is_return_of(pass_result->func_defs[20].value.body.stmts[0ul], constant(0)));
-    BOOST_TEST(is_return_of(pass_result->func_defs[21].value.body.stmts[0ul], constant(0)));
-    BOOST_TEST(is_return_of(pass_result->func_defs[22].value.body.stmts[0ul], constant(0)));
-    BOOST_TEST(is_return_of(pass_result->func_defs[23].value.body.stmts[0ul], constant(0)));
+    {
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[16ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant(-128)));
+    }
+    {
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[17ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant(-32768)));
+    }
+    {
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[18ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant("-2147483648")));
+    }
+    {
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[19ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant("-9223372036854775808")));
+    }
+    {
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[20ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant(0)));
+    }
+    {
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[21ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant(0)));
+    }
+    {
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[22ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant(0)));
+    }
+    {
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[23ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant(0)));
+    }
 }
 
 // BOOST_AUTO_TEST_CASE(parse_error_000)

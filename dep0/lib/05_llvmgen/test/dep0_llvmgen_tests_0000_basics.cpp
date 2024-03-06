@@ -54,6 +54,18 @@ BOOST_AUTO_TEST_CASE(pass_015)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_016)
+{
+    apply_beta_delta_normalization = true;
+    BOOST_TEST_REQUIRE(pass("0000_basics/pass_016.depc"));
+    {
+        auto const f = pass_result.value()->getFunction("g");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, {sext}));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(1)));
+    }
+}
+
 // BOOST_AUTO_TEST_CASE(typecheck_error_000) doesn't type check
 // BOOST_AUTO_TEST_CASE(typecheck_error_001) doesn't type check
 // BOOST_AUTO_TEST_CASE(typecheck_error_002) doesn't type check

@@ -45,6 +45,11 @@ BOOST_AUTO_TEST_CASE(pass_014)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_015)
+{
+    BOOST_TEST_REQUIRE(pass("0000_basics/pass_015.depc"));
+}
+
 BOOST_AUTO_TEST_CASE(typecheck_error_000)
 {
     BOOST_TEST_REQUIRE(fail("0000_basics/typecheck_error_000.depc"));

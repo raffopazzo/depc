@@ -112,7 +112,7 @@ bool beta_delta_normalize(environment_t const& env, context_t const& ctx, body_t
         return std::holds_alternative<stmt_t::return_t>(x.value);
     };
     // NB taking `stmts` by value because we are about to perform a destructive self-assignment
-    auto replace_with = [&] (std::vector<stmt_t>::iterator it, std::vector<stmt_t> stmts)
+    auto const replace_with = [&] (std::vector<stmt_t>::iterator it, std::vector<stmt_t> stmts)
     {
         // If there is nothing to replace `it` with, then just remove it;
         // otherwise we need to splice all the replacing statements in place of `it`,
@@ -134,6 +134,13 @@ bool beta_delta_normalize(environment_t const& env, context_t const& ctx, body_t
         return it;
     };
     bool changed = false;
+    // drop redundant returns
+    if (auto const it = std::ranges::find_if(body.stmts, is_return); it != body.stmts.end())
+    {
+        auto const old_size = body.stmts.size();
+        body.stmts.erase(std::next(it), body.stmts.end());
+        changed = old_size != body.stmts.size();
+    }
     auto it = body.stmts.begin();
     while (it != body.stmts.end())
     {
@@ -150,7 +157,6 @@ bool beta_delta_normalize(environment_t const& env, context_t const& ctx, body_t
                     if (auto* const abs = std::get_if<expr_t::abs_t>(&app.func.get().value))
                     {
                         changed = true;
-                        // TODO fix this: if body contains 2 return statements, all others in between must be dropped
                         std::erase_if(abs->body.stmts, is_return);
                         return replace_with(it, std::move(abs->body.stmts));
                     }

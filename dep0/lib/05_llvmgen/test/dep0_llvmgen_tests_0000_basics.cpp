@@ -6,6 +6,8 @@
 
 using namespace dep0::llvmgen::testing;
 
+static auto const sext = std::vector{llvm::Attribute::SExt};
+
 BOOST_FIXTURE_TEST_SUITE(dep0_llvmgen_tests_0000_basics, LLVMGenTestsFixture)
 
 BOOST_AUTO_TEST_CASE(pass_000) { BOOST_TEST(pass("0000_basics/pass_000.depc")); }
@@ -37,6 +39,18 @@ BOOST_AUTO_TEST_CASE(pass_014)
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i8));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
         BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(0)));
+    }
+}
+
+BOOST_AUTO_TEST_CASE(pass_015)
+{
+    apply_beta_delta_normalization = true;
+    BOOST_TEST_REQUIRE(pass("0000_basics/pass_015.depc"));
+    {
+        auto const f = pass_result.value()->getFunction("f");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, {sext}));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(1)));
     }
 }
 

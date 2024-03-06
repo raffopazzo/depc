@@ -1,0 +1,10 @@
+i32_t f()
+{
+    return 1;
+    return 2;
+}
+
+i32_t g()
+{
+    return f();
+}

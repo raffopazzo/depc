@@ -10,11 +10,10 @@ BOOST_FIXTURE_TEST_SUITE(dep0_parser_tests_0000_basics, ParserTestsFixture)
 BOOST_AUTO_TEST_CASE(pass_000)
 {
     BOOST_TEST_REQUIRE(pass("0000_basics/pass_000.depc"));
-    BOOST_TEST(pass_result->type_defs.size() == 0ul);
-    BOOST_TEST(pass_result->func_defs.size() == 0ul);
     BOOST_TEST(pass_result->properties.line == 9);
     BOOST_TEST(pass_result->properties.col == 1);
     BOOST_TEST(pass_result->properties.txt == "");
+    BOOST_TEST(pass_result->entries.size() == 0ul);
 }
 BOOST_AUTO_TEST_CASE(pass_001)
 {
@@ -25,17 +24,17 @@ BOOST_AUTO_TEST_CASE(pass_001)
     BOOST_TEST(pass_result->properties.col == 1);
     BOOST_TEST(pass_result->properties.txt == file_source);
 
-    BOOST_TEST(pass_result->type_defs.size() == 0ul);
-    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 1ul);
-    auto const& f = pass_result->func_defs[0];
-    BOOST_TEST(f.properties.line == 1);
-    BOOST_TEST(f.properties.col == 1);
-    BOOST_TEST(f.properties.txt == source);
-    BOOST_TEST(is_i32(f.value.ret_type.get()));
-    BOOST_TEST(f.value.ret_type.get().properties.line == 1);
-    BOOST_TEST(f.value.ret_type.get().properties.col == 1);
-    BOOST_TEST(f.value.ret_type.get().properties.txt == "i32_t");
-    BOOST_TEST(f.name == "main");
+    BOOST_TEST_REQUIRE(pass_result->entries.size() == 1ul);
+    auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[0]);
+    BOOST_TEST_REQUIRE(f);
+    BOOST_TEST(f->properties.line == 1);
+    BOOST_TEST(f->properties.col == 1);
+    BOOST_TEST(f->properties.txt == source);
+    BOOST_TEST(is_i32(f->value.ret_type.get()));
+    BOOST_TEST(f->value.ret_type.get().properties.line == 1);
+    BOOST_TEST(f->value.ret_type.get().properties.col == 1);
+    BOOST_TEST(f->value.ret_type.get().properties.txt == "i32_t");
+    BOOST_TEST(f->name == "main");
 }
 
 BOOST_AUTO_TEST_CASE(pass_002) { BOOST_TEST(pass("0000_basics/pass_002.depc")); }
@@ -54,21 +53,23 @@ BOOST_AUTO_TEST_CASE(pass_013) { BOOST_TEST(pass("0000_basics/pass_013.depc")); 
 BOOST_AUTO_TEST_CASE(pass_014)
 {
     BOOST_TEST_REQUIRE(pass("0000_basics/pass_014.depc"));
-    BOOST_TEST_REQUIRE(pass_result->func_defs.size() == 2ul);
+    BOOST_TEST_REQUIRE(pass_result->entries.size() == 2ul);
     {
-        auto const& f = pass_result->func_defs[0ul];
-        BOOST_TEST(f.name == "unit");
-        BOOST_TEST(f.value.args.size() == 0ul);
-        BOOST_TEST(is_unit(f.value.ret_type.get()));
-        BOOST_TEST(f.value.body.stmts.size() == 0ul);
+        auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[0ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "unit");
+        BOOST_TEST(f->value.args.size() == 0ul);
+        BOOST_TEST(is_unit(f->value.ret_type.get()));
+        BOOST_TEST(f->value.body.stmts.size() == 0ul);
     }
     {
-        auto const& f = pass_result->func_defs[1ul];
-        BOOST_TEST(f.name == "f");
-        BOOST_TEST(f.value.args.size() == 0ul);
-        BOOST_TEST(is_unit(f.value.ret_type.get()));
-        BOOST_TEST_REQUIRE(f.value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f.value.body.stmts[0ul], app_of(var("unit"))));
+        auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[1ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "f");
+        BOOST_TEST(f->value.args.size() == 0ul);
+        BOOST_TEST(is_unit(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], app_of(var("unit"))));
     }
 }
 

@@ -1,0 +1,10 @@
+typedef sign_t = signed 8 bit integer from -1 to 1;
+typedef hour_t = unsigned 8 bit integer from 0 to 23;
+
+sign_t negative() { return -1; }
+sign_t zero() { return 0; }
+sign_t max_sign() { return 1; }
+sign_t min_sign() { return max_sign() + 1; }
+
+hour_t max_hour() { return 23; }
+hour_t min_hour() { return max_hour() + 1; }

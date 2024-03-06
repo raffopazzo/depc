@@ -29,6 +29,26 @@ inline constexpr auto is_bool =
         return failure("type is not bool_t but ", pretty_name(type.value));
 };
 
+inline constexpr auto is_i8 =
+[] <ast::Properties P> (ast::expr_t<P> const& type)
+-> boost::test_tools::predicate_result
+{
+    if (std::holds_alternative<typename ast::expr_t<P>::i8_t>(type.value))
+        return true;
+    else
+        return failure("type is not i8_t but ", pretty_name(type.value));
+};
+
+inline constexpr auto is_i16 =
+[] <ast::Properties P> (ast::expr_t<P> const& type)
+-> boost::test_tools::predicate_result
+{
+    if (std::holds_alternative<typename ast::expr_t<P>::i16_t>(type.value))
+        return true;
+    else
+        return failure("type is not i16_t but ", pretty_name(type.value));
+};
+
 inline constexpr auto is_i32 =
 [] <ast::Properties P> (ast::expr_t<P> const& type)
 -> boost::test_tools::predicate_result
@@ -37,6 +57,36 @@ inline constexpr auto is_i32 =
         return true;
     else
         return failure("type is not i32_t but ", pretty_name(type.value));
+};
+
+inline constexpr auto is_i64 =
+[] <ast::Properties P> (ast::expr_t<P> const& type)
+-> boost::test_tools::predicate_result
+{
+    if (std::holds_alternative<typename ast::expr_t<P>::i64_t>(type.value))
+        return true;
+    else
+        return failure("type is not i64_t but ", pretty_name(type.value));
+};
+
+inline constexpr auto is_u8 =
+[] <ast::Properties P> (ast::expr_t<P> const& type)
+-> boost::test_tools::predicate_result
+{
+    if (std::holds_alternative<typename ast::expr_t<P>::u8_t>(type.value))
+        return true;
+    else
+        return failure("type is not u8_t but ", pretty_name(type.value));
+};
+
+inline constexpr auto is_u16 =
+[] <ast::Properties P> (ast::expr_t<P> const& type)
+-> boost::test_tools::predicate_result
+{
+    if (std::holds_alternative<typename ast::expr_t<P>::u16_t>(type.value))
+        return true;
+    else
+        return failure("type is not u16_t but ", pretty_name(type.value));
 };
 
 inline constexpr auto is_u32 =

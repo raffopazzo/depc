@@ -15,40 +15,7 @@ struct ParserTestsFixture
 {
     std::filesystem::path testfiles = std::getenv("DEP0_TESTFILES_DIR");
 
-    /**
-     * Historically `pass_result` was just `dep0::parser::module_t`;
-     * when definitions and declarations were replaced by a variant
-     * to allow definitions and declarations in any order,
-     * there was the need to avoid breaking all tests;
-     * the solution adopted was to introduce `pass_result_t` and
-     * store definitions and declarations in member fields that
-     * had the same name as the old `module_t`.
-     * This arguably incurs unnecessary copies but the result
-     * is also more ergonomic even for new tests that only have
-     * function definitions, since they are all in `func_defs`.
-     * See https://github.com/raffopazzo/depc/pull/29
-     */
-    struct pass_result_t
-    {
-        dep0::source_loc_t properties;
-        std::vector<dep0::parser::module_t::entry_t> entries;
-        std::vector<dep0::parser::type_def_t> type_defs;
-        std::vector<dep0::parser::func_decl_t> func_decls;
-        std::vector<dep0::parser::func_def_t> func_defs;
-
-        explicit pass_result_t(dep0::parser::module_t m)
-            : properties(m.properties)
-            , entries(std::move(m.entries))
-        {
-            for (auto const& x: entries)
-                dep0::match(
-                    x,
-                    [this] (dep0::parser::type_def_t const& x) { type_defs.push_back(x); },
-                    [this] (dep0::parser::func_decl_t const& x) { func_decls.push_back(x); },
-                    [this] (dep0::parser::func_def_t const& x) { func_defs.push_back(x); });
-        }
-    };
-    std::optional<pass_result_t> pass_result;
+    std::optional<dep0::parser::module_t> pass_result;
 
     boost::test_tools::predicate_result pass(std::filesystem::path);
     boost::test_tools::predicate_result fail(std::filesystem::path);

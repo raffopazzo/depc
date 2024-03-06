@@ -10,7 +10,6 @@
 #include "dep0/typecheck/beta_delta_reduction.hpp"
 
 #include "dep0/ast/pretty_print.hpp"
-#include "dep0/ast/substitute.hpp"
 
 #include "dep0/fmap.hpp"
 #include "dep0/match.hpp"
@@ -206,14 +205,13 @@ check_numeric_expr(
     {
         return error_t::from_error(dep0::error_t(std::move(msg), loc), env, ctx, expected_type);
     };
-    auto const check_integer = [&] (
+    auto const check_int = [&] (
         std::string_view const type_name,
-        ast::sign_t const sign,
-        boost::multiprecision::cpp_int const& max_abs_value
+        boost::multiprecision::cpp_int const& min_value,
+        boost::multiprecision::cpp_int const& max_value
     ) -> expected<expr_t>
     {
-        using enum ast::sign_t;
-        if ((sign == unsigned_v and x.value.sign() == -1) or boost::multiprecision::abs(x.value) > max_abs_value)
+        if (x.value < min_value or max_value < x.value)
         {
             std::ostringstream err;
             err << "numeric constant does not fit inside `" << type_name << '`';
@@ -223,14 +221,14 @@ check_numeric_expr(
     };
     return match(
         expected_type.value,
-        [&] (expr_t::i8_t  const&) { return check_integer("i8_t",  ast::sign_t::signed_v,   127ul); },
-        [&] (expr_t::i16_t const&) { return check_integer("i16_t", ast::sign_t::signed_v,   32767ul); },
-        [&] (expr_t::i32_t const&) { return check_integer("i32_t", ast::sign_t::signed_v,   2147483647ul); },
-        [&] (expr_t::i64_t const&) { return check_integer("i64_t", ast::sign_t::signed_v,   9223372036854775807ul); },
-        [&] (expr_t::u8_t  const&) { return check_integer("u8_t",  ast::sign_t::unsigned_v, 255ul); },
-        [&] (expr_t::u16_t const&) { return check_integer("u16_t", ast::sign_t::unsigned_v, 65535ul); },
-        [&] (expr_t::u32_t const&) { return check_integer("u32_t", ast::sign_t::unsigned_v, 4294967295ul); },
-        [&] (expr_t::u64_t const&) { return check_integer("u64_t", ast::sign_t::unsigned_v, 18446744073709551615ul); },
+        [&] (expr_t::i8_t  const&) { return check_int("i8_t",  cpp_int_min_signed<8>(),  cpp_int_max_signed<8>()); },
+        [&] (expr_t::i16_t const&) { return check_int("i16_t", cpp_int_min_signed<16>(), cpp_int_max_signed<16>()); },
+        [&] (expr_t::i32_t const&) { return check_int("i32_t", cpp_int_min_signed<32>(), cpp_int_max_signed<32>()); },
+        [&] (expr_t::i64_t const&) { return check_int("i64_t", cpp_int_min_signed<64>(), cpp_int_max_signed<64>()); },
+        [&] (expr_t::u8_t  const&) { return check_int("u8_t",  0, cpp_int_max_unsigned<8>()); },
+        [&] (expr_t::u16_t const&) { return check_int("u16_t", 0, cpp_int_max_unsigned<16>()); },
+        [&] (expr_t::u32_t const&) { return check_int("u32_t", 0, cpp_int_max_unsigned<32>()); },
+        [&] (expr_t::u64_t const&) { return check_int("u64_t", 0, cpp_int_max_unsigned<64>()); },
         [&] (expr_t::var_t const& var) -> expected<expr_t>
         {
             std::ostringstream err;
@@ -249,21 +247,15 @@ check_numeric_expr(
                         t.value,
                         [&] (type_def_t::integer_t const& integer) -> expected<expr_t>
                         {
-                            return check_integer(
-                                integer.name,
-                                integer.sign,
-                                integer.max_abs_value.value_or([&]
-                                {
-                                    bool const with_sign = integer.sign == ast::sign_t::signed_v;
-                                    switch (integer.width)
-                                    {
-                                        using enum ast::width_t;
-                                        case _8:  return with_sign ? 127ul : 255ul;
-                                        case _16: return with_sign ? 32767ul : 65535ul;
-                                        case _32: return with_sign ? 2147483647ul : 4294967295ul;
-                                        default:  return with_sign ? 9223372036854775807ul : 18446744073709551615ul;
-                                    }
-                                }()));
+                            auto const& [name, sign, width, max_abs_value] = integer;
+                            if (sign == ast::sign_t::signed_v)
+                                return max_abs_value
+                                    ? check_int(name, -*max_abs_value, *max_abs_value)
+                                    : check_int(name, cpp_int_min_signed(width), cpp_int_max_signed(width));
+                            else
+                                return max_abs_value
+                                    ? check_int(name, 0ul, *max_abs_value)
+                                    : check_int(name, 0ul, cpp_int_max_unsigned(width));
                         });
                 },
                 [&] (func_decl_t const& func_decl) -> expected<expr_t>

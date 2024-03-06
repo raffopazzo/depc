@@ -1,0 +1,24 @@
+i8_t one_i8() { return 1; }
+i16_t one_i16() { return 1; }
+i32_t one_i32() { return 1; }
+i64_t one_i64() { return 1; }
+u8_t one_u8() { return 1; }
+u16_t one_u16() { return 1; }
+u32_t one_u32() { return 1; }
+u64_t one_u64() { return 1; }
+i8_t max_i8() { return 127; }
+i16_t max_i16() { return 32767; }
+i32_t max_i32() { return 2147483647; }
+i64_t max_i64() { return 9223372036854775807; }
+u8_t max_u8() { return 255; }
+u16_t max_u16() { return 65535; }
+u32_t max_u32() { return 4294967295; }
+u64_t max_u64() { return 18446744073709551615; }
+i8_t min_i8() { return max_i8() + one_i8(); }
+i16_t min_i16() { return max_i16() + one_i16(); }
+i32_t min_i32() { return max_i32() + one_i32(); }
+i64_t min_i64() { return max_i64() + one_i64(); }
+u8_t min_u8() { return max_u8() + one_u8(); }
+u16_t min_u16() { return max_u16() + one_u16(); }
+u32_t min_u32() { return max_u32() + one_u32(); }
+u64_t min_u64() { return max_u64() + one_u64(); }

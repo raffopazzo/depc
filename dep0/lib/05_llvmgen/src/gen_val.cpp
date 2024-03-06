@@ -36,6 +36,11 @@ static void move_to_entry_block(llvm::Instruction* const i, llvm::Function* cons
         i->moveAfter(&bb.back());
 }
 
+llvm::Value* gen_val(llvm::IntegerType* const type, boost::multiprecision::cpp_int const& x)
+{
+    return llvm::ConstantInt::get(type, x.str(), 10);
+}
+
 llvm::Value* gen_val(
     global_context_t& global,
     local_context_t const& local,
@@ -125,13 +130,10 @@ llvm::Value* gen_val(
         },
         [&] (typecheck::expr_t::numeric_constant_t const& x) -> llvm::Value*
         {
-            // TODO currently beta-delta normalization operates on the templated AST,
-            // so it does not reduce inside `properties.sort`, which means we might fail to generate a type;
-            // we should in fact check all usages of `properties.sort`
             auto const& type = std::get<typecheck::expr_t>(expr.properties.sort.get());
             auto const llvm_type = cast<llvm::IntegerType>(gen_type(global, type));
             assert(llvm_type);
-            return storeOrReturn(llvm::ConstantInt::get(llvm_type, x.value.str(), 10));
+            return storeOrReturn(gen_val(llvm_type, x.value));
         },
         [&] (typecheck::expr_t::boolean_expr_t const& x) -> llvm::Value*
         {
@@ -222,11 +224,38 @@ llvm::Value* gen_val(
                 x.value,
                 [&] (typecheck::expr_t::arith_expr_t::plus_t const& x) -> llvm::Value*
                 {
-                    // TODO add NUW/NSW but probably depends on decision whether typechecking `plus_t` requires proofs?
-                    // use temporaries to make sure that LHS comes before RHS in the emitted IR
                     auto const lhs = gen_val(global, local, builder, x.lhs.get(), nullptr);
                     auto const rhs = gen_val(global, local, builder, x.rhs.get(), nullptr);
-                    return builder.CreateAdd(lhs, rhs);
+                    auto result = builder.CreateAdd(lhs, rhs);
+                    // for user-defined integrals we might have to manually wrap around
+                    match(
+                        std::get<typecheck::expr_t>(x.lhs.get().properties.sort.get()).value,
+                        [&] (typecheck::expr_t::global_t const& g)
+                        {
+                            auto const type_def = std::get_if<typecheck::type_def_t>(global[g]);
+                            assert(type_def and "unknown global or not a typedef");
+                            match(
+                                type_def->value,
+                                [&] (typecheck::type_def_t::integer_t const& integer)
+                                {
+                                    if (integer.max_abs_value)
+                                    {
+                                        using enum dep0::ast::sign_t;
+                                        using enum llvm::CmpInst::Predicate;
+                                        auto const type = gen_type(global, integer.width);
+                                        auto const min_val =
+                                            integer.sign == signed_v
+                                            ? gen_val(type, -*integer.max_abs_value)
+                                            : llvm::ConstantInt::get(type, 0);
+                                        auto const max_val = gen_val(type, *integer.max_abs_value);
+                                        auto const op = integer.sign == signed_v ? ICMP_SGT : ICMP_UGT;
+                                        auto const cond = builder.CreateCmp(op, result, max_val);
+                                        result = builder.CreateSelect(cond, min_val, result);
+                                    }
+                                });
+                        },
+                        [] (auto const&) {});
+                    return result;
                 }));
         },
         [&] (typecheck::expr_t::var_t const& var) -> llvm::Value*

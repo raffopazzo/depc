@@ -4,11 +4,11 @@
 #include "private/check.hpp"
 #include "private/derivation_rules.hpp"
 #include "private/returns_from_all_branches.hpp"
+#include "private/substitute.hpp"
 
 #include "dep0/typecheck/beta_delta_reduction.hpp"
 
 #include "dep0/ast/pretty_print.hpp"
-#include "dep0/ast/substitute.hpp"
 
 #include "dep0/match.hpp"
 
@@ -408,7 +408,7 @@ type_assign_app(
         if (not arg)
             return std::move(arg.error());
         if (func_type->args[i].var)
-            substitute<properties_t>(
+            substitute(
                 *func_type->args[i].var,
                 *arg,
                 func_type->args.begin() + i + 1,

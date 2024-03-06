@@ -16,6 +16,11 @@ namespace dep0::llvmgen {
 llvm::FunctionType* gen_func_type(global_context_t&, llvm_func_proto_t const&);
 
 /**
+ * Return the LLVM integer type of the given bit width.
+ */
+llvm::IntegerType* gen_type(global_context_t&, ast::width_t);
+
+/**
  * Generate the LLVM type for the given type expression, which must be a 1st order type.
  *
  * @param type  Must be an expression of sort `typename_t` and it must represent a 1st order type.

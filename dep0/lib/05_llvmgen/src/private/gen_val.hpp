@@ -10,6 +10,11 @@
 namespace dep0::llvmgen {
 
 /**
+ * Generates an LLVM value for the given type and number.
+ */
+llvm::Value* gen_val(llvm::IntegerType*, boost::multiprecision::cpp_int const&);
+
+/**
  * Generates an LLVM value for the given expression.
  *
  * @param dest  If this parameter is not nullptr, this function will emit appropriate IR instructions

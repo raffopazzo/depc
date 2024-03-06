@@ -16,8 +16,6 @@ add_library(dep0_ast_lib
     include/dep0/ast/replace_impl.hpp
     include/dep0/ast/size.hpp
     include/dep0/ast/size_impl.hpp
-    include/dep0/ast/substitute.hpp
-    include/dep0/ast/substitute_impl.hpp
     src/alpha_equivalence.cpp
     src/ast.cpp
     src/concepts.cpp
@@ -27,7 +25,6 @@ add_library(dep0_ast_lib
     src/rename.cpp
     src/replace.cpp
     src/size.cpp
-    src/substitute.cpp
     )
 add_library(DepC::Dep0::Ast ALIAS dep0_ast_lib)
 target_compile_features(dep0_ast_lib PUBLIC cxx_std_20)

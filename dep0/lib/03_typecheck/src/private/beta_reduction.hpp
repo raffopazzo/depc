@@ -12,7 +12,7 @@ namespace dep0::typecheck {
 bool beta_normalize(body_t&);
 
 /**
- * Perform a beta normalization inside the given expression.
+ * @return true if beta normalization modified the given expression.
  */
 bool beta_normalize(expr_t&);
 

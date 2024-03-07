@@ -7,7 +7,7 @@
 namespace dep0::typecheck {
 
 /**
- * Perform a beta normalization inside the given body.
+ * @return true if beta normalization modified the given body.
  */
 bool beta_normalize(body_t&);
 

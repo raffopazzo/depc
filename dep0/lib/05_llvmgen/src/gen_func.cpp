@@ -99,6 +99,8 @@ llvm::Value* gen_func_decl(
             llvm::Function::ExternalLinkage,
             name.name.view(),
             global.llvm_module);
+    bool const inserted = global.try_emplace(name, llvm_func_t(llvm_f)).second;
+    assert(inserted);
     local_context_t local;
     gen_func_args(global, local, proto, llvm_f);
     gen_func_attributes(global, proto, llvm_f);

@@ -10,6 +10,7 @@
 #include <boost/hana.hpp>
 
 #include <cassert>
+#include <limits>
 #include <optional>
 
 namespace dep0::typecheck {

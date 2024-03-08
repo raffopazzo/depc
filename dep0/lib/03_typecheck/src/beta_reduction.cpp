@@ -1,5 +1,6 @@
 #include "private/beta_reduction.hpp"
 
+#include "private/drop_unreachable_stmts.hpp"
 #include "private/substitute.hpp"
 
 #include "dep0/destructive_self_assign.hpp"
@@ -179,14 +180,7 @@ bool beta_normalize(body_t& body)
             body.stmts.erase(it + *index_of_ret, body.stmts.end());
         return it;
     };
-    bool changed = false;
-    // drop redundant returns
-    if (auto const it = std::ranges::find_if(body.stmts, is_return); it != body.stmts.end())
-    {
-        auto const old_size = body.stmts.size();
-        body.stmts.erase(std::next(it), body.stmts.end());
-        changed = old_size != body.stmts.size();
-    }
+    bool changed = drop_unreachable_stmts(body);
     auto it = body.stmts.begin();
     while (it != body.stmts.end())
     {
@@ -198,11 +192,13 @@ bool beta_normalize(body_t& body)
                 // if immediately-invoked lambda we can extract the body,
                 // but have to suppress return statements from the invoked lambda,
                 // otherwise they would become early returns from the parent function
+                // TODO if the return statement is inside an if-else it currently becomes an early return
                 // TODO blindly suppressing return of the invoked lambda will be wrong once we have side-effects
                 if (app.args.empty())
                     if (auto* const abs = std::get_if<expr_t::abs_t>(&app.func.get().value))
                     {
                         changed = true;
+                        drop_unreachable_stmts(abs->body);
                         std::erase_if(abs->body.stmts, is_return);
                         return replace_with(it, std::move(abs->body.stmts));
                     }

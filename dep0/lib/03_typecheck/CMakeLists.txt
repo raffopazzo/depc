@@ -17,6 +17,7 @@ add_library(dep0_typecheck_lib
   src/private/cpp_int_limits.hpp
   src/private/delta_unfold.hpp
   src/private/derivation_rules.hpp
+  src/private/drop_unreachable_stmts.hpp
   src/private/proof_state.hpp
   src/private/returns_from_all_branches.hpp
   src/private/rewrite.hpp
@@ -34,6 +35,7 @@ add_library(dep0_typecheck_lib
   src/delta_unfold.cpp
   src/derivation.cpp
   src/derivation_rules.cpp
+  src/drop_unreachable_stmts.cpp
   src/environment.cpp
   src/error.cpp
   src/proof_state.cpp

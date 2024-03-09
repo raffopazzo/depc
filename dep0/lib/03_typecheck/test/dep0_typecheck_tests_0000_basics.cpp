@@ -87,6 +87,30 @@ BOOST_AUTO_TEST_CASE(pass_017)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_018)
+{
+    BOOST_TEST_REQUIRE(pass("0000_basics/pass_018.depc"));
+    BOOST_TEST_REQUIRE(pass_result->entries.size() == 2ul);
+    {
+        auto const f = std::get_if<dep0::typecheck::func_decl_t>(&pass_result->entries[0ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "f");
+        BOOST_TEST(f->signature.args.size() == 1ul);
+        BOOST_TEST(is_arg(f->signature.args[0ul], is_bool, std::nullopt));
+        BOOST_TEST(is_i32(f->signature.ret_type.get()));
+    }
+    {
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[1ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "g");
+        BOOST_TEST(f->value.args.size() == 0ul);
+        BOOST_TEST(is_i32(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 2ul);
+        BOOST_TEST(is_app_of(f->value.body.stmts[0], global("f"), constant(true)));
+        BOOST_TEST(is_return_of(f->value.body.stmts[1ul], constant(0)));
+    }
+}
+
 BOOST_AUTO_TEST_CASE(typecheck_error_000)
 {
     BOOST_TEST_REQUIRE(fail("0000_basics/typecheck_error_000.depc"));

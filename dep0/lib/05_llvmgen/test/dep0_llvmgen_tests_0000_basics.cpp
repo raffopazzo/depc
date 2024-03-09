@@ -75,7 +75,23 @@ BOOST_AUTO_TEST_CASE(pass_017)
         auto const f = pass_result.value()->getFunction("g");
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(is_i1, "which", {zext})}, is_i32, {sext}));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(2)));
+        auto const inst = get_instructions(f->getEntryBlock());
+        BOOST_TEST_REQUIRE(inst.size() == 1ul);
+        BOOST_TEST(is_return_of(inst[0], constant(2)));
+    }
+}
+
+BOOST_AUTO_TEST_CASE(pass_018)
+{
+    apply_beta_delta_normalization = true;
+    BOOST_TEST_REQUIRE(pass("0000_basics/pass_018.depc"));
+    {
+        auto const f = pass_result.value()->getFunction("g");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, {sext}));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        auto const inst = get_instructions(f->getEntryBlock());
+        BOOST_TEST_REQUIRE(inst.size() == 1ul);
+        BOOST_TEST(is_return_of(inst[0], constant(0)));
     }
 }
 

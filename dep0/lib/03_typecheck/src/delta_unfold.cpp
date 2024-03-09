@@ -173,7 +173,7 @@ bool delta_unfold(environment_t const& env, context_t const& ctx, expr_t& expr)
     if (auto const type = std::get_if<expr_t>(&expr.properties.sort.get()))
         if (delta_unfold(env, ctx, *type))
             return true;
-    // for boolean_expr_t, relation_expr_t and arith_expr_t, prefer primitive reduction over further unfolding
+    // for boolean_expr_t, relation_expr_t,  etc, prefer primitive reduction over further unfolding
     return match(
         expr.value,
         [&] (expr_t::boolean_expr_t& x)

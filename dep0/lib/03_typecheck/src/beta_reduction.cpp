@@ -1,7 +1,6 @@
 #include "private/beta_reduction.hpp"
 
 #include "private/drop_unreachable_stmts.hpp"
-#include "private/has_side_effects.hpp"
 #include "private/substitute.hpp"
 
 #include "dep0/destructive_self_assign.hpp"
@@ -190,10 +189,10 @@ bool beta_normalize(body_t& body)
             it->value,
             [&] (expr_t::app_t const&)
             {
-                if (not has_side_effects(*it))
-                    return body.stmts.erase(it);
-                else
-                    return std::next(it);
+                // currently all functions are immutable and can be dropped right away;
+                // eventually we'll have to keep calls to mutable functions,
+                // in order to retain their side effects
+                return body.stmts.erase(it);
             },
             [&] (stmt_t::if_else_t& if_)
             {

@@ -1,6 +1,7 @@
 #include "private/beta_reduction.hpp"
 
 #include "private/drop_unreachable_stmts.hpp"
+#include "private/has_side_effects.hpp"
 #include "private/substitute.hpp"
 
 #include "dep0/destructive_self_assign.hpp"
@@ -187,22 +188,12 @@ bool beta_normalize(body_t& body)
         changed |= impl::beta_normalize(*it);
         it = match(
             it->value,
-            [&] (expr_t::app_t& app)
+            [&] (expr_t::app_t const&)
             {
-                // if immediately-invoked lambda we can extract the body,
-                // but have to suppress return statements from the invoked lambda,
-                // otherwise they would become early returns from the parent function
-                // TODO if the return statement is inside an if-else it currently becomes an early return
-                // TODO blindly suppressing return of the invoked lambda will be wrong once we have side-effects
-                if (app.args.empty())
-                    if (auto* const abs = std::get_if<expr_t::abs_t>(&app.func.get().value))
-                    {
-                        changed = true;
-                        drop_unreachable_stmts(abs->body);
-                        std::erase_if(abs->body.stmts, is_return);
-                        return replace_with(it, std::move(abs->body.stmts));
-                    }
-                return std::next(it);
+                if (not has_side_effects(*it))
+                    return body.stmts.erase(it);
+                else
+                    return std::next(it);
             },
             [&] (stmt_t::if_else_t& if_)
             {

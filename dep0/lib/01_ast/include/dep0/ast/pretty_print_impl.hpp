@@ -194,7 +194,7 @@ std::ostream& pretty_print(std::ostream& os, typename stmt_t<P>::if_else_t const
         if (body.stmts.size() == 1ul and not std::holds_alternative<typename stmt_t<P>::if_else_t>(body.stmts[0].value))
             pretty_print(detail::new_line(os, indent + 1ul), body.stmts[0], indent + 1ul);
         else
-            pretty_print(detail::new_line(os, indent + 1ul), body, indent + 1ul);
+            pretty_print(detail::new_line(os, indent), body, indent);
     };
     pretty_print(os << "if (", x.cond, indent + 1ul) << ')';
     print_stmt_or_body(x.true_branch);

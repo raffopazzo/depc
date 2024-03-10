@@ -192,9 +192,11 @@ BOOST_AUTO_TEST_CASE(pass_004)
     // normalization should handle integer signed/unsigned wrapping
     // and compute the correct type for the numeric constant
     BOOST_TEST(dep0::typecheck::beta_delta_normalize(*pass_result));
+    BOOST_TEST_REQUIRE(pass_result->entries.size() == 8ul);
     {
         auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[6]);
         BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "min_hour");
         auto const& stmt = f->value.body.stmts[0ul];
         BOOST_TEST_REQUIRE(is_return_of(stmt, constant(0)));
         auto const ret = std::get<dep0::typecheck::stmt_t::return_t>(stmt.value);
@@ -203,6 +205,7 @@ BOOST_AUTO_TEST_CASE(pass_004)
     {
         auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[7]);
         BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "min_sign");
         auto const& stmt = f->value.body.stmts[0ul];
         BOOST_TEST_REQUIRE(is_return_of(stmt, constant(-1)));
         auto const ret = std::get<dep0::typecheck::stmt_t::return_t>(stmt.value);

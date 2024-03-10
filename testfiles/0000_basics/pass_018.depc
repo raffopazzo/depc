@@ -1,0 +1,7 @@
+i32_t f(bool);
+
+i32_t g()
+{
+    f(true);
+    return 0;
+}

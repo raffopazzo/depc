@@ -2,8 +2,6 @@
 
 namespace dep0::typecheck {
 
-static bool returns_from_all_branches(stmt_t::if_else_t const&);
-
 bool returns_from_all_branches(body_t const& body)
 {
     struct visitor

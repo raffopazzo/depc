@@ -9,6 +9,15 @@ namespace dep0::typecheck {
 /**
  * Unfold one function definition,
  * from the given environment and context,
+ * inside the given body.
+ *
+ * @return True if a definition was unfolded.
+ */
+bool delta_unfold(environment_t const&, context_t const&, body_t&);
+
+/**
+ * Unfold one function definition,
+ * from the given environment and context,
  * inside the given expression.
  *
  * @return True if a definition was unfolded.

@@ -1,0 +1,13 @@
+i32_t f(bool which)
+{
+    if (which)
+        return 0;
+    else
+        return 1;
+}
+
+i32_t g(bool which)
+{
+    f(which);
+    return 2;
+}

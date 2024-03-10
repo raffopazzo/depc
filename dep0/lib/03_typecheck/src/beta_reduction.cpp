@@ -5,6 +5,7 @@
 
 #include "dep0/destructive_self_assign.hpp"
 #include "dep0/match.hpp"
+#include "dep0/vector_splice.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -154,31 +155,14 @@ bool beta_normalize(expr_t::subscript_t& subscript)
 
 bool beta_normalize(body_t& body)
 {
-    auto const is_return = [] (stmt_t const& x)
-    {
-        return std::holds_alternative<stmt_t::return_t>(x.value);
-    };
     // NB taking `stmts` by value because we are about to perform a destructive self-assignment
     auto const replace_with = [&] (std::vector<stmt_t>::iterator it, std::vector<stmt_t> stmts)
     {
-        // If there is nothing to replace `it` with, then just remove it;
-        // otherwise we need to splice all the replacing statements in place of `it`,
-        // which can be done efficiently by replacing `it` with the first statement, and insert the rest after it.
-        // Finally, if the new statements contain a return statment, any other statement after that can be dropped.
-        if (stmts.empty())
-            return body.stmts.erase(it);
-        auto const index_of_ret = [&]
-        {
-            auto const j = std::ranges::find_if(stmts, is_return);
-            return j == stmts.end() ? std::nullopt : std::optional{std::distance(stmts.begin(), j)};
-        }();
-        auto j = stmts.begin();
-        *it++ = std::move(*j++);
-        it = body.stmts.insert(it, std::make_move_iterator(j), std::make_move_iterator(stmts.end()));
-        if (index_of_ret)
-            // if you were expecting a `+1` here, the reason it's missing is because we manually incremented `it` once
-            body.stmts.erase(it + *index_of_ret, body.stmts.end());
-        return it;
+        // replace `it` with the new statements and then drop whatever has now become unreachable because of them
+        it = vector_splice(body.stmts, it, std::move(stmts));
+        auto const new_end = drop_unreachable_stmts(it, body.stmts.end()).second;
+        body.stmts.erase(new_end, body.stmts.end());
+        return it; // the first statement is obviously reachable, so `it` is still valid
     };
     bool changed = drop_unreachable_stmts(body);
     auto it = body.stmts.begin();

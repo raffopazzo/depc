@@ -22,6 +22,7 @@ static bool delta_unfold(environment_t const&, context_t const&, stmt_t::if_else
 static bool delta_unfold(environment_t const&, context_t const&, stmt_t::return_t&);
 
 static bool delta_unfold(environment_t const&, context_t const&, expr_t::typename_t&) { return false; }
+static bool delta_unfold(environment_t const&, context_t const&, expr_t::true_t&) { return false; }
 static bool delta_unfold(environment_t const&, context_t const&, expr_t::bool_t&) { return false; }
 static bool delta_unfold(environment_t const&, context_t const&, expr_t::unit_t&) { return false; }
 static bool delta_unfold(environment_t const&, context_t const&, expr_t::i8_t&) { return false; }
@@ -222,9 +223,40 @@ bool delta_unfold(environment_t const& env, context_t const& ctx, expr_t& expr)
                 x.value,
                 [&] <typename T> (T& x)
                 {
-                    // TODO numeric constants too
                     if (auto const a = std::get_if<expr_t::boolean_constant_t>(&x.lhs.get().value))
                         if (auto const b = std::get_if<expr_t::boolean_constant_t>(&x.rhs.get().value))
+                        {
+                            bool const c =
+                                boost::hana::overload(
+                                    [&] (boost::hana::type<expr_t::relation_expr_t::eq_t>)
+                                    {
+                                        return a->value == b->value;
+                                    },
+                                    [&] (boost::hana::type<expr_t::relation_expr_t::neq_t>)
+                                    {
+                                        return a->value != b->value;
+                                    },
+                                    [&] (boost::hana::type<expr_t::relation_expr_t::gt_t>)
+                                    {
+                                        return a->value > b->value;
+                                    },
+                                    [&] (boost::hana::type<expr_t::relation_expr_t::gte_t>)
+                                    {
+                                        return a->value >= b->value;
+                                    },
+                                    [&] (boost::hana::type<expr_t::relation_expr_t::lt_t>)
+                                    {
+                                        return a->value < b->value;
+                                    },
+                                    [&] (boost::hana::type<expr_t::relation_expr_t::lte_t>)
+                                    {
+                                        return a->value <= b->value;
+                                    })(boost::hana::type_c<T>);
+                            expr.value.template emplace<expr_t::boolean_constant_t>(c);
+                            return true;
+                        }
+                    if (auto const a = std::get_if<expr_t::numeric_constant_t>(&x.lhs.get().value))
+                        if (auto const b = std::get_if<expr_t::numeric_constant_t>(&x.rhs.get().value))
                         {
                             bool const c =
                                 boost::hana::overload(

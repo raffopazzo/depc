@@ -59,6 +59,11 @@ struct expr_t
     struct typename_t {};
 
     /**
+     * Represents the type constructor `true_t`, whose type is `(bool) -> typename`.
+     */
+    struct true_t {};
+
+    /**
      * Represents the primitive type `bool`, whose values are `true` or `false`.
      */
     struct bool_t {};
@@ -276,7 +281,7 @@ struct expr_t
 
     using value_t =
         std::variant<
-            typename_t,
+            typename_t, true_t,
             bool_t, unit_t, i8_t, i16_t, i32_t, i64_t, u8_t, u16_t, u32_t, u64_t,
             boolean_constant_t, numeric_constant_t, boolean_expr_t, relation_expr_t, arith_expr_t,
             var_t, global_t, app_t, abs_t, pi_t,

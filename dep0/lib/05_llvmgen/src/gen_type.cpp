@@ -49,9 +49,14 @@ llvm::Type* gen_type(global_context_t& global, typecheck::expr_t const& x)
 {
     return match(
         x.value,
-        [&] (typecheck::expr_t::typename_t const&) -> llvm::Type*
+        [] (typecheck::expr_t::typename_t const&) -> llvm::Type*
         {
             assert(false and "cannot generate a type for typename");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::true_t const&) -> llvm::Type*
+        {
+            assert(false and "cannot generate a type for true_t");
             __builtin_unreachable();
         },
         [&] (typecheck::expr_t::bool_t const&) -> llvm::Type* { return llvm::Type::getInt1Ty(global.llvm_ctx); },
@@ -98,27 +103,27 @@ llvm::Type* gen_type(global_context_t& global, typecheck::expr_t const& x)
         [&] (typecheck::expr_t::u16_t const&) -> llvm::Type* { return llvm::Type::getInt16Ty(global.llvm_ctx); },
         [&] (typecheck::expr_t::u32_t const&) -> llvm::Type* { return llvm::Type::getInt32Ty(global.llvm_ctx); },
         [&] (typecheck::expr_t::u64_t const&) -> llvm::Type* { return llvm::Type::getInt64Ty(global.llvm_ctx); },
-        [&] (typecheck::expr_t::boolean_constant_t const&) -> llvm::Type*
+        [] (typecheck::expr_t::boolean_constant_t const&) -> llvm::Type*
         {
             assert(false and "cannot generate a type for a boolean constant");
             __builtin_unreachable();
         },
-        [&] (typecheck::expr_t::numeric_constant_t const&) -> llvm::Type*
+        [] (typecheck::expr_t::numeric_constant_t const&) -> llvm::Type*
         {
             assert(false and "cannot generate a type for a numeric constant");
             __builtin_unreachable();
         },
-        [&] (typecheck::expr_t::boolean_expr_t const&) -> llvm::Type*
+        [] (typecheck::expr_t::boolean_expr_t const&) -> llvm::Type*
         {
             assert(false and "cannot generate a type for a boolean expression");
             __builtin_unreachable();
         },
-        [&] (typecheck::expr_t::relation_expr_t const&) -> llvm::Type*
+        [] (typecheck::expr_t::relation_expr_t const&) -> llvm::Type*
         {
             assert(false and "cannot generate a type for a relation expression");
             __builtin_unreachable();
         },
-        [&] (typecheck::expr_t::arith_expr_t const&) -> llvm::Type*
+        [] (typecheck::expr_t::arith_expr_t const&) -> llvm::Type*
         {
             assert(false and "cannot generate a type for an arithmetic expression");
             __builtin_unreachable();
@@ -154,7 +159,7 @@ llvm::Type* gen_type(global_context_t& global, typecheck::expr_t const& x)
             auto const properties = get_array_properties(x);
             return gen_type(global, properties.element_type)->getPointerTo();
         },
-        [&] (typecheck::expr_t::abs_t const&) -> llvm::Type*
+        [] (typecheck::expr_t::abs_t const&) -> llvm::Type*
         {
             assert(false and "cannot generate a type for a function abstraction");
             __builtin_unreachable();
@@ -165,17 +170,17 @@ llvm::Type* gen_type(global_context_t& global, typecheck::expr_t const& x)
             assert(proto and "can only generate an llvm type for 1st order function types");
             return gen_func_type(global, *proto)->getPointerTo();
         },
-        [&] (typecheck::expr_t::array_t const&) -> llvm::Type*
+        [] (typecheck::expr_t::array_t const&) -> llvm::Type*
         {
             assert(false and "cannot generate a type for an array_t expression");
             __builtin_unreachable();
         },
-        [&] (typecheck::expr_t::init_list_t const&) -> llvm::Type*
+        [] (typecheck::expr_t::init_list_t const&) -> llvm::Type*
         {
             assert(false and "cannot generate a type for an initializer list");
             __builtin_unreachable();
         },
-        [&] (typecheck::expr_t::subscript_t const&) -> llvm::Type*
+        [] (typecheck::expr_t::subscript_t const&) -> llvm::Type*
         {
             assert(false and "cannot generate a type for subscript expression");
             __builtin_unreachable();

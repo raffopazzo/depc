@@ -74,6 +74,11 @@ llvm::Value* gen_val(
             assert(false and "cannot generate a value for a typename");
             __builtin_unreachable();
         },
+        [] (typecheck::expr_t::true_t const&) -> llvm::Value*
+        {
+            assert(false and "cannot generate a value for true_t");
+            __builtin_unreachable();
+        },
         [] (typecheck::expr_t::bool_t const&) -> llvm::Value*
         {
             assert(false and "cannot generate a value for bool_t");

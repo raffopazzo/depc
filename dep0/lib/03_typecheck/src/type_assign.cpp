@@ -3,6 +3,7 @@
 #include "private/beta_delta_equivalence.hpp"
 #include "private/check.hpp"
 #include "private/derivation_rules.hpp"
+#include "private/proof_search.hpp"
 #include "private/returns_from_all_branches.hpp"
 #include "private/substitute.hpp"
 
@@ -48,51 +49,33 @@ expected<expr_t> type_assign(environment_t const& env, context_t const& ctx, par
     auto const loc = expr.properties;
     return match(
         expr.value,
-        [&] (parser::expr_t::typename_t) -> expected<expr_t>
+        [] (parser::expr_t::typename_t) -> expected<expr_t> { return derivation_rules::make_typename(); },
+        [&] (parser::expr_t::true_t const&) -> expected<expr_t>
         {
-            return derivation_rules::make_typename();
+            return make_legal_expr(
+                make_legal_expr(
+                    kind_t{}, // TODO need to add a test to make sure this is correct
+                    expr_t::pi_t{
+                        std::vector{
+                            // Using loc here is arguably wrong, but also irrelevant because the location of arguments
+                            // is used mainly to keep track of the origin of binding variables in some context.
+                            // But this will never go in a context; it doesn't even have a name!
+                            make_legal_func_arg(loc, derivation_rules::make_bool())
+                        },
+                        derivation_rules::make_typename()}),
+                expr_t::true_t{});
         },
-        [&] (parser::expr_t::bool_t) -> expected<expr_t>
-        {
-            return derivation_rules::make_bool();
-        },
-        [&] (parser::expr_t::unit_t) -> expected<expr_t>
-        {
-            return derivation_rules::make_unit();
-        },
-        [&] (parser::expr_t::i8_t) -> expected<expr_t>
-        {
-            return derivation_rules::make_i8();
-        },
-        [&] (parser::expr_t::i16_t) -> expected<expr_t>
-        {
-            return derivation_rules::make_i16();
-        },
-        [&] (parser::expr_t::i32_t) -> expected<expr_t>
-        {
-            return derivation_rules::make_i32();
-        },
-        [&] (parser::expr_t::i64_t) -> expected<expr_t>
-        {
-            return derivation_rules::make_i64();
-        },
-        [&] (parser::expr_t::u8_t) -> expected<expr_t>
-        {
-            return derivation_rules::make_u8();
-        },
-        [&] (parser::expr_t::u16_t) -> expected<expr_t>
-        {
-            return derivation_rules::make_u16();
-        },
-        [&] (parser::expr_t::u32_t) -> expected<expr_t>
-        {
-            return derivation_rules::make_u32();
-        },
-        [&] (parser::expr_t::u64_t) -> expected<expr_t>
-        {
-            return derivation_rules::make_u64();
-        },
-        [&] (parser::expr_t::boolean_constant_t const& x) -> expected<expr_t>
+        [] (parser::expr_t::bool_t) -> expected<expr_t> { return derivation_rules::make_bool(); },
+        [] (parser::expr_t::unit_t) -> expected<expr_t> { return derivation_rules::make_unit(); },
+        [] (parser::expr_t::i8_t) -> expected<expr_t> { return derivation_rules::make_i8(); },
+        [] (parser::expr_t::i16_t) -> expected<expr_t> { return derivation_rules::make_i16(); },
+        [] (parser::expr_t::i32_t) -> expected<expr_t> { return derivation_rules::make_i32(); },
+        [] (parser::expr_t::i64_t) -> expected<expr_t> { return derivation_rules::make_i64(); },
+        [] (parser::expr_t::u8_t) -> expected<expr_t> { return derivation_rules::make_u8(); },
+        [] (parser::expr_t::u16_t) -> expected<expr_t> { return derivation_rules::make_u16(); },
+        [] (parser::expr_t::u32_t) -> expected<expr_t> { return derivation_rules::make_u32(); },
+        [] (parser::expr_t::u64_t) -> expected<expr_t> { return derivation_rules::make_u64(); },
+        [] (parser::expr_t::boolean_constant_t const& x) -> expected<expr_t>
         {
             return make_legal_expr(derivation_rules::make_bool(), expr_t::boolean_constant_t{x.value});
         },
@@ -335,28 +318,44 @@ expected<expr_t> type_assign(environment_t const& env, context_t const& ctx, par
                     if (not index)
                         return std::move(index.error());
                     beta_delta_normalize(env, ctx, *index);
-                    if (auto const i = std::get_if<expr_t::numeric_constant_t>(&index->value))
-                        if (auto const n = std::get_if<expr_t::numeric_constant_t>(&app->args.at(1ul).value))
-                            if (i->value < n->value)
-                            {
-                                // we're about to move from `array`, which holds the element type; so must take a copy
-                                auto element_type = app->args.at(0ul);
-                                return make_legal_expr(
-                                    element_type,
-                                    expr_t::subscript_t{std::move(*array), std::move(*index)});
-                            }
-                            else
-                            {
-                                std::ostringstream err;
-                                pretty_print<properties_t>(err << "array index `", *i) << '`';
-                                pretty_print<properties_t>(err << " is not within bounds `", *n) << '`';
-                                return error_t::from_error(dep0::error_t(err.str(), loc));
-                            }
-                    // TODO either index or size (or both) are run-time values; we need to add proof-search for `i < n`
-                    std::ostringstream err;
-                    pretty_print(err << "cannot verify that array index `", *index) << '`';
-                    pretty_print(err << " is within bounds `", app->args.at(1ul)) << '`';
-                    return error_t::from_error(dep0::error_t(err.str(), loc));
+                    // TODO should somehow add derivation_rules::make_true_t() or something similar
+                    auto const true_t =
+                        make_legal_expr(
+                            make_legal_expr(
+                                kind_t{},
+                                expr_t::pi_t{
+                                    std::vector{
+                                        make_legal_func_arg(loc, derivation_rules::make_bool())
+                                    },
+                                    derivation_rules::make_typename()}),
+                            expr_t::true_t{});
+                    auto const proof_type =
+                        make_legal_expr(
+                            derivation_rules::make_typename(),
+                            expr_t::app_t{
+                                true_t,
+                                {
+                                    make_legal_expr(
+                                        derivation_rules::make_bool(),
+                                        expr_t::relation_expr_t{
+                                            expr_t::relation_expr_t::lt_t{*index, app->args[1]}
+                                        })
+                                }});
+                    if (proof_search(env, ctx, proof_type))
+                    {
+                        // we're about to move from `array`, which holds the element type; so must take a copy
+                        auto element_type = app->args.at(0ul);
+                        return make_legal_expr(
+                            element_type,
+                            expr_t::subscript_t{std::move(*array), std::move(*index)});
+                    }
+                    else
+                    {
+                        std::ostringstream err;
+                        pretty_print(err << "cannot verify that array index `", *index) << '`';
+                        pretty_print(err << " is within bounds `", app->args.at(1ul)) << '`';
+                        return error_t::from_error(dep0::error_t(err.str(), loc));
+                    }
                 },
                 [&] (kind_t) -> expected<expr_t>
                 {

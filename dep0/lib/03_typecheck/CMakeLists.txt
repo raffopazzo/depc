@@ -18,6 +18,7 @@ add_library(dep0_typecheck_lib
   src/private/delta_unfold.hpp
   src/private/derivation_rules.hpp
   src/private/drop_unreachable_stmts.hpp
+  src/private/proof_search.hpp
   src/private/proof_state.hpp
   src/private/returns_from_all_branches.hpp
   src/private/rewrite.hpp
@@ -38,11 +39,16 @@ add_library(dep0_typecheck_lib
   src/drop_unreachable_stmts.cpp
   src/environment.cpp
   src/error.cpp
+  src/proof_search.cpp
   src/proof_state.cpp
   src/returns_from_all_branches.cpp
   src/rewrite.cpp
   src/substitute.cpp
   src/type_assign.cpp
+  # tactics headers
+  src/private/tactics/search_true_t.hpp
+  # tactics sources
+  src/tactics/search_true_t.cpp
   )
 add_library(DepC::Dep0::TypeCheck ALIAS dep0_typecheck_lib)
 target_compile_features(dep0_typecheck_lib PUBLIC cxx_std_20)

@@ -22,6 +22,7 @@ static bool beta_normalize(stmt_t::if_else_t&);
 static bool beta_normalize(stmt_t::return_t&);
 
 static bool beta_normalize(expr_t::typename_t&) { return false; }
+static bool beta_normalize(expr_t::true_t&) { return false; }
 static bool beta_normalize(expr_t::bool_t&) { return false; }
 static bool beta_normalize(expr_t::unit_t&) { return false; }
 static bool beta_normalize(expr_t::i8_t&) { return false; }

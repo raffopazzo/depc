@@ -13,7 +13,7 @@ namespace dep0::typecheck {
  * If `expr` is provably true, the returned value will be the empty initializer list `{}`,
  * because `true_t(true)` is a unit-like type.
  */
-std::optional<expr_t> search_true_t(environment_t const&, context_t const&, expr_t const&);
+std::optional<expr_t> search_true_t(environment_t const&, context_t const&, expr_t const& type);
 
 } // namespace dep0::typecheck
 

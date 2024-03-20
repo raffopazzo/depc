@@ -17,14 +17,15 @@ void source_handle_t::release()
 }
 
 source_handle_t::~source_handle_t() { release(); }
-source_handle_t::source_handle_t(source_handle_t const& that) : state(that.state) { ++that.state->counter; }
+source_handle_t::source_handle_t(source_handle_t const& that) : state(that.state) { if (state) ++state->counter; }
 source_handle_t::source_handle_t(source_handle_t&& that) : state(std::exchange(that.state, nullptr)) { }
 
 source_handle_t& source_handle_t::operator=(source_handle_t const& that)
 {
     release();
     state = that.state;
-    ++that.state->counter;
+    if (state)
+        ++state->counter;
     return *this;
 }
 

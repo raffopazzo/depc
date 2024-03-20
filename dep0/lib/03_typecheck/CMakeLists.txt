@@ -47,8 +47,10 @@ add_library(dep0_typecheck_lib
   src/type_assign.cpp
   # tactics headers
   src/private/tactics/search_true_t.hpp
+  src/private/tactics/search_var.hpp
   # tactics sources
   src/tactics/search_true_t.cpp
+  src/tactics/search_var.cpp
   )
 add_library(DepC::Dep0::TypeCheck ALIAS dep0_typecheck_lib)
 target_compile_features(dep0_typecheck_lib PUBLIC cxx_std_20)

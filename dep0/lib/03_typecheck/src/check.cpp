@@ -23,6 +23,23 @@
 
 namespace dep0::typecheck {
 
+/**
+ * Add an anonymous variable with name `auto:k` to the existing context bound to the given expression.
+ * The number `k` is guaranteed to generate a new unique variable name.
+ */
+static void add_anonymous_var(context_t& ctx, expr_t const& expr)
+{
+    static std::size_t next_id = 1ul;
+    static const source_text empty = source_text(make_null_handle(), "auto");
+    do
+    {
+        auto const var = expr_t::var_t{empty, next_id++};
+        if (ctx.try_emplace(var, std::nullopt, expr))
+            return;
+    }
+    while (true);
+}
+
 expected<module_t> check(parser::module_t const& x) noexcept
 {
     environment_t env;
@@ -142,6 +159,15 @@ expected<stmt_t> check_stmt(environment_t const& env, proof_state_t& state, pars
             {
                 auto new_state = proof_state_t(state.context.extend(), state.goal);
                 new_state.rewrite(*cond, derivation_rules::make_true());
+                // we must add `true_t(cond)` to the new context only after we have rewritten `cond=true`,
+                // otherwise the new context will contain `true_t(true)`, which is not helpful to verify array access
+                add_anonymous_var(
+                    new_state.context,
+                    make_legal_expr(
+                        make_legal_expr(
+                            derivation_rules::make_typename(),
+                            expr_t::app_t{derivation_rules::make_true_t(), {*cond}}),
+                        expr_t::init_list_t{}));
                 return check_body(env, std::move(new_state), x.true_branch);
             }();
             if (not true_branch)
@@ -150,6 +176,7 @@ expected<stmt_t> check_stmt(environment_t const& env, proof_state_t& state, pars
             {
                 auto new_state = proof_state_t(state.context.extend(), state.goal);
                 new_state.rewrite(*cond, derivation_rules::make_false());
+                // TODO add anonymous var of type `true_t(not cond)` to the new context
                 if (auto false_branch = check_body(env, std::move(new_state), *x.false_branch))
                     return make_legal_stmt(
                         stmt_t::if_else_t{
@@ -165,6 +192,7 @@ expected<stmt_t> check_stmt(environment_t const& env, proof_state_t& state, pars
             // then it means we are now in the implied else branch;
             // we can then rewrite `cond = false` inside the current proof state
             if (returns_from_all_branches(*true_branch))
+                // TODO add anonymous var of type `true_t(not cond)` to the existing context
                 state.rewrite(*cond, derivation_rules::make_false());
             return make_legal_stmt(
                 stmt_t::if_else_t{

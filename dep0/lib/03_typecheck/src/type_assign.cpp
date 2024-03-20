@@ -254,7 +254,7 @@ expected<expr_t> type_assign(environment_t const& env, context_t const& ctx, par
             auto pi_ctx = ctx.extend();
             return check_pi_type(env, pi_ctx, loc, pi.args, pi.ret_type.get());
         },
-        [&] (parser::expr_t::array_t const&) -> expected<expr_t>
+        [] (parser::expr_t::array_t) -> expected<expr_t>
         {
             return derivation_rules::make_array();
         },

@@ -18,7 +18,7 @@ class context_t
 public:
     struct value_type
     {
-        source_loc_t origin;
+        std::optional<source_loc_t> origin;
         expr_t value;
     };
 
@@ -37,7 +37,7 @@ public:
     value_type const* operator[](expr_t::var_t const&) const;
 
     // non-const member functions
-    dep0::expected<const_iterator> try_emplace(expr_t::var_t, source_loc_t, expr_t);
+    dep0::expected<const_iterator> try_emplace(expr_t::var_t, std::optional<source_loc_t>, expr_t);
 
 private:
     scope_map<expr_t::var_t, value_type> m_values;

@@ -122,6 +122,7 @@ std::optional<expr_t> rewrite(expr_t const& from, expr_t const& to, expr_t const
             // leaf nodes (eg typename_t, var_t, etc) are empty because alpha-equivalence returned false,
             // meaning that `from != old` and therefore there is nothing to rewrite
             [] (expr_t::typename_t) { },
+            [] (expr_t::true_t) { },
             [] (expr_t::bool_t) { },
             [] (expr_t::unit_t) { },
             [] (expr_t::i8_t) { },

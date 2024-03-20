@@ -65,7 +65,7 @@ context_t::value_type const* context_t::operator[](expr_t::var_t const& name) co
 // non-const member functions
 
 dep0::expected<context_t::const_iterator>
-context_t::try_emplace(expr_t::var_t name, source_loc_t const loc, expr_t v)
+context_t::try_emplace(expr_t::var_t name, std::optional<source_loc_t> const loc, expr_t v)
 {
     auto const res = m_values.try_emplace(std::move(name), loc, std::move(v));
     if (res.second)
@@ -75,8 +75,9 @@ context_t::try_emplace(expr_t::var_t name, source_loc_t const loc, expr_t v)
         auto const& prev = res.first->second;
         std::ostringstream err;
         pretty_print<properties_t>(err << "cannot redefine `", name) << '`';
-        err << ", previously defined at " << prev.origin.line << ':' << prev.origin.col;
-        pretty_print(err << ", as `", prev.value.properties.sort.get()) << '`';
+        pretty_print(err << ", previously defined as `", prev.value.properties.sort.get()) << '`';
+        if (prev.origin)
+            err << " at " << prev.origin->line << ':' << prev.origin->col;
         return dep0::error_t(err.str(), loc);
     }
 }

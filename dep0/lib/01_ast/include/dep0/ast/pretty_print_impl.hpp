@@ -20,28 +20,29 @@ namespace detail {
 template <Properties P> bool needs_new_line(body_t<P> const&);
 template <Properties P> bool needs_new_line(func_arg_t<P> const&);
 template <Properties P> bool needs_new_line(expr_t<P> const&);
-template <Properties P> bool needs_new_line(typename expr_t<P>::typename_t const&);
-template <Properties P> bool needs_new_line(typename expr_t<P>::bool_t const&);
-template <Properties P> bool needs_new_line(typename expr_t<P>::unit_t const&);
-template <Properties P> bool needs_new_line(typename expr_t<P>::i8_t const&);
-template <Properties P> bool needs_new_line(typename expr_t<P>::i16_t const&);
-template <Properties P> bool needs_new_line(typename expr_t<P>::i32_t const&);
-template <Properties P> bool needs_new_line(typename expr_t<P>::i64_t const&);
-template <Properties P> bool needs_new_line(typename expr_t<P>::u8_t const&);
-template <Properties P> bool needs_new_line(typename expr_t<P>::u16_t const&);
-template <Properties P> bool needs_new_line(typename expr_t<P>::u32_t const&);
-template <Properties P> bool needs_new_line(typename expr_t<P>::u64_t const&);
-template <Properties P> bool needs_new_line(typename expr_t<P>::boolean_constant_t const&);
-template <Properties P> bool needs_new_line(typename expr_t<P>::numeric_constant_t const&);
+template <Properties P> bool needs_new_line(typename expr_t<P>::typename_t const&) { return false; }
+template <Properties P> bool needs_new_line(typename expr_t<P>::true_t const&) { return false; }
+template <Properties P> bool needs_new_line(typename expr_t<P>::bool_t const&) { return false; }
+template <Properties P> bool needs_new_line(typename expr_t<P>::unit_t const&) { return false; }
+template <Properties P> bool needs_new_line(typename expr_t<P>::i8_t const&) { return false; }
+template <Properties P> bool needs_new_line(typename expr_t<P>::i16_t const&) { return false; }
+template <Properties P> bool needs_new_line(typename expr_t<P>::i32_t const&) { return false; }
+template <Properties P> bool needs_new_line(typename expr_t<P>::i64_t const&) { return false; }
+template <Properties P> bool needs_new_line(typename expr_t<P>::u8_t const&) { return false; }
+template <Properties P> bool needs_new_line(typename expr_t<P>::u16_t const&) { return false; }
+template <Properties P> bool needs_new_line(typename expr_t<P>::u32_t const&) { return false; }
+template <Properties P> bool needs_new_line(typename expr_t<P>::u64_t const&) { return false; }
+template <Properties P> bool needs_new_line(typename expr_t<P>::boolean_constant_t const&) { return false; }
+template <Properties P> bool needs_new_line(typename expr_t<P>::numeric_constant_t const&) { return false; }
 template <Properties P> bool needs_new_line(typename expr_t<P>::boolean_expr_t const&);
 template <Properties P> bool needs_new_line(typename expr_t<P>::relation_expr_t const&);
 template <Properties P> bool needs_new_line(typename expr_t<P>::arith_expr_t const&);
-template <Properties P> bool needs_new_line(typename expr_t<P>::var_t const&);
-template <Properties P> bool needs_new_line(typename expr_t<P>::global_t const&);
+template <Properties P> bool needs_new_line(typename expr_t<P>::var_t const&) { return false; }
+template <Properties P> bool needs_new_line(typename expr_t<P>::global_t const&) { return false; }
 template <Properties P> bool needs_new_line(typename expr_t<P>::app_t const&);
 template <Properties P> bool needs_new_line(typename expr_t<P>::abs_t const&);
 template <Properties P> bool needs_new_line(typename expr_t<P>::pi_t const&);
-template <Properties P> bool needs_new_line(typename expr_t<P>::array_t const&);
+template <Properties P> bool needs_new_line(typename expr_t<P>::array_t const&) { return false; }
 template <Properties P> bool needs_new_line(typename expr_t<P>::init_list_t const&);
 template <Properties P> bool needs_new_line(typename expr_t<P>::subscript_t const&);
 /** @} */
@@ -54,30 +55,31 @@ template <Properties P> bool needs_new_line(typename expr_t<P>::subscript_t cons
  * @{
  */
 template <Properties P> bool needs_parenthesis(expr_t<P> const&);
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::typename_t const&);
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::bool_t const&);
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::unit_t const&);
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::i8_t const&);
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::i16_t const&);
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::i32_t const&);
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::i64_t const&);
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::u8_t const&);
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::u16_t const&);
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::u32_t const&);
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::u64_t const&);
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::boolean_constant_t const&);
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::numeric_constant_t const&);
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::typename_t const&) { return false; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::true_t const&) { return false; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::bool_t const&) { return false; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::unit_t const&) { return false; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::i8_t const&) { return false; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::i16_t const&) { return false; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::i32_t const&) { return false; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::i64_t const&) { return false; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::u8_t const&) { return false; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::u16_t const&) { return false; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::u32_t const&) { return false; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::u64_t const&) { return false; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::boolean_constant_t const&) { return false; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::numeric_constant_t const&) { return false; }
 template <Properties P> bool needs_parenthesis(typename expr_t<P>::boolean_expr_t const&);
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::relation_expr_t const&);
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::arith_expr_t const&);
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::var_t const&);
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::global_t const&);
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::app_t const&);
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::abs_t const&);
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::pi_t const&);
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::array_t const&);
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::init_list_t const&);
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::subscript_t const&);
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::relation_expr_t const&) { return true; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::arith_expr_t const&) { return true; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::var_t const&) { return false; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::global_t const&) { return false; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::app_t const&) { return false; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::abs_t const&) { return false; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::pi_t const&) { return false; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::array_t const&) { return false; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::init_list_t const&) { return false; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::subscript_t const&) { return false; }
 /** @} */
 
 inline std::ostream& new_line(std::ostream& os, std::size_t const indent)
@@ -227,6 +229,12 @@ template <Properties P>
 std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::typename_t const&, std::size_t)
 {
     return os << "typename";
+}
+
+template <Properties P>
+std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::true_t const&, std::size_t)
+{
+    return os << "true_t";
 }
 
 template <Properties P>
@@ -524,21 +532,6 @@ bool needs_new_line(expr_t<P> const& x)
     return match(x.value, [&] (auto const& x) { return needs_new_line<P>(x); });
 }
 
-template <Properties P> bool needs_new_line(typename expr_t<P>::typename_t const&) { return false; }
-template <Properties P> bool needs_new_line(typename expr_t<P>::bool_t const&) { return false; }
-template <Properties P> bool needs_new_line(typename expr_t<P>::unit_t const&) { return false; }
-template <Properties P> bool needs_new_line(typename expr_t<P>::i8_t const&) { return false; }
-template <Properties P> bool needs_new_line(typename expr_t<P>::i16_t const&) { return false; }
-template <Properties P> bool needs_new_line(typename expr_t<P>::i32_t const&) { return false; }
-template <Properties P> bool needs_new_line(typename expr_t<P>::i64_t const&) { return false; }
-template <Properties P> bool needs_new_line(typename expr_t<P>::u8_t const&) { return false; }
-template <Properties P> bool needs_new_line(typename expr_t<P>::u16_t const&) { return false; }
-template <Properties P> bool needs_new_line(typename expr_t<P>::u32_t const&) { return false; }
-template <Properties P> bool needs_new_line(typename expr_t<P>::u64_t const&) { return false; }
-
-template <Properties P> bool needs_new_line(typename expr_t<P>::boolean_constant_t const&) { return false; }
-template <Properties P> bool needs_new_line(typename expr_t<P>::numeric_constant_t const&) { return false; }
-
 template <Properties P>
 bool needs_new_line(typename expr_t<P>::boolean_expr_t const& x)
 {
@@ -576,9 +569,6 @@ bool needs_new_line(typename expr_t<P>::arith_expr_t const& x)
         });
 }
 
-template <Properties P> bool needs_new_line(typename expr_t<P>::var_t const&) { return false; }
-template <Properties P> bool needs_new_line(typename expr_t<P>::global_t const&) { return false; }
-
 template <Properties P>
 bool needs_new_line(typename expr_t<P>::app_t const& x)
 {
@@ -599,12 +589,6 @@ bool needs_new_line(typename expr_t<P>::pi_t const& x)
 {
     return needs_new_line(x.ret_type.get())
         or std::any_of(x.args.begin(), x.args.end(), [] (func_arg_t<P> const& arg) { return needs_new_line(arg); });
-}
-
-template <Properties P>
-bool needs_new_line(typename expr_t<P>::array_t const&)
-{
-    return false;
 }
 
 template <Properties P>
@@ -630,33 +614,10 @@ bool needs_parenthesis(expr_t<P> const& x)
     return match(x.value, [&] (auto const& x) { return needs_parenthesis<P>(x); });
 }
 
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::typename_t const&) { return false; }
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::bool_t const&) { return false; }
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::unit_t const&) { return false; }
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::i8_t const&) { return false; }
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::i16_t const&) { return false; }
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::i32_t const&) { return false; }
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::i64_t const&) { return false; }
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::u8_t const&) { return false; }
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::u16_t const&) { return false; }
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::u32_t const&) { return false; }
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::u64_t const&) { return false; }
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::boolean_constant_t const&) { return false; }
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::numeric_constant_t const&) { return false; }
 template <Properties P> bool needs_parenthesis(typename expr_t<P>::boolean_expr_t const& x)
 {
     return not std::holds_alternative<typename expr_t<P>::boolean_expr_t::not_t>(x.value);
 }
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::relation_expr_t const&) { return true; }
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::arith_expr_t const&) { return true; }
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::var_t const&) { return false; }
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::global_t const&) { return false; }
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::app_t const&) { return false; }
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::abs_t const&) { return false; }
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::pi_t const&) { return false; }
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::array_t const&) { return false; }
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::init_list_t const&) { return false; }
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::subscript_t const&) { return false; }
 
 } // namespace detail
 

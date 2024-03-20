@@ -26,7 +26,7 @@ bool beta_delta_normalize(environment_t const& env, func_decl_t& decl)
         changed |= beta_delta_normalize(env, ctx, arg.type);
         if (arg.var)
         {
-            auto const ok = ctx.try_emplace(*arg.var, arg.properties.origin, make_legal_expr(arg.type, *arg.var));
+            auto const ok = ctx.try_emplace(*arg.var, std::nullopt, make_legal_expr(arg.type, *arg.var));
             assert(ok.has_value());
         }
     }
@@ -44,7 +44,7 @@ bool beta_delta_normalize(environment_t const& env, func_def_t& def)
         changed |= beta_delta_normalize(env, ctx, arg.type);
         if (arg.var)
         {
-            auto const ok = ctx.try_emplace(*arg.var, arg.properties.origin, make_legal_expr(arg.type, *arg.var));
+            auto const ok = ctx.try_emplace(*arg.var, std::nullopt, make_legal_expr(arg.type, *arg.var));
             assert(ok.has_value());
         }
     }

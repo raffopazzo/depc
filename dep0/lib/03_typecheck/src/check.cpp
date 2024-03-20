@@ -419,7 +419,7 @@ expected<expr_t> check_pi_type(
             if (var)
                 if (auto ok = ctx.try_emplace(*var, arg_loc, make_legal_expr(*type, *var)); not ok)
                     return error_t::from_error(std::move(ok.error()));
-            return make_legal_func_arg(arg_loc, std::move(*type), std::move(var));
+            return make_legal_func_arg(std::move(*type), std::move(var));
         });
     if (not args)
         return std::move(args.error());

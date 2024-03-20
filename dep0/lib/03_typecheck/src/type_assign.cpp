@@ -50,21 +50,7 @@ expected<expr_t> type_assign(environment_t const& env, context_t const& ctx, par
     return match(
         expr.value,
         [] (parser::expr_t::typename_t) -> expected<expr_t> { return derivation_rules::make_typename(); },
-        [&] (parser::expr_t::true_t const&) -> expected<expr_t>
-        {
-            return make_legal_expr(
-                make_legal_expr(
-                    kind_t{}, // TODO need to add a test to make sure this is correct
-                    expr_t::pi_t{
-                        std::vector{
-                            // Using loc here is arguably wrong, but also irrelevant because the location of arguments
-                            // is used mainly to keep track of the origin of binding variables in some context.
-                            // But this will never go in a context; it doesn't even have a name!
-                            make_legal_func_arg(loc, derivation_rules::make_bool())
-                        },
-                        derivation_rules::make_typename()}),
-                expr_t::true_t{});
-        },
+        [&] (parser::expr_t::true_t const&) -> expected<expr_t> { return derivation_rules::make_true_t(); },
         [] (parser::expr_t::bool_t) -> expected<expr_t> { return derivation_rules::make_bool(); },
         [] (parser::expr_t::unit_t) -> expected<expr_t> { return derivation_rules::make_unit(); },
         [] (parser::expr_t::i8_t) -> expected<expr_t> { return derivation_rules::make_i8(); },
@@ -270,26 +256,7 @@ expected<expr_t> type_assign(environment_t const& env, context_t const& ctx, par
         },
         [&] (parser::expr_t::array_t const&) -> expected<expr_t>
         {
-            // the elemnt type of the array must be of sort types,
-            // i.e. a "function argument" of type `typename`;
-            // to have array of types (eg `{int, bool, bool}`),
-            // we fisrt need to add cumulativity of types;
-            // i.e. we can have an array of ints, eg {1,2,3},
-            // but not an array of types, eg {int, bool, bool};
-            // with cumulativity we can have both
-            return make_legal_expr(
-                make_legal_expr(
-                    kind_t{}, // TODO need to add a test to make sure this is correct
-                    expr_t::pi_t{
-                        std::vector{
-                            // Using loc here is arguably wrong, but also irrelevant because the location of arguments
-                            // is used mainly to keep track of the origin of binding variables in some context.
-                            // But these two will never go in a context; they don't even have a name!
-                            make_legal_func_arg(loc, derivation_rules::make_typename()),
-                            make_legal_func_arg(loc, derivation_rules::make_u64())
-                        },
-                        derivation_rules::make_typename()}),
-                expr_t::array_t{});
+            return derivation_rules::make_array();
         },
         [&] (parser::expr_t::init_list_t const& init_list) -> expected<expr_t>
         {
@@ -318,22 +285,11 @@ expected<expr_t> type_assign(environment_t const& env, context_t const& ctx, par
                     if (not index)
                         return std::move(index.error());
                     beta_delta_normalize(env, ctx, *index);
-                    // TODO should somehow add derivation_rules::make_true_t() or something similar
-                    auto const true_t =
-                        make_legal_expr(
-                            make_legal_expr(
-                                kind_t{},
-                                expr_t::pi_t{
-                                    std::vector{
-                                        make_legal_func_arg(loc, derivation_rules::make_bool())
-                                    },
-                                    derivation_rules::make_typename()}),
-                            expr_t::true_t{});
                     auto const proof_type =
                         make_legal_expr(
                             derivation_rules::make_typename(),
                             expr_t::app_t{
-                                true_t,
+                                derivation_rules::make_true_t(),
                                 {
                                     make_legal_expr(
                                         derivation_rules::make_bool(),

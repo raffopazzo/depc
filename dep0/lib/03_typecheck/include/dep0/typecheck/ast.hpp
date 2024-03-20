@@ -82,7 +82,6 @@ struct legal_func_def_t
 
 struct legal_func_arg_t
 {
-    source_loc_t origin;
     derivation_t<func_arg_t> derivation;
     bool operator==(legal_func_arg_t const&) const = default;
 };

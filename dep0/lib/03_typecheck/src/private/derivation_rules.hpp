@@ -12,6 +12,7 @@ struct derivation_rules
     static derivation_t<T> make_derivation();
 
     static expr_t make_typename();
+    static expr_t make_true_t();
     static expr_t make_bool();
     static expr_t make_unit();
     static expr_t make_i8();
@@ -25,6 +26,8 @@ struct derivation_rules
 
     static expr_t make_true();
     static expr_t make_false();
+
+    static expr_t make_array();
 };
 
 template <typename... Args>
@@ -62,9 +65,9 @@ func_def_t make_legal_func_def(source_loc_t const origin, sort_t sort, Args&&...
 }
 
 template <typename... Args>
-func_arg_t make_legal_func_arg(source_loc_t const origin, Args&&... args)
+func_arg_t make_legal_func_arg(Args&&... args)
 {
-    return func_arg_t{origin, derivation_rules::make_derivation<func_arg_t>(), std::forward<Args>(args)...};
+    return func_arg_t{derivation_rules::make_derivation<func_arg_t>(), std::forward<Args>(args)...};
 }
 
 template <typename... Args>

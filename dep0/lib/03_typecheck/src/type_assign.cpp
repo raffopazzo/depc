@@ -50,7 +50,7 @@ expected<expr_t> type_assign(environment_t const& env, context_t const& ctx, par
     return match(
         expr.value,
         [] (parser::expr_t::typename_t) -> expected<expr_t> { return derivation_rules::make_typename(); },
-        [&] (parser::expr_t::true_t const&) -> expected<expr_t> { return derivation_rules::make_true_t(); },
+        [] (parser::expr_t::true_t) -> expected<expr_t> { return derivation_rules::make_true_t(); },
         [] (parser::expr_t::bool_t) -> expected<expr_t> { return derivation_rules::make_bool(); },
         [] (parser::expr_t::unit_t) -> expected<expr_t> { return derivation_rules::make_unit(); },
         [] (parser::expr_t::i8_t) -> expected<expr_t> { return derivation_rules::make_i8(); },

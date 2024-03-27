@@ -34,7 +34,7 @@ static void add_anonymous_var(context_t& ctx, expr_t const& expr)
     do
     {
         auto const var = expr_t::var_t{empty, next_id++};
-        if (ctx.try_emplace(var, std::nullopt, expr))
+        if (ctx.try_emplace(var, std::nullopt, expr)) // should always be true but doesn't harm to try the next one
             return;
     }
     while (true);

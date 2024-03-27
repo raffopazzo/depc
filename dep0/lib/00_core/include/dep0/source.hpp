@@ -31,6 +31,7 @@ class source_handle_t
 
     friend source_handle_t make_null_handle();
 
+    void acquire(state_t*);
     void release();
 
 public:

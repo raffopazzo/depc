@@ -6,6 +6,13 @@ namespace dep0 {
 
 source_handle_t::source_handle_t(std::nullptr_t) : state(nullptr) { }
 
+void source_handle_t::acquire(state_t* const s)
+{
+    state = s;
+    if (state)
+        ++state->counter;
+}
+
 void source_handle_t::release()
 {
     // on quick-bench this combination of likelihood attributes perfomed the best, which makes intuitive sense:
@@ -17,15 +24,13 @@ void source_handle_t::release()
 }
 
 source_handle_t::~source_handle_t() { release(); }
-source_handle_t::source_handle_t(source_handle_t const& that) : state(that.state) { if (state) ++state->counter; }
+source_handle_t::source_handle_t(source_handle_t const& that) { acquire(that.state); }
 source_handle_t::source_handle_t(source_handle_t&& that) : state(std::exchange(that.state, nullptr)) { }
 
 source_handle_t& source_handle_t::operator=(source_handle_t const& that)
 {
     release();
-    state = that.state;
-    if (state)
-        ++state->counter;
+    acquire(that.state);
     return *this;
 }
 

@@ -1445,6 +1445,43 @@ BOOST_AUTO_TEST_CASE(pass_018)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_019)
+{
+    apply_beta_delta_normalization = true;
+    BOOST_TEST_REQUIRE(pass("0007_arrays/pass_019.depc"));
+    {
+        auto const f = pass_result.value()->getFunction("get");
+        BOOST_TEST_REQUIRE(
+            is_function_of(
+                f,
+                std::tuple{arg_of(is_i64, "i", zext), arg_of(pointer_to(is_i32), "xs", nonnull)},
+                is_i32, sext));
+        auto const blks = get_blocks(*f);
+        BOOST_TEST_REQUIRE(blks.size() == 3ul);
+        auto const entry = blks[0];
+        auto const then0 = blks[1];
+        auto const else0 = blks[2];
+        auto const i = f->getArg(0);
+        auto const xs = f->getArg(1);
+        {
+            auto const inst = get_instructions(*entry);
+            BOOST_TEST_REQUIRE(inst.size() == 2ul);
+            BOOST_TEST(is_cmp(inst[0], llvm::CmpInst::Predicate::ICMP_ULT, exactly(i), constant(3)));
+            BOOST_TEST(is_branch_of(inst[1], exactly(inst[0]), exactly(then0), exactly(else0)));
+        }
+        {
+            auto const inst = get_instructions(*then0);
+            BOOST_TEST_REQUIRE(inst.size() == 3ul);
+            BOOST_TEST(is_gep_of(inst[0], is_i32, exactly(xs), exactly(i)));
+            BOOST_TEST(is_load_of(inst[1], is_i32, exactly(inst[0]), align_of(4)));
+            BOOST_TEST(is_return_of(inst[2], exactly(inst[1])));
+        }
+        {
+            BOOST_TEST(is_return_of(else0->getTerminator(), constant(0)));
+        }
+    }
+}
+
 // BOOST_AUTO_TEST_CASE(typecheck_error_000)
 // BOOST_AUTO_TEST_CASE(typecheck_error_001)
 // BOOST_AUTO_TEST_CASE(typecheck_error_002)

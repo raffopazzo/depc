@@ -1,0 +1,7 @@
+i32_t get(u64_t i, array_t(i32_t, 3) xs)
+{
+    if (i < 3)
+        return xs[i];
+    else
+        return 0;
+}

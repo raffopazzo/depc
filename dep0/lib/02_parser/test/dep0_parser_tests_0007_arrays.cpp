@@ -886,6 +886,28 @@ BOOST_AUTO_TEST_CASE(pass_018)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_019)
+{
+    BOOST_TEST_REQUIRE(pass("0007_arrays/pass_019.depc"));
+    BOOST_TEST_REQUIRE(pass_result->entries.size() == 1ul);
+    {
+        auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[0ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "get");
+        BOOST_TEST_REQUIRE(f->value.args.size() == 2ul);
+        BOOST_TEST(is_arg(f->value.args[0ul], is_u64, "i"));
+        BOOST_TEST(is_arg(f->value.args[1ul], array_of(is_i32, constant(3)), "xs"));
+        BOOST_TEST(is_i32(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(
+            is_if_else(
+                f->value.body.stmts[0ul],
+                lt(var("i"), constant(3)),
+                std::tuple{return_of(subscript_of(var("xs"), var("i")))},
+                std::tuple{return_of(constant(0))}));
+    }
+}
+
 BOOST_AUTO_TEST_CASE(typecheck_error_000)
 {
     BOOST_TEST_REQUIRE(pass("0007_arrays/typecheck_error_000.depc"));

@@ -154,10 +154,24 @@ llvm::Type* gen_type(global_context_t& global, typecheck::expr_t const& x)
                         });
                 });
         },
-        [&] (typecheck::expr_t::app_t const&) -> llvm::Type*
+        [&] (typecheck::expr_t::app_t const& app) -> llvm::Type*
         {
-            auto const properties = get_array_properties(x);
-            return gen_type(global, properties.element_type)->getPointerTo();
+            return match(
+                app.func.get().value,
+                [&] (typecheck::expr_t::true_t const&) -> llvm::Type*
+                {
+                    return llvm::StructType::get(global.llvm_ctx);
+                },
+                [&] (typecheck::expr_t::array_t const&) -> llvm::Type*
+                {
+                    auto const properties = get_array_properties(x);
+                    return gen_type(global, properties.element_type)->getPointerTo();
+                },
+                [] (auto const&) -> llvm::Type*
+                {
+                    assert(false and "cannot generate a type for application of anything except true_t and array_t");
+                    __builtin_unreachable();
+                });
         },
         [] (typecheck::expr_t::abs_t const&) -> llvm::Type*
         {

@@ -20,6 +20,7 @@ KW_NOT: 'not';
 KW_OR: 'or';
 KW_RETURN: 'return';
 KW_TRUE: 'true';
+KW_TRUE_T: 'true_t';
 KW_TYPEDEF: 'typedef';
 KW_TYPENAME: 'typename';
 KW_U16_T: 'u16_t';

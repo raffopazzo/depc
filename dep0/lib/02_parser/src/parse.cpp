@@ -424,10 +424,15 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         return expr_t{get_loc(src, *ctx->var), expr_t::var_t{get_text(src, *ctx->var)}};
     }
 
-    virtual std::any visitArrayExpr(DepCParser::ArrayExprContext* ctx) override
+    virtual std::any visitKwExpr(DepCParser::KwExprContext* ctx) override
     {
         assert(ctx);
-        return expr_t{get_loc(src, *ctx), expr_t::array_t{}};
+        auto const loc = get_loc(src, *ctx);
+        if (ctx->KW_ARRAY())
+            return expr_t{loc, expr_t::array_t{}};
+        if (ctx->KW_TRUE_T())
+            return expr_t{loc, expr_t::true_t{}};
+        throw error_t("unexpected alternative when parsing KwExprContext", loc);
     }
 
     virtual std::any visitTypeExpr(DepCParser::TypeExprContext* ctx) override
@@ -520,8 +525,8 @@ struct parse_visitor_t : dep0::DepCParserVisitor
             return std::any_cast<expr_t>(visitNumericConstant(p));
         if (auto const p = dynamic_cast<DepCParser::BooleanConstantContext*>(ctx))
             return std::any_cast<expr_t>(visitBooleanConstant(p));
-        if (auto const p = dynamic_cast<DepCParser::ArrayExprContext*>(ctx))
-            return std::any_cast<expr_t>(visitArrayExpr(p));
+        if (auto const p = dynamic_cast<DepCParser::KwExprContext*>(ctx))
+            return std::any_cast<expr_t>(visitKwExpr(p));
         if (auto const p = dynamic_cast<DepCParser::VarExprContext*>(ctx))
             return std::any_cast<expr_t>(visitVarExpr(p));
         if (auto const p = dynamic_cast<DepCParser::TypeExprContext*>(ctx))

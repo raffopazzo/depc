@@ -15,6 +15,7 @@
 #include "dep0/match.hpp"
 #include "dep0/scope_map.hpp"
 
+#include <atomic>
 #include <cassert>
 #include <iterator>
 #include <numeric>
@@ -29,11 +30,11 @@ namespace dep0::typecheck {
  */
 static void add_anonymous_var(context_t& ctx, expr_t const& expr)
 {
-    static std::size_t next_id = 1ul;
+    static std::atomic<std::size_t> next_id = 1ul;
     static const source_text empty = source_text(make_null_handle(), "auto");
     do
     {
-        auto const var = expr_t::var_t{empty, next_id++};
+        auto const var = expr_t::var_t{empty, next_id.fetch_add(1ul, std::memory_order_relaxed)};
         if (ctx.try_emplace(var, std::nullopt, expr)) // should always be true but doesn't harm to try the next one
             return;
     }

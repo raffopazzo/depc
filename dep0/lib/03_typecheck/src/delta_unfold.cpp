@@ -118,11 +118,8 @@ bool delta_unfold(environment_t const& env, context_t const& ctx, expr_t::abs_t&
     {
         if (delta_unfold(env, ctx2, arg.type))
             return true;
-        if (arg.var)
-        {
-            auto const inserted = ctx2.try_emplace(*arg.var, std::nullopt, context_t::var_decl_t{arg.type});
-            assert(inserted.has_value());
-        }
+        auto const inserted = ctx2.try_emplace(arg.var, std::nullopt, context_t::var_decl_t{arg.type});
+        assert(inserted.has_value());
     }
     if (delta_unfold(env, ctx2, abs.ret_type.get()))
         return true;
@@ -136,11 +133,8 @@ bool delta_unfold(environment_t const& env, context_t const& ctx, expr_t::pi_t& 
     {
         if (delta_unfold(env, ctx2, arg.type))
             return true;
-        if (arg.var)
-        {
-            auto const inserted = ctx2.try_emplace(*arg.var, std::nullopt, context_t::var_decl_t{arg.type});
-            assert(inserted.has_value());
-        }
+        auto const inserted = ctx2.try_emplace(arg.var, std::nullopt, context_t::var_decl_t{arg.type});
+        assert(inserted.has_value());
     }
     return delta_unfold(env, ctx2, pi.ret_type.get());
 }

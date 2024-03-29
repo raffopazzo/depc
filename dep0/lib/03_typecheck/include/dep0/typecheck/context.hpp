@@ -65,10 +65,16 @@ public:
     // non-const member functions
 
     /**
+     * Add a new binding variable to the current context level, with an automatically generated name.
+     */
+    const_iterator add_auto(var_decl_t);
+
+    /**
      * Add a new binding variable to the current context level, if one does not already exist.
      * If a binding already exists, but only at the parent level, the new binding will shadowow the parent one.
+     * If the variable name is nullopt, an automatically generated name will be used as if `add_auto()` was invoked.
      */
-    dep0::expected<const_iterator> try_emplace(expr_t::var_t, std::optional<source_loc_t>, var_decl_t);
+    dep0::expected<const_iterator> try_emplace(std::optional<expr_t::var_t>, std::optional<source_loc_t>, var_decl_t);
 
 private:
     scope_map<expr_t::var_t, value_type> m_values;

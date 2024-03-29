@@ -9,6 +9,7 @@
 
 #include "private/rewrite.hpp"
 
+#include <atomic>
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -62,17 +63,36 @@ context_t::value_type const* context_t::operator[](expr_t::var_t const& name) co
 
 // non-const member functions
 
-dep0::expected<context_t::const_iterator>
-context_t::try_emplace(expr_t::var_t name, std::optional<source_loc_t> const loc, var_decl_t v)
+context_t::const_iterator context_t::add_auto(var_decl_t decl)
 {
-    auto const res = m_values.try_emplace(std::move(name), loc, std::move(v));
+    static std::atomic<std::size_t> next_id = 1ul;
+    static const source_text empty = source_text(make_null_handle(), "auto");
+    do
+    {
+        auto const [it, ok] =
+            m_values.try_emplace(
+                expr_t::var_t{empty, next_id.fetch_add(1ul, std::memory_order_relaxed)},
+                std::nullopt,
+                std::move(decl));
+        if (ok) // should always be true but doesn't harm to try the next one
+            return it;
+    }
+    while (true);
+}
+
+dep0::expected<context_t::const_iterator>
+context_t::try_emplace(std::optional<expr_t::var_t> name, std::optional<source_loc_t> const loc, var_decl_t decl)
+{
+    if (not name)
+        return add_auto(std::move(decl));
+    auto const res = m_values.try_emplace(std::move(*name), loc, std::move(decl));
     if (res.second)
         return dep0::expected<const_iterator>(res.first);
     else
     {
         auto const& prev = res.first->second;
         std::ostringstream err;
-        pretty_print<properties_t>(err << "cannot redefine `", name) << '`';
+        pretty_print<properties_t>(err << "cannot redefine `", *name) << '`';
         pretty_print(err << ", previously defined as `", prev.value.type) << '`';
         if (prev.origin)
             err << " at " << prev.origin->line << ':' << prev.origin->col;

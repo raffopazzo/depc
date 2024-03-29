@@ -15,7 +15,6 @@
 #include "dep0/match.hpp"
 #include "dep0/scope_map.hpp"
 
-#include <atomic>
 #include <cassert>
 #include <iterator>
 #include <numeric>
@@ -23,23 +22,6 @@
 #include <sstream>
 
 namespace dep0::typecheck {
-
-/**
- * Add an anonymous variable with name `auto:k` to the existing context bound to the given expression.
- * The number `k` is guaranteed to generate a new unique variable name.
- */
-static void add_anonymous_var(context_t& ctx, expr_t type)
-{
-    static std::atomic<std::size_t> next_id = 1ul;
-    static const source_text empty = source_text(make_null_handle(), "auto");
-    do
-    {
-        auto const var = expr_t::var_t{empty, next_id.fetch_add(1ul, std::memory_order_relaxed)};
-        if (ctx.try_emplace(var, std::nullopt, context_t::var_decl_t(std::move(type)))) // should always be true but doesn't harm to try the next one
-            return;
-    }
-    while (true);
-}
 
 expected<module_t> check(parser::module_t const& x) noexcept
 {
@@ -162,11 +144,11 @@ expected<stmt_t> check_stmt(environment_t const& env, proof_state_t& state, pars
                 new_state.rewrite(*cond, derivation_rules::make_true());
                 // we must add `true_t(cond)` to the new context only after we have rewritten `cond=true`,
                 // otherwise the new context will contain `true_t(true)`, which is not helpful to verify array access
-                add_anonymous_var(
-                    new_state.context,
-                    make_legal_expr(
-                        derivation_rules::make_typename(),
-                        expr_t::app_t{derivation_rules::make_true_t(), {*cond}}));
+                new_state.context.add_auto(
+                    context_t::var_decl_t{
+                        make_legal_expr(
+                            derivation_rules::make_typename(),
+                            expr_t::app_t{derivation_rules::make_true_t(), {*cond}})});
                 return check_body(env, std::move(new_state), x.true_branch);
             }();
             if (not true_branch)
@@ -443,9 +425,8 @@ expected<expr_t> check_pi_type(
                     err << "cannot typecheck function argument at index " << arg_index;
                 return error_t::from_error(dep0::error_t(err.str(), loc, {std::move(type.error())}));
             }
-            if (var)
-                if (auto ok = ctx.try_emplace(*var, arg_loc, context_t::var_decl_t{*type}); not ok)
-                    return error_t::from_error(std::move(ok.error()));
+            if (auto ok = ctx.try_emplace(var, arg_loc, context_t::var_decl_t{*type}); not ok)
+                return error_t::from_error(std::move(ok.error()));
             return make_legal_func_arg(std::move(*type), std::move(var));
         });
     if (not args)

@@ -2,3 +2,9 @@ i32_t third(u64_t n, true_t(2 < n) p, array_t(i32_t, n) xs)
 {
     return xs[2];
 }
+
+// same but proof is anonymous
+i32_t third2(u64_t n, true_t(2 < n), array_t(i32_t, n) xs)
+{
+    return xs[2];
+}

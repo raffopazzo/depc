@@ -120,7 +120,7 @@ bool delta_unfold(environment_t const& env, context_t const& ctx, expr_t::abs_t&
             return true;
         if (arg.var)
         {
-            auto const inserted = ctx2.try_emplace(*arg.var, std::nullopt, make_legal_expr(arg.type, *arg.var));
+            auto const inserted = ctx2.try_emplace(*arg.var, std::nullopt, context_t::var_decl_t{arg.type});
             assert(inserted.has_value());
         }
     }
@@ -138,7 +138,7 @@ bool delta_unfold(environment_t const& env, context_t const& ctx, expr_t::pi_t& 
             return true;
         if (arg.var)
         {
-            auto const inserted = ctx2.try_emplace(*arg.var, std::nullopt, make_legal_expr(arg.type, *arg.var));
+            auto const inserted = ctx2.try_emplace(*arg.var, std::nullopt, context_t::var_decl_t{arg.type});
             assert(inserted.has_value());
         }
     }

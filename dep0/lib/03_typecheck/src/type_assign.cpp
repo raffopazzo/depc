@@ -220,7 +220,7 @@ expected<expr_t> type_assign(environment_t const& env, context_t const& ctx, par
             {
                 auto var = expr_t::var_t{x.name};
                 if (auto const expr = ctx[var])
-                    return make_legal_expr(expr->value.properties.sort.get(), std::move(var));
+                    return make_legal_expr(expr->value.type, std::move(var));
             }
             {
                 auto global = expr_t::global_t{x.name};

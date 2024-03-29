@@ -28,14 +28,14 @@ namespace dep0::typecheck {
  * Add an anonymous variable with name `auto:k` to the existing context bound to the given expression.
  * The number `k` is guaranteed to generate a new unique variable name.
  */
-static void add_anonymous_var(context_t& ctx, expr_t const& expr)
+static void add_anonymous_var(context_t& ctx, expr_t type)
 {
     static std::atomic<std::size_t> next_id = 1ul;
     static const source_text empty = source_text(make_null_handle(), "auto");
     do
     {
         auto const var = expr_t::var_t{empty, next_id.fetch_add(1ul, std::memory_order_relaxed)};
-        if (ctx.try_emplace(var, std::nullopt, expr)) // should always be true but doesn't harm to try the next one
+        if (ctx.try_emplace(var, std::nullopt, context_t::var_decl_t(std::move(type)))) // should always be true but doesn't harm to try the next one
             return;
     }
     while (true);
@@ -165,10 +165,8 @@ expected<stmt_t> check_stmt(environment_t const& env, proof_state_t& state, pars
                 add_anonymous_var(
                     new_state.context,
                     make_legal_expr(
-                        make_legal_expr(
-                            derivation_rules::make_typename(),
-                            expr_t::app_t{derivation_rules::make_true_t(), {*cond}}),
-                        expr_t::init_list_t{}));
+                        derivation_rules::make_typename(),
+                        expr_t::app_t{derivation_rules::make_true_t(), {*cond}}));
                 return check_body(env, std::move(new_state), x.true_branch);
             }();
             if (not true_branch)
@@ -446,7 +444,7 @@ expected<expr_t> check_pi_type(
                 return error_t::from_error(dep0::error_t(err.str(), loc, {std::move(type.error())}));
             }
             if (var)
-                if (auto ok = ctx.try_emplace(*var, arg_loc, make_legal_expr(*type, *var)); not ok)
+                if (auto ok = ctx.try_emplace(*var, arg_loc, context_t::var_decl_t{*type}); not ok)
                     return error_t::from_error(std::move(ok.error()));
             return make_legal_func_arg(std::move(*type), std::move(var));
         });

@@ -16,10 +16,15 @@ namespace dep0::typecheck {
 class context_t
 {
 public:
+    struct var_decl_t
+    {
+        expr_t type;
+    };
+
     struct value_type
     {
         std::optional<source_loc_t> origin;
-        expr_t value;
+        var_decl_t value;
     };
 
     using const_iterator = typename scope_map<expr_t::var_t, value_type>::const_iterator;
@@ -63,7 +68,7 @@ public:
      * Add a new binding variable to the current context level, if one does not already exist.
      * If a binding already exists, but only at the parent level, the new binding will shadowow the parent one.
      */
-    dep0::expected<const_iterator> try_emplace(expr_t::var_t, std::optional<source_loc_t>, expr_t);
+    dep0::expected<const_iterator> try_emplace(expr_t::var_t, std::optional<source_loc_t>, var_decl_t);
 
 private:
     scope_map<expr_t::var_t, value_type> m_values;
@@ -73,6 +78,5 @@ private:
 
 // non-member functions
 std::ostream& pretty_print(std::ostream&, context_t const&);
-std::ostream& pretty_print(std::ostream&, context_t::value_type const&);
 
 } // namespace dep0::typecheck

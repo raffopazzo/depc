@@ -49,6 +49,8 @@ add_library(dep0_llvmgen_tests_fixture
     llvm_predicates/types.cpp
     llvm_predicates/xor.hpp
     llvm_predicates/xor.cpp
+    llvm_predicates/zeroinitializer.hpp
+    llvm_predicates/zeroinitializer.cpp
     llvm_predicates.hpp
     llvm_predicates.cpp
     )

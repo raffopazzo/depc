@@ -8,6 +8,7 @@
 #include "private/type_assign.hpp"
 
 #include "dep0/typecheck/beta_delta_reduction.hpp"
+#include "dep0/typecheck/list_initialization.hpp"
 
 #include "dep0/ast/pretty_print.hpp"
 
@@ -305,11 +306,12 @@ check_expr(
             dep0::error_t(err.str(), loc, std::vector{std::move(reason)}),
             env, ctx, expected_type);
     };
+    // some expressions cannot be type-assigned without an expected type, so we have to add a special case;
+    // for all other expressions we can type-assign and check that the assigned type is what we expect
     return match(
         x.value,
         [&] (parser::expr_t::numeric_constant_t const& x) -> expected<expr_t>
         {
-            // numeric constant cannot be type-assigned without an expected type
             return match(
                 expected_type,
                 [&] (expr_t expected_type) -> expected<expr_t>
@@ -326,7 +328,6 @@ check_expr(
         },
         [&] (parser::expr_t::arith_expr_t const& x) -> expected<expr_t>
         {
-            // an arithmetic expression like `1+2` cannot be type-assigned without an expected type
             return match(
                 x.value,
                 [&] (parser::expr_t::arith_expr_t::plus_t const& x) -> expected<expr_t>
@@ -343,45 +344,53 @@ check_expr(
                                 std::move(*rhs)}});
                 });
         },
-        [&] (parser::expr_t::init_list_t const& init_list) -> expected<expr_t>
+        [&] (parser::expr_t::init_list_t const& list) -> expected<expr_t>
         {
-            // initializer lists cannot be type-assigned without an expected type (which for now can only be an array)
             return match(
                 expected_type,
                 [&] (expr_t expected_type) -> expected<expr_t>
                 {
                     beta_delta_normalize(env, ctx, expected_type);
-                    auto const app = get_if_app_of_array(expected_type);
-                    if (not app)
-                    {
-                        std::ostringstream err;
-                        pretty_print(err << "type mismatch between initializer list and `", expected_type) << '`';
-                        return error_t::from_error(dep0::error_t(err.str(), loc), env, ctx, expected_type);
-                    }
-                    auto const n = std::get_if<expr_t::numeric_constant_t>(&app->args.at(1ul).value);
-                    if (not n)
-                    {
-                        std::ostringstream err;
-                        pretty_print(err << "type mismatch between initializer list and `", expected_type) << '`';
-                        return error_t::from_error(dep0::error_t(err.str(), loc), env, ctx, expected_type);
-                    }
-                    if (n->value != init_list.values.size())
-                    {
-                        std::ostringstream err;
-                        err << "initializer list has " << init_list.values.size() << " elements but was expecting ";
-                        pretty_print<properties_t>(err, *n);
-                        return error_t::from_error(dep0::error_t(err.str(), loc), env, ctx, expected_type);
-                    }
-                    auto values =
-                        fmap_or_error(
-                            init_list.values,
-                            [&] (parser::expr_t const& v)
+                    return match(
+                        is_list_initializable(expected_type),
+                        [&] (is_list_initializable_result::no_t) -> expected<expr_t>
+                        {
+                            std::ostringstream err;
+                            pretty_print(err << "type mismatch between initializer list and `", expected_type) << '`';
+                            return error_t::from_error(dep0::error_t(err.str(), loc), env, ctx, expected_type);
+                        },
+                        [&] (is_list_initializable_result::true_t) -> expected<expr_t>
+                        {
+                            if (not list.values.empty())
                             {
-                                return check_expr(env, ctx, v, app->args.at(0ul));
-                            });
-                    if (not values)
-                        return std::move(values.error());
-                    return make_legal_expr(expected_type, expr_t::init_list_t{std::move(*values)});
+                                std::ostringstream err;
+                                pretty_print(err << "initializer list for `", expected_type) << "` must be empty";
+                                return error_t::from_error(dep0::error_t(err.str(), loc), env, ctx, expected_type);
+                            }
+                            return make_legal_expr(expected_type, expr_t::init_list_t{});
+                        },
+                        [&] (is_list_initializable_result::array_t const& array) -> expected<expr_t>
+                        {
+                            if (array.size.value != list.values.size())
+                            {
+                                std::ostringstream err;
+                                pretty_print(err << "initializer list for `", expected_type) << '`';
+                                pretty_print<properties_t>(
+                                    err << " has " << list.values.size() << " elements but was expecting ",
+                                    array.size);
+                                return error_t::from_error(dep0::error_t(err.str(), loc), env, ctx, expected_type);
+                            }
+                            auto values =
+                                fmap_or_error(
+                                    list.values,
+                                    [&] (parser::expr_t const& v)
+                                    {
+                                        return check_expr(env, ctx, v, array.element_type);
+                                    });
+                            if (not values)
+                                return std::move(values.error());
+                            return make_legal_expr(expected_type, expr_t::init_list_t{std::move(*values)});
+                        });
                 },
                 [&] (kind_t) -> expected<expr_t>
                 {
@@ -392,7 +401,6 @@ check_expr(
         },
         [&] (auto const&) -> expected<expr_t>
         {
-            // for all other cases, we can type-assign and check that the assigned type is what we expect
             auto result = type_assign(env, ctx, x);
             if (result)
                 if (auto eq = is_beta_delta_equivalent(env, ctx, result->properties.sort.get(), expected_type); not eq)

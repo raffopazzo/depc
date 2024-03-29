@@ -9,8 +9,11 @@
 #include "private/gen_type.hpp"
 #include "private/proto.hpp"
 
+#include "dep0/typecheck/list_initialization.hpp"
+
 #include "dep0/match.hpp"
 
+#include <llvm/IR/Constants.h>
 #include <llvm/Transforms/Utils/BasicBlockUtils.h>
 
 #include <boost/hana.hpp>
@@ -351,24 +354,39 @@ llvm::Value* gen_val(
         },
         [&] (typecheck::expr_t::init_list_t const& x) -> llvm::Value*
         {
-            auto const properties = get_array_properties(std::get<typecheck::expr_t>(expr.properties.sort.get()));
-            auto const dest2 = dest ? dest : [&]
-            {
-                auto const total_size = gen_array_total_size(global, local, builder, properties);
-                auto const element_type = gen_type(global, properties.element_type);
-                return builder.CreateAlloca(element_type, total_size);
-            }();
-            auto const type = dest2->getType()->getPointerElementType();
-            auto const stride_size = gen_stride_size_if_needed(global, local, builder, properties);
-            auto const int32 = llvm::Type::getInt32Ty(global.llvm_ctx); // TODO we use u64_t to typecheck arrays
-            for (auto const i: std::views::iota(0ul, x.values.size()))
-            {
-                auto const index = llvm::ConstantInt::get(int32, i);
-                auto const offset = stride_size ? builder.CreateMul(stride_size, index) : index;
-                auto const p = builder.CreateGEP(type, dest2, offset);
-                gen_val(global, local, builder, x.values[i], p);
-            }
-            return dest2;
+            auto const& type = std::get<typecheck::expr_t>(expr.properties.sort.get());
+            return match(
+                typecheck::is_list_initializable(type),
+                [] (typecheck::is_list_initializable_result::no_t) -> llvm::Value*
+                {
+                    assert(false and "cannot generate a value for a non-list-initializable type");
+                    __builtin_unreachable();
+                },
+                [&] (typecheck::is_list_initializable_result::true_t) -> llvm::Value*
+                {
+                    return llvm::ConstantAggregateZero::get(gen_type(global, type));
+                },
+                [&] (typecheck::is_list_initializable_result::array_t const&) -> llvm::Value*
+                {
+                    auto const properties = get_array_properties(type);
+                    auto const dest2 = dest ? dest : [&]
+                    {
+                        auto const total_size = gen_array_total_size(global, local, builder, properties);
+                        auto const element_type = gen_type(global, properties.element_type);
+                        return builder.CreateAlloca(element_type, total_size);
+                    }();
+                    auto const type = dest2->getType()->getPointerElementType();
+                    auto const stride_size = gen_stride_size_if_needed(global, local, builder, properties);
+                    auto const int32 = llvm::Type::getInt32Ty(global.llvm_ctx); // TODO we use u64_t to typecheck arrays
+                    for (auto const i: std::views::iota(0ul, x.values.size()))
+                    {
+                        auto const index = llvm::ConstantInt::get(int32, i);
+                        auto const offset = stride_size ? builder.CreateMul(stride_size, index) : index;
+                        auto const p = builder.CreateGEP(type, dest2, offset);
+                        gen_val(global, local, builder, x.values[i], p);
+                    }
+                    return dest2;
+                });
         },
         [&] (typecheck::expr_t::subscript_t const& subscript) -> llvm::Value*
         {

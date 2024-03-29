@@ -1170,9 +1170,41 @@ BOOST_AUTO_TEST_CASE(pass_021)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_022)
+{
+    BOOST_TEST_REQUIRE(pass("0007_arrays/pass_022.depc"));
+    BOOST_TEST_REQUIRE(pass_result->entries.size() == 2ul);
+    {
+        auto const f = std::get_if<dep0::typecheck::func_decl_t>(&pass_result->entries[0ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "f");
+        BOOST_TEST_REQUIRE(f->signature.args.size() == 4ul);
+        BOOST_TEST(is_arg(f->signature.args[0], is_u64, "n"));
+        BOOST_TEST(is_arg(f->signature.args[1], is_u64, "i"));
+        BOOST_TEST(is_arg(f->signature.args[2], true_t_of(lt(var("i"), var("n"))), std::nullopt));
+        BOOST_TEST(is_arg(f->signature.args[3], array_of(is_i32, var("n")), "xs"));
+        BOOST_TEST(is_i32(f->signature.ret_type.get()));
+    }
+    {
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[1ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "g");
+        BOOST_TEST_REQUIRE(f->value.args.size() == 1ul);
+        BOOST_TEST(is_arg(f->value.args[0], array_of(is_i32, constant(2)), "xs"));
+        BOOST_TEST(is_i32(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(
+            is_return_of(
+                f->value.body.stmts[0],
+                app_of(global("f"), constant(2), constant(0), init_list_of(), var("xs"))));
+    }
+}
+
 BOOST_AUTO_TEST_CASE(typecheck_error_000) { BOOST_TEST_REQUIRE(fail("0007_arrays/typecheck_error_000.depc")); }
 BOOST_AUTO_TEST_CASE(typecheck_error_001) { BOOST_TEST_REQUIRE(fail("0007_arrays/typecheck_error_001.depc")); }
 BOOST_AUTO_TEST_CASE(typecheck_error_002) { BOOST_TEST_REQUIRE(fail("0007_arrays/typecheck_error_002.depc")); }
 BOOST_AUTO_TEST_CASE(typecheck_error_003) { BOOST_TEST_REQUIRE(fail("0007_arrays/typecheck_error_003.depc")); }
+BOOST_AUTO_TEST_CASE(typecheck_error_004) { BOOST_TEST_REQUIRE(fail("0007_arrays/typecheck_error_004.depc")); }
+BOOST_AUTO_TEST_CASE(typecheck_error_005) { BOOST_TEST_REQUIRE(fail("0007_arrays/typecheck_error_005.depc")); }
 
 BOOST_AUTO_TEST_SUITE_END()

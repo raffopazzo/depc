@@ -9,6 +9,7 @@ add_library(dep0_typecheck_lib
   include/dep0/typecheck/derivation.hpp
   include/dep0/typecheck/environment.hpp
   include/dep0/typecheck/error.hpp
+  include/dep0/typecheck/list_initialization.hpp
   # private headers
   src/private/beta_delta_equivalence.hpp
   src/private/beta_reduction.hpp
@@ -39,6 +40,7 @@ add_library(dep0_typecheck_lib
   src/drop_unreachable_stmts.cpp
   src/environment.cpp
   src/error.cpp
+  src/list_initialization.cpp
   src/proof_search.cpp
   src/proof_state.cpp
   src/returns_from_all_branches.cpp

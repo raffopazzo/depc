@@ -1484,7 +1484,7 @@ BOOST_AUTO_TEST_CASE(pass_019)
 
 BOOST_AUTO_TEST_CASE(pass_020)
 {
-    apply_beta_delta_normalization = true;
+    apply_beta_delta_normalization = false;
     BOOST_TEST_REQUIRE(pass("0007_arrays/pass_020.depc"));
     {
         auto const f = pass_result.value()->getFunction("third");
@@ -1515,6 +1515,51 @@ BOOST_AUTO_TEST_CASE(pass_020)
         auto const xs = f->getArg(2);
         auto const& ret = f->getEntryBlock().getTerminator();
         BOOST_TEST(is_return_of(ret, load_of(is_i32, gep_of(is_i32, exactly(xs), constant(2)), align_of(4))));
+    }
+}
+
+BOOST_AUTO_TEST_CASE(pass_021)
+{
+    apply_beta_delta_normalization = false;
+    BOOST_TEST_REQUIRE(pass("0007_arrays/pass_021.depc"));
+    {
+        auto const f = pass_result.value()->getFunction("f");
+        BOOST_TEST_REQUIRE(
+            is_function_of(
+                f,
+                std::tuple{
+                    arg_of(is_i64, "n", zext),
+                    arg_of(is_i64, "i", zext),
+                    arg_of(struct_of()),
+                    arg_of(pointer_to(is_i32), "xs", nonnull),
+                },
+                is_i32, sext));
+        auto const i = f->getArg(1);
+        auto const xs = f->getArg(3);
+        auto const& ret = f->getEntryBlock().getTerminator();
+        BOOST_TEST(is_return_of(ret, load_of(is_i32, gep_of(is_i32, exactly(xs), exactly(i)), align_of(4))));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("g");
+        BOOST_TEST_REQUIRE(
+            is_function_of(
+                f,
+                std::tuple{
+                    arg_of(is_i64, "n", zext),
+                    arg_of(is_i64, "i", zext),
+                    arg_of(struct_of(), "p"),
+                    arg_of(pointer_to(is_i32), "xs", nonnull),
+                },
+                is_i32, sext));
+        BOOST_TEST(
+            is_return_of(
+                f->getEntryBlock().getTerminator(),
+                direct_call_of(
+                    exactly(pass_result.value()->getFunction("f")),
+                    call_arg(exactly(f->getArg(0)), zext),
+                    call_arg(exactly(f->getArg(1)), zext),
+                    call_arg(exactly(f->getArg(2))),
+                    call_arg(exactly(f->getArg(3))))));
     }
 }
 

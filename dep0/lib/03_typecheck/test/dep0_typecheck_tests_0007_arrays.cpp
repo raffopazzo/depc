@@ -1138,6 +1138,38 @@ BOOST_AUTO_TEST_CASE(pass_020)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_021)
+{
+    BOOST_TEST_REQUIRE(pass("0007_arrays/pass_021.depc"));
+    BOOST_TEST_REQUIRE(pass_result->entries.size() == 2ul);
+    {
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[0ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "f");
+        BOOST_TEST_REQUIRE(f->value.args.size() == 4ul);
+        BOOST_TEST(is_arg(f->value.args[0], is_u64, "n"));
+        BOOST_TEST(is_arg(f->value.args[1], is_u64, "i"));
+        BOOST_TEST(is_arg(f->value.args[2], true_t_of(lt(var("i"), var("n"))), std::nullopt));
+        BOOST_TEST(is_arg(f->value.args[3], array_of(is_i32, var("n")), "xs"));
+        BOOST_TEST(is_i32(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0], subscript_of(var("xs"), var("i"))));
+    }
+    {
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[1ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "g");
+        BOOST_TEST_REQUIRE(f->value.args.size() == 4ul);
+        BOOST_TEST(is_arg(f->value.args[0], is_u64, "n"));
+        BOOST_TEST(is_arg(f->value.args[1], is_u64, "i"));
+        BOOST_TEST(is_arg(f->value.args[2], true_t_of(lt(var("i"), var("n"))), "p"));
+        BOOST_TEST(is_arg(f->value.args[3], array_of(is_i32, var("n")), "xs"));
+        BOOST_TEST(is_i32(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0], app_of(global("f"), var("n"), var("i"), var("p"), var("xs"))));
+    }
+}
+
 BOOST_AUTO_TEST_CASE(typecheck_error_000) { BOOST_TEST_REQUIRE(fail("0007_arrays/typecheck_error_000.depc")); }
 BOOST_AUTO_TEST_CASE(typecheck_error_001) { BOOST_TEST_REQUIRE(fail("0007_arrays/typecheck_error_001.depc")); }
 BOOST_AUTO_TEST_CASE(typecheck_error_002) { BOOST_TEST_REQUIRE(fail("0007_arrays/typecheck_error_002.depc")); }

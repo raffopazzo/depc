@@ -37,9 +37,9 @@ environment_t::value_type const* environment_t::operator[](expr_t::global_t cons
 dep0::expected<std::true_type> environment_t::try_emplace(expr_t::global_t global, value_type v)
 {
     auto const accept =
-        [&] (scope_map<expr_t::global_t, value_type>& map) -> dep0::expected<std::true_type>
+        [&] (scope_map<expr_t::global_t, value_type>& dest) -> dep0::expected<std::true_type>
         {
-            bool const inserted = map.try_emplace(std::move(global), std::move(v)).second;
+            bool const inserted = dest.try_emplace(std::move(global), std::move(v)).second;
             assert(inserted);
             return std::true_type{};
         };
@@ -76,9 +76,8 @@ dep0::expected<std::true_type> environment_t::try_emplace(expr_t::global_t globa
         },
         [&] (func_decl_t const& decl) -> dep0::expected<std::true_type>
         {
-            // a new function declaration must either:
-            //  - match the exact same signature of a previous function declaration or definition
-            //  - or have a new unique name
+            // if we already encountered a function declaration or definition with this name,
+            // the two signatures must be equivalent
             if (auto const* const prev = this->operator[](global))
                 return match(
                     *prev,
@@ -98,9 +97,8 @@ dep0::expected<std::true_type> environment_t::try_emplace(expr_t::global_t globa
         },
         [&] (func_def_t const& def) -> dep0::expected<std::true_type>
         {
-            // a new function definition must either:
-            //  - match the exact same signature of a previous function declaration
-            //  - or have a new unique name
+            // if we already encountered a function declaration (but not a definition!) with this name,
+            // the two signatures must be equivalent
             if (auto const* const prev = this->operator[](global))
                 return match(
                     *prev,

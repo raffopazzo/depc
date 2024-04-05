@@ -134,13 +134,14 @@ void gen_func(
     llvm_func_proto_t const& proto,
     typecheck::expr_t::abs_t const& f)
 {
-    // we may have already constructed and stored a function object from `gen_func_decl`;
-    // if that is the case we only need to generate the body now
+    // we may have already constructed a function object from `gen_func_decl`;
+    // if that is the case, all we have to do now is generate the body
     llvm::Function* llvm_f;
     local_context_t local;
     if (auto* const p = global[name])
     {
         llvm_f = llvm::dyn_cast<llvm::Function>(std::get<llvm_func_t>(*p).func);
+        assert(llvm_f);
     }
     else
     {

@@ -5,3 +5,6 @@ i32_t g()
     f(true);
     return 0;
 }
+
+// implementation
+i32_t f(bool) { return 0; }

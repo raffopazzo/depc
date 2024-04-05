@@ -15,7 +15,7 @@ namespace dep0::llvmgen {
  *
  * @param name  The name to assign to the LLVM function that will be generated.
  */
-llvm::Value* gen_func_decl(
+void gen_func_decl(
     global_context_t&,
     typecheck::expr_t::global_t const&,
     llvm_func_proto_t const&);

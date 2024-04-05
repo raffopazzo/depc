@@ -88,23 +88,25 @@ void gen_func_body(
     }
 }
 
-llvm::Value* gen_func_decl(
+void gen_func_decl(
     global_context_t& global,
     typecheck::expr_t::global_t const& name,
     llvm_func_proto_t const& proto)
 {
-    auto const llvm_f =
-        llvm::Function::Create(
-            gen_func_type(global, proto),
-            llvm::Function::ExternalLinkage,
-            name.name.view(),
-            global.llvm_module);
-    bool const inserted = global.try_emplace(name, llvm_func_t(llvm_f)).second;
-    assert(inserted);
-    local_context_t local;
-    gen_func_args(global, local, proto, llvm_f);
-    gen_func_attributes(global, proto, llvm_f);
-    return llvm_f;
+    if (not global[name])
+    {
+        auto const llvm_f =
+            llvm::Function::Create(
+                gen_func_type(global, proto),
+                llvm::Function::ExternalLinkage,
+                name.name.view(),
+                global.llvm_module);
+        bool const inserted = global.try_emplace(name, llvm_func_t(llvm_f)).second;
+        assert(inserted);
+        local_context_t local;
+        gen_func_args(global, local, proto, llvm_f);
+        gen_func_attributes(global, proto, llvm_f);
+    }
 }
 
 llvm::Value* gen_func(
@@ -132,18 +134,28 @@ void gen_func(
     llvm_func_proto_t const& proto,
     typecheck::expr_t::abs_t const& f)
 {
-    auto const llvm_f =
-        llvm::Function::Create(
-            gen_func_type(global, proto),
-            llvm::Function::ExternalLinkage,
-            name.name.view(),
-            global.llvm_module);
-    // add function to the parent context; but generation must happen in the function context
-    bool const inserted = global.try_emplace(name, llvm_func_t(llvm_f)).second;
-    assert(inserted);
+    // we may have already constructed a function object from `gen_func_decl`;
+    // if that is the case, all we have to do now is generate the body
+    llvm::Function* llvm_f;
     local_context_t local;
-    gen_func_args(global, local, proto, llvm_f);
-    gen_func_attributes(global, proto, llvm_f);
+    if (auto* const p = global[name])
+    {
+        llvm_f = llvm::dyn_cast<llvm::Function>(std::get<llvm_func_t>(*p).func);
+        assert(llvm_f);
+    }
+    else
+    {
+        llvm_f =
+            llvm::Function::Create(
+                gen_func_type(global, proto),
+                llvm::Function::ExternalLinkage,
+                name.name.view(),
+                global.llvm_module);
+        bool const inserted = global.try_emplace(name, llvm_func_t(llvm_f)).second;
+        assert(inserted);
+        gen_func_args(global, local, proto, llvm_f);
+        gen_func_attributes(global, proto, llvm_f);
+    }
     gen_func_body(global, local, proto, f.body, llvm_f);
 }
 

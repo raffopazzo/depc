@@ -16,6 +16,7 @@
 #include "dep0/match.hpp"
 #include "dep0/scope_map.hpp"
 
+#include <algorithm>
 #include <cassert>
 #include <iterator>
 #include <numeric>
@@ -27,6 +28,7 @@ namespace dep0::typecheck {
 expected<module_t> check(parser::module_t const& x) noexcept
 {
     environment_t env;
+    std::vector<expr_t::global_t> decls; // we must check that all function declarations have been defined
     auto entries =
         fmap_or_error(
             x.entries,
@@ -36,11 +38,39 @@ expected<module_t> check(parser::module_t const& x) noexcept
                 return match(
                     v,
                     [&] (parser::type_def_t const& t) -> expected<entry_t> { return check_type_def(env, t); },
-                    [&] (parser::func_decl_t const& x) -> expected<entry_t> { return check_func_decl(env, x); },
+                    [&] (parser::func_decl_t const& x) -> expected<entry_t>
+                    {
+                        auto const& result = check_func_decl(env, x);
+                        if (result)
+                            decls.push_back(expr_t::global_t{x.name});
+                        return result;
+                    },
                     [&] (parser::func_def_t const& f) -> expected<entry_t> { return check_func_def(env, f); });
             });
     if (not entries)
         return std::move(entries.error());
+    // we now must check that all function declarations have been defined:
+    // remove all names that have been defined and if there is any leftover type-checking must fail
+    auto const new_end =
+        std::remove_if(
+            decls.begin(), decls.end(),
+            [&] (expr_t::global_t const& name)
+            {
+                auto const* const prev = env[name];
+                return prev and std::holds_alternative<func_def_t>(*prev);
+            });
+    if (decls.begin() != new_end)
+    {
+        std::vector<dep0::error_t> reasons;
+        for (auto const& name: std::ranges::subrange(decls.begin(), new_end))
+        {
+            auto const* const p = env[name];
+            assert(p);
+            auto const loc = match(*p, [] (auto const& x) { return x.properties.origin; });
+            reasons.push_back(dep0::error_t("function has been declared but not defined", loc));
+        }
+        return error_t::from_error(dep0::error_t("module is not valid", std::nullopt, std::move(reasons)));
+    }
     return make_legal_module(std::move(*entries));
 }
 

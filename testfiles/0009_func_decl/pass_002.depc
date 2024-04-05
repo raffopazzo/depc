@@ -1,2 +1,4 @@
 i32_t f();
 i32_t g() { return f(); }
+// implementation
+i32_t f() { return 0; }

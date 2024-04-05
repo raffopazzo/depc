@@ -1141,7 +1141,7 @@ BOOST_AUTO_TEST_CASE(pass_020)
 BOOST_AUTO_TEST_CASE(pass_021)
 {
     BOOST_TEST_REQUIRE(pass("0007_arrays/pass_021.depc"));
-    BOOST_TEST_REQUIRE(pass_result->entries.size() == 2ul);
+    BOOST_TEST_REQUIRE(pass_result->entries.size() == 3ul);
     {
         auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[0ul]);
         BOOST_TEST_REQUIRE(f);
@@ -1168,27 +1168,10 @@ BOOST_AUTO_TEST_CASE(pass_021)
         BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
         BOOST_TEST(is_return_of(f->value.body.stmts[0], app_of(global("f"), var("n"), var("i"), var("p"), var("xs"))));
     }
-}
-
-BOOST_AUTO_TEST_CASE(pass_022)
-{
-    BOOST_TEST_REQUIRE(pass("0007_arrays/pass_022.depc"));
-    BOOST_TEST_REQUIRE(pass_result->entries.size() == 2ul);
     {
-        auto const f = std::get_if<dep0::typecheck::func_decl_t>(&pass_result->entries[0ul]);
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[2ul]);
         BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(f->name == "f");
-        BOOST_TEST_REQUIRE(f->signature.args.size() == 4ul);
-        BOOST_TEST(is_arg(f->signature.args[0], is_u64, "n"));
-        BOOST_TEST(is_arg(f->signature.args[1], is_u64, "i"));
-        BOOST_TEST(is_arg(f->signature.args[2], true_t_of(lt(var("i"), var("n"))), std::nullopt));
-        BOOST_TEST(is_arg(f->signature.args[3], array_of(is_i32, var("n")), "xs"));
-        BOOST_TEST(is_i32(f->signature.ret_type.get()));
-    }
-    {
-        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[1ul]);
-        BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(f->name == "g");
+        BOOST_TEST(f->name == "h");
         BOOST_TEST_REQUIRE(f->value.args.size() == 1ul);
         BOOST_TEST(is_arg(f->value.args[0], array_of(is_i32, constant(2)), "xs"));
         BOOST_TEST(is_i32(f->value.ret_type.get()));

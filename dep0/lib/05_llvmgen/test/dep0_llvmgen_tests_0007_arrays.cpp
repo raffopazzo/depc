@@ -1561,28 +1561,8 @@ BOOST_AUTO_TEST_CASE(pass_021)
                     call_arg(exactly(f->getArg(2))),
                     call_arg(exactly(f->getArg(3))))));
     }
-}
-
-BOOST_AUTO_TEST_CASE(pass_022)
-{
-    apply_beta_delta_normalization = false;
-    BOOST_TEST_REQUIRE(pass("0007_arrays/pass_022.depc"));
     {
-        auto const f = pass_result.value()->getFunction("f");
-        BOOST_TEST_REQUIRE(
-            is_function_of(
-                f,
-                std::tuple{
-                    arg_of(is_i64, "n", zext),
-                    arg_of(is_i64, "i", zext),
-                    arg_of(struct_of()),
-                    arg_of(pointer_to(is_i32), "xs", nonnull),
-                },
-                is_i32, sext));
-        BOOST_TEST(f->size() == 0ul);
-    }
-    {
-        auto const f = pass_result.value()->getFunction("g");
+        auto const f = pass_result.value()->getFunction("h");
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(pointer_to(is_i32), "xs", nonnull)}, is_i32, sext));
         BOOST_TEST(
             is_return_of(
@@ -1600,5 +1580,7 @@ BOOST_AUTO_TEST_CASE(pass_022)
 // BOOST_AUTO_TEST_CASE(typecheck_error_001)
 // BOOST_AUTO_TEST_CASE(typecheck_error_002)
 // BOOST_AUTO_TEST_CASE(typecheck_error_003)
+// BOOST_AUTO_TEST_CASE(typecheck_error_004)
+// BOOST_AUTO_TEST_CASE(typecheck_error_005)
 
 BOOST_AUTO_TEST_SUITE_END()

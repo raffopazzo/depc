@@ -67,6 +67,17 @@ BOOST_AUTO_TEST_CASE(pass_003)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_004)
+{
+    BOOST_TEST_REQUIRE(pass("0009_func_decl/pass_004.depc"));
+    {
+        auto const f = pass_result.value()->getFunction("f");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, sext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(0)));
+    }
+}
+
 // BOOST_AUTO_TEST_CASE(typecheck_error_000)
 // BOOST_AUTO_TEST_CASE(typecheck_error_001)
 

@@ -7,23 +7,23 @@
 namespace dep0::typecheck {
 
 /**
- * Contains the possible results returned by `is_list_initializable()`.
+ * Contains the possible results returned from `is_list_initializable()`.
  */
 namespace is_list_initializable_result
 {
     /**
-     * The type cannot be initialized by an initializer list.
+     * The type cannot be initialized with an initializer list.
      */
     struct no_t{};
 
     /**
-     * The type is `true_t(true)`, which can be initialized by `{}`.
+     * The type is `true_t(true)`, which can be initialized with `{}`.
      */
     struct true_t{};
 
     /**
      * The type is an `array_t(type, N)` for some constant `N`,
-     * which can be initialized by `{value1, ..., valueN}`.
+     * which can be initialized with `{value1, ..., valueN}`.
      */
     struct array_t
     {
@@ -39,7 +39,7 @@ using is_list_initializable_result_t =
         is_list_initializable_result::array_t>;
 
 /**
- * Decide whether the given type can be initialized by a (possibly empty) initializer list,
+ * Decide whether the given type can be initialized with a (possibly empty) initializer list,
  * i.e. an expression of the form `{expr1, ..., exprN}`.
  */
 is_list_initializable_result_t is_list_initializable(expr_t const& type);

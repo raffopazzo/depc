@@ -19,7 +19,8 @@ BOOST_AUTO_TEST_CASE(pass_000)
     {
         auto const f = pass_result.value()->getFunction("f1");
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i1, zext));
-        BOOST_TEST(f->size() == 0ul);
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(false)));
     }
 }
 
@@ -30,7 +31,8 @@ BOOST_AUTO_TEST_CASE(pass_001)
     {
         auto const f = pass_result.value()->getFunction("f");
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(is_i32, std::nullopt, sext)}, is_i1, zext));
-        BOOST_TEST(f->size() == 0ul);
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(false)));
     }
 }
 
@@ -40,7 +42,8 @@ BOOST_AUTO_TEST_CASE(pass_002)
     {
         auto const f = pass_result.value()->getFunction("f");
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, sext));
-        BOOST_TEST(f->size() == 0ul);
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(0)));
     }
     {
         auto const f = pass_result.value()->getFunction("g");
@@ -52,5 +55,30 @@ BOOST_AUTO_TEST_CASE(pass_002)
                 direct_call_of(exactly(pass_result.value()->getFunction("f")))));
     }
 }
+
+BOOST_AUTO_TEST_CASE(pass_003)
+{
+    BOOST_TEST_REQUIRE(pass("0009_func_decl/pass_003.depc"));
+    {
+        auto const f = pass_result.value()->getFunction("f");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, sext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(0)));
+    }
+}
+
+BOOST_AUTO_TEST_CASE(pass_004)
+{
+    BOOST_TEST_REQUIRE(pass("0009_func_decl/pass_004.depc"));
+    {
+        auto const f = pass_result.value()->getFunction("f");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, sext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(0)));
+    }
+}
+
+// BOOST_AUTO_TEST_CASE(typecheck_error_000)
+// BOOST_AUTO_TEST_CASE(typecheck_error_001)
 
 BOOST_AUTO_TEST_SUITE_END()

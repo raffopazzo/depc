@@ -7,3 +7,14 @@ auto g3(i32_t, u32_t) -> typename;
 auto h1() -> g1();
 auto h2(i32_t x) -> g2(x);
 auto h3(i32_t x, u32_t y) -> g3(x, y);
+
+// implementation
+bool f1() { return false; }
+bool f2(i32_t) { return false; }
+bool f3(i32_t, u32_t) { return false; }
+auto g1() -> typename { return bool; }
+auto g2(i32_t) -> typename { return bool; }
+auto g3(i32_t, u32_t) -> typename { return bool; }
+auto h1() -> g1() { return true; }
+auto h2(i32_t x) -> g2(x) { return true; }
+auto h3(i32_t x, u32_t y) -> g3(x, y) { return true; }

@@ -7,3 +7,7 @@ auto g(i32_t x) -> typename
 }
 
 auto h(i32_t x) -> g(x);
+
+// implementation
+bool f(i32_t) { return false; }
+auto h(i32_t x) -> g(x) { return false; }

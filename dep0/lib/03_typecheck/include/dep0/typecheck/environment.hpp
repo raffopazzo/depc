@@ -17,8 +17,6 @@ class environment_t
 public:
     using value_type = std::variant<type_def_t, func_decl_t, func_def_t>;
 
-    using const_iterator = typename scope_map<expr_t::global_t, value_type>::const_iterator;
-
     environment_t() = default;
     environment_t(environment_t const&) = default;
     environment_t& operator=(environment_t const&) = default;
@@ -30,12 +28,18 @@ public:
     value_type const* operator[](expr_t::global_t const&) const;
 
     // non-const member functions
-    dep0::expected<const_iterator> try_emplace(expr_t::global_t, value_type);
+    dep0::expected<std::true_type> try_emplace(expr_t::global_t, value_type);
 
 private:
-    scope_map<expr_t::global_t, value_type> m_values;
+    // Function declarations are stored separately from their definitions (and from type definitions).
+    // But the subscript operator must return an immutable stable pointer to a value_type,
+    // so both map store a value_type bot not all alternatives are inhabited in either of them.
+    scope_map<expr_t::global_t, value_type> m_fwd_decls;
+    scope_map<expr_t::global_t, value_type> m_definitions;
 
-    environment_t(scope_map<expr_t::global_t, value_type>);
+    environment_t(
+        scope_map<expr_t::global_t, value_type> fwd_decls,
+        scope_map<expr_t::global_t, value_type> definitions);
 };
 
 } // namespace dep0::typecheck

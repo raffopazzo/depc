@@ -32,9 +32,8 @@ is_beta_delta_equivalent(
             {
                 auto x2 = x;
                 auto y2 = y;
-                beta_delta_normalize(env, ctx, x2);
-                beta_delta_normalize(env, ctx, y2);
-                eq = is_alpha_equivalent(x2, y2);
+                if (beta_delta_normalize(env, ctx, x2) | beta_delta_normalize(env, ctx, y2)) // don't short-circuit
+                    eq = is_alpha_equivalent(x2, y2);
             }
             return eq;
         }

@@ -138,7 +138,7 @@ expected<expr_t> check_type(environment_t const& env, context_t const& ctx, pars
         return as_kind;
     return error_t::from_error(
         dep0::error_t(
-            "expression cannot be assigned to neither types nor kinds",
+            "expression is neither a type nor a kind",
             type.properties,
             as_type.error() == as_kind.error() // please don't print stupid duplicate error messages...
                 ? std::vector<dep0::error_t>{std::move(as_type.error())}

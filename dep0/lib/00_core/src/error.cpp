@@ -67,7 +67,10 @@ static std::ostream& without_indent(std::ostream& os, error_t const& err, std::s
     }
     os << err.error;
     if (q == quoting_mode::multi_line)
+    {
         quote(os, err.location->txt, indent+1);
+        new_line(os, indent);
+    }
     switch (err.reasons.size())
     {
     case 0ul: return os;

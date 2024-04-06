@@ -65,7 +65,7 @@ boost::test_tools::predicate_result is_struct(llvm::StructType const& s, Types&&
         if (result)
         {
             auto const i = next++;
-            if (auto const tmp = types(s.getElementType(i)); not tmp)
+            if (auto const tmp = std::forward<Types>(types)(s.getElementType(i)); not tmp)
                 result = failure("literal struct element predidcate failed at index ", i, ": ", tmp.message());
         }
     }(), ...);
@@ -75,28 +75,25 @@ boost::test_tools::predicate_result is_struct(llvm::StructType const& s, Types&&
 template <Predicate<llvm::Type>... Types>
 boost::test_tools::predicate_result is_struct(llvm::StructType const* const p, Types&&... types)
 {
-    using namespace dep0::testing;
     if (not p)
-        return failure("struct is null");
+        return dep0::testing::failure("struct is null");
     return is_struct(*p, std::forward<Types>(types)...);
 }
 
 template <Predicate<llvm::Type>... Types>
 boost::test_tools::predicate_result is_struct(llvm::Type const& t, Types&&... types)
 {
-    using namespace dep0::testing;
-    auto const p = dyn_cast<llvm::StructType>(&t);
-    if (not p)
-        return failure("type is not a struct but ", to_string(t));
-    return is_struct(*p, std::forward<Types>(types)...);
+    if (auto const p = dyn_cast<llvm::StructType>(&t))
+        return is_struct(*p, std::forward<Types>(types)...);
+    else
+        return dep0::testing::failure("type is not a struct but ", to_string(t));
 }
 
 template <Predicate<llvm::Type>... Types>
 boost::test_tools::predicate_result is_struct(llvm::Type const* const p, Types&&... types)
 {
-    using namespace dep0::testing;
     if (not p)
-        return failure("type null");
+        return dep0::testing::failure("type null");
     return is_struct(*p, std::forward<Types>(types)...);
 }
 

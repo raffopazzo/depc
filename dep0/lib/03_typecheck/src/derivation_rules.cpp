@@ -11,6 +11,10 @@ expr_t derivation_rules::make_true_t()
             expr_t::pi_t{std::vector{make_legal_func_arg(make_bool())}, make_typename()}),
         expr_t::true_t{});
 }
+expr_t derivation_rules::make_true_t(expr_t cond)
+{
+    return make_legal_expr(make_typename(), expr_t::app_t{make_true_t(), {std::move(cond)}});
+}
 expr_t derivation_rules::make_bool() { return make_legal_expr(make_typename(), expr_t::bool_t{}); }
 expr_t derivation_rules::make_unit() { return make_legal_expr(make_typename(), expr_t::unit_t{}); }
 expr_t derivation_rules::make_i8() { return make_legal_expr(make_typename(), expr_t::i8_t{}); }

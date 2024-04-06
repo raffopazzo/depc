@@ -13,6 +13,7 @@ struct derivation_rules
 
     static expr_t make_typename();
     static expr_t make_true_t();
+    static expr_t make_true_t(expr_t);
     static expr_t make_bool();
     static expr_t make_unit();
     static expr_t make_i8();

@@ -175,11 +175,7 @@ expected<stmt_t> check_stmt(environment_t const& env, proof_state_t& state, pars
                 new_state.rewrite(*cond, derivation_rules::make_true());
                 // we must add `true_t(cond)` to the new context only after we have rewritten `cond=true`,
                 // otherwise the new context will contain `true_t(true)`, which is not helpful to verify array access
-                new_state.context.add_auto(
-                    context_t::var_decl_t{
-                        make_legal_expr(
-                            derivation_rules::make_typename(),
-                            expr_t::app_t{derivation_rules::make_true_t(), {*cond}})});
+                new_state.context.add_auto(context_t::var_decl_t{derivation_rules::make_true_t(*cond)});
                 return check_body(env, std::move(new_state), x.true_branch);
             }();
             if (not true_branch)

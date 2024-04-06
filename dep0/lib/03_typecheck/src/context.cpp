@@ -67,11 +67,8 @@ void context_t::add_auto(var_decl_t decl)
     static std::size_t next_id = 1ul;
     static const source_text empty = source_text(make_null_handle(), "auto");
     do
-    {
-        // should always be true but doesn't harm to try the next id
         if (m_values.try_emplace(expr_t::var_t{empty, next_id++}, std::nullopt, std::move(decl)).second)
-            return;
-    }
+            return; // should always be true but doesn't harm to try the next id
     while (true);
 }
 
@@ -83,12 +80,12 @@ context_t::try_emplace(std::optional<expr_t::var_t> name, std::optional<source_l
         add_auto(std::move(decl));
         return std::true_type{};
     }
-    auto const res = m_values.try_emplace(std::move(*name), loc, std::move(decl));
-    if (res.second)
+    auto const [it, inserted] = m_values.try_emplace(std::move(*name), loc, std::move(decl));
+    if (inserted)
         return std::true_type{};
     else
     {
-        auto const& prev = res.first->second;
+        auto const& prev = it->second;
         std::ostringstream err;
         pretty_print<properties_t>(err << "cannot redefine `", *name) << '`';
         pretty_print(err << ", previously defined as `", prev.value.type) << '`';

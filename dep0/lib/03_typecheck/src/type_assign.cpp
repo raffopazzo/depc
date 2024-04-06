@@ -230,7 +230,7 @@ expected<expr_t> type_assign(environment_t const& env, context_t const& ctx, par
         [&] (parser::expr_t::global_t const& x) -> expected<expr_t>
         {
             return error_t::from_error(dep0::error_t(
-                "unexpected global name from parser. This is an internal error; please report it!", loc));
+                "unexpected global name from parser. This is a bug; please report it!", loc));
         },
         [&] (parser::expr_t::app_t const& x) -> expected<expr_t>
         {

@@ -63,7 +63,7 @@ context_t::value_type const* context_t::operator[](expr_t::var_t const& name) co
 
 // non-const member functions
 
-context_t::const_iterator context_t::add_auto(var_decl_t decl)
+void context_t::add_auto(var_decl_t decl)
 {
     static std::atomic<std::size_t> next_id = 1ul;
     static const source_text empty = source_text(make_null_handle(), "auto");
@@ -75,19 +75,22 @@ context_t::const_iterator context_t::add_auto(var_decl_t decl)
                 std::nullopt,
                 std::move(decl));
         if (ok) // should always be true but doesn't harm to try the next one
-            return it;
+            return;
     }
     while (true);
 }
 
-dep0::expected<context_t::const_iterator>
+dep0::expected<std::true_type>
 context_t::try_emplace(std::optional<expr_t::var_t> name, std::optional<source_loc_t> const loc, var_decl_t decl)
 {
     if (not name)
-        return add_auto(std::move(decl));
+    {
+        add_auto(std::move(decl));
+        return std::true_type{};
+    }
     auto const res = m_values.try_emplace(std::move(*name), loc, std::move(decl));
     if (res.second)
-        return dep0::expected<const_iterator>(res.first);
+        return std::true_type{};
     else
     {
         auto const& prev = res.first->second;

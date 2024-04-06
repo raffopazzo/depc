@@ -51,8 +51,8 @@ public:
     context_t rewrite(expr_t const& from, expr_t const& to) const;
 
     /**
-     * Return the name of all variables visible from the current context,
-     * i.e. all variables in the current context plus all variables from the parent, grand-parent, etc.
+     * Return the name of all variables visible from the current context, i.e.
+     * all variables in the current context plus all variables from parent, grand-parent, etc.
      */
     std::set<expr_t::var_t> vars() const;
 

@@ -9,7 +9,6 @@
 
 #include "private/rewrite.hpp"
 
-#include <atomic>
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -65,16 +64,12 @@ context_t::value_type const* context_t::operator[](expr_t::var_t const& name) co
 
 void context_t::add_auto(var_decl_t decl)
 {
-    static std::atomic<std::size_t> next_id = 1ul;
+    static std::size_t next_id = 1ul;
     static const source_text empty = source_text(make_null_handle(), "auto");
     do
     {
-        auto const [it, ok] =
-            m_values.try_emplace(
-                expr_t::var_t{empty, next_id.fetch_add(1ul, std::memory_order_relaxed)},
-                std::nullopt,
-                std::move(decl));
-        if (ok) // should always be true but doesn't harm to try the next one
+        // should always be true but doesn't harm to try the next id
+        if (m_values.try_emplace(expr_t::var_t{empty, next_id++}, std::nullopt, std::move(decl)).second)
             return;
     }
     while (true);

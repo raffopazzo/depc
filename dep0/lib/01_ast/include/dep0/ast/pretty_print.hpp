@@ -22,6 +22,9 @@ template <Properties P>
 std::ostream& pretty_print(std::ostream&, type_def_t<P> const&, std::size_t indent = 0ul);
 
 template <Properties P>
+std::ostream& pretty_print(std::ostream&, axiom_t<P> const&, std::size_t indent = 0ul);
+
+template <Properties P>
 std::ostream& pretty_print(std::ostream&, func_decl_t<P> const&, std::size_t indent = 0ul);
 
 template <Properties P>

@@ -1,0 +1,8 @@
+axiom not_gte_implies_lt(u64_t i, u64_t n, true_t(not(i >= n)) p) -> true_t(i < n);
+
+i32_t f(u64_t i, array_t(i32_t, 3) xs)
+{
+    if (i >= 3)
+        return -1;
+    return xs[i];
+}

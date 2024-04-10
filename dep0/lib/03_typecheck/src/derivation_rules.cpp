@@ -29,6 +29,11 @@ expr_t derivation_rules::make_u64() { return make_legal_expr(make_typename(), ex
 expr_t derivation_rules::make_true() { return make_legal_expr(make_bool(), expr_t::boolean_constant_t{true}); }
 expr_t derivation_rules::make_false() { return make_legal_expr(make_bool(), expr_t::boolean_constant_t{false}); }
 
+expr_t derivation_rules::make_boolean_expr(expr_t::boolean_expr_t::value_t v)
+{
+    return make_legal_expr(make_bool(), expr_t::boolean_expr_t{std::move(v)});
+}
+
 expr_t derivation_rules::make_array()
 {
     // the elemnt type of the array must be of sort types,

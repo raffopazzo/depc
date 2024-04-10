@@ -19,4 +19,3 @@ std::optional<expr_t> search_var(environment_t const& env, context_t const& ctx,
 }
 
 } // namespace dep0::typecheck
-

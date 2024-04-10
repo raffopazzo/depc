@@ -24,6 +24,7 @@ add_library(dep0_typecheck_lib
   src/private/returns_from_all_branches.hpp
   src/private/rewrite.hpp
   src/private/substitute.hpp
+  src/private/unification.hpp
   src/private/type_assign.hpp
   # source files
   src/ast.cpp
@@ -46,11 +47,14 @@ add_library(dep0_typecheck_lib
   src/returns_from_all_branches.cpp
   src/rewrite.cpp
   src/substitute.cpp
+  src/unification.cpp
   src/type_assign.cpp
   # tactics headers
+  src/private/tactics/search_app.hpp
   src/private/tactics/search_true_t.hpp
   src/private/tactics/search_var.hpp
   # tactics sources
+  src/tactics/search_app.cpp
   src/tactics/search_true_t.cpp
   src/tactics/search_var.cpp
   )

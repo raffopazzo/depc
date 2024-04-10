@@ -395,6 +395,21 @@ struct type_def_t
 };
 
 /**
+ * Axioms are like function declarations, except they are not followed by a function definition.
+ * In other words, they are true propositions that cannot be proved.
+ * Introducing the wrong set of axioms may lead to an inconsistent theory.
+ */
+template <Properties P>
+struct axiom_t
+{
+    using properties_t = typename P::axiom_properties_type;
+
+    properties_t properties;
+    source_text name;
+    expr_t<P>::pi_t signature;
+};
+
+/**
  * Represents a global function declaration,
  * which is comprised of a name and a Pi-type for its signature and return type.
  */
@@ -433,9 +448,10 @@ struct module_t
 {
     using properties_t = typename P::module_properties_type;
     using type_def_t = ast::type_def_t<P>;
+    using axiom_t = ast::axiom_t<P>;
     using func_decl_t = ast::func_decl_t<P>;
     using func_def_t = ast::func_def_t<P>;
-    using entry_t = std::variant<type_def_t, func_decl_t, func_def_t>;
+    using entry_t = std::variant<type_def_t, axiom_t, func_decl_t, func_def_t>;
 
     properties_t properties;
     std::vector<entry_t> entries;

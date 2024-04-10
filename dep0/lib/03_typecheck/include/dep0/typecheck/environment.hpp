@@ -5,6 +5,7 @@
 #include "dep0/error.hpp"
 #include "dep0/scope_map.hpp"
 
+#include <set>
 #include <variant>
 
 namespace dep0::typecheck {
@@ -15,7 +16,7 @@ namespace dep0::typecheck {
 class environment_t
 {
 public:
-    using value_type = std::variant<type_def_t, func_decl_t, func_def_t>;
+    using value_type = std::variant<type_def_t, axiom_t, func_decl_t, func_def_t>;
 
     environment_t() = default;
     environment_t(environment_t const&) = default;
@@ -25,6 +26,13 @@ public:
 
     // const member functions
     environment_t extend() const;
+
+    /**
+     * Return the name of all globals visible from the current environment, i.e.
+     * all globals in the current environment plus all globals from parent, grand-parent, etc.
+     */
+    std::set<expr_t::global_t> globals() const;
+
     value_type const* operator[](expr_t::global_t const&) const;
 
     // non-const member functions

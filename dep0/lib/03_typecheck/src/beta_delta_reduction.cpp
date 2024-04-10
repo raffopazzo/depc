@@ -12,10 +12,26 @@ namespace dep0::typecheck {
 
 namespace impl {
 
+static bool beta_delta_normalize(environment_t const&, axiom_t&);
 static bool beta_delta_normalize(environment_t const&, func_decl_t&);
 static bool beta_delta_normalize(environment_t const&, func_def_t&);
 static bool beta_delta_normalize(environment_t const&, context_t const&, sort_t&);
 static bool beta_delta_normalize(environment_t const&, context_t const&, body_t&);
+
+bool beta_delta_normalize(environment_t const& env, axiom_t& axiom)
+{
+    context_t ctx;
+    bool changed = false;
+    for (func_arg_t& arg: axiom.signature.args)
+    {
+        changed |= beta_delta_normalize(env, ctx, arg.type);
+        auto const ok = ctx.try_emplace(arg.var, std::nullopt, context_t::var_decl_t{arg.type});
+        assert(ok.has_value());
+    }
+    changed |= beta_delta_normalize(env, ctx, axiom.signature.ret_type.get());
+    changed |= beta_delta_normalize(env, ctx, axiom.properties.sort.get());
+    return changed;
+}
 
 bool beta_delta_normalize(environment_t const& env, func_decl_t& decl)
 {
@@ -84,6 +100,13 @@ bool beta_delta_normalize(module_t& m)
                 auto const ok = env.try_emplace(expr_t::global_t{name}, def);
                 assert(ok.has_value());
                 return false;
+            },
+            [&] (axiom_t& axiom)
+            {
+                bool const result = impl::beta_delta_normalize(env, axiom);
+                auto const ok = env.try_emplace(expr_t::global_t{axiom.name}, axiom);
+                assert(ok.has_value());
+                return result;
             },
             [&] (func_decl_t& decl)
             {

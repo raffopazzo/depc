@@ -28,6 +28,8 @@ struct derivation_rules
     static expr_t make_true();
     static expr_t make_false();
 
+    static expr_t make_boolean_expr(expr_t::boolean_expr_t::value_t);
+
     static expr_t make_array();
 };
 
@@ -41,6 +43,17 @@ template <typename... Args>
 type_def_t make_legal_type_def(source_loc_t const origin, Args&&... args)
 {
     return type_def_t{origin, derivation_rules::make_derivation<type_def_t>(), std::forward<Args>(args)...};
+}
+
+template <typename... Args>
+axiom_t make_legal_axiom(source_loc_t const origin, sort_t sort, Args&&... args)
+{
+    return axiom_t{
+        origin,
+        derivation_rules::make_derivation<axiom_t>(),
+        std::move(sort),
+        std::forward<Args>(args)...
+    };
 }
 
 template <typename... Args>

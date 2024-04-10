@@ -8,6 +8,7 @@ fragment ALPHANUM: [A-Za-z0-9_]+;
 KW_AND: 'and';
 KW_ARRAY: 'array_t';
 KW_AUTO: 'auto';
+KW_AXIOM: 'axiom';
 KW_BOOL: 'bool';
 KW_ELSE: 'else';
 KW_FALSE: 'false';

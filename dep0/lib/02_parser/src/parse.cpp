@@ -76,6 +76,8 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         assert(ctx);
         if (ctx->typeDef())
             return module_t::entry_t{std::any_cast<type_def_t>(visitTypeDef(ctx->typeDef()))};
+        if (ctx->axiom())
+            return module_t::entry_t{std::any_cast<axiom_t>(visitAxiom(ctx->axiom()))};
         if (ctx->funcDecl())
             return module_t::entry_t{std::any_cast<func_decl_t>(visitFuncDecl(ctx->funcDecl()))};
         if (ctx->funcDef())
@@ -131,6 +133,19 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         std::vector<func_arg_t> args;
         expr_t ret_type;
     };
+
+    virtual std::any visitAxiom(DepCParser::AxiomContext* ctx) override
+    {
+        assert(ctx);
+        assert(ctx->name);
+        return axiom_t{
+            get_loc(src, *ctx),
+            get_text(src, *ctx->name),
+            expr_t::pi_t{
+                visitFuncArgs(ctx->funcArg()),
+                visitExpr(ctx->retType)
+            }};
+    }
 
     virtual std::any visitFuncSig(DepCParser::FuncSigContext* ctx) override
     {

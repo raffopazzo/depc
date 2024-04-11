@@ -396,7 +396,7 @@ struct type_def_t
 
 /**
  * Axioms are like function declarations, except they are not followed by a function definition.
- * In other words, they are true propositions that cannot be proved.
+ * In the Curry-Howard isomorphism, they are true propositions that cannot be proved.
  * Introducing the wrong set of axioms may lead to an inconsistent theory.
  */
 template <Properties P>

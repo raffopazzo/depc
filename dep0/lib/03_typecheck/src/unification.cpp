@@ -32,8 +32,15 @@ bool unify(expr_t const& from, expr_t const& to, std::map<expr_t::var_t, expr_t>
             [] (expr_t::u16_t, expr_t::u16_t) { return true; },
             [] (expr_t::u32_t, expr_t::u32_t) { return true; },
             [] (expr_t::u64_t, expr_t::u64_t) { return true; },
-            [] (expr_t::boolean_constant_t const& x, expr_t::boolean_constant_t const& y) { return x.value == y.value; },
-            [] (expr_t::numeric_constant_t const& x, expr_t::numeric_constant_t const& y) { return x.value == y.value; },
+            [] (expr_t::boolean_constant_t const& x, expr_t::boolean_constant_t const& y)
+            {
+                return x.value == y.value;
+            },
+            [] (expr_t::numeric_constant_t const& x, expr_t::numeric_constant_t const& y)
+            {
+                // TOOD should we compare the two types here? if so, add a test; if not, explain why.
+                return x.value == y.value;
+            },
             [&] (expr_t::boolean_expr_t const& x, expr_t::boolean_expr_t const& y)
             {
                 return std::visit(
@@ -80,7 +87,11 @@ bool unify(expr_t const& from, expr_t const& to, std::map<expr_t::var_t, expr_t>
                 assert(inserted);
                 return true;
             },
-            [] (expr_t::global_t const& x, expr_t::global_t const& y) { return x == y; },
+            [] (expr_t::global_t const& x, expr_t::global_t const& y)
+            {
+                // TODO should probably check that the two globals refer to the same environment (needs a test)
+                return x == y;
+            },
             [&] (expr_t::app_t const& x, expr_t::app_t const& y)
             {
                 if (x.args.size() != y.args.size())

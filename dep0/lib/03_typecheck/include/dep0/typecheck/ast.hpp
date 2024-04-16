@@ -71,7 +71,7 @@ struct legal_axiom_t
 {
     source_loc_t origin;
     derivation_t<axiom_t> derivation;
-    boost::recursive_wrapper<sort_t> sort; // TODO this doesn't need to be wrapped
+    boost::recursive_wrapper<sort_t> sort;
     bool operator==(legal_axiom_t const&) const = default;
 };
 
@@ -79,7 +79,7 @@ struct legal_func_decl_t
 {
     source_loc_t origin;
     derivation_t<func_decl_t> derivation;
-    boost::recursive_wrapper<sort_t> sort; // TODO this doesn't need to be wrapped
+    boost::recursive_wrapper<sort_t> sort;
     bool operator==(legal_func_decl_t const&) const = default;
 };
 
@@ -87,7 +87,7 @@ struct legal_func_def_t
 {
     source_loc_t origin;
     derivation_t<func_def_t> derivation;
-    boost::recursive_wrapper<sort_t> sort; // TODO this doesn't need to be wrapped
+    boost::recursive_wrapper<sort_t> sort;
     bool operator==(legal_func_def_t const&) const = default;
 };
 

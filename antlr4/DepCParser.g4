@@ -49,7 +49,7 @@ typeDef:
     {one_of("to")}? ID
     ('...' | '+'? max=INT)
     SEMI;
-funcArg: ('typename' | expr) name=ID?;
+funcArg: ({one_of("0")}? qty=INT)? ('typename' | expr) name=ID?;
 
 // Types
 type: primitiveType | funcType | typeVar;

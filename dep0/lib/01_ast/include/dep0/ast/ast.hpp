@@ -25,6 +25,24 @@ template <Properties P> struct body_t;
 template <Properties P> struct stmt_t;
 template <Properties P> struct expr_t;
 
+// enums
+
+/**
+ * Represents the keywords `signed` or `unsigned` used inside a user-defined integral type definition.
+ */
+enum class sign_t { signed_v, unsigned_v };
+
+/**
+ * Represents the bit width used inside a user-defined integral type definition.
+ */
+enum class width_t { _8, _16, _32, _64 };
+
+/**
+ * Represents the quantity associated to a function argument;
+ * the default is `many`, unless an explicit quantity is specified.
+ */
+enum class qty_t { zero, many };
+
 // definitions
 
 /**
@@ -322,6 +340,7 @@ struct func_arg_t
     using expr_t = ast::expr_t<P>;
 
     properties_t properties;
+    qty_t qty;
     expr_t type;
     std::optional<typename expr_t::var_t> var;
 };
@@ -352,24 +371,6 @@ struct stmt_t
     properties_t properties;
     value_t value;
 };
-
-/**
- * Represents the keywords `signed` or `unsigned` used inside a user-defined integral type definition.
- *
- * One could argue that this should be inside `type_def_t::integer_t`
- * but that would make the enum dependent on `P`,
- * which adds no value but only clutter.
- */
-enum class sign_t { signed_v, unsigned_v };
-
-/**
- * Represents the bit width used inside a user-defined integral type definition.
- *
- * One could argue that this should be inside `type_def_t::integer_t`
- * but that would make the enum dependent on `P`,
- * which adds no value but only clutter.
- */
-enum class width_t { _8, _16, _32, _64 };
 
 /**
  * Represents a user-defined integral type definition.

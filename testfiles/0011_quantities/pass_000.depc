@@ -1,0 +1,2 @@
+unit_t f(0 unit_t x) { }
+unit_t g(0 unit_t) { }

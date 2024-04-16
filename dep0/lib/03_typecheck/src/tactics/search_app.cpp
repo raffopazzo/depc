@@ -34,6 +34,8 @@ std::optional<expr_t> search_app(environment_t const& env, context_t const& ctx,
                         nullptr);
                     args.push_back(std::move(it->second));
                 }
+                // TODO calling `proof_search()` may result in infinite recursion;
+                //      need to add a version with state and bail out if recursion is detected
                 else if (auto val = proof_search(env, ctx, arg.type))
                     // TODO if arg has a name, we should substitute() in later arguments and return type (needs a test)
                     args.push_back(std::move(*val));

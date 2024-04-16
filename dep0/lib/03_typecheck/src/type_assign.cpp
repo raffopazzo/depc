@@ -67,9 +67,7 @@ expected<expr_t> type_assign(environment_t const& env, context_t const& ctx, par
         },
         [&] (parser::expr_t::numeric_constant_t const& x) -> expected<expr_t>
         {
-            std::ostringstream err;
-            err << "cannot assign a unique type to numeric constant without being context-sensitive";
-            return error_t::from_error(dep0::error_t(err.str(), loc));
+            return error_t::from_error(dep0::error_t("numeric constants have no unique type", loc));
         },
         [&] (parser::expr_t::boolean_expr_t const& x) -> expected<expr_t>
         {
@@ -176,15 +174,12 @@ expected<expr_t> type_assign(environment_t const& env, context_t const& ctx, par
                                             std::move(*lhs),
                                             std::move(*rhs)}};
                                 })(boost::hana::type_c<T>));
+                    else if (lhs.has_error() xor rhs.has_error()) // if only 1 error, just forward that one
+                        return error_t::from_error(std::move(lhs.has_error() ? lhs.error() : rhs.error()));
                     else
-                    {
-                        std::ostringstream err;
-                        err << "cannot assign a unique type to relation expression";
-                        std::vector<dep0::error_t> reasons;
-                        if (lhs.has_error()) reasons.push_back(std::move(lhs.error()));
-                        if (rhs.has_error()) reasons.push_back(std::move(rhs.error()));
-                        return error_t::from_error(dep0::error_t(err.str(), loc, std::move(reasons)));
-                    }
+                        return error_t::from_error(dep0::error_t(
+                            "relation expression cannot be assigned a type",
+                            loc, {std::move(lhs.error()), std::move(rhs.error())}));
                 });
         },
         [&] (parser::expr_t::arith_expr_t const& x) -> expected<expr_t>
@@ -204,15 +199,12 @@ expected<expr_t> type_assign(environment_t const& env, context_t const& ctx, par
                                     std::move(*lhs),
                                     std::move(*rhs)}});
                     }
+                    else if (lhs.has_error() xor rhs.has_error()) // if only 1 error, just forward that one
+                        return error_t::from_error(std::move(lhs.has_error() ? lhs.error() : rhs.error()));
                     else
-                    {
-                        std::ostringstream err;
-                        err << "cannot assign a unique type to arithmetic expression";
-                        std::vector<dep0::error_t> reasons;
-                        if (lhs.has_error()) reasons.push_back(std::move(lhs.error()));
-                        if (rhs.has_error()) reasons.push_back(std::move(rhs.error()));
-                        return error_t::from_error(dep0::error_t(err.str(), loc, std::move(reasons)));
-                    }
+                        return error_t::from_error(dep0::error_t(
+                            "arithmetic expression cannot be assigned a type",
+                            loc, {std::move(lhs.error()), std::move(rhs.error())}));
                 });
         },
         [&] (parser::expr_t::var_t const& x) -> expected<expr_t>
@@ -220,7 +212,7 @@ expected<expr_t> type_assign(environment_t const& env, context_t const& ctx, par
             {
                 auto var = expr_t::var_t{x.name};
                 if (auto const expr = ctx[var])
-                    return make_legal_expr(expr->value.properties.sort.get(), std::move(var));
+                    return make_legal_expr(expr->value.type, std::move(var));
             }
             {
                 auto global = expr_t::global_t{x.name};
@@ -237,9 +229,8 @@ expected<expr_t> type_assign(environment_t const& env, context_t const& ctx, par
         },
         [&] (parser::expr_t::global_t const& x) -> expected<expr_t>
         {
-            std::ostringstream err;
-            err << "unexpected global name from parser: " << x.name;
-            return error_t::from_error(dep0::error_t(err.str(), loc));
+            return error_t::from_error(dep0::error_t(
+                "unexpected global name from parser. This is a bug; please report it!", loc));
         },
         [&] (parser::expr_t::app_t const& x) -> expected<expr_t>
         {
@@ -260,9 +251,7 @@ expected<expr_t> type_assign(environment_t const& env, context_t const& ctx, par
         },
         [&] (parser::expr_t::init_list_t const& init_list) -> expected<expr_t>
         {
-            std::ostringstream err;
-            err << "cannot assign a unique type to an initializer list expression";
-            return error_t::from_error(dep0::error_t(err.str(), loc));
+            return error_t::from_error(dep0::error_t("initializer lists have no unique type", loc));
         },
         [&] (parser::expr_t::subscript_t const& subscript) -> expected<expr_t>
         {

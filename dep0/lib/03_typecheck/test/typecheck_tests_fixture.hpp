@@ -125,6 +125,12 @@ struct TypecheckTestsFixture
         return dep0::testing::plus<dep0::typecheck::properties_t>(std::forward<Args>(args)...);
     }
 
+    template <typename... Args>
+    static constexpr auto true_t_of(Args&&... args)
+    {
+        return dep0::testing::true_t_of<dep0::typecheck::properties_t>(std::forward<Args>(args)...);
+    }
+
     template <dep0::testing::Predicate<dep0::typecheck::expr_t> F>
     static auto arg_of(F&& f, std::optional<std::string> name = std::nullopt)
     {

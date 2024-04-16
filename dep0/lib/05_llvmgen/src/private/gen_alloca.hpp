@@ -14,7 +14,7 @@
 namespace dep0::llvmgen {
 
 /**
- * Contains the possible results returned by needs_alloca
+ * Contains the possible results returned by `needs_alloca()`
  */
 namespace needs_alloca_result
 {

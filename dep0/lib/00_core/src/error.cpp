@@ -68,14 +68,23 @@ static std::ostream& without_indent(std::ostream& os, error_t const& err, std::s
     os << err.error;
     if (q == quoting_mode::multi_line)
         quote(os, err.location->txt, indent+1);
+    auto const because = [&] () -> std::ostream&
+    {
+        if (q == quoting_mode::multi_line)
+            new_line(os, indent);
+        else
+            os << ' ';
+        return os << "because";
+    };
     switch (err.reasons.size())
     {
     case 0ul: return os;
-    case 1ul: return without_indent(os << " because ", err.reasons[0], indent, 0ul);
+    case 1ul:
+        because() << ' ';
+        return without_indent(os, err.reasons[0], indent, 0ul);
     default:
-        os << " because:";
-        std::size_t i = 1ul;
-        for (auto const& reason: err.reasons)
+        because() << ':';
+        for (std::size_t i = 1ul; auto const& reason: err.reasons)
             with_indent(os << std::endl, reason, indent+1, i++);
         return os;
     }

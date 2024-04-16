@@ -79,7 +79,7 @@ expr:
     | lhs=expr 'or' rhs=expr # orExpr
     | sign=('+' | '-')? value=INT # numericConstant
     | value=('true'|'false') # booleanConstant
-    | 'array_t' # arrayExpr
+    | ('array_t' | 'true_t') # kwExpr
     | var=ID # varExpr
     | type # typeExpr // in an expression `f(x)` x should be parsed as `var` so this rule must come after `var`
     | '(' expr ')' # subExpr

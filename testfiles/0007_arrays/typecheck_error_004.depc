@@ -1,0 +1,8 @@
+i32_t f(u64_t n, u64_t i, true_t(i < n), array_t(i32_t, n) xs)
+{
+    return xs[i];
+}
+i32_t g(u64_t n, array_t(i32_t, n) xs)
+{
+    return f(n, 0, {}, xs);
+}

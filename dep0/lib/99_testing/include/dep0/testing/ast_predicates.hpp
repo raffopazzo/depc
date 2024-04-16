@@ -12,6 +12,7 @@
 #include "dep0/testing/ast_predicates/relation_expr.hpp"
 #include "dep0/testing/ast_predicates/stmt.hpp"
 #include "dep0/testing/ast_predicates/subscript.hpp"
+#include "dep0/testing/ast_predicates/true_t.hpp"
 #include "dep0/testing/ast_predicates/type_def.hpp"
 #include "dep0/testing/ast_predicates/types.hpp"
 #include "dep0/testing/ast_predicates/var.hpp"

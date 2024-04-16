@@ -37,12 +37,10 @@ context_t context_t::rewrite(expr_t const& from, expr_t const& to) const
     {
         auto const val = (*this)[var];
         assert(val);
-        expr_t const& expr = val->value;
-        if (auto new_sort = typecheck::rewrite(from, to, expr.properties.sort.get()))
+        if (auto new_sort = typecheck::rewrite(from, to, val->value.type))
         {
-            auto new_expr = expr;
-            new_expr.properties.sort = std::move(*new_sort);
-            auto const inserted = result.try_emplace(var, val->origin, std::move(new_expr));
+            auto const inserted =
+                result.try_emplace(var, val->origin, var_decl_t{std::move(std::get<expr_t>(*new_sort))});
             assert(inserted.has_value());
         }
     }
@@ -64,18 +62,33 @@ context_t::value_type const* context_t::operator[](expr_t::var_t const& name) co
 
 // non-const member functions
 
-dep0::expected<context_t::const_iterator>
-context_t::try_emplace(expr_t::var_t name, std::optional<source_loc_t> const loc, expr_t v)
+void context_t::add_auto(var_decl_t decl)
 {
-    auto const res = m_values.try_emplace(std::move(name), loc, std::move(v));
-    if (res.second)
-        return dep0::expected<const_iterator>(res.first);
+    static std::size_t next_id = 1ul;
+    static const source_text empty = source_text(make_null_handle(), "auto");
+    do
+        if (m_values.try_emplace(expr_t::var_t{empty, next_id++}, std::nullopt, std::move(decl)).second)
+            return; // should always be true but doesn't harm to try the next id
+    while (true);
+}
+
+dep0::expected<std::true_type>
+context_t::try_emplace(std::optional<expr_t::var_t> name, std::optional<source_loc_t> const loc, var_decl_t decl)
+{
+    if (not name)
+    {
+        add_auto(std::move(decl));
+        return std::true_type{};
+    }
+    auto const [it, inserted] = m_values.try_emplace(std::move(*name), loc, std::move(decl));
+    if (inserted)
+        return std::true_type{};
     else
     {
-        auto const& prev = res.first->second;
+        auto const& prev = it->second;
         std::ostringstream err;
-        pretty_print<properties_t>(err << "cannot redefine `", name) << '`';
-        pretty_print(err << ", previously defined as `", prev.value.properties.sort.get()) << '`';
+        pretty_print<properties_t>(err << "cannot redefine `", *name) << '`';
+        pretty_print(err << ", previously defined as `", prev.value.type) << '`';
         if (prev.origin)
             err << " at " << prev.origin->line << ':' << prev.origin->col;
         return dep0::error_t(err.str(), loc);
@@ -126,22 +139,12 @@ std::ostream& pretty_print(std::ostream& os, context_t const& ctx)
             pretty_print<properties_t>(os, var);
             padding.resize(alignment - length_of(var), ' ');
             os << padding << ": ";
-            match(
-                val->value.properties.sort.get(),
-                [&] (expr_t const& type)
-                {
-                    auto copy = type;
-                    bool const changed = beta_delta_normalize(environment_t{}, ctx, copy);
-                    pretty_print(os, changed and ast::size(copy) < ast::size(type) ? copy : type, indent);
-                },
-                [&] (kind_t) { pretty_print(os, kind_t{}, indent); });
+            expr_t const& type = val->value.type;
+            auto copy = type;
+            bool const changed = beta_delta_normalize(environment_t{}, ctx, copy);
+            pretty_print(os, changed and ast::size(copy) < ast::size(type) ? copy : type, indent);
         });
     return os;
-}
-
-std::ostream& pretty_print(std::ostream& os, context_t::value_type const& v)
-{
-    return pretty_print<properties_t>(os, v.value);
 }
 
 std::vector<expr_t::var_t> topologically_ordered_vars(context_t const& ctx)
@@ -152,28 +155,10 @@ std::vector<expr_t::var_t> topologically_ordered_vars(context_t const& ctx)
         result.begin(), result.end(),
         [&] (expr_t::var_t const& var_x, expr_t::var_t const& var_y)
         {
-            expr_t const& x = ctx[var_x]->value;
-            expr_t const& y = ctx[var_y]->value;
-            return match(
-                x.properties.sort.get(),
-                [&] (expr_t const& type_x)
-                {
-                    return match(
-                        y.properties.sort.get(),
-                        [&] (expr_t const& type_y)
-                        {
-                            return ast::occurs_in(var_x, type_y, ast::occurrence_style::free)
-                                and not ast::occurs_in(var_y, type_x, ast::occurrence_style::free);
-                        },
-                        [] (kind_t) { return false; });
-                },
-                [&] (kind_t)
-                {
-                    return match(
-                        y.properties.sort.get(),
-                        [] (expr_t const&) { return true; },
-                        [] (kind_t) { return false; });
-                });
+            expr_t const& type_x = ctx[var_x]->value.type;
+            expr_t const& type_y = ctx[var_y]->value.type;
+            return ast::occurs_in(var_x, type_y, ast::occurrence_style::free)
+                and not ast::occurs_in(var_y, type_x, ast::occurrence_style::free);
         });
     return result;
 }

@@ -38,11 +38,21 @@ bool is_first_order_type(typecheck::expr_t const& type)
         [] (typecheck::expr_t::global_t const&) { return true; }, // caller must call only if expr is a type
         [] (typecheck::expr_t::app_t const& x)
         {
-            // `array_t(type, size)` is a 1st order type if `type` is of 1st order,
-            // regardless of how complex the size expression is;
-            // whatever the size, it will always reduce to just a pointer anyway;
-            return std::holds_alternative<typecheck::expr_t::array_t>(x.func.get().value)
-                and is_first_order_type(x.args[0ul]);
+            return match(
+                x.func.get().value,
+                [] (typecheck::expr_t::true_t const&)
+                {
+                    // `true_t(expr)` is a unit-like type whose only value is `{}`
+                    return true;
+                },
+                [&] (typecheck::expr_t::array_t const&)
+                {
+                    // `array_t(type, size)` is a 1st order type if `type` is of 1st order,
+                    // regardless of how complex the size expression is;
+                    // whatever the size, it will always reduce to just a pointer anyway;
+                    return is_first_order_type(x.args[0ul]);
+                },
+                [] (auto const&) { return false; });
         },
         [] (typecheck::expr_t::abs_t const&) { return false; },
         [] (typecheck::expr_t::pi_t const& t) { return is_first_order_function_type(t.args, t.ret_type.get()); },

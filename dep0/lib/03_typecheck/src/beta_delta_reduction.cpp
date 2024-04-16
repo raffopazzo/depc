@@ -24,11 +24,8 @@ bool beta_delta_normalize(environment_t const& env, func_decl_t& decl)
     for (func_arg_t& arg: decl.signature.args)
     {
         changed |= beta_delta_normalize(env, ctx, arg.type);
-        if (arg.var)
-        {
-            auto const ok = ctx.try_emplace(*arg.var, std::nullopt, make_legal_expr(arg.type, *arg.var));
-            assert(ok.has_value());
-        }
+        auto const ok = ctx.try_emplace(arg.var, std::nullopt, context_t::var_decl_t{arg.type});
+        assert(ok.has_value());
     }
     changed |= beta_delta_normalize(env, ctx, decl.signature.ret_type.get());
     changed |= beta_delta_normalize(env, ctx, decl.properties.sort.get());
@@ -42,11 +39,8 @@ bool beta_delta_normalize(environment_t const& env, func_def_t& def)
     for (func_arg_t& arg: def.value.args)
     {
         changed |= beta_delta_normalize(env, ctx, arg.type);
-        if (arg.var)
-        {
-            auto const ok = ctx.try_emplace(*arg.var, std::nullopt, make_legal_expr(arg.type, *arg.var));
-            assert(ok.has_value());
-        }
+        auto const ok = ctx.try_emplace(arg.var, std::nullopt, context_t::var_decl_t{arg.type});
+        assert(ok.has_value());
     }
     changed |= beta_delta_normalize(env, ctx, def.value.ret_type.get());
     changed |= beta_delta_normalize(env, ctx, def.value.body);

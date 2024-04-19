@@ -255,6 +255,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
             [&loc] (source_text const qty)
             {
                 if (qty == "0") return ast::qty_t::zero;
+                if (qty == "1") return ast::qty_t::one;
                 throw error_t("unexpected quantity when parsing FuncArgContext", loc);
             }(get_text(src, *ctx->qty));
         if (ctx->KW_TYPENAME())

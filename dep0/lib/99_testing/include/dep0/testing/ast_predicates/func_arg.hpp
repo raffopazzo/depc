@@ -27,6 +27,7 @@ boost::test_tools::predicate_result is_arg(
             switch (qty)
             {
             case ast::qty_t::zero: return "zero";
+            case ast::qty_t::one: return "one";
             case ast::qty_t::many: return "many";
             default: return "<unknown>";
             }

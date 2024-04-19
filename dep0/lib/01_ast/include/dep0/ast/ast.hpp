@@ -41,7 +41,7 @@ enum class width_t { _8, _16, _32, _64 };
  * Represents the quantity associated to a function argument;
  * the default is `many`, unless an explicit quantity is specified.
  */
-enum class qty_t { zero, many };
+enum class qty_t { zero, one, many };
 
 // definitions
 

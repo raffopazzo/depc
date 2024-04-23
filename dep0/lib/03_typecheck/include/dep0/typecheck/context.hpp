@@ -18,6 +18,7 @@ class context_t
 public:
     struct var_decl_t
     {
+        ast::qty_t qty;
         expr_t type;
     };
 

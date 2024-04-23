@@ -6,6 +6,7 @@
 #pragma once
 
 #include "private/proof_state.hpp"
+#include "private/usage.hpp"
 
 #include "dep0/typecheck/context.hpp"
 #include "dep0/typecheck/environment.hpp"
@@ -59,9 +60,22 @@ expected<func_def_t> check_func_def(environment_t&, parser::func_def_t const&);
  * means that the `if` condition was false once execution gets past the `if` statement;
  * this knowledge can be used to refine the current proof state.
  *
+ * @param usage Helper object to keep track of usage of variables in the given context.
+ *
+ * @param usage_multiplier  When adding up usage of variables, their quantity is multiplied by this amount
+ *                          in order to account for nested usage. For example, in an erased context this
+ *                          multiplier can be `zero` or when checking against an unrestricted function
+ *                          argument the multiplier should be `many`.
+ *
  * @return A legal body or an error.
  */
-expected<body_t> check_body(environment_t const&, proof_state_t, parser::body_t const&);
+expected<body_t>
+check_body(
+    environment_t const&,
+    proof_state_t,
+    parser::body_t const&,
+    usage_t& usage,
+    ast::qty_t usage_multiplier);
 
 /**
  * Checks whether a statement is legal, i.e. if all its expressions and bodies are legal.
@@ -70,9 +84,22 @@ expected<body_t> check_body(environment_t const&, proof_state_t, parser::body_t 
  * For example, an `if` statement without the `false` branch which returns from all paths of the `true` branch,
  * means that the `if` condition was false once execution gets past the `if` statement.
  *
+ * @param usage Helper object to keep track of usage of variables in the given context.
+ *
+ * @param usage_multiplier  When adding up usage of variables, their quantity is multiplied by this amount
+ *                          in order to account for nested usage. For example, in an erased context this
+ *                          multiplier can be `zero` or when checking against an unrestricted function
+ *                          argument the multiplier should be `many`.
+ *
  * @return A legal statement or an error.
  */
-expected<stmt_t> check_stmt(environment_t const&, proof_state_t&, parser::stmt_t const&);
+expected<stmt_t>
+check_stmt(
+    environment_t const&,
+    proof_state_t&,
+    parser::stmt_t const&,
+    usage_t& usage,
+    ast::qty_t usage_multiplier);
 
 /**
  * Checks whether the given expression is of sort type or kind in the given environment and context.
@@ -86,9 +113,23 @@ expected<expr_t> check_type(environment_t const&, context_t const&, parser::expr
  *
  * @param expected_type The type/kind that the expression must have.
  *
+ * @param usage Helper object to keep track of usage of variables in the given context.
+ *
+ * @param usage_multiplier  When adding up usage of variables, their quantity is multiplied by this amount
+ *                          in order to account for nested usage. For example, in an erased context this
+ *                          multiplier can be `zero` or when checking against an unrestricted function
+ *                          argument the multiplier should be `many`.
+ *
  * @return A legal expression or an error.
  */
-expected<expr_t> check_expr(environment_t const&, context_t const&, parser::expr_t const&, sort_t const& expected_type);
+expected<expr_t>
+check_expr(
+    environment_t const&,
+    context_t const&,
+    parser::expr_t const&,
+    sort_t const& expected_type,
+    usage_t& usage,
+    ast::qty_t usage_multiplier);
 
 /**
  * Checks whether a numerical expression, eg `42`, has the expected type in the given environment and context.

@@ -41,7 +41,21 @@ enum class width_t { _8, _16, _32, _64 };
  * Represents the quantity associated to a function argument;
  * the default is `many`, unless an explicit quantity is specified.
  */
-enum class qty_t { zero, one, many };
+enum class qty_t { zero = 0, one = 1, many = 2 }; // do not change ordering
+
+inline qty_t operator+(qty_t const a, qty_t const b)
+{
+    auto const x = static_cast<int>(a);
+    auto const y = static_cast<int>(b);
+    return static_cast<qty_t>(std::min(2, x + y));
+}
+
+inline qty_t operator*(qty_t const a, qty_t const b)
+{
+    auto const x = static_cast<int>(a);
+    auto const y = static_cast<int>(b);
+    return static_cast<qty_t>(std::min(2, x * y));
+}
 
 // definitions
 

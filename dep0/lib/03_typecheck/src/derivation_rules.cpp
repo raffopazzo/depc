@@ -8,7 +8,9 @@ expr_t derivation_rules::make_true_t()
     return make_legal_expr(
         make_legal_expr(
             kind_t{}, // TODO need to add a test to make sure this is correct
-            expr_t::pi_t{std::vector{make_legal_func_arg(make_bool())}, make_typename()}),
+            expr_t::pi_t{
+                std::vector{make_legal_func_arg(ast::qty_t::zero, make_bool())},
+                make_typename()}),
         expr_t::true_t{});
 }
 expr_t derivation_rules::make_true_t(expr_t cond)
@@ -48,8 +50,8 @@ expr_t derivation_rules::make_array()
             kind_t{}, // TODO need to add a test to make sure this is correct
             expr_t::pi_t{
                 std::vector{
-                    make_legal_func_arg(make_typename()),
-                    make_legal_func_arg(make_u64())
+                    make_legal_func_arg(ast::qty_t::many, make_typename()),
+                    make_legal_func_arg(ast::qty_t::many, make_u64())
                 },
                 make_typename()}),
         expr_t::array_t{});

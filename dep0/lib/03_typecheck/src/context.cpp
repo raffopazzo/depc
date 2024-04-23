@@ -40,7 +40,7 @@ context_t context_t::rewrite(expr_t const& from, expr_t const& to) const
         if (auto new_sort = typecheck::rewrite(from, to, val->value.type))
         {
             auto const inserted =
-                result.try_emplace(var, val->origin, var_decl_t{std::move(std::get<expr_t>(*new_sort))});
+                result.try_emplace(var, val->origin, var_decl_t{val->value.qty, std::move(std::get<expr_t>(*new_sort))});
             assert(inserted.has_value());
         }
     }

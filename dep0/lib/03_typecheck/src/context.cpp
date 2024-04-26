@@ -62,10 +62,17 @@ context_t::value_type const* context_t::operator[](expr_t::var_t const& name) co
 
 // non-const member functions
 
-void context_t::add_auto(var_decl_t decl)
+void context_t::add_unnamed(expr_t type)
+{
+    add_unnamed(var_decl_t{ast::qty_t::zero, std::move(type)});
+}
+
+void context_t::add_unnamed(var_decl_t decl)
 {
     static std::size_t next_id = 1ul;
     static const source_text empty = source_text(make_null_handle(), "auto");
+    // an unnamed variable can only be used via proof-search, so it better have zero quantity
+    decl.qty = ast::qty_t::zero;
     do
         if (m_values.try_emplace(expr_t::var_t{empty, next_id++}, std::nullopt, std::move(decl)).second)
             return; // should always be true but doesn't harm to try the next id
@@ -77,7 +84,7 @@ context_t::try_emplace(std::optional<expr_t::var_t> name, std::optional<source_l
 {
     if (not name)
     {
-        add_auto(std::move(decl));
+        add_unnamed(std::move(decl));
         return std::true_type{};
     }
     auto const [it, inserted] = m_values.try_emplace(std::move(*name), loc, std::move(decl));

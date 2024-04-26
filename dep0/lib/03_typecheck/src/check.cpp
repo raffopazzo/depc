@@ -209,10 +209,7 @@ check_stmt(
                 new_state.rewrite(*cond, derivation_rules::make_true());
                 // we must add `true_t(cond)` to the new context only after we have rewritten `cond=true`,
                 // otherwise the new context will contain `true_t(true)`, which is not helpful to verify array access
-                new_state.context.add_auto(
-                    context_t::var_decl_t{
-                        ast::qty_t::zero, // `true_t(cond)` can only be passed to erased arguments
-                        derivation_rules::make_true_t(*cond)});
+                new_state.context.add_unnamed(derivation_rules::make_true_t(*cond));
                 auto usage2 = usage.extend();
                 return check_body(env, std::move(new_state), x.true_branch, usage2, usage_multiplier);
             }();
@@ -220,12 +217,10 @@ check_stmt(
                 return std::move(true_branch.error());
             auto const add_true_not_cond = [&cond] (context_t& dest)
             {
-                dest.add_auto(
-                    context_t::var_decl_t{
-                        ast::qty_t::zero, // `true_t(not cond)` can only be passed to erased arguments
-                        derivation_rules::make_true_t(
-                            derivation_rules::make_boolean_expr(
-                                expr_t::boolean_expr_t::not_t{*cond}))});
+                dest.add_unnamed(
+                    derivation_rules::make_true_t(
+                        derivation_rules::make_boolean_expr(
+                            expr_t::boolean_expr_t::not_t{*cond})));
             };
             if (x.false_branch)
             {

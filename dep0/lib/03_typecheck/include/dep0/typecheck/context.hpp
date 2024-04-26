@@ -64,19 +64,21 @@ public:
     // non-const member functions
 
     /**
-     * Add a new binding variable to the current context level, with an automatically generated name.
+     * Add a new variable to the current context, with the given type and an automatically generated name.
      */
-    void add_auto(var_decl_t);
+    void add_unnamed(expr_t);
 
     /**
      * Add a new binding variable to the current context level, if one does not already exist.
      * If a binding already exists, but only at the parent level, the new binding will shadow the parent one.
-     * If the variable name is nullopt, an automatically generated name will be used as if `add_auto()` was invoked.
+     * If the variable name is nullopt, an automatically generated name will be used as if `add_unnamed()` was invoked.
      */
     dep0::expected<std::true_type> try_emplace(std::optional<expr_t::var_t>, std::optional<source_loc_t>, var_decl_t);
 
 private:
     scope_map<expr_t::var_t, value_type> m_values;
+
+    void add_unnamed(var_decl_t);
 
     context_t(scope_map<expr_t::var_t, value_type>);
 };

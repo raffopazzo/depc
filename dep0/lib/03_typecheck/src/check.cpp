@@ -203,6 +203,16 @@ check_stmt(
             auto cond = check_expr(env, state.context, x.cond, derivation_rules::make_bool(), usage, usage_multiplier);
             if (not cond)
                 return std::move(cond.error());
+            // Variable usage in each branch must be checked separately, starting afresh from the outer scope.
+            // But after each branch, usages have to be combined and accounted towards the outer scope.
+            auto true_branch_usage = usage.extend();
+            auto false_branch_usage = usage.extend();
+            auto const combine_usages = [&]
+            {
+                for (auto const& u: {true_branch_usage, false_branch_usage})
+                    for (auto const& [var, qty]: u)
+                        usage.add(var, qty);
+            };
             auto true_branch = [&]
             {
                 auto new_state = proof_state_t(state.context.extend(), state.goal);
@@ -210,8 +220,7 @@ check_stmt(
                 // we must add `true_t(cond)` to the new context only after we have rewritten `cond=true`,
                 // otherwise the new context will contain `true_t(true)`, which is not helpful to verify array access
                 new_state.context.add_unnamed(derivation_rules::make_true_t(*cond));
-                auto usage2 = usage.extend();
-                return check_body(env, std::move(new_state), x.true_branch, usage2, usage_multiplier);
+                return check_body(env, std::move(new_state), x.true_branch, true_branch_usage, usage_multiplier);
             }();
             if (not true_branch)
                 return std::move(true_branch.error());
@@ -227,14 +236,18 @@ check_stmt(
                 auto new_state = proof_state_t(state.context.extend(), state.goal);
                 new_state.rewrite(*cond, derivation_rules::make_false());
                 add_true_not_cond(new_state.context);
-                auto usage2 = usage.extend();
-                if (auto false_branch = check_body(env, std::move(new_state), *x.false_branch, usage2, usage_multiplier))
+                auto false_branch =
+                    check_body(env, std::move(new_state), *x.false_branch, false_branch_usage, usage_multiplier);
+                if (false_branch)
+                {
+                    combine_usages();
                     return make_legal_stmt(
                         stmt_t::if_else_t{
                             std::move(*cond),
                             std::move(*true_branch),
                             std::move(*false_branch)
                         });
+                }
                 else
                     return std::move(false_branch.error());
             }
@@ -247,6 +260,7 @@ check_stmt(
                 state.rewrite(*cond, derivation_rules::make_false());
                 add_true_not_cond(state.context);
             }
+            combine_usages();
             return make_legal_stmt(
                 stmt_t::if_else_t{
                     std::move(*cond),

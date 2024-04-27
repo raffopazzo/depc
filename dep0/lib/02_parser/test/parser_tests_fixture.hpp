@@ -45,6 +45,12 @@ struct ParserTestsFixture
     }
 
     template <typename... Args>
+    static constexpr auto if_else_of(Args&&... args)
+    {
+        return dep0::testing::if_else_of<dep0::parser::properties_t>(std::forward<Args>(args)...);
+    }
+
+    template <typename... Args>
     static constexpr auto return_of(Args&&... args)
     {
         return dep0::testing::return_of<dep0::parser::properties_t>(std::forward<Args>(args)...);

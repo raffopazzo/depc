@@ -15,7 +15,7 @@ BOOST_AUTO_TEST_CASE(pass_000)
         auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[0ul]);
         BOOST_TEST_REQUIRE(f);
         BOOST_TEST(f->name == "f0");
-        BOOST_TEST(f->value.args.size() == 1ul);
+        BOOST_TEST_REQUIRE(f->value.args.size() == 1ul);
         BOOST_TEST(is_arg(f->value.args[0], is_i32, "x", dep0::ast::qty_t::zero));
         BOOST_TEST(is_i32(f->value.ret_type.get()));
         BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
@@ -25,7 +25,7 @@ BOOST_AUTO_TEST_CASE(pass_000)
         auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[1ul]);
         BOOST_TEST_REQUIRE(f);
         BOOST_TEST(f->name == "f1");
-        BOOST_TEST(f->value.args.size() == 1ul);
+        BOOST_TEST_REQUIRE(f->value.args.size() == 1ul);
         BOOST_TEST(is_arg(f->value.args[0], is_i32, "x", dep0::ast::qty_t::one));
         BOOST_TEST(is_i32(f->value.ret_type.get()));
         BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
@@ -35,7 +35,7 @@ BOOST_AUTO_TEST_CASE(pass_000)
         auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[2ul]);
         BOOST_TEST_REQUIRE(f);
         BOOST_TEST(f->name == "f2");
-        BOOST_TEST(f->value.args.size() == 1ul);
+        BOOST_TEST_REQUIRE(f->value.args.size() == 1ul);
         BOOST_TEST(is_arg(f->value.args[0], is_i32, "x", dep0::ast::qty_t::many));
         BOOST_TEST(is_i32(f->value.ret_type.get()));
         BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
@@ -45,7 +45,7 @@ BOOST_AUTO_TEST_CASE(pass_000)
         auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[3ul]);
         BOOST_TEST_REQUIRE(f);
         BOOST_TEST(f->name == "g");
-        BOOST_TEST(f->value.args.size() == 3ul);
+        BOOST_TEST_REQUIRE(f->value.args.size() == 3ul);
         BOOST_TEST(is_arg(f->value.args[0], is_i32, "x", dep0::ast::qty_t::zero));
         BOOST_TEST(is_arg(f->value.args[1], is_i32, "y", dep0::ast::qty_t::one));
         BOOST_TEST(is_arg(f->value.args[2], is_i32, "z", dep0::ast::qty_t::many));
@@ -75,7 +75,7 @@ BOOST_AUTO_TEST_CASE(pass_001)
         auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[0ul]);
         BOOST_TEST_REQUIRE(f);
         BOOST_TEST(f->name == "f");
-        BOOST_TEST(f->value.args.size() == 2ul);
+        BOOST_TEST_REQUIRE(f->value.args.size() == 2ul);
         BOOST_TEST(is_arg(f->value.args[0], is_bool, "which", dep0::ast::qty_t::one));
         BOOST_TEST(is_arg(f->value.args[1], is_i32, "x", dep0::ast::qty_t::one));
         BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
@@ -96,7 +96,7 @@ BOOST_AUTO_TEST_CASE(pass_002)
         auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[0ul]);
         BOOST_TEST_REQUIRE(f);
         BOOST_TEST(f->name == "f");
-        BOOST_TEST(f->value.args.size() == 1ul);
+        BOOST_TEST_REQUIRE(f->value.args.size() == 1ul);
         BOOST_TEST(is_arg(f->value.args[0], is_typename, std::nullopt));
         BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
         BOOST_TEST(is_return_of(f->value.body.stmts[0], constant(0)));
@@ -105,7 +105,7 @@ BOOST_AUTO_TEST_CASE(pass_002)
         auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[1ul]);
         BOOST_TEST_REQUIRE(f);
         BOOST_TEST(f->name == "g1");
-        BOOST_TEST(f->value.args.size() == 1ul);
+        BOOST_TEST_REQUIRE(f->value.args.size() == 1ul);
         BOOST_TEST(is_arg(f->value.args[0], is_u64, "n", dep0::ast::qty_t::zero));
         BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
         BOOST_TEST(
@@ -117,7 +117,7 @@ BOOST_AUTO_TEST_CASE(pass_002)
         auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[2ul]);
         BOOST_TEST_REQUIRE(f);
         BOOST_TEST(f->name == "g2");
-        BOOST_TEST(f->value.args.size() == 1ul);
+        BOOST_TEST_REQUIRE(f->value.args.size() == 1ul);
         BOOST_TEST(is_arg(f->value.args[0], is_u64, "n", dep0::ast::qty_t::zero));
         BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
         BOOST_TEST(is_return_of(f->value.body.stmts[0], app_of(global("f"), array_of(is_i32, var("n")))));
@@ -126,7 +126,7 @@ BOOST_AUTO_TEST_CASE(pass_002)
         auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[3ul]);
         BOOST_TEST_REQUIRE(f);
         BOOST_TEST(f->name == "g3");
-        BOOST_TEST(f->value.args.size() == 1ul);
+        BOOST_TEST_REQUIRE(f->value.args.size() == 1ul);
         BOOST_TEST(is_arg(f->value.args[0], is_u64, "n", dep0::ast::qty_t::zero));
         BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
         BOOST_TEST(is_return_of(f->value.body.stmts[0], app_of(global("f"), true_t_of(gt(var("n"), constant(0))))));
@@ -136,5 +136,7 @@ BOOST_AUTO_TEST_CASE(pass_002)
 BOOST_AUTO_TEST_CASE(typecheck_error_000) { BOOST_TEST(fail("0011_quantities/typecheck_error_000.depc")); }
 BOOST_AUTO_TEST_CASE(typecheck_error_001) { BOOST_TEST(fail("0011_quantities/typecheck_error_001.depc")); }
 BOOST_AUTO_TEST_CASE(typecheck_error_002) { BOOST_TEST(fail("0011_quantities/typecheck_error_002.depc")); }
+BOOST_AUTO_TEST_CASE(typecheck_error_003) { BOOST_TEST(fail("0011_quantities/typecheck_error_003.depc")); }
+BOOST_AUTO_TEST_CASE(typecheck_error_004) { BOOST_TEST(fail("0011_quantities/typecheck_error_004.depc")); }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -1,0 +1,11 @@
+i32_t f(1 i32_t x) { return x + 1; }
+
+i32_t g(bool x, 1 i32_t y)
+{
+    if (x)
+        if (f(y) > 0)
+            return 1;
+        else {}
+    else {}
+    return y; // typecheck error: y can only be used once
+}

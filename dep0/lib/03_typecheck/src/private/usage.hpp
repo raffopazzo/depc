@@ -28,6 +28,16 @@ public:
     usage_t() = default;
 
     /**
+     * @name Iterators
+     * Iterators to traverse the variables that have been used at the current scope level;
+     * usage at the parent level are not reachable by these iterators.
+     * @{
+     */
+    auto begin() const { return count.begin(); }
+    auto end() const { return count.end(); }
+    /**@}*/
+
+    /**
      * Obtain a new object to track usage of variables within a nested scope,
      * for example inside the true branch of an if-else statement.
      */

@@ -60,12 +60,7 @@ expected<func_def_t> check_func_def(environment_t&, parser::func_def_t const&);
  * means that the `if` condition was false once execution gets past the `if` statement;
  * this knowledge can be used to refine the current proof state.
  *
- * @param usage Helper object to keep track of usage of variables in the given context.
- *
- * @param usage_multiplier  When adding up usage of variables, their quantity is multiplied by this amount
- *                          in order to account for nested usage. For example, in an erased context this
- *                          multiplier can be `zero` or when checking against an unrestricted function
- *                          argument the multiplier should be `many`.
+ * @param usage,usage_multiplier    @see usage
  *
  * @return A legal body or an error.
  */
@@ -84,12 +79,7 @@ check_body(
  * For example, an `if` statement without the `false` branch which returns from all paths of the `true` branch,
  * means that the `if` condition was false once execution gets past the `if` statement.
  *
- * @param usage Helper object to keep track of usage of variables in the given context.
- *
- * @param usage_multiplier  When adding up usage of variables, their quantity is multiplied by this amount
- *                          in order to account for nested usage. For example, in an erased context this
- *                          multiplier can be `zero` or when checking against an unrestricted function
- *                          argument the multiplier should be `many`.
+ * @param usage,usage_multiplier    @see usage
  *
  * @return A legal statement or an error.
  */
@@ -111,14 +101,8 @@ expected<expr_t> check_type(environment_t const&, context_t const&, parser::expr
 /**
  * Checks whether the given expression has the expected type/kind, in the given environment and context.
  *
- * @param expected_type The type/kind that the expression must have.
- *
- * @param usage Helper object to keep track of usage of variables in the given context.
- *
- * @param usage_multiplier  When adding up usage of variables, their quantity is multiplied by this amount
- *                          in order to account for nested usage. For example, in an erased context this
- *                          multiplier can be `zero` or when checking against an unrestricted function
- *                          argument the multiplier should be `many`.
+ * @param expected_type             The type/kind that the expression must have.
+ * @param usage,usage_multiplier    @see usage
  *
  * @return A legal expression or an error.
  */

@@ -263,7 +263,7 @@ void rewrite(
                             ast::occurs_in(*old_arg.var, from, ast::occurrence_style::free) or
                             ast::occurs_in(*old_arg.var, to, ast::occurrence_style::free);
                     if (new_type)
-                        new_arg.emplace(old_arg.properties, std::move(*new_type), old_arg.var);
+                        new_arg.emplace(old_arg.properties, old_arg.qty, std::move(*new_type), old_arg.var);
                 }
                 return new_arg;
             });

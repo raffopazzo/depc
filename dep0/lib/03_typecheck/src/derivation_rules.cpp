@@ -8,12 +8,14 @@ expr_t derivation_rules::make_true_t()
     return make_legal_expr(
         make_legal_expr(
             kind_t{}, // TODO need to add a test to make sure this is correct
-            expr_t::pi_t{std::vector{make_legal_func_arg(make_bool())}, make_typename()}),
+            expr_t::pi_t{
+                std::vector{make_legal_func_arg(ast::qty_t::zero, make_bool())},
+                make_typename()}),
         expr_t::true_t{});
 }
 expr_t derivation_rules::make_true_t(expr_t cond)
 {
-    return make_legal_expr(make_typename(), expr_t::app_t{make_true_t(), {std::move(cond)}});
+    return make_app(make_true_t(), {std::move(cond)});
 }
 expr_t derivation_rules::make_bool() { return make_legal_expr(make_typename(), expr_t::bool_t{}); }
 expr_t derivation_rules::make_unit() { return make_legal_expr(make_typename(), expr_t::unit_t{}); }
@@ -34,6 +36,11 @@ expr_t derivation_rules::make_boolean_expr(expr_t::boolean_expr_t::value_t v)
     return make_legal_expr(make_bool(), expr_t::boolean_expr_t{std::move(v)});
 }
 
+expr_t derivation_rules::make_relation_expr(expr_t::relation_expr_t::value_t v)
+{
+    return make_legal_expr(make_bool(), expr_t::relation_expr_t{std::move(v)});
+}
+
 expr_t derivation_rules::make_array()
 {
     // the elemnt type of the array must be of sort types,
@@ -48,11 +55,22 @@ expr_t derivation_rules::make_array()
             kind_t{}, // TODO need to add a test to make sure this is correct
             expr_t::pi_t{
                 std::vector{
-                    make_legal_func_arg(make_typename()),
-                    make_legal_func_arg(make_u64())
+                    make_legal_func_arg(ast::qty_t::zero, make_typename()),
+                    make_legal_func_arg(ast::qty_t::zero, make_u64())
                 },
                 make_typename()}),
         expr_t::array_t{});
 }
 
+expr_t derivation_rules::make_app(expr_t func, std::vector<expr_t> args)
+{
+    auto const func_type = std::get_if<expr_t>(&func.properties.sort.get());
+    assert(func_type);
+    auto const pi_type = std::get_if<expr_t::pi_t>(&func_type->value);
+    assert(pi_type);
+    auto ret_type = pi_type->ret_type.get(); // make copy before moving func
+    return make_legal_expr(std::move(ret_type), expr_t::app_t{std::move(func), std::move(args)});
+}
+
 } // namespace dep0::typecheck
+

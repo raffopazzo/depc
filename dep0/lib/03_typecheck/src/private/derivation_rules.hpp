@@ -29,8 +29,11 @@ struct derivation_rules
     static expr_t make_false();
 
     static expr_t make_boolean_expr(expr_t::boolean_expr_t::value_t);
+    static expr_t make_relation_expr(expr_t::relation_expr_t::value_t);
 
     static expr_t make_array();
+
+    static expr_t make_app(expr_t, std::vector<expr_t>);
 };
 
 template <typename... Args>

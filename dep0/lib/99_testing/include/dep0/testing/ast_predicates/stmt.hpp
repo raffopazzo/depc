@@ -60,6 +60,20 @@ boost::test_tools::predicate_result
 template <
     ast::Properties P,
     Predicate<ast::expr_t<P>> F_cond,
+    Predicate<ast::stmt_t<P>>... F_then>
+constexpr auto if_else_of(F_cond&& f_cond, std::tuple<F_then...> f_then)
+{
+    return
+        [f_cond=std::forward<F_cond>(f_cond), f_then=std::move(f_then)]
+        (ast::stmt_t<P> const& stmt)
+        {
+            return is_if_else(stmt, f_cond, f_then);
+        };
+}
+
+template <
+    ast::Properties P,
+    Predicate<ast::expr_t<P>> F_cond,
     Predicate<ast::stmt_t<P>>... F_then,
     Predicate<ast::stmt_t<P>>... F_else>
 boost::test_tools::predicate_result
@@ -98,6 +112,21 @@ boost::test_tools::predicate_result
         }(), ...);
     } (std::make_index_sequence<N_else>{});
     return result;
+}
+
+template <
+    ast::Properties P,
+    Predicate<ast::expr_t<P>> F_cond,
+    Predicate<ast::stmt_t<P>>... F_then,
+    Predicate<ast::stmt_t<P>>... F_else>
+constexpr auto if_else_of(F_cond&& f_cond, std::tuple<F_then...> f_then, std::tuple<F_else...> f_else)
+{
+    return
+        [f_cond=std::forward<F_cond>(f_cond), f_then=std::move(f_then), f_else=std::move(f_else)]
+        (ast::stmt_t<P> const& stmt)
+        {
+            return is_if_else(stmt, f_cond, f_then, f_else);
+        };
 }
 
 template <ast::Properties P>

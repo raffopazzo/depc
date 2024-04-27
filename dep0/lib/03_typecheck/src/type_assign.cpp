@@ -33,18 +33,32 @@ type_assign_pair(
     environment_t const& env,
     context_t const& ctx,
     parser::expr_t const& lhs,
-    parser::expr_t const& rhs)
+    parser::expr_t const& rhs,
+    usage_t& usage,
+    ast::qty_t const usage_multiplier)
 {
-    auto a = type_assign(env, ctx, lhs);
+    // If we can assign a type to lhs, we check rhs against that, and we are done.
+    // Otherwise assign a type to rhs and check lhs against that, and we are done.
+    // In either case, type-assignment is speculative so we use a temporary usage object;
+    // only if type-assignment succeeds we commit to the real usage object.
+    auto tmp_usage_a = usage.extend();
+    auto tmp_usage_b = usage.extend();
+    auto a = type_assign(env, ctx, lhs, tmp_usage_a, usage_multiplier);
     auto b = a
-        ? check_expr(env, ctx, rhs, a->properties.sort.get())
-        : type_assign(env, ctx, rhs);
+        ? check_expr(env, ctx, rhs, a->properties.sort.get(), usage += tmp_usage_a, usage_multiplier)
+        : type_assign(env, ctx, rhs, tmp_usage_b, usage_multiplier);
     if (b and not a)
-        a = check_expr(env, ctx, lhs, b->properties.sort.get());
+        a = check_expr(env, ctx, lhs, b->properties.sort.get(), usage += tmp_usage_b, usage_multiplier);
     return std::pair{std::move(a), std::move(b)};
 }
 
-expected<expr_t> type_assign(environment_t const& env, context_t const& ctx, parser::expr_t const& expr)
+expected<expr_t>
+type_assign(
+    environment_t const& env,
+    context_t const& ctx,
+    parser::expr_t const& expr,
+    usage_t& usage,
+    ast::qty_t const usage_multiplier)
 {
     auto const loc = expr.properties;
     return match(
@@ -75,7 +89,13 @@ expected<expr_t> type_assign(environment_t const& env, context_t const& ctx, par
                 x.value,
                 [&] (parser::expr_t::boolean_expr_t::not_t const& x) -> expected<expr_t>
                 {
-                    if (auto expr = check_expr(env, ctx, x.expr.get(), derivation_rules::make_bool()))
+                    auto expr =
+                        check_expr(
+                            env, ctx,
+                            x.expr.get(),
+                            derivation_rules::make_bool(),
+                            usage, usage_multiplier);
+                    if (expr)
                         return make_legal_expr(
                             derivation_rules::make_bool(),
                             expr_t::boolean_expr_t{
@@ -86,10 +106,10 @@ expected<expr_t> type_assign(environment_t const& env, context_t const& ctx, par
                 },
                 [&] <typename T> (T const& x) -> expected<expr_t>
                 {
-                    auto lhs = check_expr(env, ctx, x.lhs.get(), derivation_rules::make_bool());
+                    auto lhs = check_expr(env, ctx, x.lhs.get(), derivation_rules::make_bool(), usage, usage_multiplier);
                     if (not lhs)
                         return std::move(lhs.error());
-                    auto rhs = check_expr(env, ctx, x.rhs.get(), derivation_rules::make_bool());
+                    auto rhs = check_expr(env, ctx, x.rhs.get(), derivation_rules::make_bool(), usage, usage_multiplier);
                     if (not rhs)
                         return std::move(rhs.error());
                     return make_legal_expr(
@@ -127,7 +147,7 @@ expected<expr_t> type_assign(environment_t const& env, context_t const& ctx, par
                 x.value,
                 [&] <typename T> (T const& x) -> expected<expr_t>
                 {
-                    auto [lhs, rhs] = type_assign_pair(env, ctx, x.lhs.get(), x.rhs.get());
+                    auto [lhs, rhs] = type_assign_pair(env, ctx, x.lhs.get(), x.rhs.get(), usage, usage_multiplier);
                     if (lhs and rhs)
                         return make_legal_expr(
                             derivation_rules::make_bool(),
@@ -188,7 +208,7 @@ expected<expr_t> type_assign(environment_t const& env, context_t const& ctx, par
                 x.value,
                 [&] (parser::expr_t::arith_expr_t::plus_t const& x) -> expected<expr_t>
                 {
-                    auto [lhs, rhs] = type_assign_pair(env, ctx, x.lhs.get(), x.rhs.get());
+                    auto [lhs, rhs] = type_assign_pair(env, ctx, x.lhs.get(), x.rhs.get(), usage, usage_multiplier);
                     if (lhs and rhs)
                     {
                         auto type = lhs->properties.sort.get(); // about to move from lhs, take a copy
@@ -212,7 +232,33 @@ expected<expr_t> type_assign(environment_t const& env, context_t const& ctx, par
             {
                 auto var = expr_t::var_t{x.name};
                 if (auto const expr = ctx[var])
+                {
+                    // if multiplier is zero nothing is really used and type-assignment always succeeds;
+                    // so don't even bother looking up things and adding them up
+                    if (usage_multiplier > ast::qty_t::zero)
+                    {
+                        auto const prev = usage[var];
+                        if (usage.add(var, ast::qty_t::one * usage_multiplier) > expr->value.qty)
+                        {
+                            // The user has now used something more than they could;
+                            // let's try to give them a sensible error message.
+                            // Firstly, this must mean that the context allowed for only either `zero` or `one`.
+                            // So there are overall two cases:
+                            // 1. if the context allowed for zero uses,
+                            //    then they must have attempted to use the thing at run-time;
+                            // 2. otherwise the context allowed for only one use and, in that case:
+                            //    a. either they tried to pass the variable to a function argument
+                            //       with multiplicity `many` (or something similar to that)
+                            //    b. or they used the thing more than once.
+                            char const* msg =
+                                expr->value.qty == ast::qty_t::zero ? "variable cannot be used at run-time"
+                                : prev == ast::qty_t::zero ? "cannot use linear variable in non-linear context"
+                                : "variable has already been used once";
+                            return error_t::from_error(dep0::error_t(msg, loc));
+                        }
+                    }
                     return make_legal_expr(expr->value.type, std::move(var));
+                }
             }
             {
                 auto global = expr_t::global_t{x.name};
@@ -235,11 +281,11 @@ expected<expr_t> type_assign(environment_t const& env, context_t const& ctx, par
         },
         [&] (parser::expr_t::app_t const& x) -> expected<expr_t>
         {
-            return type_assign_app(env, ctx, x, loc);
+            return type_assign_app(env, ctx, x, loc, usage, usage_multiplier);
         },
         [&] (parser::expr_t::abs_t const& f) -> expected<expr_t>
         {
-            return type_assign_abs(env, ctx, f, loc, std::nullopt);
+            return type_assign_abs(env, ctx, f, loc, std::nullopt, usage, usage_multiplier);
         },
         [&] (parser::expr_t::pi_t const& pi) -> expected<expr_t>
         {
@@ -256,7 +302,15 @@ expected<expr_t> type_assign(environment_t const& env, context_t const& ctx, par
         },
         [&] (parser::expr_t::subscript_t const& subscript) -> expected<expr_t>
         {
-            auto array = type_assign(env, ctx, subscript.array.get());
+            // We don't know how to allow the use of the subscript operator on a linear array.
+            // Intuitively, one could argue that it should be possible to spend each element only once;
+            // but we don't have inference rules to establish that and it might also require
+            // keeping track at runtime of which element has been spent.
+            // So, for now, we require that the array has quantity of either `zero` or `many`.
+            // It should still be possible to allow structured binding of a linear array to extract
+            // all its elements at once, provided that the size of the array is known at compile-time.
+            // Rust has similar limitations.
+            auto array = type_assign(env, ctx, subscript.array.get(), usage, usage_multiplier * ast::qty_t::many);
             if (not array)
                 return std::move(array.error());
             return match(
@@ -271,23 +325,20 @@ expected<expr_t> type_assign(environment_t const& env, context_t const& ctx, par
                         pretty_print(err << "cannot index into non-array expression of type `", t) << '`';
                         return error_t::from_error(dep0::error_t(err.str(), loc));
                     }
-                    auto index = check_expr(env, ctx, subscript.index.get(), derivation_rules::make_u64());
+                    auto index =
+                        check_expr(
+                            env, ctx,
+                            subscript.index.get(),
+                            derivation_rules::make_u64(),
+                            usage, usage_multiplier);
                     if (not index)
                         return std::move(index.error());
                     beta_delta_normalize(env, ctx, *index);
                     auto const proof_type =
-                        make_legal_expr(
-                            derivation_rules::make_typename(),
-                            expr_t::app_t{
-                                derivation_rules::make_true_t(),
-                                {
-                                    make_legal_expr(
-                                        derivation_rules::make_bool(),
-                                        expr_t::relation_expr_t{
-                                            expr_t::relation_expr_t::lt_t{*index, app->args[1]}
-                                        })
-                                }});
-                    if (proof_search(env, ctx, proof_type))
+                        derivation_rules::make_true_t(
+                            derivation_rules::make_relation_expr(
+                                expr_t::relation_expr_t::lt_t{*index, app->args[1]}));
+                    if (proof_search(env, ctx, proof_type, usage, ast::qty_t::zero))
                     {
                         // we're about to move from `array`, which holds the element type; so must take a copy
                         auto element_type = app->args.at(0ul);
@@ -317,13 +368,15 @@ type_assign_app(
     environment_t const& env,
     context_t const& ctx,
     parser::expr_t::app_t const& app,
-    source_loc_t const& loc)
+    source_loc_t const& loc,
+    usage_t& usage,
+    ast::qty_t const usage_multiplier)
 {
     auto const error = [&] (std::string msg)
     {
         return error_t::from_error(dep0::error_t(std::move(msg), loc));
     };
-    auto func = type_assign(env, ctx, app.func.get());
+    auto func = type_assign(env, ctx, app.func.get(), usage, usage_multiplier);
     if (not func)
         return std::move(func.error());
     auto func_type = [&] () -> expected<expr_t::pi_t>
@@ -349,7 +402,13 @@ type_assign_app(
     std::vector<expr_t> args;
     for (auto const i: std::views::iota(0ul, func_type->args.size()))
     {
-        auto arg = check_expr(env, ctx, app.args[i], func_type->args[i].type);
+        auto arg =
+            check_expr(
+                env, ctx,
+                app.args[i],
+                func_type->args[i].type,
+                usage,
+                usage_multiplier * func_type->args[i].qty);
         if (not arg)
             return std::move(arg.error());
         if (func_type->args[i].var)
@@ -372,7 +431,9 @@ expected<expr_t> type_assign_abs(
     context_t const& ctx,
     parser::expr_t::abs_t const& f,
     source_loc_t const& location,
-    std::optional<source_text> const& name)
+    std::optional<source_text> const& name,
+    usage_t& usage,
+    ast::qty_t const usage_multiplier)
 {
     auto f_ctx = ctx.extend();
     auto func_type = check_pi_type(env, f_ctx, location, f.args, f.ret_type.get());
@@ -394,7 +455,7 @@ expected<expr_t> type_assign_abs(
             return error_t::from_error(std::move(ok.error()));
     }
     auto [arg_types, ret_type] = std::get<expr_t::pi_t>(func_type->value);
-    auto body = check_body(f_env, proof_state_t(f_ctx, ret_type.get()), f.body);
+    auto body = check_body(f_env, proof_state_t(f_ctx, ret_type.get()), f.body, usage, usage_multiplier);
     if (not body)
         return std::move(body.error());
     // so far so good, but we now need to make sure that all branches contain a return statement,

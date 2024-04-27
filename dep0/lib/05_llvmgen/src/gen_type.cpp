@@ -9,9 +9,7 @@
 
 namespace dep0::llvmgen {
 
-llvm::FunctionType* gen_func_type(
-    global_context_t& global,
-    llvm_func_proto_t const& proto)
+llvm::FunctionType* gen_func_type(global_context_t& global, llvm_func_proto_t const& proto)
 {
     bool constexpr is_var_arg = false;
     std::vector<llvm::Type*> arg_types; // might need to contain a return argument
@@ -27,8 +25,8 @@ llvm::FunctionType* gen_func_type(
                 arg_types.push_back(gen_type(global, array.properties.element_type)->getPointerTo());
                 return llvm::Type::getVoidTy(global.llvm_ctx);
             });
-    arg_types.reserve(arg_types.size() + proto.args().size());
-    for (typecheck::func_arg_t const& arg: proto.args())
+    arg_types.reserve(arg_types.size() + proto.runtime_args().size());
+    for (typecheck::func_arg_t const& arg: proto.runtime_args())
         arg_types.push_back(gen_type(global, arg.type));
     return llvm::FunctionType::get(ret_type, std::move(arg_types), is_var_arg);
 }

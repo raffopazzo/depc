@@ -25,6 +25,7 @@ add_library(dep0_typecheck_lib
   src/private/rewrite.hpp
   src/private/substitute.hpp
   src/private/unification.hpp
+  src/private/usage.hpp
   src/private/type_assign.hpp
   # source files
   src/ast.cpp
@@ -48,6 +49,7 @@ add_library(dep0_typecheck_lib
   src/rewrite.cpp
   src/substitute.cpp
   src/unification.cpp
+  src/usage.cpp
   src/type_assign.cpp
   # tactics headers
   src/private/tactics/search_app.hpp

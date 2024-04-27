@@ -250,10 +250,18 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         {
             return ctx->name ? std::optional{expr_t::var_t{get_text(src, *ctx->name)}} : std::nullopt;
         };
+        auto const qty =
+            ctx->qty == nullptr ? ast::qty_t::many :
+            [&loc] (source_text const qty)
+            {
+                if (qty == "0") return ast::qty_t::zero;
+                if (qty == "1") return ast::qty_t::one;
+                throw error_t("unexpected quantity when parsing FuncArgContext", loc);
+            }(get_text(src, *ctx->qty));
         if (ctx->KW_TYPENAME())
-            return func_arg_t{loc, visitTypename(ctx->KW_TYPENAME()), get_name()};
+            return func_arg_t{loc, qty, visitTypename(ctx->KW_TYPENAME()), get_name()};
         if (ctx->expr())
-            return func_arg_t{loc, visitExpr(ctx->expr()), get_name()};
+            return func_arg_t{loc, qty, visitExpr(ctx->expr()), get_name()};
         throw error_t("unexpected alternative when parsing FuncArgContext", loc);
     }
 

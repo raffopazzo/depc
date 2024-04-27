@@ -42,6 +42,7 @@ struct AstTestsFixture
     static expr_t var(char const* const name);
     static expr_t::var_t var_t(char const* const name);
     static func_arg_t arg(expr_t type, char const* const var_name = nullptr);
+    static func_arg_t arg(qty_t, expr_t type, char const* const var_name = nullptr);
     static expr_t abs(std::vector<func_arg_t> args, expr_t ret_type, body_t body);
     static expr_t pi(std::vector<func_arg_t> args, expr_t ret_type);
 };

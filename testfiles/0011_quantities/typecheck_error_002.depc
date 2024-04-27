@@ -1,0 +1,2 @@
+i32_t f2(  i32_t x) { return x; }
+i32_t f1(1 i32_t x) { return f2(x); } // typecheck error: cannot use x in non-linear context

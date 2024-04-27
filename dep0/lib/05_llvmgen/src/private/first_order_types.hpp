@@ -10,8 +10,11 @@ namespace dep0::llvmgen {
  * Checks whether a function type formed by the given arguments and return type is of the 1st order.
  * A function type is of the 1st order if both its argument types and the return type are all 1st order types.
  *
- * @param args      The arguments forming the function types; only their types matter for this purpose.
- * @param ret_type  The return type of the function type.
+ * @param args
+ *      The arguments forming the function types; only their types matter for this purpose.
+ *
+ * @param ret_type
+ *      The return type of the function type.
  *
  * @return True if the function type formed by the given arguments and return type is of the 1st order.
  */

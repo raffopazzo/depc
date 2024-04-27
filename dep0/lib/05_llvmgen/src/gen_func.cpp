@@ -31,14 +31,14 @@ void gen_func_args(
     auto llvm_arg_it = llvm_f->arg_begin();
     if (is_alloca_needed(proto.ret_type()))
     {
-        assert(llvm_f->arg_size() == proto.args().size() + 1ul and "function with sret must have 1 more argument");
+        assert(llvm_f->arg_size() == proto.runtime_args().size() + 1ul and "function with sret must have 1 more argument");
         llvm_arg_it->addAttr(llvm::Attribute::StructRet);
         llvm_arg_it->addAttr(llvm::Attribute::NonNull);
         ++llvm_arg_it;
     }
     else
-        assert(llvm_f->arg_size() == proto.args().size() and "function and prototype must have same arguments");
-    for (auto const& arg: proto.args())
+        assert(llvm_f->arg_size() == proto.runtime_args().size() and "function and prototype must have same arguments");
+    for (auto const& arg: proto.runtime_args())
     {
         auto& llvm_arg = *llvm_arg_it++;
         if (auto const attr = get_sign_ext_attribute(global, arg.type); attr != llvm::Attribute::None)

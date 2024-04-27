@@ -1,0 +1,11 @@
+i32_t f0(0 i32_t x) { return 0; }
+i32_t f1(1 i32_t x) { return x; }
+i32_t f2(  i32_t x) { return x + x; }
+
+i32_t g(0 i32_t x, 1 i32_t y, i32_t z)
+{
+    return
+         f0(x) + // cannot call f1(x) nor f2(x)
+        (f0(y) + f1(y)) + // cannot call f2(y)
+        (f0(z) + f1(z) + f2(z)); // can call everything
+}

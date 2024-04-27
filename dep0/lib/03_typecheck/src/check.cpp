@@ -125,7 +125,8 @@ expected<func_decl_t> check_func_decl(environment_t& env, parser::func_decl_t co
 expected<func_def_t> check_func_def(environment_t& env, parser::func_def_t const& f)
 {
     context_t ctx;
-    auto abs = type_assign_abs(env, ctx, f.value, f.properties, f.name);
+    usage_t usage;
+    auto abs = type_assign_abs(env, ctx, f.value, f.properties, f.name, usage, ast::qty_t::one);
     if (not abs)
         return std::move(abs.error());
     auto result =
@@ -143,10 +144,11 @@ expected<expr_t> check_type(environment_t const& env, context_t const& ctx, pars
 {
     // TODO try move to a "traditional" 2-step approach: type-assign first and then compare to the expected type;
     // numerical constants might get in the way, if so could maybe pass a "tie-breaker"?
-    auto as_type = check_expr(env, ctx, type, derivation_rules::make_typename());
+    usage_t usage; // when checking types an empty usage_t works just as fine, because the multiplier is zero anyway
+    auto as_type = check_expr(env, ctx, type, derivation_rules::make_typename(), usage, ast::qty_t::zero);
     if (as_type)
         return as_type;
-    auto as_kind = check_expr(env, ctx, type, kind_t{});
+    auto as_kind = check_expr(env, ctx, type, kind_t{}, usage, ast::qty_t::zero);
     if (as_kind)
         return as_kind;
     return error_t::from_error(
@@ -158,61 +160,93 @@ expected<expr_t> check_type(environment_t const& env, context_t const& ctx, pars
                 : std::vector<dep0::error_t>{std::move(as_type.error()), std::move(as_kind.error())}));
 }
 
-expected<body_t> check_body(environment_t const& env, proof_state_t state, parser::body_t const& x)
+expected<body_t>
+check_body(
+    environment_t const& env,
+    proof_state_t state,
+    parser::body_t const& x,
+    usage_t& usage,
+    ast::qty_t const usage_multiplier)
 {
-    if (auto stmts = fmap_or_error(x.stmts, [&] (parser::stmt_t const& s) { return check_stmt(env, state, s); }))
+    auto stmts =
+        fmap_or_error(
+            x.stmts,
+            [&] (parser::stmt_t const& s)
+            {
+                return check_stmt(env, state, s, usage, usage_multiplier);
+            });
+    if (stmts)
         return make_legal_body(std::move(*stmts));
     else
         return std::move(stmts.error());
 }
 
-expected<stmt_t> check_stmt(environment_t const& env, proof_state_t& state, parser::stmt_t const& s)
+expected<stmt_t>
+check_stmt(
+    environment_t const& env,
+    proof_state_t& state,
+    parser::stmt_t const& s,
+    usage_t& usage,
+    ast::qty_t const usage_multiplier)
 {
     return match(
         s.value,
         [&] (parser::expr_t::app_t const& x) -> expected<stmt_t>
         {
-            if (auto app = type_assign_app(env, state.context, x, s.properties))
+            if (auto app = type_assign_app(env, state.context, x, s.properties, usage, usage_multiplier))
                 return make_legal_stmt(std::move(std::get<expr_t::app_t>(app->value)));
             else
                 return std::move(app.error());
         },
         [&] (parser::stmt_t::if_else_t const& x) -> expected<stmt_t>
         {
-            auto cond = check_expr(env, state.context, x.cond, derivation_rules::make_bool());
+            auto cond = check_expr(env, state.context, x.cond, derivation_rules::make_bool(), usage, usage_multiplier);
             if (not cond)
                 return std::move(cond.error());
+            // Variable usage in each branch must be checked separately, starting afresh from the outer scope.
+            // But after each branch, usages have to be combined and accounted towards the outer scope.
+            auto true_branch_usage = usage.extend();
+            auto false_branch_usage = usage.extend();
+            auto const combine_usages = [&]
+            {
+                usage += true_branch_usage;
+                usage += false_branch_usage;
+            };
             auto true_branch = [&]
             {
                 auto new_state = proof_state_t(state.context.extend(), state.goal);
                 new_state.rewrite(*cond, derivation_rules::make_true());
                 // we must add `true_t(cond)` to the new context only after we have rewritten `cond=true`,
                 // otherwise the new context will contain `true_t(true)`, which is not helpful to verify array access
-                new_state.context.add_auto(context_t::var_decl_t{derivation_rules::make_true_t(*cond)});
-                return check_body(env, std::move(new_state), x.true_branch);
+                new_state.context.add_unnamed(derivation_rules::make_true_t(*cond));
+                return check_body(env, std::move(new_state), x.true_branch, true_branch_usage, usage_multiplier);
             }();
             if (not true_branch)
                 return std::move(true_branch.error());
             auto const add_true_not_cond = [&cond] (context_t& dest)
             {
-                dest.add_auto(
-                    context_t::var_decl_t{
-                        derivation_rules::make_true_t(
-                            derivation_rules::make_boolean_expr(
-                                expr_t::boolean_expr_t::not_t{*cond}))});
+                dest.add_unnamed(
+                    derivation_rules::make_true_t(
+                        derivation_rules::make_boolean_expr(
+                            expr_t::boolean_expr_t::not_t{*cond})));
             };
             if (x.false_branch)
             {
                 auto new_state = proof_state_t(state.context.extend(), state.goal);
                 new_state.rewrite(*cond, derivation_rules::make_false());
                 add_true_not_cond(new_state.context);
-                if (auto false_branch = check_body(env, std::move(new_state), *x.false_branch))
+                auto false_branch =
+                    check_body(env, std::move(new_state), *x.false_branch, false_branch_usage, usage_multiplier);
+                if (false_branch)
+                {
+                    combine_usages();
                     return make_legal_stmt(
                         stmt_t::if_else_t{
                             std::move(*cond),
                             std::move(*true_branch),
                             std::move(*false_branch)
                         });
+                }
                 else
                     return std::move(false_branch.error());
             }
@@ -225,6 +259,7 @@ expected<stmt_t> check_stmt(environment_t const& env, proof_state_t& state, pars
                 state.rewrite(*cond, derivation_rules::make_false());
                 add_true_not_cond(state.context);
             }
+            combine_usages();
             return make_legal_stmt(
                 stmt_t::if_else_t{
                     std::move(*cond),
@@ -245,7 +280,7 @@ expected<stmt_t> check_stmt(environment_t const& env, proof_state_t& state, pars
                     return error_t::from_error(dep0::error_t(err.str(), s.properties), env, state.context, state.goal);
                 }
             }
-            else if (auto expr = check_expr(env, state.context, *x.expr, state.goal))
+            else if (auto expr = check_expr(env, state.context, *x.expr, state.goal, usage, usage_multiplier))
                 return make_legal_stmt(stmt_t::return_t{std::move(*expr)});
             else
                 return std::move(expr.error());
@@ -349,7 +384,9 @@ check_expr(
     environment_t const& env,
     context_t const& ctx,
     parser::expr_t const& x,
-    sort_t const& expected_type)
+    sort_t const& expected_type,
+    usage_t& usage,
+    ast::qty_t const usage_multiplier)
 {
     auto const loc = x.properties;
     auto const type_error = [&] (sort_t const& actual_type, dep0::error_t reason)
@@ -387,9 +424,9 @@ check_expr(
                 x.value,
                 [&] (parser::expr_t::arith_expr_t::plus_t const& x) -> expected<expr_t>
                 {
-                    auto lhs = check_expr(env, ctx, x.lhs.get(), expected_type);
+                    auto lhs = check_expr(env, ctx, x.lhs.get(), expected_type, usage, usage_multiplier);
                     if (not lhs) return std::move(lhs.error());
-                    auto rhs = check_expr(env, ctx, x.rhs.get(), expected_type);
+                    auto rhs = check_expr(env, ctx, x.rhs.get(), expected_type, usage, usage_multiplier);
                     if (not rhs) return std::move(rhs.error());
                     return make_legal_expr(
                         expected_type,
@@ -440,7 +477,7 @@ check_expr(
                                     list.values,
                                     [&] (parser::expr_t const& v)
                                     {
-                                        return check_expr(env, ctx, v, array.element_type);
+                                        return check_expr(env, ctx, v, array.element_type, usage, usage_multiplier);
                                     });
                             if (not values)
                                 return std::move(values.error());
@@ -456,7 +493,7 @@ check_expr(
         },
         [&] (auto const&) -> expected<expr_t>
         {
-            auto result = type_assign(env, ctx, x);
+            auto result = type_assign(env, ctx, x, usage, usage_multiplier);
             if (result)
                 if (auto eq = is_beta_delta_equivalent(env, ctx, result->properties.sort.get(), expected_type); not eq)
                     return type_error(result->properties.sort.get(), std::move(eq.error()));
@@ -488,9 +525,9 @@ expected<expr_t> check_pi_type(
                     err << "cannot typecheck function argument at index " << arg_index;
                 return error_t::from_error(dep0::error_t(err.str(), loc, {std::move(type.error())}));
             }
-            if (auto ok = ctx.try_emplace(var, arg_loc, context_t::var_decl_t{*type}); not ok)
+            if (auto ok = ctx.try_emplace(var, arg_loc, context_t::var_decl_t{arg.qty, *type}); not ok)
                 return error_t::from_error(std::move(ok.error()));
-            return make_legal_func_arg(std::move(*type), std::move(var));
+            return make_legal_func_arg(arg.qty, std::move(*type), std::move(var));
         });
     if (not args)
         return std::move(args.error());

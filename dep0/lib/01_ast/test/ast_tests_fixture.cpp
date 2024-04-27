@@ -50,8 +50,14 @@ AstTestsFixture::expr_t::var_t AstTestsFixture::var_t(char const* const name)
 
 AstTestsFixture::func_arg_t AstTestsFixture::arg(expr_t type, char const* const var_name)
 {
+    return arg(qty_t::many, std::move(type), var_name);
+}
+
+AstTestsFixture::func_arg_t AstTestsFixture::arg(qty_t const qty, expr_t type, char const* const var_name)
+{
     return func_arg_t{
         dummy_properties_t{},
+        qty,
         std::move(type),
         var_name ? std::optional{var_t(var_name)} : std::nullopt
     };

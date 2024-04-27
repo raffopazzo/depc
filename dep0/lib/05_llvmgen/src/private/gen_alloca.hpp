@@ -39,14 +39,16 @@ using needs_alloca_result_t =
 /**
  * Decides whether the given type expression requires an allocation or not.
  *
- * @param type  The type expression to check, which must have sort `typename_t`.
+ * @param type
+ *      The type expression to check, which must have sort `typename_t`.
  */
 needs_alloca_result_t needs_alloca(typecheck::expr_t const& type);
 
 /**
  * Checks whether the given type expression requires an allocation or not.
  *
- * @param type  The type expression to check, which must have sort `typename_t`.
+ * @param type
+ *      The type expression to check, which must have sort `typename_t`.
  *
  * @return True if allocation is required for the given type, false otherwise.
  */
@@ -55,8 +57,9 @@ bool is_alloca_needed(typecheck::expr_t const& type);
 /**
  * Generates an alloca instruction but only if the input type requires an allocation.
  *
- * @param type      A type expression that may or may not require an allocation;
- *                  for example `array_t(i32_t, n)` does but `i32_t` on its own does not.
+ * @param type
+ *      A type expression that may or may not require an allocation;
+ *      for example `array_t(i32_t, n)` does but `i32_t` on its own does not.
  *
  * @return The generated alloca instruction, or nullptr if allocation is not required for the given type.
  */

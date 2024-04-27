@@ -1,0 +1,2 @@
+i32_t f1(1 i32_t x) { return x; }
+i32_t f0(0 i32_t x) { return f1(x); } // typecheck error: x is erased in this context

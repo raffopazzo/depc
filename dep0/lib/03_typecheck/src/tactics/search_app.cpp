@@ -9,10 +9,18 @@
 
 namespace dep0::typecheck {
 
-std::optional<expr_t> search_app(environment_t const& env, context_t const& ctx, expr_t const& type)
+std::optional<expr_t>
+search_app(
+    environment_t const& env,
+    context_t const& ctx,
+    expr_t const& type,
+    usage_t& usage,
+    ast::qty_t const usage_multiplier)
 {
     std::optional<expr_t> result;
-    auto const try_application = [&] (expr_t::global_t const& func_name, sort_t const& func_type)
+    auto const impl =
+        [&env, &ctx, &type, &result, usage_multiplier]
+        (expr_t::global_t const& name, sort_t const& func_type, usage_t& tmp_usage)
     {
         auto const& pi = std::get<expr_t::pi_t>(std::get<expr_t>(func_type).value);
         if (auto substitutions = unify(pi.ret_type.get(), type))
@@ -36,7 +44,7 @@ std::optional<expr_t> search_app(environment_t const& env, context_t const& ctx,
                 }
                 // TODO calling `proof_search()` may result in infinite recursion;
                 //      need to add a version with state and bail out if recursion is detected
-                else if (auto val = proof_search(env, ctx, arg.type))
+                else if (auto val = proof_search(env, ctx, arg.type, tmp_usage, usage_multiplier))
                     // TODO if arg has a name, we should substitute() in later arguments and return type (needs a test)
                     args.push_back(std::move(*val));
                 else
@@ -46,20 +54,24 @@ std::optional<expr_t> search_app(environment_t const& env, context_t const& ctx,
                 make_legal_expr(
                     std::move(app_type.ret_type.get()),
                     expr_t::app_t{
-                        make_legal_expr(func_type, func_name),
+                        make_legal_expr(func_type, name),
                         std::move(args)});
         }
     };
     for (auto const& name: env.globals())
     {
+        auto tmp_usage = usage.extend();
         match(
             *env[name],
             [] (type_def_t const&) {},
-            [&] (axiom_t const& axiom) { try_application(name, axiom.properties.sort.get()); },
-            [&] (func_decl_t const& decl) { try_application(name, decl.properties.sort.get()); },
-            [&] (func_def_t const& def) { try_application(name, def.properties.sort.get()); });
+            [&] (axiom_t const& axiom) { impl(name, axiom.properties.sort.get(), tmp_usage); },
+            [&] (func_decl_t const& decl) { impl(name, decl.properties.sort.get(), tmp_usage); },
+            [&] (func_def_t const& def) { impl(name, def.properties.sort.get(), tmp_usage); });
         if (result)
+        {
+            usage += tmp_usage;
             break;
+        }
     }
     return result;
 }

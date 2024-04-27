@@ -242,7 +242,7 @@ type_assign(
                         {
                             // The user has now used something more than they could;
                             // let's try to give them a sensible error message.
-                            // Firstly, the context must have allowed for either `zero` or `one` use but not `many`.
+                            // Firstly, this must mean that the context allowed for only either `zero` or `one`.
                             // So there are overall two cases:
                             // 1. if the context allowed for zero uses,
                             //    then they must have attempted to use the thing at run-time;

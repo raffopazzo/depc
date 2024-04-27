@@ -234,7 +234,7 @@ type_assign(
                 if (auto const expr = ctx[var])
                 {
                     // if multiplier is zero nothing is really used and type-assignment always succeeds;
-                    // so don't even bother looking up and adding up things
+                    // so don't even bother looking up things and adding them up
                     if (usage_multiplier > ast::qty_t::zero)
                     {
                         auto const prev = usage[var];
@@ -407,7 +407,8 @@ type_assign_app(
                 env, ctx,
                 app.args[i],
                 func_type->args[i].type,
-                usage, usage_multiplier * func_type->args[i].qty);
+                usage,
+                usage_multiplier * func_type->args[i].qty);
         if (not arg)
             return std::move(arg.error());
         if (func_type->args[i].var)

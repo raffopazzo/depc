@@ -38,6 +38,7 @@ expected<module_t> check(parser::module_t const& x) noexcept
                 return match(
                     v,
                     [&] (parser::type_def_t const& t) -> expected<entry_t> { return check_type_def(env, t); },
+                    [&] (parser::axiom_t const& x) -> expected<entry_t> { return check_axiom(env, x); },
                     [&] (parser::func_decl_t const& x) -> expected<entry_t>
                     {
                         auto const& result = check_func_decl(env, x);
@@ -95,6 +96,18 @@ expected<type_def_t> check_type_def(environment_t& env, parser::type_def_t const
                 return error_t::from_error(std::move(ok.error()));
             return result;
         });
+}
+
+expected<axiom_t> check_axiom(environment_t& env, parser::axiom_t const& axiom)
+{
+    context_t ctx;
+    auto pi_type = check_pi_type(env, ctx, axiom.properties, axiom.signature.args, axiom.signature.ret_type.get());
+    if (not pi_type)
+        return std::move(pi_type.error());
+    auto result = make_legal_axiom(axiom.properties, *pi_type, axiom.name, std::get<expr_t::pi_t>(pi_type->value));
+    if (auto ok = env.try_emplace(expr_t::global_t{axiom.name}, result); not ok)
+        return error_t::from_error(std::move(ok.error()));
+    return result;
 }
 
 expected<func_decl_t> check_func_decl(environment_t& env, parser::func_decl_t const& decl)
@@ -180,11 +193,19 @@ expected<stmt_t> check_stmt(environment_t const& env, proof_state_t& state, pars
             }();
             if (not true_branch)
                 return std::move(true_branch.error());
+            auto const add_true_not_cond = [&cond] (context_t& dest)
+            {
+                dest.add_auto(
+                    context_t::var_decl_t{
+                        derivation_rules::make_true_t(
+                            derivation_rules::make_boolean_expr(
+                                expr_t::boolean_expr_t::not_t{*cond}))});
+            };
             if (x.false_branch)
             {
                 auto new_state = proof_state_t(state.context.extend(), state.goal);
                 new_state.rewrite(*cond, derivation_rules::make_false());
-                // TODO add anonymous var of type `true_t(not cond)` to the new context
+                add_true_not_cond(new_state.context);
                 if (auto false_branch = check_body(env, std::move(new_state), *x.false_branch))
                     return make_legal_stmt(
                         stmt_t::if_else_t{
@@ -200,8 +221,10 @@ expected<stmt_t> check_stmt(environment_t const& env, proof_state_t& state, pars
             // then it means we are now in the implied else branch;
             // we can then rewrite `cond = false` inside the current proof state
             if (returns_from_all_branches(*true_branch))
-                // TODO add anonymous var of type `true_t(not cond)` to the existing context
+            {
                 state.rewrite(*cond, derivation_rules::make_false());
+                add_true_not_cond(state.context);
+            }
             return make_legal_stmt(
                 stmt_t::if_else_t{
                     std::move(*cond),
@@ -293,6 +316,12 @@ check_numeric_expr(
                                     ? check_int(name, 0ul, *max_abs_value)
                                     : check_int(name, 0ul, cpp_int_max_unsigned(width));
                         });
+                },
+                [&] (axiom_t const& axiom) -> expected<expr_t>
+                {
+                    std::ostringstream err;
+                    err << "type mismatch between numeric constant and `" << axiom.name << '`';
+                    return error(err.str());
                 },
                 [&] (func_decl_t const& func_decl) -> expected<expr_t>
                 {

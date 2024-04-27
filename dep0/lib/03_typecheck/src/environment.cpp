@@ -6,6 +6,7 @@
 #include "dep0/match.hpp"
 
 #include <cassert>
+#include <ranges>
 #include <sstream>
 
 namespace dep0::typecheck {
@@ -22,6 +23,15 @@ environment_t::environment_t(
 environment_t environment_t::extend() const
 {
     return environment_t(m_fwd_decls.extend(), m_definitions.extend());
+}
+
+std::set<expr_t::global_t> environment_t::globals() const
+{
+    std::set<expr_t::global_t> result;
+    for (auto const& m: {m_definitions, m_fwd_decls})
+        for (auto x = std::optional{m}; x.has_value(); x = x->parent())
+            std::ranges::copy(std::views::keys(*x), std::inserter(result, result.end()));
+    return result;
 }
 
 environment_t::value_type const* environment_t::operator[](expr_t::global_t const& global) const
@@ -50,6 +60,7 @@ dep0::expected<std::true_type> environment_t::try_emplace(expr_t::global_t globa
             match(
                 v,
                 [&] (type_def_t const&) { err << "cannot add type definition "; },
+                [&] (axiom_t const&) { err << "cannot add axiom "; },
                 [&] (func_decl_t const&) { err << "cannot add function declaration "; },
                 [&] (func_def_t const&) { err << "cannot add function definition "; });
             pretty_print<properties_t>(err << '`', global) << '`';
@@ -58,6 +69,7 @@ dep0::expected<std::true_type> environment_t::try_emplace(expr_t::global_t globa
             match(
                 prev,
                 [&] (type_def_t const& x) { pretty_print(err, x); },
+                [&] (axiom_t const& x) { pretty_print(err, x); },
                 [&] (func_decl_t const& x) { pretty_print(err, x.properties.sort.get()); },
                 [&] (func_def_t const& x) { pretty_print(err, x.properties.sort.get()); });
             err << '`';
@@ -74,6 +86,14 @@ dep0::expected<std::true_type> environment_t::try_emplace(expr_t::global_t globa
             else
                 return accept(m_definitions);
         },
+        [&] (axiom_t const& axiom) -> dep0::expected<std::true_type>
+        {
+            // a new axiom must have a new unique name
+            if (auto const* const prev = this->operator[](global))
+                return reject(*prev);
+            else
+                return accept(m_definitions);
+        },
         [&] (func_decl_t const& decl) -> dep0::expected<std::true_type>
         {
             // if we already encountered a function declaration or definition with this name,
@@ -81,16 +101,17 @@ dep0::expected<std::true_type> environment_t::try_emplace(expr_t::global_t globa
             if (auto const* const prev = this->operator[](global))
                 return match(
                     *prev,
-                    [&] (type_def_t const&) -> dep0::expected<std::true_type>
-                    {
-                        return reject(*prev);
-                    },
-                    [&] (auto const& old) -> dep0::expected<std::true_type>
+                    [&] <typename T> (T const& old) -> dep0::expected<std::true_type>
+                    requires (std::is_same_v<T, func_decl_t> or std::is_same_v<T, func_def_t>)
                     {
                         if (is_beta_delta_equivalent(*this, {}, decl.properties.sort.get(), old.properties.sort.get()))
                             return std::true_type{};
                         else
                             return reject(*prev);
+                    },
+                    [&] (auto const& old) -> dep0::expected<std::true_type>
+                    {
+                        return reject(*prev);
                     });
             else
                 return accept(m_fwd_decls);

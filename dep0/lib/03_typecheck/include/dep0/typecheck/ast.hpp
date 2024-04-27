@@ -16,6 +16,7 @@ namespace dep0::typecheck {
 
 struct legal_module_t;
 struct legal_type_def_t;
+struct legal_axiom_t;
 struct legal_func_decl_t;
 struct legal_func_def_t;
 struct legal_func_arg_t;
@@ -27,6 +28,7 @@ struct properties_t
 {
     using module_properties_type = legal_module_t;
     using type_def_properties_type = legal_type_def_t;
+    using axiom_properties_type = legal_axiom_t;
     using func_decl_properties_type = legal_func_decl_t;
     using func_def_properties_type = legal_func_def_t;
     using func_arg_properties_type = legal_func_arg_t;
@@ -38,6 +40,7 @@ static_assert(ast::Properties<properties_t>);
 
 using module_t = ast::module_t<properties_t>;
 using type_def_t = ast::type_def_t<properties_t>;
+using axiom_t = ast::axiom_t<properties_t>;
 using func_decl_t = ast::func_decl_t<properties_t>;
 using func_def_t = ast::func_def_t<properties_t>;
 using func_arg_t = ast::func_arg_t<properties_t>;
@@ -62,6 +65,14 @@ struct legal_type_def_t
     source_loc_t origin;
     derivation_t<type_def_t> derivation;
     bool operator==(legal_type_def_t const&) const = default;
+};
+
+struct legal_axiom_t
+{
+    source_loc_t origin;
+    derivation_t<axiom_t> derivation;
+    boost::recursive_wrapper<sort_t> sort;
+    bool operator==(legal_axiom_t const&) const = default;
 };
 
 struct legal_func_decl_t

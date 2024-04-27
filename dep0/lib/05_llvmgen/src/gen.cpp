@@ -27,6 +27,10 @@ expected<unique_ref<llvm::Module>>
                 bool const inserted = global.try_emplace(typecheck::expr_t::global_t{name}, def).second;
                 assert(inserted);
             },
+            [] (typecheck::axiom_t const&)
+            {
+                // axioms cannot be invoked at run-time, so we don't need to do anything here
+            },
             // LLVM can only generate functions for 1st order abstractions;
             // for 2nd order abstractions we rely on beta-delta normalization to produce
             // a value or a 1st order application;

@@ -221,6 +221,7 @@ expected<expr_t> type_assign(environment_t const& env, context_t const& ctx, par
                         match(
                             *def,
                             [] (type_def_t const&) -> sort_t { return derivation_rules::make_typename(); },
+                            [] (axiom_t const& x) -> sort_t { return x.properties.sort.get(); },
                             [] (func_decl_t const& x) -> sort_t { return x.properties.sort.get(); },
                             [] (func_def_t const& x) -> sort_t { return x.properties.sort.get(); }),
                         std::move(global));

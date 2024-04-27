@@ -27,6 +27,14 @@ namespace dep0::typecheck {
 expected<type_def_t> check_type_def(environment_t&, parser::type_def_t const&);
 
 /**
+ * Checks whether an axiom declaration is legal;
+ * if it is, the declaration is stored in the given environment.
+ *
+ * @return A legal axiom declaration or an error.
+ */
+expected<axiom_t> check_axiom(environment_t&, parser::axiom_t const&);
+
+/**
  * Checks whether a function declaration is legal;
  * if it is, the declaration is stored in the given environment.
  *

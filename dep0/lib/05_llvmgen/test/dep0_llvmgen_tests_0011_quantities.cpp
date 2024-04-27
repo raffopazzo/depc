@@ -6,6 +6,7 @@
 
 using namespace dep0::llvmgen::testing;
 
+static auto const nonnull = std::vector{llvm::Attribute::NonNull};
 static auto const sext = std::vector{llvm::Attribute::SExt};
 static auto const zext = std::vector{llvm::Attribute::ZExt};
 
@@ -100,6 +101,24 @@ BOOST_AUTO_TEST_CASE(pass_002)
     {
         auto const f = pass_result.value()->getFunction("g3");
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, sext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(0)));
+    }
+}
+
+BOOST_AUTO_TEST_CASE(pass_003)
+{
+    apply_beta_delta_normalization = true;
+    BOOST_TEST_REQUIRE(pass("0011_quantities/pass_003.depc"));
+    {
+        auto const f = pass_result.value()->getFunction("g");
+        BOOST_TEST_REQUIRE(
+            is_function_of(
+                f,
+                std::tuple{
+                    arg_of(pointer_to(is_i32), "xs", nonnull),
+                    arg_of(is_i32, std::nullopt, sext)},
+                is_i32, sext));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
         BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(0)));
     }

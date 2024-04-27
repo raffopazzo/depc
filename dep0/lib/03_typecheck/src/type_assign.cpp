@@ -302,9 +302,15 @@ type_assign(
         },
         [&] (parser::expr_t::subscript_t const& subscript) -> expected<expr_t>
         {
-            // TODO is `1 array_t(t, n) xs` expendable once in general or once per element?
-            //      what about nested arrays? does multiplicity 1 extend to the elements too?
-            auto array = type_assign(env, ctx, subscript.array.get(), usage, usage_multiplier);
+            // We don't know how to allow the use of the subscript operator on a linear array.
+            // Intuitively, one could argue that it should be possible to spend each element only once;
+            // but we don't have inference rules to establish that and it might also require
+            // keeping track at runtime of which element has been spent.
+            // So, for now, we require that the array has quantity of either `zero` or `many`.
+            // It should still be possible to allow structured binding of a linear array to extract
+            // all its elements at once, provided that the size of the array is known at compile-time.
+            // Rust has similar limitations.
+            auto array = type_assign(env, ctx, subscript.array.get(), usage, usage_multiplier * ast::qty_t::many);
             if (not array)
                 return std::move(array.error());
             return match(

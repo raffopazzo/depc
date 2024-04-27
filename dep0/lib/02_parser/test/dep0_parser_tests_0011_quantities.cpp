@@ -79,6 +79,7 @@ BOOST_AUTO_TEST_CASE(pass_001)
         BOOST_TEST_REQUIRE(f->value.args.size() == 2ul);
         BOOST_TEST(is_arg(f->value.args[0], is_bool, "which", dep0::ast::qty_t::one));
         BOOST_TEST(is_arg(f->value.args[1], is_i32, "x", dep0::ast::qty_t::one));
+        BOOST_TEST(is_i32(f->value.ret_type.get()));
         BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
         BOOST_TEST(
             is_if_else(
@@ -99,6 +100,7 @@ BOOST_AUTO_TEST_CASE(pass_002)
         BOOST_TEST(f->name == "f");
         BOOST_TEST_REQUIRE(f->value.args.size() == 1ul);
         BOOST_TEST(is_arg(f->value.args[0], is_typename, std::nullopt));
+        BOOST_TEST(is_i32(f->value.ret_type.get()));
         BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
         BOOST_TEST(is_return_of(f->value.body.stmts[0], constant(0)));
     }
@@ -108,6 +110,7 @@ BOOST_AUTO_TEST_CASE(pass_002)
         BOOST_TEST(f->name == "g1");
         BOOST_TEST_REQUIRE(f->value.args.size() == 1ul);
         BOOST_TEST(is_arg(f->value.args[0], is_u64, "n", dep0::ast::qty_t::zero));
+        BOOST_TEST(is_i32(f->value.ret_type.get()));
         BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
         BOOST_TEST(
             is_return_of(
@@ -120,6 +123,7 @@ BOOST_AUTO_TEST_CASE(pass_002)
         BOOST_TEST(f->name == "g2");
         BOOST_TEST_REQUIRE(f->value.args.size() == 1ul);
         BOOST_TEST(is_arg(f->value.args[0], is_u64, "n", dep0::ast::qty_t::zero));
+        BOOST_TEST(is_i32(f->value.ret_type.get()));
         BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
         BOOST_TEST(is_return_of(f->value.body.stmts[0], app_of(var("f"), array_of(is_i32, var("n")))));
     }
@@ -129,8 +133,36 @@ BOOST_AUTO_TEST_CASE(pass_002)
         BOOST_TEST(f->name == "g3");
         BOOST_TEST_REQUIRE(f->value.args.size() == 1ul);
         BOOST_TEST(is_arg(f->value.args[0], is_u64, "n", dep0::ast::qty_t::zero));
+        BOOST_TEST(is_i32(f->value.ret_type.get()));
         BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
         BOOST_TEST(is_return_of(f->value.body.stmts[0], app_of(var("f"), true_t_of(gt(var("n"), constant(0))))));
+    }
+}
+
+BOOST_AUTO_TEST_CASE(pass_003)
+{
+    BOOST_TEST_REQUIRE(pass("0011_quantities/pass_003.depc"));
+    BOOST_TEST_REQUIRE(pass_result->entries.size() == 2ul);
+    {
+        auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[0ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "f");
+        BOOST_TEST_REQUIRE(f->value.args.size() == 1ul);
+        BOOST_TEST(is_arg(f->value.args[0], is_i32, std::nullopt));
+        BOOST_TEST(is_typename(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0], is_i32));
+    }
+    {
+        auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[1ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "g");
+        BOOST_TEST_REQUIRE(f->value.args.size() == 2ul);
+        BOOST_TEST(is_arg(f->value.args[0], array_of(is_i32, constant(3)), "xs", dep0::ast::qty_t::one));
+        BOOST_TEST(is_arg(f->value.args[1], app_of(var("f"), subscript_of(var("xs"), constant(0))), std::nullopt));
+        BOOST_TEST(is_i32(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0], constant(0)));
     }
 }
 

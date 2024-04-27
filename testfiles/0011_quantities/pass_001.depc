@@ -1,0 +1,7 @@
+i32_t f(1 bool which, 1 i32_t x)
+{
+    if (which)
+        return x;
+    else
+        return x + 1;
+}

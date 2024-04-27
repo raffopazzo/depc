@@ -7,6 +7,7 @@
 using namespace dep0::llvmgen::testing;
 
 static auto const sext = std::vector{llvm::Attribute::SExt};
+static auto const zext = std::vector{llvm::Attribute::ZExt};
 
 BOOST_FIXTURE_TEST_SUITE(dep0_llvmgen_tests_0011_quantities, LLVMGenTestsFixture)
 
@@ -58,5 +59,30 @@ BOOST_AUTO_TEST_CASE(pass_000)
                         direct_call_of(f2, call_arg(z, sext))))));
     }
 }
+
+BOOST_AUTO_TEST_CASE(pass_001)
+{
+    BOOST_TEST_REQUIRE(pass("0011_quantities/pass_001.depc"));
+    {
+        auto const f = pass_result.value()->getFunction("f");
+        BOOST_TEST_REQUIRE(
+            is_function_of(
+                f,
+                std::tuple{arg_of(is_i1, "which", zext), arg_of(is_i32, "x", sext)},
+                is_i32, sext));
+        auto const blks = get_blocks(*f);
+        BOOST_TEST_REQUIRE(blks.size() == 3ul);
+        auto const entry = blks[0];
+        auto const then0 = blks[1];
+        auto const else0 = blks[2];
+        BOOST_TEST(is_branch_of(entry->getTerminator(), exactly(f->getArg(0ul)), exactly(then0), exactly(else0)));
+        BOOST_TEST(is_return_of(then0->getTerminator(), exactly(f->getArg(1ul))));
+        BOOST_TEST(is_return_of(else0->getTerminator(), add_of(exactly(f->getArg(1ul)), constant(1))));
+    }
+}
+
+// BOOST_AUTO_TEST_CASE(typecheck_error_000)
+// BOOST_AUTO_TEST_CASE(typecheck_error_001)
+// BOOST_AUTO_TEST_CASE(typecheck_error_002)
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -15,7 +15,7 @@ BOOST_AUTO_TEST_CASE(pass_000)
         auto const f = std::get_if<dep0::parser::axiom_t>(&pass_result->entries[0ul]);
         BOOST_TEST_REQUIRE(f);
         BOOST_TEST(f->name == "not_gte_implies_lt");
-        BOOST_TEST(f->signature.args.size() == 3ul);
+        BOOST_TEST_REQUIRE(f->signature.args.size() == 3ul);
         BOOST_TEST(is_arg(f->signature.args[0], is_u64, "i"));
         BOOST_TEST(is_arg(f->signature.args[1], is_u64, "n"));
         BOOST_TEST(is_arg(f->signature.args[2], true_t_of(not_of(gte(var("i"), var("n")))), std::nullopt));
@@ -25,7 +25,7 @@ BOOST_AUTO_TEST_CASE(pass_000)
         auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[1ul]);
         BOOST_TEST_REQUIRE(f);
         BOOST_TEST(f->name == "f");
-        BOOST_TEST(f->value.args.size() == 2ul);
+        BOOST_TEST_REQUIRE(f->value.args.size() == 2ul);
         BOOST_TEST(is_arg(f->value.args[0], is_u64, "i"));
         BOOST_TEST(is_arg(f->value.args[1], array_of(is_i32, constant(3)), "xs"));
         BOOST_TEST(is_i32(f->value.ret_type.get()));
@@ -47,7 +47,7 @@ BOOST_AUTO_TEST_CASE(pass_001)
         auto const f = std::get_if<dep0::parser::axiom_t>(&pass_result->entries[0ul]);
         BOOST_TEST_REQUIRE(f);
         BOOST_TEST(f->name == "not_gte_implies_lt");
-        BOOST_TEST(f->signature.args.size() == 3ul);
+        BOOST_TEST_REQUIRE(f->signature.args.size() == 3ul);
         BOOST_TEST(is_arg(f->signature.args[0], is_u64, "i"));
         BOOST_TEST(is_arg(f->signature.args[1], is_u64, "n"));
         BOOST_TEST(is_arg(f->signature.args[2], true_t_of(not_of(gte(var("i"), var("n")))), "p"));
@@ -57,7 +57,7 @@ BOOST_AUTO_TEST_CASE(pass_001)
         auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[1ul]);
         BOOST_TEST_REQUIRE(f);
         BOOST_TEST(f->name == "f");
-        BOOST_TEST(f->value.args.size() == 2ul);
+        BOOST_TEST_REQUIRE(f->value.args.size() == 2ul);
         BOOST_TEST(is_arg(f->value.args[0], is_u64, "i"));
         BOOST_TEST(is_arg(f->value.args[1], array_of(is_i32, constant(3)), "xs"));
         BOOST_TEST(is_i32(f->value.ret_type.get()));
@@ -79,7 +79,7 @@ BOOST_AUTO_TEST_CASE(pass_002)
         auto const f = std::get_if<dep0::parser::axiom_t>(&pass_result->entries[0ul]);
         BOOST_TEST_REQUIRE(f);
         BOOST_TEST(f->name == "not_gte_implies_lt");
-        BOOST_TEST(f->signature.args.size() == 3ul);
+        BOOST_TEST_REQUIRE(f->signature.args.size() == 3ul);
         BOOST_TEST(is_arg(f->signature.args[0], is_u64, "i"));
         BOOST_TEST(is_arg(f->signature.args[1], is_u64, "n"));
         BOOST_TEST(is_arg(f->signature.args[2], true_t_of(not_of(gte(var("i"), var("n")))), "p"));
@@ -89,7 +89,7 @@ BOOST_AUTO_TEST_CASE(pass_002)
         auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[1ul]);
         BOOST_TEST_REQUIRE(f);
         BOOST_TEST(f->name == "f");
-        BOOST_TEST(f->value.args.size() == 2ul);
+        BOOST_TEST_REQUIRE(f->value.args.size() == 2ul);
         BOOST_TEST(is_arg(f->value.args[0], is_u64, "i"));
         BOOST_TEST(is_arg(f->value.args[1], array_of(is_i32, constant(3)), "xs"));
         BOOST_TEST(is_i32(f->value.ret_type.get()));
@@ -111,7 +111,7 @@ BOOST_AUTO_TEST_CASE(typecheck_error_000)
         auto const f = std::get_if<dep0::parser::axiom_t>(&pass_result->entries[0ul]);
         BOOST_TEST_REQUIRE(f);
         BOOST_TEST(f->name == "not_gte_implies_lt_i32");
-        BOOST_TEST(f->signature.args.size() == 3ul);
+        BOOST_TEST_REQUIRE(f->signature.args.size() == 3ul);
         BOOST_TEST(is_arg(f->signature.args[0], is_i32, "i"));
         BOOST_TEST(is_arg(f->signature.args[1], is_i32, "n"));
         BOOST_TEST(is_arg(f->signature.args[2], true_t_of(not_of(gte(var("i"), var("n")))), std::nullopt));
@@ -121,7 +121,7 @@ BOOST_AUTO_TEST_CASE(typecheck_error_000)
         auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[1ul]);
         BOOST_TEST_REQUIRE(f);
         BOOST_TEST(f->name == "f");
-        BOOST_TEST(f->value.args.size() == 2ul);
+        BOOST_TEST_REQUIRE(f->value.args.size() == 2ul);
         BOOST_TEST(is_arg(f->value.args[0], is_u64, "i"));
         BOOST_TEST(is_arg(f->value.args[1], array_of(is_i32, constant(3)), "xs"));
         BOOST_TEST(is_i32(f->value.ret_type.get()));

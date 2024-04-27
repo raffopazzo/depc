@@ -47,8 +47,9 @@ public:
     /**
      * Add uses from another context to this one.
      * Usually the other context is a direct extension of this one;
-     * in fact, the parent context of the input object are not considered.
-     * This is useful, for example, to tally up usages of both branches of an if-else statement.
+     * in fact, the parent context of the input object is not considered.
+     * This is useful, for example, to tally up usages of both branches of an if-else statement,
+     * or to add usages from a temporary usage object, for example during proof-search.
      */
     usage_t& operator+=(usage_t const&);
 };

@@ -335,17 +335,9 @@ type_assign(
                         return std::move(index.error());
                     beta_delta_normalize(env, ctx, *index);
                     auto const proof_type =
-                        make_legal_expr(
-                            derivation_rules::make_typename(),
-                            expr_t::app_t{
-                                derivation_rules::make_true_t(),
-                                {
-                                    make_legal_expr(
-                                        derivation_rules::make_bool(),
-                                        expr_t::relation_expr_t{
-                                            expr_t::relation_expr_t::lt_t{*index, app->args[1]}
-                                        })
-                                }});
+                        derivation_rules::make_true_t(
+                            derivation_rules::make_relation_expr(
+                                expr_t::relation_expr_t::lt_t{*index, app->args[1]}));
                     if (proof_search(env, ctx, proof_type)) // TODO proof-searching should take usage into account
                     {
                         // we're about to move from `array`, which holds the element type; so must take a copy

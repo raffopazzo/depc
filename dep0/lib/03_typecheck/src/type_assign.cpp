@@ -37,18 +37,18 @@ type_assign_pair(
     usage_t& usage,
     ast::qty_t const usage_multiplier)
 {
-    // TODO in principle it might happen that we fail to type-assign `lhs` for some reason and then,
-    //      because we have already accounted for the variables that appear in `lhs`,
-    //      we might fail to type-assign `rhs` or to check that `lhs` has the same type assigned to `rhs`;
-    //      a solution could be to have some temporary `usage2 = usage.extend()` and
-    //      use that to look ahead whether type-assignment of `lhs` will succeed;
-    //      but first we need a test to verify this
-    auto a = type_assign(env, ctx, lhs, usage, usage_multiplier);
+    // If we can assign a type to lhs, we check rhs against that, and we are done.
+    // Otherwise assign a type to rhs and check lhs against that, and we are done.
+    // In either case, type-assignment is speculative so we use a temporary usage object;
+    // only if type-assignment succeeds we commit to the real usage object.
+    auto tmp_usage_a = usage.extend();
+    auto tmp_usage_b = usage.extend();
+    auto a = type_assign(env, ctx, lhs, tmp_usage_a, usage_multiplier);
     auto b = a
-        ? check_expr(env, ctx, rhs, a->properties.sort.get(), usage, usage_multiplier)
-        : type_assign(env, ctx, rhs, usage, usage_multiplier);
+        ? check_expr(env, ctx, rhs, a->properties.sort.get(), usage += tmp_usage_a, usage_multiplier)
+        : type_assign(env, ctx, rhs, tmp_usage_b, usage_multiplier);
     if (b and not a)
-        a = check_expr(env, ctx, lhs, b->properties.sort.get(), usage, usage_multiplier);
+        a = check_expr(env, ctx, lhs, b->properties.sort.get(), usage += tmp_usage_b, usage_multiplier);
     return std::pair{std::move(a), std::move(b)};
 }
 

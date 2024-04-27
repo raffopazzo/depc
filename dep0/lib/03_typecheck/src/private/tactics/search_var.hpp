@@ -4,6 +4,8 @@
 #include "dep0/typecheck/context.hpp"
 #include "dep0/typecheck/environment.hpp"
 
+#include "private/usage.hpp"
+
 #include <optional>
 
 namespace dep0::typecheck {
@@ -16,6 +18,12 @@ namespace dep0::typecheck {
  * the returned value will be a `var_t` referring to it.
  * Otherwise search fails and `std::nullopt` is returned.
  */
-std::optional<expr_t> search_var(environment_t const&, context_t const&, expr_t const& type);
+std::optional<expr_t>
+search_var(
+    environment_t const&,
+    context_t const&,
+    expr_t const& type,
+    usage_t&,
+    ast::qty_t usage_multiplier);
 
 } // namespace dep0::typecheck

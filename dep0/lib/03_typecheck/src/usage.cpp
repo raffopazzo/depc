@@ -29,4 +29,11 @@ ast::qty_t usage_t::operator[](expr_t::var_t const& var) const
     return old ? *old : ast::qty_t::zero;
 }
 
+usage_t& usage_t::operator+=(usage_t const& that)
+{
+    for (auto const& [var, qty]: that.count)
+        add(var, qty);
+    return *this;
+}
+
 } // namespace dep0::typecheck

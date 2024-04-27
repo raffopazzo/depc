@@ -28,16 +28,6 @@ public:
     usage_t() = default;
 
     /**
-     * @name Iterators
-     * Iterators to traverse the variables that have been used at the current scope level;
-     * usage at the parent level are not reachable by these iterators.
-     * @{
-     */
-    auto begin() const { return count.begin(); }
-    auto end() const { return count.end(); }
-    /**@}*/
-
-    /**
      * Obtain a new object to track usage of variables within a nested scope,
      * for example inside the true branch of an if-else statement.
      */
@@ -53,6 +43,14 @@ public:
      * returns `zero` if the variable has never been used so far.
      */
     ast::qty_t operator[](expr_t::var_t const&) const;
+
+    /**
+     * Add uses from another context to this one.
+     * Usually the other context is a direct extension of this one;
+     * in fact, the parent context of the input object are not considered.
+     * This is useful, for example, to tally up usages of both branches of an if-else statement.
+     */
+    usage_t& operator+=(usage_t const&);
 };
 
 } // namespace dep0::typecheck

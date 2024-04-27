@@ -4,6 +4,8 @@
 #include "dep0/typecheck/context.hpp"
 #include "dep0/typecheck/environment.hpp"
 
+#include "private/usage.hpp"
+
 #include <optional>
 
 namespace dep0::typecheck {
@@ -11,6 +13,12 @@ namespace dep0::typecheck {
 /**
  * Search for a value of the given type by applying axioms and theorems (aka functions) from the given environment.
  */
-std::optional<expr_t> search_app(environment_t const&, context_t const&, expr_t const& type);
+std::optional<expr_t>
+search_app(
+    environment_t const&,
+    context_t const&,
+    expr_t const& type,
+    usage_t&,
+    ast::qty_t usage_multiplier);
 
 } // namespace dep0::typecheck

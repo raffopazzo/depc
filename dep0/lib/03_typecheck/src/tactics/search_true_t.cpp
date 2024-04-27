@@ -6,7 +6,13 @@
 
 namespace dep0::typecheck {
 
-std::optional<expr_t> search_true_t(environment_t const& env, context_t const& ctx, expr_t const& type)
+std::optional<expr_t>
+search_true_t(
+    environment_t const& env,
+    context_t const& ctx,
+    expr_t const& type,
+    usage_t&,
+    ast::qty_t)
 {
     std::optional<expr_t> result;
     if (auto const app = std::get_if<expr_t::app_t>(&type.value);

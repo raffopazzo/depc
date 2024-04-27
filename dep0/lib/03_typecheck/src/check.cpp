@@ -209,9 +209,8 @@ check_stmt(
             auto false_branch_usage = usage.extend();
             auto const combine_usages = [&]
             {
-                for (auto const& u: {true_branch_usage, false_branch_usage})
-                    for (auto const& [var, qty]: u)
-                        usage.add(var, qty);
+                usage += true_branch_usage;
+                usage += false_branch_usage;
             };
             auto true_branch = [&]
             {

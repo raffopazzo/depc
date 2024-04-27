@@ -16,7 +16,8 @@ namespace dep0::typecheck {
  * Not all expressions can be assigned a type when taken in isolation;
  * for example numerical expressions and initializer lists.
  *
- * @param usage,usage_multiplier    @see usage
+ * @param usage,usage_multiplier
+ *      @see usage
  * 
  * @return The new expression with its type assigned in the properties field.
  */
@@ -31,10 +32,12 @@ type_assign(
 /**
  * Assign a type to a function application in the given environment and context.
  *
- * @param loc   The location in the source file where the expression was found.
- *              If type-assignment fails, it will be copied in the error message.
+ * @param loc
+ *      The location in the source file where the expression was found.
+ *      If type-assignment fails, it will be copied in the error message.
  *
- * @param usage,usage_multiplier    @see usage
+ * @param usage,usage_multiplier
+ *      @see usage
  *
  * @return The new expression with its type assigned in the properties field.
  */
@@ -50,11 +53,15 @@ type_assign_app(
 /**
  * Assign a type to an abstraction in the given environment and context.
  *
- * @param loc   The location in the source file where the expression was found.
- *              If type-assignment fails, it will be copied in the error message.
- * @param name  If the abstraction is given a name, it can call itself recursively.
+ * @param loc
+ *      The location in the source file where the expression was found.
+ *      If type-assignment fails, it will be copied in the error message.
+
+ * @param name
+ *      If the abstraction is given a name, it can call itself recursively.
  *
- * @param usage,usage_multiplier    @see usage
+ * @param usage,usage_multiplier
+ *      @see usage
  *
  * @return The new expression with its type assigned in the properties field.
  */

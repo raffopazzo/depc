@@ -16,12 +16,7 @@ namespace dep0::typecheck {
  * Not all expressions can be assigned a type when taken in isolation;
  * for example numerical expressions and initializer lists.
  *
- * @param usage Helper object to keep track of usage of variables in the given context.
- *
- * @param usage_multiplier  When adding up usage of variables, their quantity is multiplied by this amount
- *                          in order to account for nested usage. For example, in an erased context this
- *                          multiplier can be `zero` or when checking against an unrestricted function
- *                          argument the multiplier should be `many`.
+ * @param usage,usage_multiplier    @see usage
  * 
  * @return The new expression with its type assigned in the properties field.
  */
@@ -39,12 +34,7 @@ type_assign(
  * @param loc   The location in the source file where the expression was found.
  *              If type-assignment fails, it will be copied in the error message.
  *
- * @param usage Helper object to keep track of usage of variables in the given context.
- *
- * @param usage_multiplier  When adding up usage of variables, their quantity is multiplied by this amount
- *                          in order to account for nested usage. For example, in an erased context this
- *                          multiplier can be `zero` or when checking against an unrestricted function
- *                          argument the multiplier should be `many`.
+ * @param usage,usage_multiplier    @see usage
  *
  * @return The new expression with its type assigned in the properties field.
  */
@@ -64,12 +54,7 @@ type_assign_app(
  *              If type-assignment fails, it will be copied in the error message.
  * @param name  If the abstraction is given a name, it can call itself recursively.
  *
- * @param usage Helper object to keep track of usage of variables in the given context.
- *
- * @param usage_multiplier  When adding up usage of variables, their quantity is multiplied by this amount
- *                          in order to account for nested usage. For example, in an erased context this
- *                          multiplier can be `zero` or when checking against an unrestricted function
- *                          argument the multiplier should be `many`.
+ * @param usage,usage_multiplier    @see usage
  *
  * @return The new expression with its type assigned in the properties field.
  */

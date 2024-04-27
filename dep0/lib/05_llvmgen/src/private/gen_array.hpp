@@ -37,7 +37,8 @@ struct array_properties_view_t
 /**
  * Checks whether the given type expression is an array, i.e. the application of `array_t`.
  *
- * @param type  The type to check, which must have sort `typename_t`.
+ * @param type
+ *      The type to check, which must have sort `typename_t`.
  *
  * @return True if the given type is an array.
  */
@@ -46,7 +47,8 @@ bool is_array(typecheck::expr_t const& type);
 /**
  * Try to extract the properties of an array type, if possible.
  *
- * @param type  The type expression to inspect, which must have sort `typename_t`.
+ * @param type
+ *      The type expression to inspect, which must have sort `typename_t`.
  *
  * @return The properties of the array type, or an empty optional if the type is not an array.
  */
@@ -56,7 +58,8 @@ std::optional<array_properties_view_t> get_properties_if_array(typecheck::expr_t
  * Extract the properties of the array type, assuming that the input type is in fact an array;
  * if the given expression is not an array type the behaviour is undefined.
  *
- * @param type  The type expression to inspect, which must have sort `typename_t`.
+ * @param type
+ *      The type expression to inspect, which must have sort `typename_t`.
  *
  * @return The properties of the given array type.
  */

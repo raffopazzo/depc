@@ -13,7 +13,8 @@ namespace dep0::llvmgen {
 /**
  * Generate an LLVM function declaration of the given prototype.
  *
- * @param name  The name to assign to the LLVM function that will be generated.
+ * @param name
+ *      The name to assign to the LLVM function that will be generated.
  */
 void gen_func_decl(
     global_context_t&,
@@ -33,7 +34,8 @@ llvm::Value* gen_func(
 /**
  * Generate an LLVM function for a named abstraction of the given prototype.
  *
- * @param name The name to assign to the LLVM function that will be generated.
+ * @param name
+ *      The name to assign to the LLVM function that will be generated.
  */
 void gen_func(
     global_context_t&,

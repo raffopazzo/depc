@@ -10,8 +10,11 @@ namespace dep0::llvmgen {
 /**
  * Helper function to share implementation code between needs_alloca and is_alloca_needed.
  *
- * @param type      The type expression originally passed to needs_alloca and is_alloca_needed.
- * @param result    Optional pointer to the result, used by needs_alloca.
+ * @param type
+ *      The type expression originally passed to needs_alloca and is_alloca_needed.
+ *
+ * @param result
+ *      Optional pointer to the result, used by needs_alloca.
  *
  * @return bool True if the input type expression requires allocation.
  */

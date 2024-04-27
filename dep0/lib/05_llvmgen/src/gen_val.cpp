@@ -423,13 +423,17 @@ llvm::Value* gen_func_call(
                     [] (typecheck::kind_t) { return false; });
             })
         and "can only generate function call for 1st order applications");
-    auto const proto = [&] () -> llvm_func_proto_t
+    auto const pi_type = [&] () -> typecheck::expr_t::pi_t const&
     {
         auto const func_type = std::get_if<typecheck::expr_t>(&app.func.get().properties.sort.get());
         assert(func_type and "functions must be of sort type");
         auto const pi_type = std::get_if<typecheck::expr_t::pi_t>(&func_type->value);
         assert(pi_type and "functions must be pi-types");
-        auto proto = llvm_func_proto_t::from_pi(*pi_type);
+        return *pi_type;
+    }();
+    auto const proto = [&] () -> llvm_func_proto_t
+    {
+        auto proto = llvm_func_proto_t::from_pi(pi_type);
         assert(proto and "can only generate a function call for 1st order function type");
         return std::move(proto.value());
     }();
@@ -439,14 +443,15 @@ llvm::Value* gen_func_call(
     auto const has_ret_arg = is_alloca_needed(proto.ret_type());
     auto const gen_call = [&, arg_offset = has_ret_arg ? 1ul : 0ul]
     {
-        llvm_args.reserve(llvm_args.size() + app.args.size());
-        for (typecheck::expr_t const& arg: app.args)
-            llvm_args.push_back(gen_val(global, local, builder, arg, nullptr));
+        llvm_args.reserve(llvm_args.size() + proto.runtime_args().size());
+        for (auto const i: std::views::iota(0ul, pi_type.args.size()))
+            if (pi_type.args[i].qty > ast::qty_t::zero)
+                llvm_args.push_back(gen_val(global, local, builder, app.args[i], nullptr));
         // this could be a direct call to a global function, or an indirect call via a function pointer
         auto const call = builder.CreateCall(llvm_func_type, llvm_func, std::move(llvm_args));
-        for (auto const i: std::views::iota(0ul, app.args.size()))
+        for (auto const i: std::views::iota(0ul, proto.runtime_args().size()))
         {
-            auto const& arg_type = std::get<typecheck::expr_t>(app.args[i].properties.sort.get());
+            auto const& arg_type = proto.runtime_arg(i).type;
             if (auto const attr = get_sign_ext_attribute(global, arg_type); attr != llvm::Attribute::None)
                 call->addParamAttr(i + arg_offset, attr);
         }

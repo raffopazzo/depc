@@ -170,6 +170,10 @@ std::ostream& pretty_print(std::ostream& os, func_def_t<P> const& func_def, std:
 template <Properties P>
 std::ostream& pretty_print(std::ostream& os, func_arg_t<P> const& x, std::size_t const indent)
 {
+    if (x.qty == ast::qty_t::zero)
+        os << "0 ";
+    else if (x.qty == ast::qty_t::one)
+        os << "1 ";
     pretty_print(os, x.type, indent);
     if (x.var)
         pretty_print<P>(os << ' ', *x.var, indent);

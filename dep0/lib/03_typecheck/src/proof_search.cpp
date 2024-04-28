@@ -95,6 +95,5 @@ continue_proof_search(
     return result;
 }
 
-
 } // namespace dep0::typecheck
 

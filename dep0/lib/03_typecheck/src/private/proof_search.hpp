@@ -41,7 +41,7 @@ start_proof_search(
     ast::qty_t usage_multiplier);
 
 /**
- * Same as `start_proof_search` but with an existing search_state_t object.
+ * Same as `start_proof_search` but with an existing `search_state_t` object.
  * Tactics should call this function instead of `start_proof_search`;
  * this will allow the proof-search algorithm to detect infinite recursions
  * and to look up previous results from the internal cache whenever possible.

@@ -22,6 +22,7 @@ bool unify(expr_t const& from, expr_t const& to, std::map<expr_t::var_t, expr_t>
             fail_if_different_types,
             [] (expr_t::typename_t, expr_t::typename_t) { return true; },
             [] (expr_t::true_t, expr_t::true_t) { return true; },
+            [] (expr_t::auto_t, expr_t::auto_t) { return true; },
             [] (expr_t::bool_t, expr_t::bool_t) { return true; },
             [] (expr_t::unit_t, expr_t::unit_t) { return true; },
             [] (expr_t::i8_t, expr_t::i8_t) { return true; },

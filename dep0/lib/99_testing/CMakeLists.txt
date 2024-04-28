@@ -3,6 +3,7 @@ add_library(dep0_testing_lib
     include/dep0/testing/ast_predicates/app.hpp
     include/dep0/testing/ast_predicates/arith_expr.hpp
     include/dep0/testing/ast_predicates/array.hpp
+    include/dep0/testing/ast_predicates/auto.hpp
     include/dep0/testing/ast_predicates/boolean_expr.hpp
     include/dep0/testing/ast_predicates/constants.hpp
     include/dep0/testing/ast_predicates/func_arg.hpp
@@ -17,7 +18,6 @@ add_library(dep0_testing_lib
     include/dep0/testing/ast_predicates/types.hpp
     include/dep0/testing/ast_predicates/var.hpp
     include/dep0/testing/ast_predicates.hpp
-    include/dep0/testing/check_all.hpp
     include/dep0/testing/failure.hpp
     include/dep0/testing/literal_string.hpp
     include/dep0/testing/predicate.hpp
@@ -26,6 +26,7 @@ add_library(dep0_testing_lib
     src/ast_predicates/app.cpp
     src/ast_predicates/arith_expr.cpp
     src/ast_predicates/array.cpp
+    src/ast_predicates/auto.cpp
     src/ast_predicates/boolean_expr.cpp
     src/ast_predicates/constants.cpp
     src/ast_predicates/func_arg.cpp
@@ -40,7 +41,6 @@ add_library(dep0_testing_lib
     src/ast_predicates/types.cpp
     src/ast_predicates/var.cpp
     src/ast_predicates.cpp
-    src/check_all.cpp
     src/failure.cpp
     src/literal_string.cpp
     src/predicate.cpp

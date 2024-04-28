@@ -19,8 +19,8 @@ proof_search(
     auto const try_one = [&] (auto&& f) { if (not result) result = f(env, ctx, type, usage, usage_multiplier); };
     auto const try_all = [&] (auto&&... tactics) { (try_one(tactics), ...); };
     try_all(
-        search_true_t,
         search_var,
+        search_true_t,
         search_app
     );
     return result;

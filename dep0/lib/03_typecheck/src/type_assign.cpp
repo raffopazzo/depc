@@ -65,6 +65,10 @@ type_assign(
         expr.value,
         [] (parser::expr_t::typename_t) -> expected<expr_t> { return derivation_rules::make_typename(); },
         [] (parser::expr_t::true_t) -> expected<expr_t> { return derivation_rules::make_true_t(); },
+        [&] (parser::expr_t::auto_t) -> expected<expr_t>
+        {
+            return error_t::from_error(dep0::error_t("auto expressions have no unique type", loc));
+        },
         [] (parser::expr_t::bool_t) -> expected<expr_t> { return derivation_rules::make_bool(); },
         [] (parser::expr_t::unit_t) -> expected<expr_t> { return derivation_rules::make_unit(); },
         [] (parser::expr_t::i8_t) -> expected<expr_t> { return derivation_rules::make_i8(); },

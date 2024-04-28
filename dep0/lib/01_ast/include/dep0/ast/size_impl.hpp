@@ -90,6 +90,7 @@ std::size_t size(expr_t<P> const& x)
         x.value,
         [] (expr_t<P>::typename_t const&) { return 0ul; },
         [] (expr_t<P>::true_t const&) { return 0ul; },
+        [] (expr_t<P>::auto_t const&) { return 0ul; },
         [] (expr_t<P>::bool_t const&) { return 0ul; },
         [] (expr_t<P>::unit_t const&) { return 0ul; },
         [] (expr_t<P>::i8_t const&) { return 0ul; },

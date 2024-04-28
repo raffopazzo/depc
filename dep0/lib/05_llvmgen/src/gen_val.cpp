@@ -82,6 +82,11 @@ llvm::Value* gen_val(
             assert(false and "cannot generate a value for true_t");
             __builtin_unreachable();
         },
+        [] (typecheck::expr_t::auto_t const&) -> llvm::Value*
+        {
+            assert(false and "cannot generate a value for auto expression");
+            __builtin_unreachable();
+        },
         [] (typecheck::expr_t::bool_t const&) -> llvm::Value*
         {
             assert(false and "cannot generate a value for bool_t");
@@ -357,10 +362,16 @@ llvm::Value* gen_val(
             auto const& type = std::get<typecheck::expr_t>(expr.properties.sort.get());
             return match(
                 typecheck::is_list_initializable(type),
-                [] (typecheck::is_list_initializable_result::no_t) -> llvm::Value*
+                [&] (typecheck::is_list_initializable_result::no_t) -> llvm::Value*
                 {
-                    assert(false and "cannot generate a value for a non-list-initializable type");
-                    __builtin_unreachable();
+                    // We found an initializer list whose type is not trivially initializiable from a list.
+                    // This either means that typechecking is broken or, more optimistically,
+                    // that some reasoning was required to prove that the type was initializiable from a list.
+                    // One such case is `true_t(cond)` for some complicated condition.
+                    // We are not going to prove again that the condition was actually true,
+                    // so for now just construct a value of the empty struct.
+                    // If later on we add more cases like this, we might have to inspect the type.
+                    return llvm::ConstantAggregateZero::get(gen_type(global, type));
                 },
                 [&] (typecheck::is_list_initializable_result::true_t) -> llvm::Value*
                 {

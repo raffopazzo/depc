@@ -57,6 +57,7 @@ struct alpha_equivalence_visitor
 
     result_t operator()(typename expr_t<P>::typename_t, typename expr_t<P>::typename_t) const { return {}; }
     result_t operator()(typename expr_t<P>::true_t, typename expr_t<P>::true_t) const { return {}; }
+    result_t operator()(typename expr_t<P>::auto_t, typename expr_t<P>::auto_t) const { return {}; }
     result_t operator()(typename expr_t<P>::bool_t, typename expr_t<P>::bool_t) const { return {}; }
     result_t operator()(typename expr_t<P>::unit_t, typename expr_t<P>::unit_t) const { return {}; }
     result_t operator()(typename expr_t<P>::i8_t, typename expr_t<P>::i8_t) const { return {}; }

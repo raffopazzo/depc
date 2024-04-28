@@ -727,7 +727,7 @@ BOOST_AUTO_TEST_CASE(pass_010)
         BOOST_TEST(f->value.args.size() == 0ul);
         BOOST_TEST(is_unit(f->value.ret_type.get()));
         BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_app_of(f->value.body.stmts[0ul], var("h"), var("f"), constant(0)));
+        BOOST_TEST(is_func_call_of(f->value.body.stmts[0ul], var("h"), var("f"), constant(0)));
     }
 }
 

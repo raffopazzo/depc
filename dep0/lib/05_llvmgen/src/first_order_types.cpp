@@ -19,6 +19,7 @@ bool is_first_order_type(typecheck::expr_t const& type)
         type.value,
         [] (typecheck::expr_t::typename_t const&) { return false; },
         [] (typecheck::expr_t::true_t const&) { return false; }, // `true_t` on its own is a term, not a type
+        [] (typecheck::expr_t::auto_t const&) { return false; },
         [] (typecheck::expr_t::bool_t const&) { return true; },
         [] (typecheck::expr_t::unit_t const&) { return true; },
         [] (typecheck::expr_t::i8_t const&) { return true; },

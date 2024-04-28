@@ -22,6 +22,7 @@ template <Properties P> bool needs_new_line(func_arg_t<P> const&);
 template <Properties P> bool needs_new_line(expr_t<P> const&);
 template <Properties P> bool needs_new_line(typename expr_t<P>::typename_t const&) { return false; }
 template <Properties P> bool needs_new_line(typename expr_t<P>::true_t const&) { return false; }
+template <Properties P> bool needs_new_line(typename expr_t<P>::auto_t const&) { return false; }
 template <Properties P> bool needs_new_line(typename expr_t<P>::bool_t const&) { return false; }
 template <Properties P> bool needs_new_line(typename expr_t<P>::unit_t const&) { return false; }
 template <Properties P> bool needs_new_line(typename expr_t<P>::i8_t const&) { return false; }
@@ -57,6 +58,7 @@ template <Properties P> bool needs_new_line(typename expr_t<P>::subscript_t cons
 template <Properties P> bool needs_parenthesis(expr_t<P> const&);
 template <Properties P> bool needs_parenthesis(typename expr_t<P>::typename_t const&) { return false; }
 template <Properties P> bool needs_parenthesis(typename expr_t<P>::true_t const&) { return false; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::auto_t const&) { return false; }
 template <Properties P> bool needs_parenthesis(typename expr_t<P>::bool_t const&) { return false; }
 template <Properties P> bool needs_parenthesis(typename expr_t<P>::unit_t const&) { return false; }
 template <Properties P> bool needs_parenthesis(typename expr_t<P>::i8_t const&) { return false; }
@@ -248,6 +250,12 @@ template <Properties P>
 std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::true_t const&, std::size_t)
 {
     return os << "true_t";
+}
+
+template <Properties P>
+std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::auto_t const&, std::size_t)
+{
+    return os << "auto";
 }
 
 template <Properties P>

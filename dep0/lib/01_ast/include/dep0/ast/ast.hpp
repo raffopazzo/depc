@@ -98,7 +98,6 @@ struct expr_t
     /**
      * Represents the keyword 'auto' when used inside an expression.
      * It is a placeholder for a value that must be automatically filled by the compiler.
-     * It can only be used in an erased context.
      */
     struct auto_t {};
 

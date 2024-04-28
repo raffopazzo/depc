@@ -8,7 +8,7 @@
 namespace dep0::typecheck {
 
 /**
- * @return If the given expression is some `true_t(cond)` return a pointer to `cond`; null otherwise.
+ * If the given expression is some `true_t(cond)` return a pointer to `cond`; null otherwise.
  */
 static expr_t const* try_extract_condition(expr_t const& x)
 {
@@ -36,7 +36,7 @@ search_true_t(
 {
     if (auto const cond = try_extract_condition(type))
     {
-        // The condition might aready be true.
+        // The condition might already be true.
         if (is_true(*cond))
             return make_legal_expr(type, expr_t::init_list_t{});
 

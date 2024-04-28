@@ -4,6 +4,7 @@ add_library(dep0_ast_lib
     include/dep0/ast/alpha_equivalence_impl.hpp
     include/dep0/ast/ast.hpp
     include/dep0/ast/concepts.hpp
+    include/dep0/ast/hash_code.hpp
     include/dep0/ast/max_index.hpp
     include/dep0/ast/max_index_impl.hpp
     include/dep0/ast/occurs_in.hpp
@@ -19,6 +20,7 @@ add_library(dep0_ast_lib
     src/alpha_equivalence.cpp
     src/ast.cpp
     src/concepts.cpp
+    src/hash_code.cpp
     src/max_index.cpp
     src/occurs_in.cpp
     src/pretty_print.cpp

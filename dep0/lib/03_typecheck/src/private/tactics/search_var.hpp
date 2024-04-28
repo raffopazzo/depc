@@ -4,6 +4,7 @@
 #include "dep0/typecheck/context.hpp"
 #include "dep0/typecheck/environment.hpp"
 
+#include "private/proof_search.hpp"
 #include "private/usage.hpp"
 
 #include <optional>
@@ -23,6 +24,7 @@ search_var(
     environment_t const&,
     context_t const&,
     expr_t const& type,
+    search_state_t&,
     usage_t&,
     ast::qty_t usage_multiplier);
 

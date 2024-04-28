@@ -149,6 +149,7 @@ struct TypecheckTestsFixture
         return dep0::testing::is_arg<dep0::typecheck::properties_t>(arg, std::forward<Args>(args)...);
     }
 
+    // TODO rename to `is_type`
     template <dep0::testing::Predicate<dep0::typecheck::expr_t> F>
     static auto is_expr_of(dep0::typecheck::sort_t const& x, F&& f)
     {

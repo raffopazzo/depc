@@ -14,12 +14,13 @@ search_app(
     environment_t const& env,
     context_t const& ctx,
     expr_t const& type,
+    search_state_t& st,
     usage_t& usage,
     ast::qty_t const usage_multiplier)
 {
     std::optional<expr_t> result;
     auto const impl =
-        [&env, &ctx, &type, &result, usage_multiplier]
+        [&env, &ctx, &type, &st, &result, usage_multiplier]
         (expr_t::global_t const& name, sort_t const& func_type, usage_t& tmp_usage)
     {
         auto const& pi = std::get<expr_t::pi_t>(std::get<expr_t>(func_type).value);
@@ -42,9 +43,7 @@ search_app(
                         nullptr);
                     args.push_back(std::move(it->second));
                 }
-                // TODO calling `proof_search()` may result in infinite recursion;
-                //      need to add a version with state and bail out if recursion is detected
-                else if (auto val = proof_search(env, ctx, arg.type, tmp_usage, usage_multiplier))
+                else if (auto val = continue_proof_search(env, ctx, arg.type, st, tmp_usage, usage_multiplier))
                     // TODO if arg has a name, we should substitute() in later arguments and return type (needs a test)
                     args.push_back(std::move(*val));
                 else

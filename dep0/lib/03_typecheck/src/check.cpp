@@ -409,7 +409,7 @@ check_expr(
                 expected_type,
                 [&] (expr_t const& expected_type) -> expected<expr_t>
                 {
-                    if (auto p = proof_search(env, ctx, expected_type, usage, usage_multiplier))
+                    if (auto p = start_proof_search(env, ctx, expected_type, usage, usage_multiplier))
                         return std::move(*p);
                     else
                     {

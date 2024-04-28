@@ -10,6 +10,7 @@ search_var(
     environment_t const& env,
     context_t const& ctx,
     expr_t const& type,
+    search_state_t&,
     usage_t& usage,
     ast::qty_t const usage_multiplier)
 {

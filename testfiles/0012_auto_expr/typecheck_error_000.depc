@@ -1,0 +1,9 @@
+auto absurd(bool x, true_t(false) p) -> true_t(x)
+{
+    return absurd(x, p);
+}
+
+auto f(i32_t a, i32_t b) -> true_t(a < b)
+{
+    return absurd(a < b, auto); // typecheck error: cannot find a value for auto
+}

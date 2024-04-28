@@ -13,7 +13,7 @@ namespace dep0::typecheck {
 /**
  * A context contains terms currently bound to binding variables, i.e. the function scope.
  */
-class context_t
+class context_t // TODO rename to ctx_t
 {
 public:
     struct var_decl_t

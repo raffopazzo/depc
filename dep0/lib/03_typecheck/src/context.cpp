@@ -122,8 +122,10 @@ std::ostream& pretty_print(std::ostream& os, context_t const& ctx)
 {
     auto const length_of = [] (expr_t::var_t const& var)
     {
-        // length of the name, plus possibly the length of the index with the colon separator
-        return var.name.size() + (var.idx == 0ul ? 0ul : 2ul + static_cast<std::size_t>(std::log10(var.idx)));
+        // length of the name, plus:
+        //   1. length of its quantity ("0 ", "1 ", "  ")
+        //   2. and possibly the length of the index with the colon separator
+        return var.name.size() + 2 + (var.idx == 0ul ? 0ul : 2ul + static_cast<std::size_t>(std::log10(var.idx)));
     };
     auto const& vars = ctx.vars();
     auto const longest =
@@ -143,6 +145,7 @@ std::ostream& pretty_print(std::ostream& os, context_t const& ctx)
         {
             auto const val = ctx[var];
             assert(val);
+            os << (val->value.qty == ast::qty_t::zero ? "0 " : val->value.qty == ast::qty_t::one ? "1 " : "  ");
             pretty_print<properties_t>(os, var);
             padding.resize(alignment - length_of(var), ' ');
             os << padding << ": ";

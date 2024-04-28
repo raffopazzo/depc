@@ -13,7 +13,7 @@ namespace dep0::typecheck {
 /**
  * An environment contains the definitions that can be unfolded during delta-reduction.
  */
-class environment_t
+class environment_t // TOOD rename to env_t
 {
 public:
     using value_type = std::variant<type_def_t, axiom_t, func_decl_t, func_def_t>;

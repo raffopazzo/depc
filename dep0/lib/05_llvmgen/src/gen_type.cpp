@@ -60,37 +60,7 @@ llvm::Type* gen_type(global_context_t& global, typecheck::expr_t const& x)
         [&] (typecheck::expr_t::bool_t const&) -> llvm::Type* { return llvm::Type::getInt1Ty(global.llvm_ctx); },
         [&] (typecheck::expr_t::unit_t const&) -> llvm::Type*
         {
-            // This is worth an explanation, as there were some thoughts put behind this decision.
-            // In C/C++ `void` is flawed:
-            //  1. when used as return type for a function, it behaves as the unit type;
-            //  2. otherwise it behaves as the bottom type (eg function argument or member-field/array-element type).
-            // The LLVM IR also has a type `void`, with this same semantics/flaws.
-            // So one might think that mapping `unit_t` to LLVM `void` is sensible, for (1);
-            // but we would then have to deal with (2).
-            // When you try to deal with (2), you open up a Pandora's box;
-            // for example, what about arguments of type `unit_t`?
-            // We could decide to add "clever" logic to skip them,
-            // after all clang seems to do that for empty structs in C++;
-            // that would be feasible, but also complicated (and fiddly more than "clever").
-            // What about arrays? Do they have 0 size?
-            // Perhaps you can do so, but LLVM IR doesn't allow `void*` anyway.
-            // A different alternative is to just make `unit_t` 1 byte, always.
-            // This decision massively simplifies the logic of emitting LLVM IR,
-            // but there is an obvious drawback:
-            // a function with return type `unit_t` will now waste a register.
-            // Whilst this would be problematic for an efficient executable program,
-            // there are 2 important considersations:
-            //  1. first of all, the optimizer might realize that the register is not really being used
-            //     and could decide to use it for something else;
-            //     also, someone interested in performace should maybe consider making their function bodies
-            //     visible for inlining, a lot of computations might get performed at compile-time via beta-reduction;
-            //  2. traditionally, return type `void` suggests that this is a function whose only purpose is
-            //     to have side-effects; but even the most effectful function, say `memset()`, would be better if
-            //     it returned the pointer to the end of the region.
-            // So, overall, we should regard the idea of making `unit_t` an LLVM type with 0 size as
-            // a potential optimization opportunity, rather than a fundamental fact of emitting LLVM IR.
-            // So, for now, we prefer to make the codegen logic simpler and deal with this optimization later.
-            // The only time we use LLVM `void` is when a function returns an object via a StructRet argument.
+            // TODO: use empty struct instead
             return llvm::Type::getInt8Ty(global.llvm_ctx);
         },
         [&] (typecheck::expr_t::i8_t const&) -> llvm::Type* { return llvm::Type::getInt8Ty(global.llvm_ctx); },

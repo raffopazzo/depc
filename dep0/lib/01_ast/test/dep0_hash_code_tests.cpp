@@ -6,7 +6,7 @@
 
 namespace dep0::ast {
 
-BOOST_FIXTURE_TEST_SUITE(dep0_alpha_equivalence_tests, AstTestsFixture)
+BOOST_FIXTURE_TEST_SUITE(dep0_hash_code_tests, AstTestsFixture)
 
 BOOST_AUTO_TEST_CASE(basic_tests)
 {

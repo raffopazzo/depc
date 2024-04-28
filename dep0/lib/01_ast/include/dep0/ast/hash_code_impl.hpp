@@ -26,6 +26,14 @@ static std::size_t combine(std::size_t a, std::size_t const b, std::size_t const
     return a;
 }
 
+/**
+ * Helper object to keep track of unique IDs assigned in place of ordinary variable names.
+ * This is required to ensure that the hash code of alpha-equivalent expressions are the same.
+ * The idea is that the hash code of a variable name is either:
+ *   - its unique ID, if it is bound to a function argument;
+ *   - or the hash of its actual name, if it is a free variable.
+ * Essentially this implements a DeBruijn index.
+ */
 template <typename P>
 class hash_code_state_t
 {

@@ -6,6 +6,7 @@ namespace dep0::ast {
 
 /**
  * Compute the hash code of the given expression.
+ * Alpha-equivalent expressions are guaranteeed to have the same hash code.
  */
 template <Properties P> std::size_t hash_code(expr_t<P> const&);
 

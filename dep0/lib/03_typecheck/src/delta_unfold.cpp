@@ -17,55 +17,55 @@ namespace dep0::typecheck {
 
 namespace impl {
 
-static bool delta_unfold(environment_t const&, context_t const&, stmt_t&);
-static bool delta_unfold(environment_t const&, context_t const&, stmt_t::if_else_t&);
-static bool delta_unfold(environment_t const&, context_t const&, stmt_t::return_t&);
+static bool delta_unfold(env_t const&, ctx_t const&, stmt_t&);
+static bool delta_unfold(env_t const&, ctx_t const&, stmt_t::if_else_t&);
+static bool delta_unfold(env_t const&, ctx_t const&, stmt_t::return_t&);
 
-static bool delta_unfold(environment_t const&, context_t const&, expr_t::typename_t&) { return false; }
-static bool delta_unfold(environment_t const&, context_t const&, expr_t::true_t&) { return false; }
-static bool delta_unfold(environment_t const&, context_t const&, expr_t::auto_t&) { return false; }
-static bool delta_unfold(environment_t const&, context_t const&, expr_t::bool_t&) { return false; }
-static bool delta_unfold(environment_t const&, context_t const&, expr_t::unit_t&) { return false; }
-static bool delta_unfold(environment_t const&, context_t const&, expr_t::i8_t&) { return false; }
-static bool delta_unfold(environment_t const&, context_t const&, expr_t::i16_t&) { return false; }
-static bool delta_unfold(environment_t const&, context_t const&, expr_t::i32_t&) { return false; }
-static bool delta_unfold(environment_t const&, context_t const&, expr_t::i64_t&) { return false; }
-static bool delta_unfold(environment_t const&, context_t const&, expr_t::u8_t&) { return false; }
-static bool delta_unfold(environment_t const&, context_t const&, expr_t::u16_t&) { return false; }
-static bool delta_unfold(environment_t const&, context_t const&, expr_t::u32_t&) { return false; }
-static bool delta_unfold(environment_t const&, context_t const&, expr_t::u64_t&) { return false; }
-static bool delta_unfold(environment_t const&, context_t const&, expr_t::boolean_constant_t&) { return false; }
-static bool delta_unfold(environment_t const&, context_t const&, expr_t::numeric_constant_t&) { return false; }
-static bool delta_unfold(environment_t const&, context_t const&, expr_t::boolean_expr_t&);
-static bool delta_unfold(environment_t const&, context_t const&, expr_t::relation_expr_t&);
-static bool delta_unfold(environment_t const&, context_t const&, expr_t::arith_expr_t&);
-static bool delta_unfold(environment_t const&, context_t const&, expr_t::var_t&) { return false; }
-static bool delta_unfold(environment_t const&, context_t const&, expr_t::global_t&);
-static bool delta_unfold(environment_t const&, context_t const&, expr_t::app_t&);
-static bool delta_unfold(environment_t const&, context_t const&, expr_t::abs_t&);
-static bool delta_unfold(environment_t const&, context_t const&, expr_t::pi_t&);
-static bool delta_unfold(environment_t const&, context_t const&, expr_t::array_t&) { return false; }
-static bool delta_unfold(environment_t const&, context_t const&, expr_t::init_list_t&);
-static bool delta_unfold(environment_t const&, context_t const&, expr_t::subscript_t&);
+static bool delta_unfold(env_t const&, ctx_t const&, expr_t::typename_t&) { return false; }
+static bool delta_unfold(env_t const&, ctx_t const&, expr_t::true_t&) { return false; }
+static bool delta_unfold(env_t const&, ctx_t const&, expr_t::auto_t&) { return false; }
+static bool delta_unfold(env_t const&, ctx_t const&, expr_t::bool_t&) { return false; }
+static bool delta_unfold(env_t const&, ctx_t const&, expr_t::unit_t&) { return false; }
+static bool delta_unfold(env_t const&, ctx_t const&, expr_t::i8_t&) { return false; }
+static bool delta_unfold(env_t const&, ctx_t const&, expr_t::i16_t&) { return false; }
+static bool delta_unfold(env_t const&, ctx_t const&, expr_t::i32_t&) { return false; }
+static bool delta_unfold(env_t const&, ctx_t const&, expr_t::i64_t&) { return false; }
+static bool delta_unfold(env_t const&, ctx_t const&, expr_t::u8_t&) { return false; }
+static bool delta_unfold(env_t const&, ctx_t const&, expr_t::u16_t&) { return false; }
+static bool delta_unfold(env_t const&, ctx_t const&, expr_t::u32_t&) { return false; }
+static bool delta_unfold(env_t const&, ctx_t const&, expr_t::u64_t&) { return false; }
+static bool delta_unfold(env_t const&, ctx_t const&, expr_t::boolean_constant_t&) { return false; }
+static bool delta_unfold(env_t const&, ctx_t const&, expr_t::numeric_constant_t&) { return false; }
+static bool delta_unfold(env_t const&, ctx_t const&, expr_t::boolean_expr_t&);
+static bool delta_unfold(env_t const&, ctx_t const&, expr_t::relation_expr_t&);
+static bool delta_unfold(env_t const&, ctx_t const&, expr_t::arith_expr_t&);
+static bool delta_unfold(env_t const&, ctx_t const&, expr_t::var_t&) { return false; }
+static bool delta_unfold(env_t const&, ctx_t const&, expr_t::global_t&);
+static bool delta_unfold(env_t const&, ctx_t const&, expr_t::app_t&);
+static bool delta_unfold(env_t const&, ctx_t const&, expr_t::abs_t&);
+static bool delta_unfold(env_t const&, ctx_t const&, expr_t::pi_t&);
+static bool delta_unfold(env_t const&, ctx_t const&, expr_t::array_t&) { return false; }
+static bool delta_unfold(env_t const&, ctx_t const&, expr_t::init_list_t&);
+static bool delta_unfold(env_t const&, ctx_t const&, expr_t::subscript_t&);
 
-bool delta_unfold(environment_t const& env, context_t const& ctx, stmt_t& stmt)
+bool delta_unfold(env_t const& env, ctx_t const& ctx, stmt_t& stmt)
 {
     return match(stmt.value, [&] (auto& x) { return delta_unfold(env, ctx, x); });
 }
 
-bool delta_unfold(environment_t const& env, context_t const& ctx, stmt_t::if_else_t& if_)
+bool delta_unfold(env_t const& env, ctx_t const& ctx, stmt_t::if_else_t& if_)
 {
     return delta_unfold(env, ctx, if_.cond)
         or delta_unfold(env, ctx, if_.true_branch)
         or if_.false_branch and delta_unfold(env, ctx, *if_.false_branch);
 }
 
-bool delta_unfold(environment_t const& env, context_t const& ctx, stmt_t::return_t& ret)
+bool delta_unfold(env_t const& env, ctx_t const& ctx, stmt_t::return_t& ret)
 {
     return ret.expr and delta_unfold(env, ctx, *ret.expr);
 }
 
-bool delta_unfold(environment_t const& env, context_t const& ctx, expr_t::boolean_expr_t& x)
+bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t::boolean_expr_t& x)
 {
     return match(
         x.value,
@@ -73,21 +73,21 @@ bool delta_unfold(environment_t const& env, context_t const& ctx, expr_t::boolea
         [&] (auto& x) { return delta_unfold(env, ctx, x.lhs.get()) or delta_unfold(env, ctx, x.rhs.get()); });
 }
 
-bool delta_unfold(environment_t const& env, context_t const& ctx, expr_t::relation_expr_t& x)
+bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t::relation_expr_t& x)
 {
     return match(
         x.value,
         [&] (auto& x) { return delta_unfold(env, ctx, x.lhs.get()) or delta_unfold(env, ctx, x.rhs.get()); });
 }
 
-bool delta_unfold(environment_t const& env, context_t const& ctx, expr_t::arith_expr_t& x)
+bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t::arith_expr_t& x)
 {
     return match(
         x.value,
         [&] (auto& x) { return delta_unfold(env, ctx, x.lhs.get()) or delta_unfold(env, ctx, x.rhs.get()); });
 }
 
-bool delta_unfold(environment_t const&, context_t const&, expr_t::global_t&)
+bool delta_unfold(env_t const&, ctx_t const&, expr_t::global_t&)
 {
     // We only perform delta-unfolding inside a direct application,
     // eg `f(x)` for some global function `f`, but not everywhere, eg `return f`.
@@ -96,7 +96,7 @@ bool delta_unfold(environment_t const&, context_t const&, expr_t::global_t&)
     return false;
 }
 
-bool delta_unfold(environment_t const& env, context_t const& ctx, expr_t::app_t& app)
+bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t::app_t& app)
 {
     if (auto const global = std::get_if<expr_t::global_t>(&app.func.get().value))
         if (auto const func_def = std::get_if<func_def_t>(env[*global]))
@@ -112,14 +112,14 @@ bool delta_unfold(environment_t const& env, context_t const& ctx, expr_t::app_t&
     return false;
 }
 
-bool delta_unfold(environment_t const& env, context_t const& ctx, expr_t::abs_t& abs)
+bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t::abs_t& abs)
 {
     auto ctx2 = ctx.extend();
     for (auto& arg: abs.args)
     {
         if (delta_unfold(env, ctx2, arg.type))
             return true;
-        auto const inserted = ctx2.try_emplace(arg.var, std::nullopt, context_t::var_decl_t{arg.qty, arg.type});
+        auto const inserted = ctx2.try_emplace(arg.var, std::nullopt, ctx_t::var_decl_t{arg.qty, arg.type});
         assert(inserted.has_value());
     }
     if (delta_unfold(env, ctx2, abs.ret_type.get()))
@@ -127,21 +127,21 @@ bool delta_unfold(environment_t const& env, context_t const& ctx, expr_t::abs_t&
     return delta_unfold(env, ctx2, abs.body);
 }
 
-bool delta_unfold(environment_t const& env, context_t const& ctx, expr_t::pi_t& pi)
+bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t::pi_t& pi)
 {
     auto ctx2 = ctx.extend();
     for (auto& arg: pi.args)
     {
         if (delta_unfold(env, ctx2, arg.type))
             return true;
-        auto const inserted = ctx2.try_emplace(arg.var, std::nullopt, context_t::var_decl_t{arg.qty, arg.type});
+        auto const inserted = ctx2.try_emplace(arg.var, std::nullopt, ctx_t::var_decl_t{arg.qty, arg.type});
         assert(inserted.has_value());
     }
     return delta_unfold(env, ctx2, pi.ret_type.get());
 }
 
 
-bool delta_unfold(environment_t const& env, context_t const& ctx, expr_t::init_list_t& init_list)
+bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t::init_list_t& init_list)
 {
     for (auto& v: init_list.values)
         if (delta_unfold(env, ctx, v))
@@ -149,14 +149,14 @@ bool delta_unfold(environment_t const& env, context_t const& ctx, expr_t::init_l
     return false;
 }
 
-bool delta_unfold(environment_t const& env, context_t const& ctx, expr_t::subscript_t& subscript)
+bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t::subscript_t& subscript)
 {
     return delta_unfold(env, ctx, subscript.array.get()) or delta_unfold(env, ctx, subscript.index.get());
 }
 
 } // namespace impl
 
-bool delta_unfold(environment_t const& env, context_t const& ctx, body_t& body)
+bool delta_unfold(env_t const& env, ctx_t const& ctx, body_t& body)
 {
     for (auto& s: body.stmts)
         if (impl::delta_unfold(env, ctx, s))
@@ -164,7 +164,7 @@ bool delta_unfold(environment_t const& env, context_t const& ctx, body_t& body)
     return false;
 }
 
-bool delta_unfold(environment_t const& env, context_t const& ctx, expr_t& expr)
+bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t& expr)
 {
     if (auto const type = std::get_if<expr_t>(&expr.properties.sort.get()))
         if (delta_unfold(env, ctx, *type))

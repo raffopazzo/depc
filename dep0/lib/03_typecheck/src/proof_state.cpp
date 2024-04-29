@@ -4,7 +4,7 @@
 
 namespace dep0::typecheck {
 
-proof_state_t::proof_state_t(context_t c, sort_t s) :
+proof_state_t::proof_state_t(ctx_t c, sort_t s) :
     context(std::move(c)),
     goal(std::move(s))
 {

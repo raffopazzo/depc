@@ -70,8 +70,8 @@ array_properties_view_t get_array_properties(typecheck::expr_t const& type);
  * The array can also be multidimensional, for example the total size for `array_t(array_t(i32_t, 3), 4)` is 12.
  */
 llvm::Value* gen_array_total_size(
-    global_context_t&,
-    local_context_t const&,
+    global_ctx_t&,
+    local_ctx_t const&,
     llvm::IRBuilder<>&,
     array_properties_view_t const&);
 
@@ -83,8 +83,8 @@ llvm::Value* gen_array_total_size(
  * @return The LLVM value representing the stride size if the array is multidimensional, otherwise nullptr.
  */
 llvm::Value* gen_stride_size_if_needed(
-    global_context_t&,
-    local_context_t const&,
+    global_ctx_t&,
+    local_ctx_t const&,
     llvm::IRBuilder<>&,
     array_properties_view_t const&);
 

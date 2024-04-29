@@ -13,8 +13,8 @@ static bool has_unit_type(typecheck::expr_t const& expr)
 }
 
 snippet_t gen_body(
-    global_context_t& global,
-    local_context_t const& local,
+    global_ctx_t& global,
+    local_ctx_t const& local,
     typecheck::body_t const& body,
     std::string_view const entry_block_name,
     llvm::Function* const llvm_f,
@@ -44,8 +44,8 @@ snippet_t gen_body(
 }
 
 void gen_stmt(
-    global_context_t& global,
-    local_context_t const& local,
+    global_ctx_t& global,
+    local_ctx_t const& local,
     snippet_t& snipppet,
     llvm::IRBuilder<>& builder,
     typecheck::stmt_t const& stmt,

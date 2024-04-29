@@ -27,7 +27,7 @@ error_t error_t::from_error(dep0::error_t err)
     return error_t{std::move(err), std::nullopt};
 }
 
-error_t error_t::from_error(dep0::error_t err, environment_t env, context_t ctx, sort_t tgt)
+error_t error_t::from_error(dep0::error_t err, env_t env, ctx_t ctx, sort_t tgt)
 {
     return error_t{std::move(err), std::tuple{std::move(env), std::move(ctx), std::move(tgt)}};
 }

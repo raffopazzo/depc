@@ -17,7 +17,7 @@ expected<unique_ref<llvm::Module>>
     noexcept
 {
     auto llvm_module = make_ref<llvm::Module>(name, llvm_ctx);
-    global_context_t global(llvm_module.get());
+    global_ctx_t global(llvm_module.get());
     for (auto const& x: m.entries)
         match(
             x,

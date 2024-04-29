@@ -25,7 +25,7 @@ namespace dep0::typecheck {
  *
  * @return A legal type definition or an error.
  */
-expected<type_def_t> check_type_def(environment_t&, parser::type_def_t const&);
+expected<type_def_t> check_type_def(env_t&, parser::type_def_t const&);
 
 /**
  * Checks whether an axiom declaration is legal;
@@ -33,7 +33,7 @@ expected<type_def_t> check_type_def(environment_t&, parser::type_def_t const&);
  *
  * @return A legal axiom declaration or an error.
  */
-expected<axiom_t> check_axiom(environment_t&, parser::axiom_t const&);
+expected<axiom_t> check_axiom(env_t&, parser::axiom_t const&);
 
 /**
  * Checks whether a function declaration is legal;
@@ -41,7 +41,7 @@ expected<axiom_t> check_axiom(environment_t&, parser::axiom_t const&);
  *
  * @return A legal function declaration or an error.
  */
-expected<func_decl_t> check_func_decl(environment_t&, parser::func_decl_t const&);
+expected<func_decl_t> check_func_decl(env_t&, parser::func_decl_t const&);
 
 /**
  * Checks whether a function definition is legal;
@@ -49,7 +49,7 @@ expected<func_decl_t> check_func_decl(environment_t&, parser::func_decl_t const&
  *
  * @return A legal function definition or an error.
  */
-expected<func_def_t> check_func_def(environment_t&, parser::func_def_t const&);
+expected<func_def_t> check_func_def(env_t&, parser::func_def_t const&);
 
 /**
  * Checks whether a body is legal, i.e. if all its statements are legal and it returns from all paths.
@@ -67,7 +67,7 @@ expected<func_def_t> check_func_def(environment_t&, parser::func_def_t const&);
  */
 expected<body_t>
 check_body(
-    environment_t const&,
+    env_t const&,
     proof_state_t,
     parser::body_t const&,
     usage_t& usage,
@@ -87,7 +87,7 @@ check_body(
  */
 expected<stmt_t>
 check_stmt(
-    environment_t const&,
+    env_t const&,
     proof_state_t&,
     parser::stmt_t const&,
     usage_t& usage,
@@ -98,7 +98,7 @@ check_stmt(
  *
  * @return A legal type or kind, otherwise an error.
  */
-expected<expr_t> check_type(environment_t const&, context_t const&, parser::expr_t const&);
+expected<expr_t> check_type(env_t const&, ctx_t const&, parser::expr_t const&);
 
 /**
  * Checks whether the given expression has the expected type/kind, in the given environment and context.
@@ -113,8 +113,8 @@ expected<expr_t> check_type(environment_t const&, context_t const&, parser::expr
  */
 expected<expr_t>
 check_expr(
-    environment_t const&,
-    context_t const&,
+    env_t const&,
+    ctx_t const&,
     parser::expr_t const&,
     sort_t const& expected_type,
     usage_t& usage,
@@ -133,8 +133,8 @@ check_expr(
  * @return A legal numerical expression or an error.
  */
 expected<expr_t> check_numeric_expr(
-    environment_t const&,
-    context_t const&,
+    env_t const&,
+    ctx_t const&,
     parser::expr_t::numeric_constant_t const&,
     source_loc_t const& loc,
     expr_t const& expected_type);
@@ -159,8 +159,8 @@ expected<expr_t> check_numeric_expr(
  * @return A legal Pi-type or an error.
  */
 expected<expr_t> check_pi_type(
-    environment_t const&,
-    context_t& ctx,
+    env_t const&,
+    ctx_t& ctx,
     source_loc_t const& loc,
     std::vector<parser::func_arg_t> const& args,
     parser::expr_t const& ret_ty);

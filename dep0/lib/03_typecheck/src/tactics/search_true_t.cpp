@@ -27,8 +27,8 @@ static bool is_true(expr_t const& x)
 
 std::optional<expr_t>
 search_true_t(
-    environment_t const& env,
-    context_t const& ctx,
+    env_t const& env,
+    ctx_t const& ctx,
     expr_t const& type,
     search_state_t&,
     usage_t&,

@@ -64,8 +64,8 @@ bool is_alloca_needed(typecheck::expr_t const& type);
  * @return The generated alloca instruction, or nullptr if allocation is not required for the given type.
  */
 llvm::Instruction* gen_alloca_if_needed(
-    global_context_t&,
-    local_context_t const&,
+    global_ctx_t&,
+    local_ctx_t const&,
     llvm::IRBuilder<>&,
     typecheck::expr_t const& type);
 

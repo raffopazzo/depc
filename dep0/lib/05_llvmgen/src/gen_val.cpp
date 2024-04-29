@@ -45,8 +45,8 @@ llvm::Value* gen_val(llvm::IntegerType* const type, boost::multiprecision::cpp_i
 }
 
 llvm::Value* gen_val(
-    global_context_t& global,
-    local_context_t const& local,
+    global_ctx_t& global,
+    local_ctx_t const& local,
     llvm::IRBuilder<>& builder,
     typecheck::expr_t const& expr,
     llvm::Value* const dest)
@@ -417,8 +417,8 @@ llvm::Value* gen_val(
 }
 
 llvm::Value* gen_func_call(
-    global_context_t& global,
-    local_context_t const& local,
+    global_ctx_t& global,
+    local_ctx_t const& local,
     llvm::IRBuilder<>& builder,
     typecheck::expr_t::app_t const& app,
     llvm::Value* const dest)

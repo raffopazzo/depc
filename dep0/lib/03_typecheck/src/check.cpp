@@ -28,7 +28,7 @@ namespace dep0::typecheck {
 
 expected<module_t> check(parser::module_t const& x) noexcept
 {
-    environment_t env;
+    env_t env;
     std::vector<expr_t::global_t> decls; // we must check that all function declarations have been defined
     auto entries =
         fmap_or_error(
@@ -78,7 +78,7 @@ expected<module_t> check(parser::module_t const& x) noexcept
 
 // implementation of private functions
 
-expected<type_def_t> check_type_def(environment_t& env, parser::type_def_t const& type_def)
+expected<type_def_t> check_type_def(env_t& env, parser::type_def_t const& type_def)
 {
     return match(
         type_def.value,
@@ -99,9 +99,9 @@ expected<type_def_t> check_type_def(environment_t& env, parser::type_def_t const
         });
 }
 
-expected<axiom_t> check_axiom(environment_t& env, parser::axiom_t const& axiom)
+expected<axiom_t> check_axiom(env_t& env, parser::axiom_t const& axiom)
 {
-    context_t ctx;
+    ctx_t ctx;
     auto pi_type = check_pi_type(env, ctx, axiom.properties, axiom.signature.args, axiom.signature.ret_type.get());
     if (not pi_type)
         return std::move(pi_type.error());
@@ -111,9 +111,9 @@ expected<axiom_t> check_axiom(environment_t& env, parser::axiom_t const& axiom)
     return result;
 }
 
-expected<func_decl_t> check_func_decl(environment_t& env, parser::func_decl_t const& decl)
+expected<func_decl_t> check_func_decl(env_t& env, parser::func_decl_t const& decl)
 {
-    context_t ctx;
+    ctx_t ctx;
     auto pi_type = check_pi_type(env, ctx, decl.properties, decl.signature.args, decl.signature.ret_type.get());
     if (not pi_type)
         return std::move(pi_type.error());
@@ -123,9 +123,9 @@ expected<func_decl_t> check_func_decl(environment_t& env, parser::func_decl_t co
     return result;
 }
 
-expected<func_def_t> check_func_def(environment_t& env, parser::func_def_t const& f)
+expected<func_def_t> check_func_def(env_t& env, parser::func_def_t const& f)
 {
-    context_t ctx;
+    ctx_t ctx;
     usage_t usage;
     auto abs = type_assign_abs(env, ctx, f.value, f.properties, f.name, usage, ast::qty_t::one);
     if (not abs)
@@ -141,7 +141,7 @@ expected<func_def_t> check_func_def(environment_t& env, parser::func_def_t const
     return result;
 }
 
-expected<expr_t> check_type(environment_t const& env, context_t const& ctx, parser::expr_t const& type)
+expected<expr_t> check_type(env_t const& env, ctx_t const& ctx, parser::expr_t const& type)
 {
     // TODO try move to a "traditional" 2-step approach: type-assign first and then compare to the expected type;
     // numerical constants might get in the way, if so could maybe pass a "tie-breaker"?
@@ -163,7 +163,7 @@ expected<expr_t> check_type(environment_t const& env, context_t const& ctx, pars
 
 expected<body_t>
 check_body(
-    environment_t const& env,
+    env_t const& env,
     proof_state_t state,
     parser::body_t const& x,
     usage_t& usage,
@@ -184,7 +184,7 @@ check_body(
 
 expected<stmt_t>
 check_stmt(
-    environment_t const& env,
+    env_t const& env,
     proof_state_t& state,
     parser::stmt_t const& s,
     usage_t& usage,
@@ -224,7 +224,7 @@ check_stmt(
             }();
             if (not true_branch)
                 return std::move(true_branch.error());
-            auto const add_true_not_cond = [&cond] (context_t& dest)
+            auto const add_true_not_cond = [&cond] (ctx_t& dest)
             {
                 dest.add_unnamed(
                     derivation_rules::make_true_t(
@@ -290,8 +290,8 @@ check_stmt(
 
 expected<expr_t>
 check_numeric_expr(
-    environment_t const& env,
-    context_t const& ctx,
+    env_t const& env,
+    ctx_t const& ctx,
     parser::expr_t::numeric_constant_t const& x,
     source_loc_t const& loc,
     expr_t const& expected_type)
@@ -382,8 +382,8 @@ check_numeric_expr(
 
 expected<expr_t>
 check_expr(
-    environment_t const& env,
-    context_t const& ctx,
+    env_t const& env,
+    ctx_t const& ctx,
     parser::expr_t const& x,
     sort_t const& expected_type,
     usage_t& usage,
@@ -525,8 +525,8 @@ check_expr(
 }
 
 expected<expr_t> check_pi_type(
-    environment_t const& env,
-    context_t& ctx,
+    env_t const& env,
+    ctx_t& ctx,
     source_loc_t const& loc,
     std::vector<parser::func_arg_t> const& parser_args,
     parser::expr_t const& parser_ret_type)
@@ -548,7 +548,7 @@ expected<expr_t> check_pi_type(
                     err << "cannot typecheck function argument at index " << arg_index;
                 return error_t::from_error(dep0::error_t(err.str(), loc, {std::move(type.error())}));
             }
-            if (auto ok = ctx.try_emplace(var, arg_loc, context_t::var_decl_t{arg.qty, *type}); not ok)
+            if (auto ok = ctx.try_emplace(var, arg_loc, ctx_t::var_decl_t{arg.qty, *type}); not ok)
                 return error_t::from_error(std::move(ok.error()));
             return make_legal_func_arg(arg.qty, std::move(*type), std::move(var));
         });

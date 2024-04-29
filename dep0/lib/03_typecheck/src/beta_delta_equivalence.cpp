@@ -11,15 +11,15 @@ namespace dep0::typecheck {
 
 dep0::expected<std::true_type>
 is_beta_delta_equivalent(
-    environment_t const& env,
-    context_t const& ctx,
+    env_t const& env,
+    ctx_t const& ctx,
     sort_t const& x,
     sort_t const& y)
 {
     struct visitor
     {
-        environment_t const& env;
-        context_t const& ctx;
+        env_t const& env;
+        ctx_t const& ctx;
 
         dep0::expected<std::true_type> operator()(expr_t const& x, expr_t const& y) const
         {

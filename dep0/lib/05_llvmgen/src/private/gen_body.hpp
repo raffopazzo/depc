@@ -69,8 +69,8 @@ struct snippet_t
  *      It is the caller responsibility to close all open blocks before finalizing the codegen phase.
  */
 snippet_t gen_body(
-    global_context_t&,
-    local_context_t const& ,
+    global_ctx_t&,
+    local_ctx_t const& ,
     typecheck::body_t const&,
     std::string_view entry_block_name,
     llvm::Function* parent_function,
@@ -96,8 +96,8 @@ snippet_t gen_body(
  *      pointed by this LLVM value, which must be of pointer type.
  */
 void gen_stmt(
-    global_context_t&,
-    local_context_t const&,
+    global_ctx_t&,
+    local_ctx_t const&,
     snippet_t& current_snippet,
     llvm::IRBuilder<>& builder,
     typecheck::stmt_t const&,

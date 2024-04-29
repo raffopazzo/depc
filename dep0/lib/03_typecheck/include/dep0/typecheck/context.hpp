@@ -13,7 +13,7 @@ namespace dep0::typecheck {
 /**
  * A context contains terms currently bound to binding variables, i.e. the function scope.
  */
-class context_t // TODO rename to ctx_t
+class ctx_t
 {
 public:
     struct var_decl_t
@@ -28,11 +28,11 @@ public:
         var_decl_t value;
     };
 
-    context_t() = default;
-    context_t(context_t const&) = default;
-    context_t& operator=(context_t const&) = default;
-    context_t(context_t&&) = default;
-    context_t& operator=(context_t&&) = default;
+    ctx_t() = default;
+    ctx_t(ctx_t const&) = default;
+    ctx_t& operator=(ctx_t const&) = default;
+    ctx_t(ctx_t&&) = default;
+    ctx_t& operator=(ctx_t&&) = default;
 
     // const member functions
 
@@ -40,14 +40,14 @@ public:
      * Obtain a fresh context that inherits from the current one, which is referred to as the "parent".
      * The new context will allow to rebind variable names already bound in the parent context, aka shadowing.
      */
-    context_t extend() const;
+    ctx_t extend() const;
 
     /**
      * Obtain a new context where all types have been rewritten according to the equality `from = to`.
      * For example, if `xs` has type `array_t(i32_t, n)`, rewriting from `n` to `2` will
      * return a new context where `xs` has type `array_t(i32_t, 2)`.
      */
-    context_t rewrite(expr_t const& from, expr_t const& to) const;
+    ctx_t rewrite(expr_t const& from, expr_t const& to) const;
 
     /**
      * Return the name of all variables visible from the current context, i.e.
@@ -80,10 +80,10 @@ private:
 
     void add_unnamed(var_decl_t);
 
-    context_t(scope_map<expr_t::var_t, value_type>);
+    ctx_t(scope_map<expr_t::var_t, value_type>);
 };
 
 // non-member functions
-std::ostream& pretty_print(std::ostream&, context_t const&);
+std::ostream& pretty_print(std::ostream&, ctx_t const&);
 
 } // namespace dep0::typecheck

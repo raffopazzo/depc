@@ -19,18 +19,18 @@
 
 namespace dep0::typecheck {
 
-context_t::context_t(scope_map<expr_t::var_t, value_type> values) :
+ctx_t::ctx_t(scope_map<expr_t::var_t, value_type> values) :
     m_values(std::move(values))
 { }
 
 // const member functions
 
-context_t context_t::extend() const
+ctx_t ctx_t::extend() const
 {
-    return context_t(m_values.extend());
+    return ctx_t(m_values.extend());
 }
 
-context_t context_t::rewrite(expr_t const& from, expr_t const& to) const
+ctx_t ctx_t::rewrite(expr_t const& from, expr_t const& to) const
 {
     auto result = extend();
     for (auto const& var: vars())
@@ -47,7 +47,7 @@ context_t context_t::rewrite(expr_t const& from, expr_t const& to) const
     return result;
 }
 
-std::set<expr_t::var_t> context_t::vars() const
+std::set<expr_t::var_t> ctx_t::vars() const
 {
     std::set<expr_t::var_t> result;
     for (auto x = std::optional{m_values}; x.has_value(); x = x->parent())
@@ -55,19 +55,19 @@ std::set<expr_t::var_t> context_t::vars() const
     return result;
 }
 
-context_t::value_type const* context_t::operator[](expr_t::var_t const& name) const
+ctx_t::value_type const* ctx_t::operator[](expr_t::var_t const& name) const
 {
     return m_values[name];
 }
 
 // non-const member functions
 
-void context_t::add_unnamed(expr_t type)
+void ctx_t::add_unnamed(expr_t type)
 {
     add_unnamed(var_decl_t{ast::qty_t::zero, std::move(type)});
 }
 
-void context_t::add_unnamed(var_decl_t decl)
+void ctx_t::add_unnamed(var_decl_t decl)
 {
     static std::size_t next_id = 1ul;
     static const source_text empty = source_text(make_null_handle(), "auto");
@@ -80,7 +80,7 @@ void context_t::add_unnamed(var_decl_t decl)
 }
 
 dep0::expected<std::true_type>
-context_t::try_emplace(std::optional<expr_t::var_t> name, std::optional<source_loc_t> const loc, var_decl_t decl)
+ctx_t::try_emplace(std::optional<expr_t::var_t> name, std::optional<source_loc_t> const loc, var_decl_t decl)
 {
     if (not name)
     {
@@ -116,9 +116,9 @@ std::ostream& for_each_line(std::ostream& os, R&& r, F&& f)
     return os;
 }
 
-static std::vector<expr_t::var_t> topologically_ordered_vars(context_t const& ctx);
+static std::vector<expr_t::var_t> topologically_ordered_vars(ctx_t const& ctx);
 
-std::ostream& pretty_print(std::ostream& os, context_t const& ctx)
+std::ostream& pretty_print(std::ostream& os, ctx_t const& ctx)
 {
     auto const length_of = [] (expr_t::var_t const& var)
     {
@@ -151,13 +151,13 @@ std::ostream& pretty_print(std::ostream& os, context_t const& ctx)
             os << padding << ": ";
             expr_t const& type = val->value.type;
             auto copy = type;
-            bool const changed = beta_delta_normalize(environment_t{}, ctx, copy);
+            bool const changed = beta_delta_normalize(env_t{}, ctx, copy);
             pretty_print(os, changed and ast::size(copy) < ast::size(type) ? copy : type, indent);
         });
     return os;
 }
 
-std::vector<expr_t::var_t> topologically_ordered_vars(context_t const& ctx)
+std::vector<expr_t::var_t> topologically_ordered_vars(ctx_t const& ctx)
 {
     std::vector<expr_t::var_t> result;
     std::ranges::copy(ctx.vars(), std::back_inserter(result));

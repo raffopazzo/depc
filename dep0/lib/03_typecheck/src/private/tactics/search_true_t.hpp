@@ -18,8 +18,8 @@ namespace dep0::typecheck {
  */
 std::optional<expr_t>
 search_true_t(
-    environment_t const&,
-    context_t const&,
+    env_t const&,
+    ctx_t const&,
     expr_t const&,
     search_state_t&,
     usage_t&,

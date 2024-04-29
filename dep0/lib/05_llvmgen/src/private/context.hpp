@@ -17,7 +17,7 @@ namespace dep0::llvmgen {
 /**
  * Holds together things that have global visibility during IR codegen.
  */
-struct global_context_t
+struct global_ctx_t
 {
     using value_t =
         std::variant<
@@ -40,12 +40,12 @@ struct global_context_t
      */
     std::size_t get_next_id();
 
-    explicit global_context_t(llvm::Module&);
+    explicit global_ctx_t(llvm::Module&);
 
-    global_context_t(global_context_t const&) = delete;
-    global_context_t(global_context_t&&) = delete;
-    global_context_t& operator=(global_context_t const&) = delete;
-    global_context_t& operator=(global_context_t&&) = delete;
+    global_ctx_t(global_ctx_t const&) = delete;
+    global_ctx_t(global_ctx_t&&) = delete;
+    global_ctx_t& operator=(global_ctx_t const&) = delete;
+    global_ctx_t& operator=(global_ctx_t&&) = delete;
 
     value_t* operator[](typecheck::expr_t::global_t const&);
     value_t const* operator[](typecheck::expr_t::global_t const&) const;
@@ -74,7 +74,7 @@ private:
  * 
  * It contains a `scope_map`, so it follows the same model of context extension and shadowing rules.
  */
-struct local_context_t
+struct local_ctx_t
 {
     using value_t =
         std::variant<
@@ -82,7 +82,7 @@ struct local_context_t
             llvm_func_t
         >;
 
-    local_context_t() = default;
+    local_ctx_t() = default;
 
     /**
      * Extend the current context, allowing new enties to be stored even with colliding names,
@@ -90,7 +90,7 @@ struct local_context_t
      *
      * @return A new context where shadowing can take place.
      */
-    local_context_t extend() const;
+    local_ctx_t extend() const;
 
     value_t* operator[](typecheck::expr_t::var_t const&);
     value_t const* operator[](typecheck::expr_t::var_t const&) const;
@@ -104,7 +104,7 @@ struct local_context_t
 private:
     scope_map<typecheck::expr_t::var_t, value_t> values;
 
-    explicit local_context_t(scope_map<typecheck::expr_t::var_t, value_t>);
+    explicit local_ctx_t(scope_map<typecheck::expr_t::var_t, value_t>);
 };
 
 } // namespace dep0::llvmgen

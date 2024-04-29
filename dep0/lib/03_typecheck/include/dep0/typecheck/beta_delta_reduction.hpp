@@ -24,6 +24,6 @@ bool beta_delta_normalize(module_t&);
  * The reason for this is that we are interested in delta-unfolding only as
  * a way to extend beta normalization as far as possible.
  */
-bool beta_delta_normalize(environment_t const&, context_t const&, expr_t&);
+bool beta_delta_normalize(env_t const&, ctx_t const&, expr_t&);
 
 } // namespace dep0::typecheck

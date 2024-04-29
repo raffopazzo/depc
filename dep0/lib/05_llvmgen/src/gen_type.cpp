@@ -9,7 +9,7 @@
 
 namespace dep0::llvmgen {
 
-llvm::FunctionType* gen_func_type(global_context_t& global, llvm_func_proto_t const& proto)
+llvm::FunctionType* gen_func_type(global_ctx_t& global, llvm_func_proto_t const& proto)
 {
     bool constexpr is_var_arg = false;
     std::vector<llvm::Type*> arg_types; // might need to contain a return argument
@@ -31,7 +31,7 @@ llvm::FunctionType* gen_func_type(global_context_t& global, llvm_func_proto_t co
     return llvm::FunctionType::get(ret_type, std::move(arg_types), is_var_arg);
 }
 
-llvm::IntegerType* gen_type(global_context_t& global, ast::width_t const width)
+llvm::IntegerType* gen_type(global_ctx_t& global, ast::width_t const width)
 {
     switch (width)
     {
@@ -43,7 +43,7 @@ llvm::IntegerType* gen_type(global_context_t& global, ast::width_t const width)
     }
 }
 
-llvm::Type* gen_type(global_context_t& global, typecheck::expr_t const& x)
+llvm::Type* gen_type(global_ctx_t& global, typecheck::expr_t const& x)
 {
     return match(
         x.value,

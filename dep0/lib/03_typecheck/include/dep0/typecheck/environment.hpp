@@ -13,19 +13,19 @@ namespace dep0::typecheck {
 /**
  * An environment contains the definitions that can be unfolded during delta-reduction.
  */
-class environment_t // TOOD rename to env_t
+class env_t
 {
 public:
     using value_type = std::variant<type_def_t, axiom_t, func_decl_t, func_def_t>;
 
-    environment_t() = default;
-    environment_t(environment_t const&) = default;
-    environment_t& operator=(environment_t const&) = default;
-    environment_t(environment_t&&) = default;
-    environment_t& operator=(environment_t&&) = default;
+    env_t() = default;
+    env_t(env_t const&) = default;
+    env_t& operator=(env_t const&) = default;
+    env_t(env_t&&) = default;
+    env_t& operator=(env_t&&) = default;
 
     // const member functions
-    environment_t extend() const;
+    env_t extend() const;
 
     /**
      * Return the name of all globals visible from the current environment, i.e.
@@ -45,7 +45,7 @@ private:
     scope_map<expr_t::global_t, value_type> m_fwd_decls;
     scope_map<expr_t::global_t, value_type> m_definitions;
 
-    environment_t(
+    env_t(
         scope_map<expr_t::global_t, value_type> fwd_decls,
         scope_map<expr_t::global_t, value_type> definitions);
 };

@@ -13,12 +13,12 @@ namespace dep0::llvmgen {
 /**
  * Generate an LLVM function type for the given prototype.
  */
-llvm::FunctionType* gen_func_type(global_context_t&, llvm_func_proto_t const&);
+llvm::FunctionType* gen_func_type(global_ctx_t&, llvm_func_proto_t const&);
 
 /**
  * Return the LLVM integer type of the given bit width.
  */
-llvm::IntegerType* gen_type(global_context_t&, ast::width_t);
+llvm::IntegerType* gen_type(global_ctx_t&, ast::width_t);
 
 /**
  * Generate the LLVM type for the given type expression, which must be a 1st order type.
@@ -26,6 +26,6 @@ llvm::IntegerType* gen_type(global_context_t&, ast::width_t);
  * @param type
  *      Must be an expression of sort `typename_t` and it must represent a 1st order type.
  */
-llvm::Type* gen_type(global_context_t&, typecheck::expr_t const& type);
+llvm::Type* gen_type(global_ctx_t&, typecheck::expr_t const& type);
 
 } // namespace dep0::llvmgen

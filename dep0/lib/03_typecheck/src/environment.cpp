@@ -11,7 +11,7 @@
 
 namespace dep0::typecheck {
 
-environment_t::environment_t(
+env_t::env_t(
     scope_map<expr_t::global_t, value_type> fwd_decls,
     scope_map<expr_t::global_t, value_type> definitions
 ) : m_fwd_decls(std::move(fwd_decls)),
@@ -20,12 +20,12 @@ environment_t::environment_t(
 
 // const member functions
 
-environment_t environment_t::extend() const
+env_t env_t::extend() const
 {
-    return environment_t(m_fwd_decls.extend(), m_definitions.extend());
+    return env_t(m_fwd_decls.extend(), m_definitions.extend());
 }
 
-std::set<expr_t::global_t> environment_t::globals() const
+std::set<expr_t::global_t> env_t::globals() const
 {
     std::set<expr_t::global_t> result;
     for (auto const& m: {m_definitions, m_fwd_decls})
@@ -34,7 +34,7 @@ std::set<expr_t::global_t> environment_t::globals() const
     return result;
 }
 
-environment_t::value_type const* environment_t::operator[](expr_t::global_t const& global) const
+env_t::value_type const* env_t::operator[](expr_t::global_t const& global) const
 {
     if (auto const p = m_definitions[global])
         return p;
@@ -44,7 +44,7 @@ environment_t::value_type const* environment_t::operator[](expr_t::global_t cons
 
 // non-const member functions
 
-dep0::expected<std::true_type> environment_t::try_emplace(expr_t::global_t global, value_type v)
+dep0::expected<std::true_type> env_t::try_emplace(expr_t::global_t global, value_type v)
 {
     auto const accept =
         [&] (scope_map<expr_t::global_t, value_type>& dest) -> dep0::expected<std::true_type>

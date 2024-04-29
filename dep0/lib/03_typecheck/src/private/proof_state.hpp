@@ -17,11 +17,11 @@ namespace dep0::typecheck {
  */
 struct proof_state_t
 {
-    context_t context;
+    ctx_t context;
     sort_t goal;
 
     proof_state_t() = default;
-    proof_state_t(context_t, sort_t);
+    proof_state_t(ctx_t, sort_t);
 
     void rewrite(expr_t const& from, expr_t const& to);
 };

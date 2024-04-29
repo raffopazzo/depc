@@ -12,20 +12,20 @@ namespace dep0::typecheck {
 
 namespace impl {
 
-static bool beta_delta_normalize(environment_t const&, axiom_t&);
-static bool beta_delta_normalize(environment_t const&, func_decl_t&);
-static bool beta_delta_normalize(environment_t const&, func_def_t&);
-static bool beta_delta_normalize(environment_t const&, context_t const&, sort_t&);
-static bool beta_delta_normalize(environment_t const&, context_t const&, body_t&);
+static bool beta_delta_normalize(env_t const&, axiom_t&);
+static bool beta_delta_normalize(env_t const&, func_decl_t&);
+static bool beta_delta_normalize(env_t const&, func_def_t&);
+static bool beta_delta_normalize(env_t const&, ctx_t const&, sort_t&);
+static bool beta_delta_normalize(env_t const&, ctx_t const&, body_t&);
 
-bool beta_delta_normalize(environment_t const& env, axiom_t& axiom)
+bool beta_delta_normalize(env_t const& env, axiom_t& axiom)
 {
-    context_t ctx;
+    ctx_t ctx;
     bool changed = false;
     for (func_arg_t& arg: axiom.signature.args)
     {
         changed |= beta_delta_normalize(env, ctx, arg.type);
-        auto const ok = ctx.try_emplace(arg.var, std::nullopt, context_t::var_decl_t{arg.qty, arg.type});
+        auto const ok = ctx.try_emplace(arg.var, std::nullopt, ctx_t::var_decl_t{arg.qty, arg.type});
         assert(ok.has_value());
     }
     changed |= beta_delta_normalize(env, ctx, axiom.signature.ret_type.get());
@@ -33,14 +33,14 @@ bool beta_delta_normalize(environment_t const& env, axiom_t& axiom)
     return changed;
 }
 
-bool beta_delta_normalize(environment_t const& env, func_decl_t& decl)
+bool beta_delta_normalize(env_t const& env, func_decl_t& decl)
 {
-    context_t ctx;
+    ctx_t ctx;
     bool changed = false;
     for (func_arg_t& arg: decl.signature.args)
     {
         changed |= beta_delta_normalize(env, ctx, arg.type);
-        auto const ok = ctx.try_emplace(arg.var, std::nullopt, context_t::var_decl_t{arg.qty, arg.type});
+        auto const ok = ctx.try_emplace(arg.var, std::nullopt, ctx_t::var_decl_t{arg.qty, arg.type});
         assert(ok.has_value());
     }
     changed |= beta_delta_normalize(env, ctx, decl.signature.ret_type.get());
@@ -48,14 +48,14 @@ bool beta_delta_normalize(environment_t const& env, func_decl_t& decl)
     return changed;
 }
 
-bool beta_delta_normalize(environment_t const& env, func_def_t& def)
+bool beta_delta_normalize(env_t const& env, func_def_t& def)
 {
-    context_t ctx;
+    ctx_t ctx;
     bool changed = false;
     for (func_arg_t& arg: def.value.args)
     {
         changed |= beta_delta_normalize(env, ctx, arg.type);
-        auto const ok = ctx.try_emplace(arg.var, std::nullopt, context_t::var_decl_t{arg.qty, arg.type});
+        auto const ok = ctx.try_emplace(arg.var, std::nullopt, ctx_t::var_decl_t{arg.qty, arg.type});
         assert(ok.has_value());
     }
     changed |= beta_delta_normalize(env, ctx, def.value.ret_type.get());
@@ -64,7 +64,7 @@ bool beta_delta_normalize(environment_t const& env, func_def_t& def)
     return changed;
 }
 
-bool beta_delta_normalize(environment_t const& env, context_t const& ctx, sort_t& sort)
+bool beta_delta_normalize(env_t const& env, ctx_t const& ctx, sort_t& sort)
 {
     return match(
         sort,
@@ -72,7 +72,7 @@ bool beta_delta_normalize(environment_t const& env, context_t const& ctx, sort_t
         [] (kind_t const&) { return false; });
 }
 
-bool beta_delta_normalize(environment_t const& env, context_t const& ctx, body_t& body)
+bool beta_delta_normalize(env_t const& env, ctx_t const& ctx, body_t& body)
 {
     bool changed = beta_normalize(body);
     while (delta_unfold(env, ctx, body))
@@ -87,7 +87,7 @@ bool beta_delta_normalize(environment_t const& env, context_t const& ctx, body_t
 
 bool beta_delta_normalize(module_t& m)
 {
-    environment_t env;
+    env_t env;
     bool changed = false;
     for (auto& x: m.entries)
         // normalize first and then store in env, so future look-ups will find the normalized term
@@ -125,7 +125,7 @@ bool beta_delta_normalize(module_t& m)
     return changed;
 }
 
-bool beta_delta_normalize(environment_t const& env, context_t const& ctx, expr_t& expr)
+bool beta_delta_normalize(env_t const& env, ctx_t const& ctx, expr_t& expr)
 {
     bool changed = beta_normalize(expr);
     while (delta_unfold(env, ctx, expr))

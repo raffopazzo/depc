@@ -4,7 +4,7 @@
 
 namespace dep0::llvmgen {
 
-llvm::Attribute::AttrKind get_sign_ext_attribute(global_context_t const& global, typecheck::expr_t const& type)
+llvm::Attribute::AttrKind get_sign_ext_attribute(global_ctx_t const& global, typecheck::expr_t const& type)
 {
     return match(
         type.value,

@@ -13,7 +13,7 @@ namespace dep0::typecheck {
  *
  * @return True if a definition was unfolded.
  */
-bool delta_unfold(environment_t const&, context_t const&, body_t&);
+bool delta_unfold(env_t const&, ctx_t const&, body_t&);
 
 /**
  * Unfold one function definition,
@@ -22,6 +22,6 @@ bool delta_unfold(environment_t const&, context_t const&, body_t&);
  *
  * @return True if a definition was unfolded.
  */
-bool delta_unfold(environment_t const&, context_t const&, expr_t&);
+bool delta_unfold(env_t const&, ctx_t const&, expr_t&);
 
 } // namespace dep0::typecheck

@@ -14,8 +14,8 @@ namespace dep0::typecheck {
  */
 dep0::expected<std::true_type>
 is_beta_delta_equivalent(
-    environment_t const&,
-    context_t const&,
+    env_t const&,
+    ctx_t const&,
     sort_t const&,
     sort_t const&);
 

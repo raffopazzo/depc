@@ -25,8 +25,8 @@ llvm::Value* gen_val(llvm::IntegerType*, boost::multiprecision::cpp_int const&);
  * @return The value generated or `dest` if it was not nullptr.
  */
 llvm::Value* gen_val(
-    global_context_t&,
-    local_context_t const&,
+    global_ctx_t&,
+    local_ctx_t const&,
     llvm::IRBuilder<>&,
     typecheck::expr_t const&,
     llvm::Value* dest);
@@ -42,8 +42,8 @@ llvm::Value* gen_val(
  * @return The generated LLVM value or `dest` if it was not nullptr.
  */
 llvm::Value* gen_func_call(
-    global_context_t&,
-    local_context_t const&,
+    global_ctx_t&,
+    local_ctx_t const&,
     llvm::IRBuilder<>&,
     typecheck::expr_t::app_t const&,
     llvm::Value* dest);

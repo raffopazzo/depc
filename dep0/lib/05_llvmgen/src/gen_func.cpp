@@ -13,18 +13,18 @@
 
 namespace dep0::llvmgen {
 
-static void gen_func_args(global_context_t const&, local_context_t&, llvm_func_proto_t const&, llvm::Function*);
-static void gen_func_attributes(global_context_t const&, llvm_func_proto_t const&, llvm::Function*);
+static void gen_func_args(global_ctx_t const&, local_ctx_t&, llvm_func_proto_t const&, llvm::Function*);
+static void gen_func_attributes(global_ctx_t const&, llvm_func_proto_t const&, llvm::Function*);
 static void gen_func_body(
-    global_context_t&,
-    local_context_t const&,
+    global_ctx_t&,
+    local_ctx_t const&,
     llvm_func_proto_t const&,
     typecheck::body_t const&,
     llvm::Function*);
 
 void gen_func_args(
-    global_context_t const& global,
-    local_context_t& local,
+    global_ctx_t const& global,
+    local_ctx_t& local,
     llvm_func_proto_t const& proto,
     llvm::Function* const llvm_f)
 {
@@ -65,15 +65,15 @@ void gen_func_args(
     }
 }
 
-void gen_func_attributes(global_context_t const& global, llvm_func_proto_t const& proto, llvm::Function* const llvm_f)
+void gen_func_attributes(global_ctx_t const& global, llvm_func_proto_t const& proto, llvm::Function* const llvm_f)
 {
     if (auto const attr = get_sign_ext_attribute(global, proto.ret_type()); attr != llvm::Attribute::None)
         llvm_f->addAttribute(llvm::AttributeList::ReturnIndex, attr);
 }
 
 void gen_func_body(
-    global_context_t& global,
-    local_context_t const& local,
+    global_ctx_t& global,
+    local_ctx_t const& local,
     llvm_func_proto_t const& proto,
     typecheck::body_t const& body,
     llvm::Function* const llvm_f)
@@ -89,7 +89,7 @@ void gen_func_body(
 }
 
 void gen_func_decl(
-    global_context_t& global,
+    global_ctx_t& global,
     typecheck::expr_t::global_t const& name,
     llvm_func_proto_t const& proto)
 {
@@ -103,14 +103,14 @@ void gen_func_decl(
                 global.llvm_module);
         bool const inserted = global.try_emplace(name, llvm_func_t(llvm_f)).second;
         assert(inserted);
-        local_context_t local;
+        local_ctx_t local;
         gen_func_args(global, local, proto, llvm_f);
         gen_func_attributes(global, proto, llvm_f);
     }
 }
 
 llvm::Value* gen_func(
-    global_context_t& global,
+    global_ctx_t& global,
     llvm_func_proto_t const& proto,
     typecheck::expr_t::abs_t const& f)
 {
@@ -121,7 +121,7 @@ llvm::Value* gen_func(
             llvm::Function::PrivateLinkage,
             name,
             global.llvm_module);
-    local_context_t local;
+    local_ctx_t local;
     gen_func_args(global, local, proto, llvm_f);
     gen_func_attributes(global, proto, llvm_f);
     gen_func_body(global, local, proto, f.body, llvm_f);
@@ -129,7 +129,7 @@ llvm::Value* gen_func(
 }
 
 void gen_func(
-    global_context_t& global,
+    global_ctx_t& global,
     typecheck::expr_t::global_t const& name,
     llvm_func_proto_t const& proto,
     typecheck::expr_t::abs_t const& f)
@@ -137,7 +137,7 @@ void gen_func(
     // we may have already constructed a function object from `gen_func_decl`;
     // if that is the case, all we have to do now is generate the body
     llvm::Function* llvm_f;
-    local_context_t local;
+    local_ctx_t local;
     if (auto* const p = global[name])
     {
         llvm_f = llvm::dyn_cast<llvm::Function>(std::get<llvm_func_t>(*p).func);

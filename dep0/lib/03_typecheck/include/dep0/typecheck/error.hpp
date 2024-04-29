@@ -13,10 +13,10 @@ namespace dep0::typecheck {
 // Extend the basic error type with the context information available when the typecheck failure occurred.
 struct error_t : dep0::error_t
 {
-    std::optional<std::tuple<environment_t, context_t, sort_t>> context;
+    std::optional<std::tuple<env_t, ctx_t, sort_t>> context;
 
     static error_t from_error(dep0::error_t);
-    static error_t from_error(dep0::error_t, environment_t, context_t, sort_t);
+    static error_t from_error(dep0::error_t, env_t, ctx_t, sort_t);
 };
 
 template <typename T>

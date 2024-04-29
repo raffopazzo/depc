@@ -44,8 +44,8 @@ bool is_alloca_needed(typecheck::expr_t const& type)
 }
 
 llvm::Instruction* gen_alloca_if_needed(
-    global_context_t& global,
-    local_context_t const& local,
+    global_ctx_t& global,
+    local_ctx_t const& local,
     llvm::IRBuilder<>& builder,
     typecheck::expr_t const& type)
 {

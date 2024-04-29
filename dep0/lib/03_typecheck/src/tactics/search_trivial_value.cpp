@@ -10,8 +10,8 @@ namespace dep0::typecheck {
 
 std::optional<expr_t>
 search_trivial_value(
-    environment_t const& env,
-    context_t const& ctx,
+    env_t const& env,
+    ctx_t const& ctx,
     expr_t const& type,
     search_state_t&,
     usage_t&,

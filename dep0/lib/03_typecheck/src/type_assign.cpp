@@ -30,8 +30,8 @@ namespace dep0::typecheck {
 static
 std::pair<expected<expr_t>, expected<expr_t>>
 type_assign_pair(
-    environment_t const& env,
-    context_t const& ctx,
+    env_t const& env,
+    ctx_t const& ctx,
     parser::expr_t const& lhs,
     parser::expr_t const& rhs,
     usage_t& usage,
@@ -54,8 +54,8 @@ type_assign_pair(
 
 expected<expr_t>
 type_assign(
-    environment_t const& env,
-    context_t const& ctx,
+    env_t const& env,
+    ctx_t const& ctx,
     parser::expr_t const& expr,
     usage_t& usage,
     ast::qty_t const usage_multiplier)
@@ -369,8 +369,8 @@ type_assign(
 
 expected<expr_t>
 type_assign_app(
-    environment_t const& env,
-    context_t const& ctx,
+    env_t const& env,
+    ctx_t const& ctx,
     parser::expr_t::app_t const& app,
     source_loc_t const& loc,
     usage_t& usage,
@@ -431,8 +431,8 @@ type_assign_app(
 }
 
 expected<expr_t> type_assign_abs(
-    environment_t const& env,
-    context_t const& ctx,
+    env_t const& env,
+    ctx_t const& ctx,
     parser::expr_t::abs_t const& f,
     source_loc_t const& location,
     std::optional<source_text> const& name,

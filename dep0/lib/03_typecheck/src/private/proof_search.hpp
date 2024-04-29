@@ -34,8 +34,8 @@ struct search_state_t;
  */
 std::optional<expr_t>
 start_proof_search(
-    environment_t const&,
-    context_t const&,
+    env_t const&,
+    ctx_t const&,
     expr_t const& type,
     usage_t& usage,
     ast::qty_t usage_multiplier);
@@ -48,8 +48,8 @@ start_proof_search(
  */
 std::optional<expr_t>
 continue_proof_search(
-    environment_t const&,
-    context_t const&,
+    env_t const&,
+    ctx_t const&,
     expr_t const&,
     search_state_t&,
     usage_t&,

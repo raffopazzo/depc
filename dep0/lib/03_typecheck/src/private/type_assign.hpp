@@ -23,8 +23,8 @@ namespace dep0::typecheck {
  */
 expected<expr_t>
 type_assign(
-    environment_t const&,
-    context_t const&,
+    env_t const&,
+    ctx_t const&,
     parser::expr_t const&,
     usage_t& usage,
     ast::qty_t usage_multiplier);
@@ -43,8 +43,8 @@ type_assign(
  */
 expected<expr_t>
 type_assign_app(
-    environment_t const&,
-    context_t const&,
+    env_t const&,
+    ctx_t const&,
     parser::expr_t::app_t const&,
     source_loc_t const& loc,
     usage_t& usage,
@@ -67,8 +67,8 @@ type_assign_app(
  */
 expected<expr_t>
 type_assign_abs(
-    environment_t const&,
-    context_t const&,
+    env_t const&,
+    ctx_t const&,
     parser::expr_t::abs_t const&,
     source_loc_t const& loc,
     std::optional<source_text> const& name,

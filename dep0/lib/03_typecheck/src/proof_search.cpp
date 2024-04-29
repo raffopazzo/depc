@@ -54,8 +54,8 @@ std::size_t search_state_t::hash_t::operator()(expr_t const& x) const
 
 std::optional<expr_t>
 start_proof_search(
-    environment_t const& env,
-    context_t const& ctx,
+    env_t const& env,
+    ctx_t const& ctx,
     expr_t const& type,
     usage_t& usage,
     ast::qty_t const usage_multiplier)
@@ -67,8 +67,8 @@ start_proof_search(
 
 std::optional<expr_t>
 continue_proof_search(
-    environment_t const& env,
-    context_t const& ctx,
+    env_t const& env,
+    ctx_t const& ctx,
     expr_t const& type,
     search_state_t& st,
     usage_t& usage,

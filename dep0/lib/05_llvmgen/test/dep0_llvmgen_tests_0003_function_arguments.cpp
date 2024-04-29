@@ -105,19 +105,19 @@ BOOST_AUTO_TEST_CASE(pass_004)
     BOOST_TEST_REQUIRE(pass("0003_function_arguments/pass_004.depc"));
     {
         auto const f = pass_result.value()->getFunction("unit");
-        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i8));
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, struct_of()));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(0)));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), is_zeroinitializer));
     }
     {
         auto const f = pass_result.value()->getFunction("f1");
-        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(is_i8)}, is_i8));
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(struct_of())}, struct_of()));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(0)));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), is_zeroinitializer));
     }
     {
         auto const f = pass_result.value()->getFunction("g1");
-        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i8));
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, struct_of()));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
         auto const inst = get_instructions(f->getEntryBlock());
         BOOST_TEST_REQUIRE(inst.size() == 3ul);
@@ -126,17 +126,17 @@ BOOST_AUTO_TEST_CASE(pass_004)
         auto const ret   = inst[2ul];
         BOOST_TEST(is_direct_call(call1, exactly(pass_result.value()->getFunction("unit"))));
         BOOST_TEST(is_direct_call(call2, exactly(pass_result.value()->getFunction("f1")), call_arg(exactly(call1))));
-        BOOST_TEST(is_return_of(ret, constant(0)));
+        BOOST_TEST(is_return_of(ret, is_zeroinitializer));
     }
     {
         auto const f = pass_result.value()->getFunction("f2");
-        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(is_i8, "x")}, is_i8));
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(struct_of(), "x")}, struct_of()));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(0)));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), is_zeroinitializer));
     }
     {
         auto const f = pass_result.value()->getFunction("g2");
-        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i8));
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, struct_of()));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
         auto const inst = get_instructions(f->getEntryBlock());
         BOOST_TEST_REQUIRE(inst.size() == 3ul);
@@ -145,7 +145,7 @@ BOOST_AUTO_TEST_CASE(pass_004)
         auto const ret   = inst[2ul];
         BOOST_TEST(is_direct_call(call1, exactly(pass_result.value()->getFunction("unit"))));
         BOOST_TEST(is_direct_call(call2, exactly(pass_result.value()->getFunction("f2")), call_arg(exactly(call1))));
-        BOOST_TEST(is_return_of(ret, constant(0)));
+        BOOST_TEST(is_return_of(ret, is_zeroinitializer));
     }
 }
 

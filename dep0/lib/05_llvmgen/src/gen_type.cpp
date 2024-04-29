@@ -65,8 +65,7 @@ llvm::Type* gen_type(global_ctx_t& global, typecheck::expr_t const& x)
         [&] (typecheck::expr_t::bool_t const&) -> llvm::Type* { return llvm::Type::getInt1Ty(global.llvm_ctx); },
         [&] (typecheck::expr_t::unit_t const&) -> llvm::Type*
         {
-            // TODO: use empty struct instead
-            return llvm::Type::getInt8Ty(global.llvm_ctx);
+            return llvm::StructType::get(global.llvm_ctx);
         },
         [&] (typecheck::expr_t::i8_t const&) -> llvm::Type* { return llvm::Type::getInt8Ty(global.llvm_ctx); },
         [&] (typecheck::expr_t::i16_t const&) -> llvm::Type* { return llvm::Type::getInt16Ty(global.llvm_ctx); },

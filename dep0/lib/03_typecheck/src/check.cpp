@@ -474,6 +474,16 @@ check_expr(
                             pretty_print(err << "type mismatch between initializer list and `", expected_type) << '`';
                             return error_t::from_error(dep0::error_t(err.str(), loc), env, ctx, expected_type);
                         },
+                        [&] (is_list_initializable_result::unit_t) -> expected<expr_t>
+                        {
+                            if (not list.values.empty())
+                            {
+                                std::ostringstream err;
+                                pretty_print(err << "initializer list for `", expected_type) << "` must be empty";
+                                return error_t::from_error(dep0::error_t(err.str(), loc), env, ctx, expected_type);
+                            }
+                            return make_legal_expr(expected_type, expr_t::init_list_t{});
+                        },
                         [&] (is_list_initializable_result::true_t) -> expected<expr_t>
                         {
                             if (not list.values.empty())

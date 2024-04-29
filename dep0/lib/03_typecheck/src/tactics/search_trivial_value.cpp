@@ -28,7 +28,11 @@ search_trivial_value(
                         if (integer->max_abs_value and integer->max_abs_value->is_zero())
                             result = make_legal_expr(type, expr_t::numeric_constant_t{*integer->max_abs_value});
         },
-        [&] (is_list_initializable_result::true_t const&)
+        [&] (is_list_initializable_result::unit_t)
+        {
+            result = make_legal_expr(type, expr_t::init_list_t{});
+        },
+        [&] (is_list_initializable_result::true_t)
         {
             result = make_legal_expr(type, expr_t::init_list_t{});
         },

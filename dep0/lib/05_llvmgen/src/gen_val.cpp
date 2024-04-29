@@ -39,6 +39,11 @@ static void move_to_entry_block(llvm::Instruction* const i, llvm::Function* cons
         i->moveAfter(&bb.back());
 }
 
+llvm::Value* gen_val_unit(global_ctx_t& global)
+{
+    return llvm::ConstantAggregateZero::get(llvm::StructType::get(global.llvm_ctx));
+}
+
 llvm::Value* gen_val(llvm::IntegerType* const type, boost::multiprecision::cpp_int const& x)
 {
     return llvm::ConstantInt::get(type, x.str(), 10);
@@ -304,7 +309,7 @@ llvm::Value* gen_val(
                         // which would then break MergeBlockIntoPredecessor();
                         // but this is only possible if the lambda has return type unit_t,
                         // so can just generate the unit value
-                        return storeOrReturn(builder.getInt8(0));
+                        return storeOrReturn(gen_val_unit(global));
                     auto const current_func = builder.GetInsertBlock()->getParent();
                     auto const gen_inlined_body = [&] (llvm::Value* const inlined_result)
                     {
@@ -372,6 +377,10 @@ llvm::Value* gen_val(
                     // so for now just construct a value of the empty struct.
                     // If later on we add more cases like this, we might have to inspect the type.
                     return llvm::ConstantAggregateZero::get(gen_type(global, type));
+                },
+                [&] (typecheck::is_list_initializable_result::unit_t) -> llvm::Value*
+                {
+                    return gen_val_unit(global);
                 },
                 [&] (typecheck::is_list_initializable_result::true_t) -> llvm::Value*
                 {

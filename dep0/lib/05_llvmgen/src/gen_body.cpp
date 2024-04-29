@@ -81,7 +81,7 @@ void gen_stmt(
             if (not x.expr)
             {
                 // only unit_t can be missing a return expr
-                builder.CreateRet(builder.getInt8(0));
+                builder.CreateRet(gen_val_unit(global));
                 return;
             }
             if (inlined_result)
@@ -99,7 +99,7 @@ void gen_stmt(
             if (dest)
                 builder.CreateRetVoid();
             else if (has_unit_type(*x.expr))
-                builder.CreateRet(builder.getInt8(0));
+                builder.CreateRet(gen_val_unit(global));
             else
                 builder.CreateRet(ret_val);
         });

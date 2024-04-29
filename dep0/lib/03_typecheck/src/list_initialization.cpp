@@ -9,6 +9,10 @@ is_list_initializable_result_t is_list_initializable(expr_t const& type)
     auto constexpr no = is_list_initializable_result::no_t{};
     return match(
         type.value,
+        [] (expr_t::unit_t) -> is_list_initializable_result_t
+        {
+            return is_list_initializable_result::unit_t{};
+        },
         [&] (expr_t::app_t const& app) -> is_list_initializable_result_t
         {
             return match(

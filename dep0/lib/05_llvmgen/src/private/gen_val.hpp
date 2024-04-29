@@ -10,6 +10,11 @@
 namespace dep0::llvmgen {
 
 /**
+ * Generates the value of the unit type.
+ */
+llvm::Value* gen_val_unit(global_ctx_t&);
+
+/**
  * Generates an LLVM value for the given type and number.
  */
 llvm::Value* gen_val(llvm::IntegerType*, boost::multiprecision::cpp_int const&);

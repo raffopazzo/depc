@@ -1,0 +1,2 @@
+i32_t f(unit_t) { return 0; }
+i32_t g() { return f(auto); }

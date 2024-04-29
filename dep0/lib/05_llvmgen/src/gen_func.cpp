@@ -4,6 +4,7 @@
 #include "private/gen_attrs.hpp"
 #include "private/gen_body.hpp"
 #include "private/gen_type.hpp"
+#include "private/gen_val.hpp"
 
 #include <llvm/IR/Attributes.h>
 #include <llvm/IR/IRBuilder.h>
@@ -84,7 +85,7 @@ void gen_func_body(
         auto builder = llvm::IRBuilder<>(global.llvm_ctx);
         // Having open blocks means that the function has no return statement,
         // this implies its return type is `unit_t`, so just return `i8 0`.
-        snippet.seal_open_blocks(builder, [zero=builder.getInt8(0)] (auto& builder) { builder.CreateRet(zero); });
+        snippet.seal_open_blocks(builder, [unit=gen_val_unit(global)] (auto& builder) { builder.CreateRet(unit); });
     }
 }
 

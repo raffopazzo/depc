@@ -80,15 +80,15 @@ BOOST_AUTO_TEST_CASE(pass_002)
                 std::tuple{
                     arg_of(is_i64, "n", zext),
                     arg_of(pointer_to(is_i32), std::nullopt, nonnull)},
-                is_i8));
+                struct_of()));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
         auto const& bb = f->getEntryBlock();
         BOOST_TEST_REQUIRE(bb.size() == 1ul);
-        BOOST_TEST(is_return_of(bb.front(), constant(0)));
+        BOOST_TEST(is_return_of(bb.front(), is_zeroinitializer));
     }
     {
         auto const f = pass_result.value()->getFunction("nothing");
-        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i8));
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, struct_of()));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
         auto const inst = get_instructions(f->getEntryBlock());
         BOOST_TEST_REQUIRE(inst.size() == 3ul);
@@ -102,7 +102,7 @@ BOOST_AUTO_TEST_CASE(pass_002)
                 exactly(pass_result.value()->getFunction("discard")),
                 call_arg(constant(0), zext),
                 call_arg(exactly(alloca))));
-        BOOST_TEST(is_return_of(ret, constant(0)));
+        BOOST_TEST(is_return_of(ret, is_zeroinitializer));
     }
 }
 
@@ -220,13 +220,13 @@ BOOST_AUTO_TEST_CASE(pass_007)
     BOOST_TEST_REQUIRE(pass("0007_arrays/pass_007.depc"));
     {
         auto const f = pass_result.value()->getFunction("unit");
-        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i8));
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, struct_of()));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(0)));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), is_zeroinitializer));
     }
     {
         auto const f = pass_result.value()->getFunction("three_units");
-        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{ret_arg_of(is_i8)}, is_void));
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{ret_arg_of(struct_of())}, is_void));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
         auto const inst = get_instructions(f->getEntryBlock());
         BOOST_TEST_REQUIRE(inst.size() == 10ul);
@@ -242,15 +242,15 @@ BOOST_AUTO_TEST_CASE(pass_007)
         auto const ret    = inst[9];
         auto const ret_arg = f->getArg(0ul);
         auto const unit = pass_result.value()->getFunction("unit");
-        BOOST_TEST(is_gep_of(gep1, is_i8, exactly(ret_arg), constant(0)));
-        BOOST_TEST(is_gep_of(gep2, is_i8, exactly(ret_arg), constant(1)));
-        BOOST_TEST(is_gep_of(gep3, is_i8, exactly(ret_arg), constant(2)));
+        BOOST_TEST(is_gep_of(gep1, struct_of(), exactly(ret_arg), constant(0)));
+        BOOST_TEST(is_gep_of(gep2, struct_of(), exactly(ret_arg), constant(1)));
+        BOOST_TEST(is_gep_of(gep3, struct_of(), exactly(ret_arg), constant(2)));
         BOOST_TEST(is_direct_call(call1, exactly(unit)));
         BOOST_TEST(is_direct_call(call2, exactly(unit)));
         BOOST_TEST(is_direct_call(call3, exactly(unit)));
-        BOOST_TEST(is_store_of(store1, is_i8, exactly(call1), exactly(gep1), align_of(1)));
-        BOOST_TEST(is_store_of(store2, is_i8, exactly(call2), exactly(gep2), align_of(1)));
-        BOOST_TEST(is_store_of(store3, is_i8, exactly(call3), exactly(gep3), align_of(1)));
+        BOOST_TEST(is_store_of(store1, struct_of(), exactly(call1), exactly(gep1), align_of(1)));
+        BOOST_TEST(is_store_of(store2, struct_of(), exactly(call2), exactly(gep2), align_of(1)));
+        BOOST_TEST(is_store_of(store3, struct_of(), exactly(call3), exactly(gep3), align_of(1)));
         BOOST_TEST(is_return_of_void(ret));
     }
 }

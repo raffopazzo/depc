@@ -17,6 +17,11 @@ namespace is_list_initializable_result
     struct no_t{};
 
     /**
+     * The type is `unit_t`, which can be initialized with `{}`.
+     */
+    struct unit_t{};
+
+    /**
      * The type is `true_t(true)`, which can be initialized with `{}`.
      */
     struct true_t{};
@@ -35,6 +40,7 @@ namespace is_list_initializable_result
 using is_list_initializable_result_t =
     std::variant<
         is_list_initializable_result::no_t,
+        is_list_initializable_result::unit_t,
         is_list_initializable_result::true_t,
         is_list_initializable_result::array_t>;
 

@@ -23,7 +23,7 @@ BOOST_AUTO_TEST_CASE(pass_013) { BOOST_TEST(pass("0000_basics/pass_013.depc")); 
 BOOST_AUTO_TEST_CASE(pass_014)
 {
     BOOST_TEST_REQUIRE(pass("0000_basics/pass_014.depc"));
-    BOOST_TEST_REQUIRE(pass_result->entries.size() == 2ul);
+    BOOST_TEST_REQUIRE(pass_result->entries.size() == 3ul);
     {
         auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[0ul]);
         BOOST_TEST_REQUIRE(f);
@@ -42,6 +42,16 @@ BOOST_AUTO_TEST_CASE(pass_014)
         BOOST_TEST(is_unit(f->value.ret_type.get()));
         BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
         BOOST_TEST(is_return_of(f->value.body.stmts[0ul], app_of(global("unit"))));
+    }
+    {
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[2ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "g");
+        BOOST_TEST(is_type(f->properties.sort.get(), pi_of(std::tuple{}, is_unit)));
+        BOOST_TEST(f->value.args.size() == 0ul);
+        BOOST_TEST(is_unit(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], init_list_of()));
     }
 }
 

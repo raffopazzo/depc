@@ -59,13 +59,13 @@ BOOST_AUTO_TEST_CASE(pass_000)
         BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
         BOOST_TEST(is_return_of(f->value.body.stmts[0ul], [] (dep0::typecheck::expr_t const& expr)
         {
-            BOOST_TEST(is_expr_of(expr.properties.sort.get(), is_i32));
+            BOOST_TEST(is_type(expr.properties.sort.get(), is_i32));
             BOOST_TEST_REQUIRE(is_app_of(expr, global("apply"), is_i32, global("f"), constant(-1)));
             auto const& app = std::get<dep0::typecheck::expr_t::app_t>(expr.value);
             BOOST_TEST_REQUIRE(app.args.size() == 3ul);
-            BOOST_TEST(is_expr_of(app.args[0ul].properties.sort.get(), is_typename));
-            BOOST_TEST(is_expr_of(app.args[1ul].properties.sort.get(), pi_of(std::tuple{arg_of(is_i32, "x")}, is_i32)));
-            BOOST_TEST(is_expr_of(app.args[2ul].properties.sort.get(), is_i32));
+            BOOST_TEST(is_type(app.args[0ul].properties.sort.get(), is_typename));
+            BOOST_TEST(is_type(app.args[1ul].properties.sort.get(), pi_of(std::tuple{arg_of(is_i32, "x")}, is_i32)));
+            BOOST_TEST(is_type(app.args[2ul].properties.sort.get(), is_i32));
             return boost::test_tools::predicate_result(true);
         }));
     }

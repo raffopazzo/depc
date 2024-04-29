@@ -149,9 +149,8 @@ struct TypecheckTestsFixture
         return dep0::testing::is_arg<dep0::typecheck::properties_t>(arg, std::forward<Args>(args)...);
     }
 
-    // TODO rename to `is_type`
     template <dep0::testing::Predicate<dep0::typecheck::expr_t> F>
-    static auto is_expr_of(dep0::typecheck::sort_t const& x, F&& f)
+    static auto is_type(dep0::typecheck::sort_t const& x, F&& f)
     {
         auto const expr = std::get_if<dep0::typecheck::expr_t>(&x);
         if (not expr)
@@ -171,7 +170,7 @@ struct TypecheckTestsFixture
             {
                 if (auto const result = f_expr(expr); not result)
                     return failure("inside expression: ", result.message());
-                if (auto const result = is_expr_of(expr.properties.sort.get(), f_type); not result)
+                if (auto const result = is_type(expr.properties.sort.get(), f_type); not result)
                     return failure("inside type: ", result.message());
                 return true;
             };

@@ -65,7 +65,7 @@ BOOST_AUTO_TEST_CASE(pass_004)
         auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[0]);
         BOOST_TEST_REQUIRE(f);
         BOOST_TEST(f->name == "unit");
-        BOOST_TEST(is_expr_of(f->properties.sort.get(), pi_of(std::tuple{}, is_unit)));
+        BOOST_TEST(is_type(f->properties.sort.get(), pi_of(std::tuple{}, is_unit)));
         BOOST_TEST(f->value.args.size() == 0ul);
         BOOST_TEST(is_unit(f->value.ret_type.get()));
         BOOST_TEST(f->value.body.stmts.size() == 0ul);
@@ -74,7 +74,7 @@ BOOST_AUTO_TEST_CASE(pass_004)
         auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[1]);
         BOOST_TEST_REQUIRE(f);
         BOOST_TEST(f->name == "f1");
-        BOOST_TEST(is_expr_of(f->properties.sort.get(), pi_of(std::tuple{arg_of(is_unit)}, is_unit)));
+        BOOST_TEST(is_type(f->properties.sort.get(), pi_of(std::tuple{arg_of(is_unit)}, is_unit)));
         BOOST_TEST_REQUIRE(f->value.args.size() == 1ul);
         BOOST_TEST(is_arg(f->value.args[0], is_unit, std::nullopt));
         BOOST_TEST(is_unit(f->value.ret_type.get()));
@@ -85,7 +85,7 @@ BOOST_AUTO_TEST_CASE(pass_004)
         BOOST_TEST_REQUIRE(f);
         BOOST_TEST(f->name == "g1");
         BOOST_TEST(f->value.args.size() == 0ul);
-        BOOST_TEST(is_expr_of(f->properties.sort.get(), pi_of(std::tuple{}, is_unit)));
+        BOOST_TEST(is_type(f->properties.sort.get(), pi_of(std::tuple{}, is_unit)));
         BOOST_TEST(is_unit(f->value.ret_type.get()));
         BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
         BOOST_TEST(is_return_of(f->value.body.stmts[0ul], app_of(global("f1"), app_of(global("unit")))));
@@ -94,7 +94,7 @@ BOOST_AUTO_TEST_CASE(pass_004)
         auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[3]);
         BOOST_TEST_REQUIRE(f);
         BOOST_TEST(f->name == "f2");
-        BOOST_TEST(is_expr_of(f->properties.sort.get(), pi_of(std::tuple{arg_of(is_unit, "x")}, is_unit)));
+        BOOST_TEST(is_type(f->properties.sort.get(), pi_of(std::tuple{arg_of(is_unit, "x")}, is_unit)));
         BOOST_TEST_REQUIRE(f->value.args.size() == 1ul);
         BOOST_TEST(is_arg(f->value.args[0], is_unit, "x"));
         BOOST_TEST(is_unit(f->value.ret_type.get()));
@@ -105,7 +105,7 @@ BOOST_AUTO_TEST_CASE(pass_004)
         auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[4]);
         BOOST_TEST_REQUIRE(f);
         BOOST_TEST(f->name == "g2");
-        BOOST_TEST(is_expr_of(f->properties.sort.get(), pi_of(std::tuple{}, is_unit)));
+        BOOST_TEST(is_type(f->properties.sort.get(), pi_of(std::tuple{}, is_unit)));
         BOOST_TEST(f->value.args.size() == 0ul);
         BOOST_TEST(is_unit(f->value.ret_type.get()));
         BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
@@ -120,7 +120,7 @@ BOOST_AUTO_TEST_CASE(pass_005)
     auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[0]);
     BOOST_TEST_REQUIRE(f);
     BOOST_TEST(f->name == "f");
-    BOOST_TEST_REQUIRE(is_expr_of(f->properties.sort.get(), pi_of(std::tuple{arg_of(is_bool, "f")}, is_bool)));
+    BOOST_TEST_REQUIRE(is_type(f->properties.sort.get(), pi_of(std::tuple{arg_of(is_bool, "f")}, is_bool)));
     BOOST_TEST_REQUIRE(f->value.args.size() == 1ul);
     BOOST_TEST(is_arg(f->value.args[0], is_bool, "f"));
     BOOST_TEST(is_bool(f->value.ret_type.get()));

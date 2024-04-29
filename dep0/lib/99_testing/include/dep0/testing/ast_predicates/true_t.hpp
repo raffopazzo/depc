@@ -31,7 +31,7 @@ boost::test_tools::predicate_result is_true_t_of(ast::expr_t<P> const& x, F_expr
     if (app->args.size() != 1ul)
         return failure("not a true_t because application does not have exactly 1 argument but ", app->args.size());
     if (auto const result = std::forward<F_expr>(f_expr)(app->args[0ul]); not result)
-        return failure("true_t expression predicate failed: ", result.message());
+        return failure("inside argument of true_t: ", result.message());
     return true;
 }
 
@@ -40,7 +40,7 @@ constexpr auto true_t_of(F_expr&& f_expr)
 {
     return [f_expr=std::forward<F_expr>(f_expr)] (ast::expr_t<P> const& x)
     {
-        return is_app_of(x, is_true_t, f_expr);
+        return is_true_t_of(x, f_expr);
     };
 }
 

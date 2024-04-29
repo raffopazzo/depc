@@ -96,6 +96,12 @@ struct expr_t
     struct true_t {};
 
     /**
+     * Represents the keyword 'auto' when used inside an expression.
+     * It is a placeholder for a value that must be automatically filled by the compiler.
+     */
+    struct auto_t {};
+
+    /**
      * Represents the primitive type `bool`, whose values are `true` or `false`.
      */
     struct bool_t {};
@@ -313,7 +319,7 @@ struct expr_t
 
     using value_t =
         std::variant<
-            typename_t, true_t,
+            typename_t, true_t, auto_t,
             bool_t, unit_t, i8_t, i16_t, i32_t, i64_t, u8_t, u16_t, u32_t, u64_t,
             boolean_constant_t, numeric_constant_t, boolean_expr_t, relation_expr_t, arith_expr_t,
             var_t, global_t, app_t, abs_t, pi_t,

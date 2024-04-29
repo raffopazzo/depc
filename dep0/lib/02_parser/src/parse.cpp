@@ -455,6 +455,8 @@ struct parse_visitor_t : dep0::DepCParserVisitor
             return expr_t{loc, expr_t::array_t{}};
         if (ctx->KW_TRUE_T())
             return expr_t{loc, expr_t::true_t{}};
+        if (ctx->KW_AUTO())
+            return expr_t{loc, expr_t::auto_t{}};
         throw error_t("unexpected alternative when parsing KwExprContext", loc);
     }
 

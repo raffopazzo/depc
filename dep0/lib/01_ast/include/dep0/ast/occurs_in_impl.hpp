@@ -58,6 +58,7 @@ bool occurs_in(typename expr_t<P>::var_t const& var, expr_t<P> const& x, occurre
         x.value,
         [] (expr_t<P>::typename_t const&) { return false; },
         [] (expr_t<P>::true_t const&) { return false; },
+        [] (expr_t<P>::auto_t const&) { return false; },
         [] (expr_t<P>::bool_t const&) { return false; },
         [] (expr_t<P>::unit_t const&) { return false; },
         [] (expr_t<P>::i8_t const&) { return false; },

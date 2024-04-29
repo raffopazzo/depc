@@ -12,12 +12,11 @@
 namespace dep0::typecheck {
 
 /**
- * Search for a value of type `true_t(expr)` for some boolean `expr`.
- * If `expr` is provably true, the returned value will be the empty initializer list `{}`,
- * because `true_t(true)` is a unit-like type.
+ * If the given type is inhabited by a single value, return that value.
+ * For example, user-defined integral whose only value is 0 or `array_t(t, 0)` whose only value is `{}`.
  */
 std::optional<expr_t>
-search_true_t(
+search_trivial_value(
     environment_t const&,
     context_t const&,
     expr_t const&,
@@ -26,4 +25,3 @@ search_true_t(
     ast::qty_t usage_multiplier);
 
 } // namespace dep0::typecheck
-

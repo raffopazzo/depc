@@ -4,6 +4,7 @@
 #include "private/check.hpp"
 #include "private/cpp_int_limits.hpp"
 #include "private/derivation_rules.hpp"
+#include "private/proof_search.hpp"
 #include "private/returns_from_all_branches.hpp"
 #include "private/type_assign.hpp"
 
@@ -402,6 +403,28 @@ check_expr(
     // for all other expressions we can type-assign and check that the assigned type is what we expect
     return match(
         x.value,
+        [&] (parser::expr_t::auto_t const& x) -> expected<expr_t>
+        {
+            return match(
+                expected_type,
+                [&] (expr_t const& expected_type) -> expected<expr_t>
+                {
+                    if (auto p = start_proof_search(env, ctx, expected_type, usage, usage_multiplier))
+                        return std::move(*p);
+                    else
+                    {
+                        std::ostringstream err;
+                        pretty_print(err << "could not find a value of type `", expected_type) << '`';
+                        return error_t::from_error(dep0::error_t(err.str(), loc), env, ctx, expected_type);
+                    }
+                },
+                [&] (kind_t) -> expected<expr_t>
+                {
+                    std::ostringstream err;
+                    pretty_print(err << "type mismatch between auto-expression and `", kind_t{}) << '`';
+                    return error_t::from_error(dep0::error_t(err.str(), loc), env, ctx, expected_type);
+                });
+        },
         [&] (parser::expr_t::numeric_constant_t const& x) -> expected<expr_t>
         {
             return match(

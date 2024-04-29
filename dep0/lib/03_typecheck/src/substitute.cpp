@@ -46,6 +46,7 @@ void substitute(expr_t::var_t const& var, expr_t const& expr, expr_t& x)
         x.value,
         [] (expr_t::typename_t const&) {},
         [] (expr_t::true_t const&) {},
+        [] (expr_t::auto_t const&) {},
         [] (expr_t::bool_t const&) {},
         [] (expr_t::unit_t const&) {},
         [] (expr_t::i8_t const&) {},

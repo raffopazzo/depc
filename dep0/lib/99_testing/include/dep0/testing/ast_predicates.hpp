@@ -3,6 +3,7 @@
 #include "dep0/testing/ast_predicates/app.hpp"
 #include "dep0/testing/ast_predicates/array.hpp"
 #include "dep0/testing/ast_predicates/arith_expr.hpp"
+#include "dep0/testing/ast_predicates/auto.hpp"
 #include "dep0/testing/ast_predicates/boolean_expr.hpp"
 #include "dep0/testing/ast_predicates/constants.hpp"
 #include "dep0/testing/ast_predicates/func_arg.hpp"

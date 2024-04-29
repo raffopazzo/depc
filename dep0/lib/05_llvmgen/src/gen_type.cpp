@@ -57,6 +57,11 @@ llvm::Type* gen_type(global_context_t& global, typecheck::expr_t const& x)
             assert(false and "cannot generate a type for true_t");
             __builtin_unreachable();
         },
+        [] (typecheck::expr_t::auto_t const&) -> llvm::Type*
+        {
+            assert(false and "cannot generate a type for auto expression");
+            __builtin_unreachable();
+        },
         [&] (typecheck::expr_t::bool_t const&) -> llvm::Type* { return llvm::Type::getInt1Ty(global.llvm_ctx); },
         [&] (typecheck::expr_t::unit_t const&) -> llvm::Type*
         {

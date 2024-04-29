@@ -23,6 +23,7 @@ static bool delta_unfold(environment_t const&, context_t const&, stmt_t::return_
 
 static bool delta_unfold(environment_t const&, context_t const&, expr_t::typename_t&) { return false; }
 static bool delta_unfold(environment_t const&, context_t const&, expr_t::true_t&) { return false; }
+static bool delta_unfold(environment_t const&, context_t const&, expr_t::auto_t&) { return false; }
 static bool delta_unfold(environment_t const&, context_t const&, expr_t::bool_t&) { return false; }
 static bool delta_unfold(environment_t const&, context_t const&, expr_t::unit_t&) { return false; }
 static bool delta_unfold(environment_t const&, context_t const&, expr_t::i8_t&) { return false; }

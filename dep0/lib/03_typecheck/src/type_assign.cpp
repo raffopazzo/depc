@@ -65,6 +65,10 @@ type_assign(
         expr.value,
         [] (parser::expr_t::typename_t) -> expected<expr_t> { return derivation_rules::make_typename(); },
         [] (parser::expr_t::true_t) -> expected<expr_t> { return derivation_rules::make_true_t(); },
+        [&] (parser::expr_t::auto_t) -> expected<expr_t>
+        {
+            return error_t::from_error(dep0::error_t("auto expressions have no unique type", loc));
+        },
         [] (parser::expr_t::bool_t) -> expected<expr_t> { return derivation_rules::make_bool(); },
         [] (parser::expr_t::unit_t) -> expected<expr_t> { return derivation_rules::make_unit(); },
         [] (parser::expr_t::i8_t) -> expected<expr_t> { return derivation_rules::make_i8(); },
@@ -338,7 +342,7 @@ type_assign(
                         derivation_rules::make_true_t(
                             derivation_rules::make_relation_expr(
                                 expr_t::relation_expr_t::lt_t{*index, app->args[1]}));
-                    if (proof_search(env, ctx, proof_type, usage, ast::qty_t::zero))
+                    if (start_proof_search(env, ctx, proof_type, usage, ast::qty_t::zero))
                     {
                         // we're about to move from `array`, which holds the element type; so must take a copy
                         auto element_type = app->args.at(0ul);

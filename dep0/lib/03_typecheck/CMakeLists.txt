@@ -53,10 +53,12 @@ add_library(dep0_typecheck_lib
   src/type_assign.cpp
   # tactics headers
   src/private/tactics/search_app.hpp
+  src/private/tactics/search_trivial_value.hpp
   src/private/tactics/search_true_t.hpp
   src/private/tactics/search_var.hpp
   # tactics sources
   src/tactics/search_app.cpp
+  src/tactics/search_trivial_value.cpp
   src/tactics/search_true_t.cpp
   src/tactics/search_var.cpp
   )

@@ -155,7 +155,7 @@ BOOST_AUTO_TEST_CASE(pass_017)
         BOOST_TEST(is_arg(f->value.args[0ul], is_bool, "which"));
         BOOST_TEST(is_i32(f->value.ret_type.get()));
         BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 2ul);
-        BOOST_TEST(is_app_of(f->value.body.stmts[0ul], var("f"), var("which")));
+        BOOST_TEST(is_func_call_of(f->value.body.stmts[0ul], var("f"), var("which")));
         BOOST_TEST(is_return_of(f->value.body.stmts[1ul], constant(2)));
     }
 }
@@ -179,7 +179,7 @@ BOOST_AUTO_TEST_CASE(pass_018)
         BOOST_TEST(f->value.args.size() == 0ul);
         BOOST_TEST(is_i32(f->value.ret_type.get()));
         BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 2ul);
-        BOOST_TEST(is_app_of(f->value.body.stmts[0ul], var("f"), constant(true)));
+        BOOST_TEST(is_func_call_of(f->value.body.stmts[0ul], var("f"), constant(true)));
         BOOST_TEST(is_return_of(f->value.body.stmts[1ul], constant(0)));
     }
     {

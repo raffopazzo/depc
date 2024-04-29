@@ -1,6 +1,5 @@
 #pragma once
 
-#include "dep0/testing/check_all.hpp"
 #include "dep0/testing/failure.hpp"
 #include "dep0/testing/predicate.hpp"
 #include "dep0/testing/pretty_name.hpp"
@@ -20,10 +19,17 @@ boost::test_tools::predicate_result is_init_list_of(ast::expr_t<P> const& expr, 
     auto constexpr N = sizeof...(ValuePredicates);
     if (init_list->values.size() != N)
         return failure("wrong number of initializer values: ", N, " != ", init_list->values.size());
-    if constexpr (N > 0ul)
-        return check_all(init_list->values, std::forward<ValuePredicates>(f_values)...);
-    else
-        return true;
+    auto result = boost::test_tools::predicate_result(true);
+    auto it = init_list->values.begin();
+    int next = 0;
+    ([&]
+    {
+        auto const i = next++;
+        if (result)
+            if (auto const tmp = f_values(*it++); not tmp)
+                result = failure("initializer value ", i, ": ", tmp.message());
+    }(), ...);
+    return result;
 }
 
 template <ast::Properties P, Predicate<ast::expr_t<P>>... ValuePredicates>

@@ -50,6 +50,7 @@ void replace(typename expr_t<P>::var_t const& from, typename expr_t<P>::var_t co
         x.value,
         [] (typename expr_t<P>::typename_t const&) {},
         [] (typename expr_t<P>::true_t const&) {},
+        [] (typename expr_t<P>::auto_t const&) {},
         [] (typename expr_t<P>::bool_t const&) {},
         [] (typename expr_t<P>::unit_t const&) {},
         [] (typename expr_t<P>::i8_t const&) {},

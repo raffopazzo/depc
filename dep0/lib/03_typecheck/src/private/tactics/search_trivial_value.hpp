@@ -13,7 +13,7 @@ namespace dep0::typecheck {
 
 /**
  * If the given type is inhabited by a single value, return that value.
- * For example, user-defined integeral whose only value is 0 or `array_t(t, 0)` whose only value is `{}`.
+ * For example, user-defined integral whose only value is 0 or `array_t(t, 0)` whose only value is `{}`.
  */
 std::optional<expr_t>
 search_trivial_value(

@@ -1,6 +1,7 @@
 #include "private/proof_search.hpp"
 
 #include "private/tactics/search_app.hpp"
+#include "private/tactics/search_trivial_value.hpp"
 #include "private/tactics/search_true_t.hpp"
 #include "private/tactics/search_var.hpp"
 
@@ -83,6 +84,7 @@ continue_proof_search(
         try_all(
             search_var,
             search_true_t,
+            search_trivial_value,
             search_app
         );
         if (result)

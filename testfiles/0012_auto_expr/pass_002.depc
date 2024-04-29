@@ -1,0 +1,9 @@
+typedef zero_t = signed 32 bit integer from 0 to 0;
+typedef uzero_t = unsigned 32 bit integer from 0 to 0;
+
+i32_t f1(zero_t) { return 0; }
+i32_t g1() { return f1(auto); }
+
+i32_t f2(uzero_t) { return 0; }
+i32_t g2() { return f2(auto); }
+

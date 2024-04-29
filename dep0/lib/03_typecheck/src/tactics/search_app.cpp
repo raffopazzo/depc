@@ -63,7 +63,12 @@ search_app(
         match(
             *env[name],
             [] (type_def_t const&) {},
-            [&] (axiom_t const& axiom) { impl(name, axiom.properties.sort.get(), tmp_usage); },
+            [&] (axiom_t const& axiom)
+            {
+                // axioms are only viable in an erased context
+                if (usage_multiplier == ast::qty_t::zero)
+                    impl(name, axiom.properties.sort.get(), tmp_usage);
+            },
             [&] (func_decl_t const& decl) { impl(name, decl.properties.sort.get(), tmp_usage); },
             [&] (func_def_t const& def) { impl(name, def.properties.sort.get(), tmp_usage); });
         if (result)

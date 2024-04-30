@@ -50,6 +50,18 @@ struct global_ctx_t
     value_t* operator[](typecheck::expr_t::global_t const&);
     value_t const* operator[](typecheck::expr_t::global_t const&) const;
 
+    /**
+     * Return the LLVM global value holding the given string literal,
+     * or nullptr if no global value exists yet.
+     */
+    llvm::Value* get_string_literal(std::string_view);
+
+    /**
+     * Store an LLVM global value holding the given string literal;
+     * if one already exists, it will be overwritten.
+     */
+    void store_string_literal(std::string, llvm::Value*);
+
     template <typename... Args>
     auto try_emplace(typecheck::expr_t::global_t name, Args&&... args)
     {
@@ -66,6 +78,12 @@ private:
      * Holds global objects, for example functions and type-defs.
      */
     scope_map<typecheck::expr_t::global_t, value_t> values;
+
+    /**
+     * Holds the LLVM global value associated to each unique string literal.
+     * @note The comparator `std::less<>` is required to allow look-up with `string_view`.
+     */
+    std::map<std::string, llvm::Value*, std::less<>> string_literals;
 };
 
 /**

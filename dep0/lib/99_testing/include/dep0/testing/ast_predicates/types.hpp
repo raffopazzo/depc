@@ -29,6 +29,16 @@ inline constexpr auto is_bool =
         return failure("type is not bool_t but ", pretty_name(type.value));
 };
 
+inline constexpr auto is_cstr =
+[] <ast::Properties P> (ast::expr_t<P> const& type)
+-> boost::test_tools::predicate_result
+{
+    if (std::holds_alternative<typename ast::expr_t<P>::cstr_t>(type.value))
+        return true;
+    else
+        return failure("type is not cstr_t but ", pretty_name(type.value));
+};
+
 inline constexpr auto is_i8 =
 [] <ast::Properties P> (ast::expr_t<P> const& type)
 -> boost::test_tools::predicate_result

@@ -52,6 +52,7 @@ void replace(typename expr_t<P>::var_t const& from, typename expr_t<P>::var_t co
         [] (typename expr_t<P>::true_t const&) {},
         [] (typename expr_t<P>::auto_t const&) {},
         [] (typename expr_t<P>::bool_t const&) {},
+        [] (typename expr_t<P>::cstr_t const&) {},
         [] (typename expr_t<P>::unit_t const&) {},
         [] (typename expr_t<P>::i8_t const&) {},
         [] (typename expr_t<P>::i16_t const&) {},
@@ -63,6 +64,7 @@ void replace(typename expr_t<P>::var_t const& from, typename expr_t<P>::var_t co
         [] (typename expr_t<P>::u64_t const&) {},
         [] (typename expr_t<P>::boolean_constant_t const&) { },
         [] (typename expr_t<P>::numeric_constant_t const&) { },
+        [] (typename expr_t<P>::string_literal_t const&) { },
         [&] (typename expr_t<P>::boolean_expr_t& x)
         {
             return match(

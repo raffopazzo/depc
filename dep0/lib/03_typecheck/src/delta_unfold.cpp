@@ -25,6 +25,7 @@ static bool delta_unfold(env_t const&, ctx_t const&, expr_t::typename_t&) { retu
 static bool delta_unfold(env_t const&, ctx_t const&, expr_t::true_t&) { return false; }
 static bool delta_unfold(env_t const&, ctx_t const&, expr_t::auto_t&) { return false; }
 static bool delta_unfold(env_t const&, ctx_t const&, expr_t::bool_t&) { return false; }
+static bool delta_unfold(env_t const&, ctx_t const&, expr_t::cstr_t&) { return false; }
 static bool delta_unfold(env_t const&, ctx_t const&, expr_t::unit_t&) { return false; }
 static bool delta_unfold(env_t const&, ctx_t const&, expr_t::i8_t&) { return false; }
 static bool delta_unfold(env_t const&, ctx_t const&, expr_t::i16_t&) { return false; }
@@ -36,6 +37,7 @@ static bool delta_unfold(env_t const&, ctx_t const&, expr_t::u32_t&) { return fa
 static bool delta_unfold(env_t const&, ctx_t const&, expr_t::u64_t&) { return false; }
 static bool delta_unfold(env_t const&, ctx_t const&, expr_t::boolean_constant_t&) { return false; }
 static bool delta_unfold(env_t const&, ctx_t const&, expr_t::numeric_constant_t&) { return false; }
+static bool delta_unfold(env_t const&, ctx_t const&, expr_t::string_literal_t&) { return false; }
 static bool delta_unfold(env_t const&, ctx_t const&, expr_t::boolean_expr_t&);
 static bool delta_unfold(env_t const&, ctx_t const&, expr_t::relation_expr_t&);
 static bool delta_unfold(env_t const&, ctx_t const&, expr_t::arith_expr_t&);

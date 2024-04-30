@@ -39,6 +39,33 @@ static void move_to_entry_block(llvm::Instruction* const i, llvm::Function* cons
         i->moveAfter(&bb.back());
 }
 
+static bool needs_escaping(std::string_view const s)
+{
+    return s.find('\\') != s.npos;
+}
+
+static std::string escape(std::string_view const in)
+{
+    std::string out;
+    auto const n = in.size();
+    out.reserve(n);
+    for (std::size_t i = 0; i < n; ++i)
+        out.push_back([&]
+        {
+            auto const c = in[i];
+            if (c == '\\' and i+1 < n)
+                switch (in[i+1])
+                {
+                    case 'n': ++i; return '\n';
+                    case 't': ++i; return '\t';
+                    case '"': ++i; return '"';
+                    case '\\': ++i; return '\\';
+                }
+            return c;
+        }());
+    return out;
+}
+
 llvm::Value* gen_val_unit(global_ctx_t& global)
 {
     return llvm::ConstantAggregateZero::get(llvm::StructType::get(global.llvm_ctx));
@@ -97,6 +124,11 @@ llvm::Value* gen_val(
             assert(false and "cannot generate a value for bool_t");
             __builtin_unreachable();
         },
+        [] (typecheck::expr_t::cstr_t const&) -> llvm::Value*
+        {
+            assert(false and "cannot generate a value for cstr_t");
+            __builtin_unreachable();
+        },
         [] (typecheck::expr_t::unit_t const&) -> llvm::Value*
         {
             assert(false and "cannot generate a value for unit_t");
@@ -152,6 +184,21 @@ llvm::Value* gen_val(
             auto const llvm_type = cast<llvm::IntegerType>(gen_type(global, type));
             assert(llvm_type);
             return storeOrReturn(gen_val(llvm_type, x.value));
+        },
+        [&] (typecheck::expr_t::string_literal_t const& x) -> llvm::Value*
+        {
+            std::optional<std::string> escaped;
+            auto const& raw = x.value.view();
+            if (needs_escaping(raw))
+                escaped.emplace(escape(raw));
+            auto const& s = escaped ? *escaped : raw;
+            auto val = global.get_string_literal(s);
+            if (not val)
+            {
+                val = builder.CreateGlobalStringPtr(s, "$_str_");
+                global.store_string_literal(escaped ? std::move(*escaped) : std::string(s), val);
+            }
+            return storeOrReturn(val);
         },
         [&] (typecheck::expr_t::boolean_expr_t const& x) -> llvm::Value*
         {

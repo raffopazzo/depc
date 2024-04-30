@@ -53,7 +53,7 @@ funcArg: ({one_of("0", "1")}? qty=INT)? ('typename' | expr) name=ID?;
 
 // Types
 type: primitiveType | funcType | typeVar;
-primitiveType: 'bool' | 'unit_t' | 'i8_t' | 'i16_t' | 'i32_t' | 'i64_t' | 'u8_t' | 'u16_t' | 'u32_t' | 'u64_t';
+primitiveType: 'bool' | 'cstr_t' | 'unit_t' | 'i8_t' | 'i16_t' | 'i32_t' | 'i64_t' | 'u8_t' | 'u16_t' | 'u32_t' | 'u64_t';
 funcType: '(' (funcArg (',' funcArg)*)? ')' '->' ('typename' | retType=expr);
 typeVar: name=ID;
 
@@ -78,6 +78,7 @@ expr:
     | lhs=expr 'xor' rhs=expr # xorExpr
     | lhs=expr 'and' rhs=expr # andExpr
     | lhs=expr 'or' rhs=expr # orExpr
+    | value=STR # stringLiteral
     | sign=('+' | '-')? value=INT # numericConstant
     | value=('true'|'false') # booleanConstant
     | ('array_t' | 'true_t' | 'auto') # kwExpr

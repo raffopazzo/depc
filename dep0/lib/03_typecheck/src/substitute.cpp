@@ -48,6 +48,7 @@ void substitute(expr_t::var_t const& var, expr_t const& expr, expr_t& x)
         [] (expr_t::true_t const&) {},
         [] (expr_t::auto_t const&) {},
         [] (expr_t::bool_t const&) {},
+        [] (expr_t::cstr_t const&) {},
         [] (expr_t::unit_t const&) {},
         [] (expr_t::i8_t const&) {},
         [] (expr_t::i16_t const&) {},
@@ -57,8 +58,9 @@ void substitute(expr_t::var_t const& var, expr_t const& expr, expr_t& x)
         [] (expr_t::u16_t const&) {},
         [] (expr_t::u32_t const&) {},
         [] (expr_t::u64_t const&) {},
-        [] (expr_t::boolean_constant_t&) { },
-        [] (expr_t::numeric_constant_t&) { },
+        [] (expr_t::boolean_constant_t const&) { },
+        [] (expr_t::numeric_constant_t const&) { },
+        [] (expr_t::string_literal_t const&) { },
         [&] (expr_t::boolean_expr_t& x)
         {
             match(
@@ -98,7 +100,7 @@ void substitute(expr_t::var_t const& var, expr_t const& expr, expr_t& x)
             if (v == var)
                 x = expr;
         },
-        [] (expr_t::global_t&)
+        [] (expr_t::global_t const&)
         {
         },
         [&] (expr_t::app_t& x)
@@ -113,7 +115,7 @@ void substitute(expr_t::var_t const& var, expr_t const& expr, expr_t& x)
         {
             substitute(var, expr, x.args.begin(), x.args.end(), x.ret_type.get(), nullptr);
         },
-        [] (expr_t::array_t&)
+        [] (expr_t::array_t const&)
         {
         },
         [&] (expr_t::init_list_t& x)

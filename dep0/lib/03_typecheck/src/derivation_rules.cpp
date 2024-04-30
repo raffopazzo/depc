@@ -18,6 +18,7 @@ expr_t derivation_rules::make_true_t(expr_t cond)
     return make_app(make_true_t(), {std::move(cond)});
 }
 expr_t derivation_rules::make_bool() { return make_legal_expr(make_typename(), expr_t::bool_t{}); }
+expr_t derivation_rules::make_cstr() { return make_legal_expr(make_typename(), expr_t::cstr_t{}); }
 expr_t derivation_rules::make_unit() { return make_legal_expr(make_typename(), expr_t::unit_t{}); }
 expr_t derivation_rules::make_i8() { return make_legal_expr(make_typename(), expr_t::i8_t{}); }
 expr_t derivation_rules::make_i16() { return make_legal_expr(make_typename(), expr_t::i16_t{}); }

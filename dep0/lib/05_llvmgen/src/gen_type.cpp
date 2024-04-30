@@ -62,7 +62,14 @@ llvm::Type* gen_type(global_ctx_t& global, typecheck::expr_t const& x)
             assert(false and "cannot generate a type for auto expression");
             __builtin_unreachable();
         },
-        [&] (typecheck::expr_t::bool_t const&) -> llvm::Type* { return llvm::Type::getInt1Ty(global.llvm_ctx); },
+        [&] (typecheck::expr_t::bool_t const&) -> llvm::Type*
+        {
+            return llvm::Type::getInt1Ty(global.llvm_ctx);
+        },
+        [&] (typecheck::expr_t::cstr_t const&) -> llvm::Type*
+        {
+            return llvm::Type::getInt8Ty(global.llvm_ctx)->getPointerTo();
+        },
         [&] (typecheck::expr_t::unit_t const&) -> llvm::Type*
         {
             return llvm::StructType::get(global.llvm_ctx);
@@ -83,6 +90,11 @@ llvm::Type* gen_type(global_ctx_t& global, typecheck::expr_t const& x)
         [] (typecheck::expr_t::numeric_constant_t const&) -> llvm::Type*
         {
             assert(false and "cannot generate a type for a numeric constant");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::string_literal_t const&) -> llvm::Type*
+        {
+            assert(false and "cannot generate a type for a string literal");
             __builtin_unreachable();
         },
         [] (typecheck::expr_t::boolean_expr_t const&) -> llvm::Type*

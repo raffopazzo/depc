@@ -1,0 +1,8 @@
+cstr_t f0() { return ""; }
+cstr_t f1() { return "0"; }
+cstr_t f2() { return "hello world"; }
+cstr_t f3() { return "hello \"world\""; }
+cstr_t f4() { return "hello 'world'"; }
+cstr_t f5() { return "hello\\world"; }
+cstr_t f6() { return "hello\nworld"; }
+cstr_t f7() { return "hello\tworld"; }

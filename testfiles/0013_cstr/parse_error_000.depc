@@ -1,0 +1,4 @@
+cstr_t f()
+{
+    return "hello" "world"; // parse error: unescaped quotes are eager
+}

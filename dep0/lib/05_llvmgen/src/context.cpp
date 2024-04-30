@@ -19,6 +19,17 @@ global_ctx_t::value_t const* global_ctx_t::operator[](typecheck::expr_t::global_
     return values[k];
 }
 
+llvm::Value* global_ctx_t::get_string_literal(std::string_view const s)
+{
+    auto const it = string_literals.find(s);
+    return it == string_literals.end() ? nullptr : it->second;
+}
+
+void global_ctx_t::store_string_literal(std::string s, llvm::Value* const v)
+{
+    string_literals.emplace(std::move(s), v);
+}
+
 local_ctx_t::local_ctx_t(scope_map<typecheck::expr_t::var_t, value_t> values) :
     values(std::move(values))
 { }

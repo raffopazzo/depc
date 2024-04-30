@@ -10,6 +10,7 @@ KW_ARRAY: 'array_t';
 KW_AUTO: 'auto';
 KW_AXIOM: 'axiom';
 KW_BOOL: 'bool';
+KW_CSTR_T: 'cstr_t';
 KW_ELSE: 'else';
 KW_FALSE: 'false';
 KW_I16_T: 'i16_t';
@@ -55,6 +56,7 @@ SEMI: ';';
 // Tokens
 ID: ALPHA ALPHANUM*;
 INT: [0-9][0-9']*;
+STR: '"' (' ' | '!' | '\\' '"' | [\u0023-\u007E])* '"';
 
 // White Spaces
 BLOCK_COMMENT: '/*' -> skip, pushMode(BlockComment);

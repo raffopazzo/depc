@@ -199,4 +199,3 @@ BOOST_AUTO_TEST_CASE(typecheck_error_000) { BOOST_TEST(fail("0012_auto_expr/type
 BOOST_AUTO_TEST_CASE(typecheck_error_001) { BOOST_TEST(fail("0012_auto_expr/typecheck_error_001.depc")); }
 
 BOOST_AUTO_TEST_SUITE_END()
-

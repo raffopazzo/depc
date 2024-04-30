@@ -209,6 +209,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         assert(ctx);
         auto const loc = get_loc(src, *ctx);
         if (ctx->KW_BOOL()) return expr_t{loc, expr_t::bool_t{}};
+        if (ctx->KW_CSTR_T()) return expr_t{loc, expr_t::cstr_t{}};
         if (ctx->KW_UNIT_T()) return expr_t{loc, expr_t::unit_t{}};
         if (ctx->KW_I8_T()) return expr_t{loc, expr_t::i8_t{}};
         if (ctx->KW_I16_T()) return expr_t{loc, expr_t::i16_t{}};
@@ -504,6 +505,18 @@ struct parse_visitor_t : dep0::DepCParserVisitor
                     : parse_cpp_int(get_text(src, *ctx->value).view())}};
     }
 
+    virtual std::any visitStringLiteral(DepCParser::StringLiteralContext* ctx)
+    {
+        assert(ctx);
+        assert(ctx->value);
+        auto const s = get_text(src, *ctx->value);
+        assert(s.size() >= 2 and "literal string must contain enclosing quotes");
+        return expr_t{
+            get_loc(src, *ctx),
+            expr_t::string_literal_t{s.substr(1, s.size()-2)}
+        };
+    }
+
     virtual std::any visitFuncCallExpr(DepCParser::FuncCallExprContext* ctx) override
     {
         assert(ctx);
@@ -546,6 +559,8 @@ struct parse_visitor_t : dep0::DepCParserVisitor
             return std::any_cast<expr_t>(visitAndExpr(p));
         if (auto const p = dynamic_cast<DepCParser::OrExprContext*>(ctx))
             return std::any_cast<expr_t>(visitOrExpr(p));
+        if (auto const p = dynamic_cast<DepCParser::StringLiteralContext*>(ctx))
+            return std::any_cast<expr_t>(visitStringLiteral(p));
         if (auto const p = dynamic_cast<DepCParser::NumericConstantContext*>(ctx))
             return std::any_cast<expr_t>(visitNumericConstant(p));
         if (auto const p = dynamic_cast<DepCParser::BooleanConstantContext*>(ctx))

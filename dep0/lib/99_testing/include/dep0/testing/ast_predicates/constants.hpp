@@ -43,6 +43,18 @@ is_numeric_constant(ast::expr_t<P> const& expr, boost::multiprecision::cpp_int c
     return true;
 }
 
+template <ast::Properties P>
+boost::test_tools::predicate_result
+is_string_literal(ast::expr_t<P> const& expr, std::string_view const x)
+{
+    auto const s = std::get_if<typename ast::expr_t<P>::string_literal_t>(&expr.value);
+    if (not s)
+        return failure("expression is not string_literal_t but ", pretty_name(expr.value));
+    if (s->value != x)
+        return failure("string literal ", s->value, " != ", x);
+    return true;
+}
+
 inline auto constant(bool value)
 {
     return [value] <ast::Properties P> (ast::expr_t<P> const& expr)
@@ -64,6 +76,14 @@ inline auto constant(char const* const value) // not std::string_view otherwise 
     return [value=boost::multiprecision::cpp_int(value)] <ast::Properties P> (ast::expr_t<P> const& expr)
     {
         return is_numeric_constant(expr, value);
+    };
+}
+
+inline auto string_literal(std::string_view const x)
+{
+    return [x] <ast::Properties P> (ast::expr_t<P> const& expr)
+    {
+        return is_string_literal(expr, x);
     };
 }
 

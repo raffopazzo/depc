@@ -38,6 +38,11 @@ AstTestsFixture::expr_t AstTestsFixture::numeric_constant(int const value)
     return expr_t{dummy_properties_t{}, expr_t::numeric_constant_t{value}};
 }
 
+AstTestsFixture::expr_t AstTestsFixture::string_literal(char const* const value)
+{
+    return expr_t{dummy_properties_t{}, expr_t::string_literal_t{testing::literal_string(value)}};
+}
+
 AstTestsFixture::expr_t AstTestsFixture::var(char const* const name)
 {
     return expr_t{dummy_properties_t{}, var_t(name)};

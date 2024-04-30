@@ -125,6 +125,7 @@ std::optional<expr_t> rewrite(expr_t const& from, expr_t const& to, expr_t const
             [] (expr_t::true_t) { },
             [] (expr_t::auto_t) { },
             [] (expr_t::bool_t) { },
+            [] (expr_t::cstr_t) { },
             [] (expr_t::unit_t) { },
             [] (expr_t::i8_t) { },
             [] (expr_t::i16_t) { },
@@ -136,6 +137,7 @@ std::optional<expr_t> rewrite(expr_t const& from, expr_t const& to, expr_t const
             [] (expr_t::u64_t) { },
             [] (expr_t::boolean_constant_t){},
             [] (expr_t::numeric_constant_t){},
+            [] (expr_t::string_literal_t){},
             [&] (expr_t::boolean_expr_t const& x)
             {
                 match(

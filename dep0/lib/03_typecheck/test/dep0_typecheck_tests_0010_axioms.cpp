@@ -104,6 +104,7 @@ BOOST_AUTO_TEST_CASE(pass_002)
 }
 
 BOOST_AUTO_TEST_CASE(typecheck_error_000) { BOOST_TEST(fail("0010_axioms/typecheck_error_000.depc")); }
+BOOST_AUTO_TEST_CASE(typecheck_error_001) { BOOST_TEST(fail("0010_axioms/typecheck_error_001.depc")); }
 
 BOOST_AUTO_TEST_SUITE_END()
 

@@ -1,0 +1,3 @@
+axiom f() -> i32_t;
+
+i32_t g() { return f(); }

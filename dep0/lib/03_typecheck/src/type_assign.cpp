@@ -272,14 +272,26 @@ type_assign(
             {
                 auto global = expr_t::global_t{x.name};
                 if (auto const def = env[global])
-                    return make_legal_expr(
-                        match(
-                            *def,
-                            [] (type_def_t const&) -> sort_t { return derivation_rules::make_typename(); },
-                            [] (axiom_t const& x) -> sort_t { return x.properties.sort.get(); },
-                            [] (func_decl_t const& x) -> sort_t { return x.properties.sort.get(); },
-                            [] (func_def_t const& x) -> sort_t { return x.properties.sort.get(); }),
-                        std::move(global));
+                    return match(
+                        *def,
+                        [&] (type_def_t const&) -> expected<expr_t>
+                        {
+                            return make_legal_expr(derivation_rules::make_typename(), std::move(global));
+                        },
+                        [&] (axiom_t const& x) -> expected<expr_t>
+                        {
+                            if (usage_multiplier > ast::qty_t::zero)
+                                return error_t::from_error(dep0::error_t("axiom cannot be used at run-time", loc));
+                            return make_legal_expr(x.properties.sort.get(), std::move(global));
+                        },
+                        [&] (func_decl_t const& x) -> expected<expr_t>
+                        {
+                            return make_legal_expr(x.properties.sort.get(), std::move(global));
+                        },
+                        [&] (func_def_t const& x) -> expected<expr_t>
+                        {
+                            return make_legal_expr(x.properties.sort.get(), std::move(global));
+                        });
             }
             return error_t::from_error(dep0::error_t("unknown variable", loc));
         },

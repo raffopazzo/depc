@@ -3,6 +3,7 @@
 #include "private/beta_delta_equivalence.hpp"
 #include "private/check.hpp"
 #include "private/cpp_int_limits.hpp"
+#include "private/c_types.hpp"
 #include "private/derivation_rules.hpp"
 #include "private/proof_search.hpp"
 #include "private/returns_from_all_branches.hpp"
@@ -115,6 +116,8 @@ expected<axiom_t> check_axiom(env_t& env, parser::axiom_t const& axiom)
 expected<extern_decl_t> check_extern_decl(env_t& env, parser::extern_decl_t const& decl)
 {
     ctx_t ctx;
+    if (auto ok = is_c_func_type(decl.signature); not ok)
+        return error_t::from_error(std::move(ok.error()));
     auto pi_type = check_pi_type(env, ctx, decl.properties, decl.signature.args, decl.signature.ret_type.get());
     if (not pi_type)
         return std::move(pi_type.error());

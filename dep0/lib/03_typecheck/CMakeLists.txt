@@ -16,6 +16,7 @@ add_library(dep0_typecheck_lib
   src/private/check.hpp
   src/private/cpp_int_add.hpp
   src/private/cpp_int_limits.hpp
+  src/private/c_types.hpp
   src/private/delta_unfold.hpp
   src/private/derivation_rules.hpp
   src/private/drop_unreachable_stmts.hpp
@@ -36,6 +37,7 @@ add_library(dep0_typecheck_lib
   src/context.cpp
   src/cpp_int_add.cpp
   src/cpp_int_limits.cpp
+  src/c_types.cpp
   src/delta_unfold.cpp
   src/derivation.cpp
   src/derivation_rules.cpp

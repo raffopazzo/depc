@@ -61,6 +61,7 @@ dep0::expected<std::true_type> env_t::try_emplace(expr_t::global_t global, value
                 v,
                 [&] (type_def_t const&) { err << "cannot add type definition "; },
                 [&] (axiom_t const&) { err << "cannot add axiom "; },
+                [&] (extern_decl_t const&) { err << "cannot add extern function declaration "; },
                 [&] (func_decl_t const&) { err << "cannot add function declaration "; },
                 [&] (func_def_t const&) { err << "cannot add function definition "; });
             pretty_print<properties_t>(err << '`', global) << '`';
@@ -70,6 +71,7 @@ dep0::expected<std::true_type> env_t::try_emplace(expr_t::global_t global, value
                 prev,
                 [&] (type_def_t const& x) { pretty_print(err, x); },
                 [&] (axiom_t const& x) { pretty_print(err, x); },
+                [&] (extern_decl_t const& x) { pretty_print(err, x.properties.sort.get()); },
                 [&] (func_decl_t const& x) { pretty_print(err, x.properties.sort.get()); },
                 [&] (func_def_t const& x) { pretty_print(err, x.properties.sort.get()); });
             err << '`';
@@ -89,6 +91,14 @@ dep0::expected<std::true_type> env_t::try_emplace(expr_t::global_t global, value
         [&] (axiom_t const& axiom) -> dep0::expected<std::true_type>
         {
             // a new axiom must have a new unique name
+            if (auto const* const prev = this->operator[](global))
+                return reject(*prev);
+            else
+                return accept(m_definitions);
+        },
+        [&] (extern_decl_t const& decl) -> dep0::expected<std::true_type>
+        {
+            // a new extern declaration must have a new unique name
             if (auto const* const prev = this->operator[](global))
                 return reject(*prev);
             else

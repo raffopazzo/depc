@@ -284,6 +284,10 @@ type_assign(
                                 return error_t::from_error(dep0::error_t("axiom cannot be used at run-time", loc));
                             return make_legal_expr(x.properties.sort.get(), std::move(global));
                         },
+                        [&] (extern_decl_t const& x) -> expected<expr_t>
+                        {
+                            return make_legal_expr(x.properties.sort.get(), std::move(global));
+                        },
                         [&] (func_decl_t const& x) -> expected<expr_t>
                         {
                             return make_legal_expr(x.properties.sort.get(), std::move(global));

@@ -36,6 +36,14 @@ expected<type_def_t> check_type_def(env_t&, parser::type_def_t const&);
 expected<axiom_t> check_axiom(env_t&, parser::axiom_t const&);
 
 /**
+ * Checks whether an extern function declaration is legal;
+ * if it is, the declaration is stored in the given environment.
+ *
+ * @return A legal extern function declaration or an error.
+ */
+expected<extern_decl_t> check_extern_decl(env_t&, parser::extern_decl_t const&);
+
+/**
  * Checks whether a function declaration is legal;
  * if it is, the declaration is stored in the given environment.
  *

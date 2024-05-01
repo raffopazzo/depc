@@ -155,6 +155,15 @@ std::ostream& pretty_print(std::ostream& os, axiom_t<P> const& axiom, std::size_
 }
 
 template <Properties P>
+std::ostream& pretty_print(std::ostream& os, extern_decl_t<P> const& extern_decl, std::size_t const indent)
+{
+    os << "extern " << extern_decl.name;
+    auto const& signature = extern_decl.signature;
+    pretty_print(os, signature.args.begin(), signature.args.end(), signature.ret_type.get(), indent);
+    return os << ';';
+}
+
+template <Properties P>
 std::ostream& pretty_print(std::ostream& os, func_decl_t<P> const& func_decl, std::size_t const indent)
 {
     os << "auto " << func_decl.name;

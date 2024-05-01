@@ -12,6 +12,7 @@ KW_AXIOM: 'axiom';
 KW_BOOL: 'bool';
 KW_CSTR_T: 'cstr_t';
 KW_ELSE: 'else';
+KW_EXTERN: 'extern';
 KW_FALSE: 'false';
 KW_I16_T: 'i16_t';
 KW_I32_T: 'i32_t';

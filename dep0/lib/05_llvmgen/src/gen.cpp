@@ -31,6 +31,11 @@ expected<unique_ref<llvm::Module>>
             {
                 // axioms cannot be invoked at run-time, so we don't need to do anything here
             },
+            [&] (typecheck::extern_decl_t const& decl)
+            {
+                if (auto proto = llvm_func_proto_t::from_pi(decl.signature))
+                    gen_extern_decl(global, typecheck::expr_t::global_t{decl.name}, *proto);
+            },
             // LLVM can only generate functions for 1st order abstractions;
             // for 2nd order abstractions we rely on beta-delta normalization to produce
             // a value or a 1st order application;

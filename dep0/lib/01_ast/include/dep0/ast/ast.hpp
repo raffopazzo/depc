@@ -18,6 +18,8 @@ namespace dep0::ast {
 
 template <Properties P> struct module_t;
 template <Properties P> struct type_def_t;
+template <Properties P> struct axiom_t;
+template <Properties P> struct extern_decl_t;
 template <Properties P> struct func_decl_t;
 template <Properties P> struct func_def_t;
 template <Properties P> struct func_arg_t;
@@ -445,6 +447,20 @@ struct axiom_t
 };
 
 /**
+ * Represents an extern function declaration.
+ * It is exactly like a function declaration but for extern functions.
+ */
+template <Properties P>
+struct extern_decl_t
+{
+    using properties_t = typename P::extern_decl_properties_type;
+
+    properties_t properties;
+    source_text name;
+    expr_t<P>::pi_t signature;
+};
+
+/**
  * Represents a global function declaration,
  * which is comprised of a name and a Pi-type for its signature and return type.
  */
@@ -484,9 +500,10 @@ struct module_t
     using properties_t = typename P::module_properties_type;
     using type_def_t = ast::type_def_t<P>;
     using axiom_t = ast::axiom_t<P>;
+    using extern_decl_t = ast::extern_decl_t<P>;
     using func_decl_t = ast::func_decl_t<P>;
     using func_def_t = ast::func_def_t<P>;
-    using entry_t = std::variant<type_def_t, axiom_t, func_decl_t, func_def_t>;
+    using entry_t = std::variant<type_def_t, axiom_t, extern_decl_t, func_decl_t, func_def_t>;
 
     properties_t properties;
     std::vector<entry_t> entries;

@@ -69,6 +69,7 @@ search_app(
                 if (usage_multiplier == ast::qty_t::zero)
                     impl(name, axiom.properties.sort.get(), tmp_usage);
             },
+            [&] (extern_decl_t const& decl) { impl(name, decl.properties.sort.get(), tmp_usage); },
             [&] (func_decl_t const& decl) { impl(name, decl.properties.sort.get(), tmp_usage); },
             [&] (func_def_t const& def) { impl(name, def.properties.sort.get(), tmp_usage); });
         if (result)

@@ -40,6 +40,7 @@ expected<module_t> check(parser::module_t const& x) noexcept
                     v,
                     [&] (parser::type_def_t const& t) -> expected<entry_t> { return check_type_def(env, t); },
                     [&] (parser::axiom_t const& x) -> expected<entry_t> { return check_axiom(env, x); },
+                    [&] (parser::extern_decl_t const& x) -> expected<entry_t> { return check_extern_decl(env, x); },
                     [&] (parser::func_decl_t const& x) -> expected<entry_t>
                     {
                         auto const& result = check_func_decl(env, x);
@@ -107,6 +108,18 @@ expected<axiom_t> check_axiom(env_t& env, parser::axiom_t const& axiom)
         return std::move(pi_type.error());
     auto result = make_legal_axiom(axiom.properties, *pi_type, axiom.name, std::get<expr_t::pi_t>(pi_type->value));
     if (auto ok = env.try_emplace(expr_t::global_t{axiom.name}, result); not ok)
+        return error_t::from_error(std::move(ok.error()));
+    return result;
+}
+
+expected<extern_decl_t> check_extern_decl(env_t& env, parser::extern_decl_t const& decl)
+{
+    ctx_t ctx;
+    auto pi_type = check_pi_type(env, ctx, decl.properties, decl.signature.args, decl.signature.ret_type.get());
+    if (not pi_type)
+        return std::move(pi_type.error());
+    auto result = make_legal_extern_decl(decl.properties, *pi_type, decl.name, std::get<expr_t::pi_t>(pi_type->value));
+    if (auto ok = env.try_emplace(expr_t::global_t{decl.name}, result); not ok)
         return error_t::from_error(std::move(ok.error()));
     return result;
 }
@@ -357,6 +370,12 @@ check_numeric_expr(
                 {
                     std::ostringstream err;
                     err << "type mismatch between numeric constant and `" << axiom.name << '`';
+                    return error(err.str());
+                },
+                [&] (extern_decl_t const& extern_decl) -> expected<expr_t>
+                {
+                    std::ostringstream err;
+                    err << "type mismatch between numeric constant and `" << extern_decl.name << '`';
                     return error(err.str());
                 },
                 [&] (func_decl_t const& func_decl) -> expected<expr_t>

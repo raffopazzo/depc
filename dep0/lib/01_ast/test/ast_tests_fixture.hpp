@@ -9,6 +9,7 @@ struct dummy_properties_t
     using module_properties_type = dummy_properties_t;
     using type_def_properties_type = dummy_properties_t;
     using axiom_properties_type = dummy_properties_t;
+    using extern_decl_properties_type = dummy_properties_t;
     using func_decl_properties_type = dummy_properties_t;
     using func_def_properties_type = dummy_properties_t;
     using func_arg_properties_type = dummy_properties_t;
@@ -24,6 +25,7 @@ struct AstTestsFixture
     using module_t = dep0::ast::module_t<dummy_properties_t>;
     using type_def_t = dep0::ast::type_def_t<dummy_properties_t>;
     using axiom_t = dep0::ast::axiom_t<dummy_properties_t>;
+    using extern_decl_t = dep0::ast::extern_decl_t<dummy_properties_t>;
     using func_decl_t = dep0::ast::func_decl_t<dummy_properties_t>;
     using func_def_t = dep0::ast::func_def_t<dummy_properties_t>;
     using func_arg_t = dep0::ast::func_arg_t<dummy_properties_t>;

@@ -141,6 +141,7 @@ std::size_t hash_code_impl(hash_code_state_t<P>& state, expr_t<P> const& x)
             [] (expr_t<P>::true_t const&) { return 0ul; },
             [] (expr_t<P>::auto_t const&) { return 0ul; },
             [] (expr_t<P>::bool_t const&) { return 0ul; },
+            [] (expr_t<P>::cstr_t const&) { return 0ul; },
             [] (expr_t<P>::unit_t const&) { return 0ul; },
             [] (expr_t<P>::i8_t const&) { return 0ul; },
             [] (expr_t<P>::i16_t const&) { return 0ul; },
@@ -152,6 +153,7 @@ std::size_t hash_code_impl(hash_code_state_t<P>& state, expr_t<P> const& x)
             [] (expr_t<P>::u64_t const&) { return 0ul; },
             [] (expr_t<P>::boolean_constant_t const& x) { return static_cast<std::size_t>(x.value); },
             [] (expr_t<P>::numeric_constant_t const& x) { return hash_value(x.value); },
+            [] (expr_t<P>::string_literal_t const& x) { return std::hash<std::string_view>{}(x.value); },
             [&] (expr_t<P>::boolean_expr_t const& x)
             {
                 return combine(

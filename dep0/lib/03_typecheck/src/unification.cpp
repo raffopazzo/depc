@@ -24,6 +24,7 @@ bool unify(expr_t const& from, expr_t const& to, std::map<expr_t::var_t, expr_t>
             [] (expr_t::true_t, expr_t::true_t) { return true; },
             [] (expr_t::auto_t, expr_t::auto_t) { return true; },
             [] (expr_t::bool_t, expr_t::bool_t) { return true; },
+            [] (expr_t::cstr_t, expr_t::cstr_t) { return true; },
             [] (expr_t::unit_t, expr_t::unit_t) { return true; },
             [] (expr_t::i8_t, expr_t::i8_t) { return true; },
             [] (expr_t::i16_t, expr_t::i16_t) { return true; },
@@ -40,6 +41,10 @@ bool unify(expr_t const& from, expr_t const& to, std::map<expr_t::var_t, expr_t>
             [] (expr_t::numeric_constant_t const& x, expr_t::numeric_constant_t const& y)
             {
                 // TOOD should we compare the two types here? if so, add a test; if not, explain why.
+                return x.value == y.value;
+            },
+            [] (expr_t::string_literal_t const& x, expr_t::string_literal_t const& y)
+            {
                 return x.value == y.value;
             },
             [&] (expr_t::boolean_expr_t const& x, expr_t::boolean_expr_t const& y)

@@ -107,6 +107,11 @@ struct expr_t
     struct bool_t {};
 
     /**
+     * Represents the primitive type `cstr_t`, whose values are string literals.
+     */
+    struct cstr_t {};
+
+    /**
      * Represents the primitive type `unit_t`.
      *
      * It only has a single value and can always be constructed "from nowhere", aka "the top type".
@@ -177,6 +182,14 @@ struct expr_t
     struct numeric_constant_t
     {
         boost::multiprecision::cpp_int value;
+    };
+
+    /**
+     * Represents string literals, like "" and "Hello \"World\"".
+     */
+    struct string_literal_t
+    {
+        source_text value;
     };
 
     /**
@@ -320,8 +333,9 @@ struct expr_t
     using value_t =
         std::variant<
             typename_t, true_t, auto_t,
-            bool_t, unit_t, i8_t, i16_t, i32_t, i64_t, u8_t, u16_t, u32_t, u64_t,
-            boolean_constant_t, numeric_constant_t, boolean_expr_t, relation_expr_t, arith_expr_t,
+            bool_t, cstr_t, unit_t, i8_t, i16_t, i32_t, i64_t, u8_t, u16_t, u32_t, u64_t,
+            boolean_constant_t, numeric_constant_t, string_literal_t,
+            boolean_expr_t, relation_expr_t, arith_expr_t,
             var_t, global_t, app_t, abs_t, pi_t,
             array_t, init_list_t, subscript_t
         >;

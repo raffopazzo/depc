@@ -70,6 +70,7 @@ type_assign(
             return error_t::from_error(dep0::error_t("auto expressions have no unique type", loc));
         },
         [] (parser::expr_t::bool_t) -> expected<expr_t> { return derivation_rules::make_bool(); },
+        [] (parser::expr_t::cstr_t) -> expected<expr_t> { return derivation_rules::make_cstr(); },
         [] (parser::expr_t::unit_t) -> expected<expr_t> { return derivation_rules::make_unit(); },
         [] (parser::expr_t::i8_t) -> expected<expr_t> { return derivation_rules::make_i8(); },
         [] (parser::expr_t::i16_t) -> expected<expr_t> { return derivation_rules::make_i16(); },
@@ -86,6 +87,10 @@ type_assign(
         [&] (parser::expr_t::numeric_constant_t const& x) -> expected<expr_t>
         {
             return error_t::from_error(dep0::error_t("numeric constants have no unique type", loc));
+        },
+        [&] (parser::expr_t::string_literal_t const& x) -> expected<expr_t>
+        {
+            return make_legal_expr(derivation_rules::make_cstr(), expr_t::string_literal_t{x.value});
         },
         [&] (parser::expr_t::boolean_expr_t const& x) -> expected<expr_t>
         {

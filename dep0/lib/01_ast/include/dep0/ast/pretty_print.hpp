@@ -61,6 +61,9 @@ template <Properties P>
 std::ostream& pretty_print(std::ostream&, typename expr_t<P>::bool_t const&, std::size_t indent = 0ul);
 
 template <Properties P>
+std::ostream& pretty_print(std::ostream&, typename expr_t<P>::cstr_t const&, std::size_t indent = 0ul);
+
+template <Properties P>
 std::ostream& pretty_print(std::ostream&, typename expr_t<P>::unit_t const&, std::size_t indent = 0ul);
 
 template <Properties P>
@@ -92,6 +95,9 @@ std::ostream& pretty_print(std::ostream&, typename expr_t<P>::boolean_constant_t
 
 template <Properties P>
 std::ostream& pretty_print(std::ostream&, typename expr_t<P>::numeric_constant_t const&, std::size_t indent = 0ul);
+
+template <Properties P>
+std::ostream& pretty_print(std::ostream&, typename expr_t<P>::string_literal_t const&, std::size_t indent = 0ul);
 
 template <Properties P>
 std::ostream& pretty_print(std::ostream&, typename expr_t<P>::boolean_expr_t const&, std::size_t indent = 0ul);

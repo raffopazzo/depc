@@ -23,12 +23,16 @@ add_library(dep0_llvmgen_tests_fixture
     llvm_predicates/cmp.cpp
     llvm_predicates/constants.hpp
     llvm_predicates/constants.cpp
+    llvm_predicates/cstrings.hpp
+    llvm_predicates/cstrings.cpp
     llvm_predicates/function.hpp
     llvm_predicates/function.cpp
     llvm_predicates/function_type.hpp
     llvm_predicates/function_type.cpp
     llvm_predicates/gep.hpp
     llvm_predicates/gep.cpp
+    llvm_predicates/global.hpp
+    llvm_predicates/global.cpp
     llvm_predicates/load.hpp
     llvm_predicates/load.cpp
     llvm_predicates/mul.hpp
@@ -85,3 +89,4 @@ add_dep0_llvmgen_test(0009_func_decl)
 add_dep0_llvmgen_test(0010_axioms)
 add_dep0_llvmgen_test(0011_quantities)
 add_dep0_llvmgen_test(0012_auto_expr)
+add_dep0_llvmgen_test(0013_cstr)

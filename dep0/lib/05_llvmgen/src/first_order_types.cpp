@@ -21,6 +21,7 @@ bool is_first_order_type(typecheck::expr_t const& type)
         [] (typecheck::expr_t::true_t const&) { return false; }, // `true_t` on its own is a term, not a type
         [] (typecheck::expr_t::auto_t const&) { return false; },
         [] (typecheck::expr_t::bool_t const&) { return true; },
+        [] (typecheck::expr_t::cstr_t const&) { return true; },
         [] (typecheck::expr_t::unit_t const&) { return true; },
         [] (typecheck::expr_t::i8_t const&) { return true; },
         [] (typecheck::expr_t::i16_t const&) { return true; },
@@ -32,6 +33,7 @@ bool is_first_order_type(typecheck::expr_t const& type)
         [] (typecheck::expr_t::u64_t const&) { return true; },
         [] (typecheck::expr_t::boolean_constant_t const&) { return false; },
         [] (typecheck::expr_t::numeric_constant_t const&) { return false; },
+        [] (typecheck::expr_t::string_literal_t const&) { return false; },
         [] (typecheck::expr_t::boolean_expr_t const&) { return false; },
         [] (typecheck::expr_t::relation_expr_t const&) { return false; },
         [] (typecheck::expr_t::arith_expr_t const&) { return false; },

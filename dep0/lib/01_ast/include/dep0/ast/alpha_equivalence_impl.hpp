@@ -59,6 +59,7 @@ struct alpha_equivalence_visitor
     result_t operator()(typename expr_t<P>::true_t, typename expr_t<P>::true_t) const { return {}; }
     result_t operator()(typename expr_t<P>::auto_t, typename expr_t<P>::auto_t) const { return {}; }
     result_t operator()(typename expr_t<P>::bool_t, typename expr_t<P>::bool_t) const { return {}; }
+    result_t operator()(typename expr_t<P>::cstr_t, typename expr_t<P>::cstr_t) const { return {}; }
     result_t operator()(typename expr_t<P>::unit_t, typename expr_t<P>::unit_t) const { return {}; }
     result_t operator()(typename expr_t<P>::i8_t, typename expr_t<P>::i8_t) const { return {}; }
     result_t operator()(typename expr_t<P>::i16_t, typename expr_t<P>::i16_t) const { return {}; }
@@ -82,6 +83,16 @@ struct alpha_equivalence_visitor
     result_t operator()(
         typename expr_t<P>::numeric_constant_t const& x,
         typename expr_t<P>::numeric_constant_t const& y) const
+    {
+        if (x.value == y.value)
+            return {};
+        else
+            return not_alpha_equivalent(x, y);
+    }
+
+    result_t operator()(
+        typename expr_t<P>::string_literal_t const& x,
+        typename expr_t<P>::string_literal_t const& y) const
     {
         if (x.value == y.value)
             return {};

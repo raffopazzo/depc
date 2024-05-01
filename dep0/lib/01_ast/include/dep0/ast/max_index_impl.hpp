@@ -61,6 +61,7 @@ std::size_t max_index(expr_t<P> const& x)
         [] (expr_t<P>::true_t const&) { return 0ul; },
         [] (expr_t<P>::auto_t const&) { return 0ul; },
         [] (expr_t<P>::bool_t const&) { return 0ul; },
+        [] (expr_t<P>::cstr_t const&) { return 0ul; },
         [] (expr_t<P>::unit_t const&) { return 0ul; },
         [] (expr_t<P>::i8_t const&) { return 0ul; },
         [] (expr_t<P>::i16_t const&) { return 0ul; },
@@ -72,6 +73,7 @@ std::size_t max_index(expr_t<P> const& x)
         [] (expr_t<P>::u64_t const&) { return 0ul; },
         [] (expr_t<P>::boolean_constant_t const&) { return 0ul; },
         [] (expr_t<P>::numeric_constant_t const&) { return 0ul; },
+        [] (expr_t<P>::string_literal_t const&) { return 0ul; },
         [] (expr_t<P>::boolean_expr_t const& x)
         {
             return match(

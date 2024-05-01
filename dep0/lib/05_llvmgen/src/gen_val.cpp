@@ -56,8 +56,12 @@ static std::string escape(std::string_view const in)
             if (c == '\\' and i+1 < n)
                 switch (in[i+1])
                 {
+                    case 'b': ++i; return '\b';
+                    case 'f': ++i; return '\f';
                     case 'n': ++i; return '\n';
+                    case 'r': ++i; return '\r';
                     case 't': ++i; return '\t';
+                    case 'v': ++i; return '\v';
                     case '"': ++i; return '"';
                     case '\\': ++i; return '\\';
                 }

@@ -10,7 +10,7 @@ BOOST_FIXTURE_TEST_SUITE(dep0_parser_tests_0013_cstr, ParserTestsFixture)
 BOOST_AUTO_TEST_CASE(pass_000)
 {
     BOOST_TEST_REQUIRE(pass("0013_cstr/pass_000.depc"));
-    BOOST_TEST_REQUIRE(pass_result->entries.size() == 8ul);
+    BOOST_TEST_REQUIRE(pass_result->entries.size() == 12ul);
     {
         auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[0ul]);
         BOOST_TEST_REQUIRE(f);
@@ -82,6 +82,42 @@ BOOST_AUTO_TEST_CASE(pass_000)
         BOOST_TEST(is_cstr(f->value.ret_type.get()));
         BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
         BOOST_TEST(is_return_of(f->value.body.stmts[0], string_literal(R"(hello\tworld)")));
+    }
+    {
+        auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[8ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "f8");
+        BOOST_TEST(f->value.args.size() == 0ul);
+        BOOST_TEST(is_cstr(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0], string_literal(R"(hello\vworld)")));
+    }
+    {
+        auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[9ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "f9");
+        BOOST_TEST(f->value.args.size() == 0ul);
+        BOOST_TEST(is_cstr(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0], string_literal(R"(hello\bworld)")));
+    }
+    {
+        auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[10ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "f10");
+        BOOST_TEST(f->value.args.size() == 0ul);
+        BOOST_TEST(is_cstr(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0], string_literal(R"(hello\fworld)")));
+    }
+    {
+        auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[11ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "f11");
+        BOOST_TEST(f->value.args.size() == 0ul);
+        BOOST_TEST(is_cstr(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0], string_literal(R"(hello\rworld)")));
     }
 }
 

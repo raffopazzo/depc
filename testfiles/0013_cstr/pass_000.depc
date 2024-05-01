@@ -6,3 +6,7 @@ cstr_t f4() { return "hello 'world'"; }
 cstr_t f5() { return "hello\\world"; }
 cstr_t f6() { return "hello\nworld"; }
 cstr_t f7() { return "hello\tworld"; }
+cstr_t f8() { return "hello\vworld"; }
+cstr_t f9() { return "hello\bworld"; }
+cstr_t f10() { return "hello\fworld"; }
+cstr_t f11() { return "hello\rworld"; }

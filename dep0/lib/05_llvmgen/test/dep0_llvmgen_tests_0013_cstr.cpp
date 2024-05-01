@@ -6,6 +6,8 @@
 
 using namespace dep0::llvmgen::testing;
 
+static auto const nonnull = std::vector{llvm::Attribute::NonNull};
+
 BOOST_FIXTURE_TEST_SUITE(dep0_llvmgen_tests_0012_auto_expr, LLVMGenTestsFixture)
 
 BOOST_AUTO_TEST_CASE(pass_000)
@@ -24,6 +26,14 @@ BOOST_AUTO_TEST_CASE(pass_000)
     BOOST_TEST(is_global_of(pass_result.value()->getNamedGlobal("$_str_.9"), cstr("hello\bworld")));
     BOOST_TEST(is_global_of(pass_result.value()->getNamedGlobal("$_str_.10"), cstr("hello\fworld")));
     BOOST_TEST(is_global_of(pass_result.value()->getNamedGlobal("$_str_.11"), cstr("hello\rworld")));
+}
+
+BOOST_AUTO_TEST_CASE(pass_001)
+{
+    apply_beta_delta_normalization = false;
+    BOOST_TEST_REQUIRE(pass("0013_cstr/pass_001.depc"));
+    auto const f = pass_result.value()->getFunction("f");
+    BOOST_TEST(is_function_of(f, std::tuple{arg_of(pointer_to(is_i8), std::nullopt, nonnull)}, struct_of()));
 }
 
 BOOST_AUTO_TEST_SUITE_END()

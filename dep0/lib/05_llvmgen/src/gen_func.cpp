@@ -44,9 +44,7 @@ void gen_func_args(
         auto& llvm_arg = *llvm_arg_it++;
         if (auto const attr = get_sign_ext_attribute(global, arg.type); attr != llvm::Attribute::None)
             llvm_arg.addAttr(attr);
-        if (std::holds_alternative<typecheck::expr_t::cstr_t>(arg.type.value))
-            llvm_arg.addAttr(llvm::Attribute::NonNull);
-        if (is_alloca_needed(arg.type))
+        if (is_alloca_needed(arg.type) or std::holds_alternative<typecheck::expr_t::cstr_t>(arg.type.value))
             // TODO should we also set noalias, byval, etc? maybe for the return argument too?
             llvm_arg.addAttr(llvm::Attribute::NonNull);
         if (arg.var)

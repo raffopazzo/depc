@@ -343,7 +343,7 @@ std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::numeric_constan
 template <Properties P>
 std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::string_literal_t const& x, std::size_t const indent)
 {
-    return os << x.value; // TODO quote
+    return os << '"' << x.value << '"';
 }
 
 template <Properties P>

@@ -119,7 +119,6 @@ struct expr_t
      */
     struct unit_t {};
 
-
     /**
      * Represents the primitive type `i8_t`, with values from the range `[-128, +127]`.
      */

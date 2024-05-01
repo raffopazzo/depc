@@ -12,7 +12,7 @@ llvm::Attribute::AttrKind get_sign_ext_attribute(global_ctx_t const& global, typ
         [] (typecheck::expr_t::true_t const&) { return llvm::Attribute::None; },
         [] (typecheck::expr_t::auto_t const&) { return llvm::Attribute::None; },
         [] (typecheck::expr_t::bool_t const&) { return llvm::Attribute::ZExt; },
-        [] (typecheck::expr_t::cstr_t const&) { return llvm::Attribute::None; }, // TODO how to return nonnull?
+        [] (typecheck::expr_t::cstr_t const&) { return llvm::Attribute::None; },
         [] (typecheck::expr_t::unit_t const&) { return llvm::Attribute::None; },
         [] (typecheck::expr_t::i8_t const&) { return llvm::Attribute::SExt; },
         [] (typecheck::expr_t::i16_t const&) { return llvm::Attribute::SExt; },

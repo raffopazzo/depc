@@ -40,6 +40,11 @@ enum class sign_t { signed_v, unsigned_v };
 enum class width_t { _8, _16, _32, _64 };
 
 /**
+ * Strongly typed boolean to track whether functions, variables and references are mutable or not.
+ */
+enum class is_mutable_t { no = 0, yes = 1 }; // do not change ordering
+
+/**
  * Represents the quantity associated to a function argument;
  * the default is `many`, unless an explicit quantity is specified.
  */
@@ -285,6 +290,7 @@ struct expr_t
      */
     struct abs_t
     {
+        is_mutable_t is_mutable;
         std::vector<func_arg_t<P>> args;
         rec_t ret_type;
         body_t<P> body;
@@ -298,6 +304,7 @@ struct expr_t
      */
     struct pi_t
     {
+        is_mutable_t is_mutable;
         std::vector<func_arg_t<P>> args;
         rec_t ret_type;
     };

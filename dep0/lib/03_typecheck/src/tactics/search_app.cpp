@@ -23,6 +23,7 @@ search_app(
         [&env, &ctx, &type, &st, &result, usage_multiplier]
         (expr_t::global_t const& name, sort_t const& func_type, usage_t& tmp_usage)
     {
+        // TODO what about mutability here?
         auto const& pi = std::get<expr_t::pi_t>(std::get<expr_t>(func_type).value);
         if (auto substitutions = unify(pi.ret_type.get(), type))
         {

@@ -1,7 +1,7 @@
 extern f0() -> i32_t;
 extern f1(i32_t, cstr_t) -> i32_t;
 
-i32_t g()
+i32_t g() mutable
 {
     return f0() + f1(1, "2");
 }

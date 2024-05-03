@@ -95,6 +95,7 @@ bool beta_normalize(expr_t::app_t& app)
     bool changed = beta_normalize(app.func.get());
     for (auto& arg: app.args)
         changed |= beta_normalize(arg);
+    // TODO cannot substitute into mutable arguments
     if (auto* const abs = std::get_if<expr_t::abs_t>(&app.func.get().value))
     {
         if (abs->args.size() > 0ul)

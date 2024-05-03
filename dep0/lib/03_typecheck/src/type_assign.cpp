@@ -34,6 +34,7 @@ type_assign_pair(
     ctx_t const& ctx,
     parser::expr_t const& lhs,
     parser::expr_t const& rhs,
+    ast::is_mutable_t const is_mutable_allowed,
     usage_t& usage,
     ast::qty_t const usage_multiplier)
 {
@@ -43,12 +44,12 @@ type_assign_pair(
     // only if type-assignment succeeds we commit to the real usage object.
     auto tmp_usage_a = usage.extend();
     auto tmp_usage_b = usage.extend();
-    auto a = type_assign(env, ctx, lhs, tmp_usage_a, usage_multiplier);
+    auto a = type_assign(env, ctx, lhs, is_mutable_allowed, tmp_usage_a, usage_multiplier);
     auto b = a
-        ? check_expr(env, ctx, rhs, a->properties.sort.get(), usage += tmp_usage_a, usage_multiplier)
-        : type_assign(env, ctx, rhs, tmp_usage_b, usage_multiplier);
+        ? check_expr(env, ctx, rhs, a->properties.sort.get(), is_mutable_allowed, usage += tmp_usage_a, usage_multiplier)
+        : type_assign(env, ctx, rhs, is_mutable_allowed, tmp_usage_b, usage_multiplier);
     if (b and not a)
-        a = check_expr(env, ctx, lhs, b->properties.sort.get(), usage += tmp_usage_b, usage_multiplier);
+        a = check_expr(env, ctx, lhs, b->properties.sort.get(), is_mutable_allowed, usage += tmp_usage_b, usage_multiplier);
     return std::pair{std::move(a), std::move(b)};
 }
 
@@ -57,6 +58,7 @@ type_assign(
     env_t const& env,
     ctx_t const& ctx,
     parser::expr_t const& expr,
+    ast::is_mutable_t const is_mutable_allowed,
     usage_t& usage,
     ast::qty_t const usage_multiplier)
 {
@@ -103,6 +105,7 @@ type_assign(
                             env, ctx,
                             x.expr.get(),
                             derivation_rules::make_bool(),
+                            is_mutable_allowed,
                             usage, usage_multiplier);
                     if (expr)
                         return make_legal_expr(
@@ -115,10 +118,16 @@ type_assign(
                 },
                 [&] <typename T> (T const& x) -> expected<expr_t>
                 {
-                    auto lhs = check_expr(env, ctx, x.lhs.get(), derivation_rules::make_bool(), usage, usage_multiplier);
+                    auto lhs =
+                        check_expr(
+                            env, ctx, x.lhs.get(), derivation_rules::make_bool(),
+                            is_mutable_allowed, usage, usage_multiplier);
                     if (not lhs)
                         return std::move(lhs.error());
-                    auto rhs = check_expr(env, ctx, x.rhs.get(), derivation_rules::make_bool(), usage, usage_multiplier);
+                    auto rhs =
+                        check_expr(
+                            env, ctx, x.rhs.get(), derivation_rules::make_bool(),
+                            is_mutable_allowed, usage, usage_multiplier);
                     if (not rhs)
                         return std::move(rhs.error());
                     return make_legal_expr(
@@ -156,7 +165,9 @@ type_assign(
                 x.value,
                 [&] <typename T> (T const& x) -> expected<expr_t>
                 {
-                    auto [lhs, rhs] = type_assign_pair(env, ctx, x.lhs.get(), x.rhs.get(), usage, usage_multiplier);
+                    auto [lhs, rhs] =
+                        type_assign_pair(
+                            env, ctx, x.lhs.get(), x.rhs.get(), is_mutable_allowed, usage, usage_multiplier);
                     if (lhs and rhs)
                         return make_legal_expr(
                             derivation_rules::make_bool(),
@@ -217,7 +228,9 @@ type_assign(
                 x.value,
                 [&] (parser::expr_t::arith_expr_t::plus_t const& x) -> expected<expr_t>
                 {
-                    auto [lhs, rhs] = type_assign_pair(env, ctx, x.lhs.get(), x.rhs.get(), usage, usage_multiplier);
+                    auto [lhs, rhs] =
+                        type_assign_pair(
+                            env, ctx, x.lhs.get(), x.rhs.get(), is_mutable_allowed, usage, usage_multiplier);
                     if (lhs and rhs)
                     {
                         auto type = lhs->properties.sort.get(); // about to move from lhs, take a copy
@@ -306,7 +319,7 @@ type_assign(
         },
         [&] (parser::expr_t::app_t const& x) -> expected<expr_t>
         {
-            return type_assign_app(env, ctx, x, loc, usage, usage_multiplier);
+            return type_assign_app(env, ctx, x, loc, is_mutable_allowed, usage, usage_multiplier);
         },
         [&] (parser::expr_t::abs_t const& f) -> expected<expr_t>
         {
@@ -315,7 +328,7 @@ type_assign(
         [&] (parser::expr_t::pi_t const& pi) -> expected<expr_t>
         {
             auto pi_ctx = ctx.extend();
-            return check_pi_type(env, pi_ctx, loc, pi.args, pi.ret_type.get());
+            return check_pi_type(env, pi_ctx, loc, pi.is_mutable, pi.args, pi.ret_type.get());
         },
         [] (parser::expr_t::array_t) -> expected<expr_t>
         {
@@ -335,7 +348,10 @@ type_assign(
             // It should still be possible to allow structured binding of a linear array to extract
             // all its elements at once, provided that the size of the array is known at compile-time.
             // Rust has similar limitations.
-            auto array = type_assign(env, ctx, subscript.array.get(), usage, usage_multiplier * ast::qty_t::many);
+            auto array =
+                type_assign(
+                    env, ctx, subscript.array.get(), is_mutable_allowed,
+                    usage, usage_multiplier * ast::qty_t::many);
             if (not array)
                 return std::move(array.error());
             return match(
@@ -355,7 +371,7 @@ type_assign(
                             env, ctx,
                             subscript.index.get(),
                             derivation_rules::make_u64(),
-                            usage, usage_multiplier);
+                            is_mutable_allowed, usage, usage_multiplier);
                     if (not index)
                         return std::move(index.error());
                     beta_delta_normalize(env, ctx, *index);
@@ -394,6 +410,7 @@ type_assign_app(
     ctx_t const& ctx,
     parser::expr_t::app_t const& app,
     source_loc_t const& loc,
+    ast::is_mutable_t const is_mutable_allowed,
     usage_t& usage,
     ast::qty_t const usage_multiplier)
 {
@@ -401,7 +418,7 @@ type_assign_app(
     {
         return error_t::from_error(dep0::error_t(std::move(msg), loc));
     };
-    auto func = type_assign(env, ctx, app.func.get(), usage, usage_multiplier);
+    auto func = type_assign(env, ctx, app.func.get(), is_mutable_allowed, usage, usage_multiplier);
     if (not func)
         return std::move(func.error());
     auto func_type = [&] () -> expected<expr_t::pi_t>
@@ -424,6 +441,8 @@ type_assign_app(
         err << "passed " << app.args.size() << " arguments but was expecting " << func_type->args.size();
         return error(err.str());
     }
+    if (is_mutable_allowed < func_type->is_mutable)
+        return error("cannot invoke mutable function inside immutable context");
     std::vector<expr_t> args;
     for (auto const i: std::views::iota(0ul, func_type->args.size()))
     {
@@ -432,6 +451,7 @@ type_assign_app(
                 env, ctx,
                 app.args[i],
                 func_type->args[i].type,
+                is_mutable_allowed,
                 usage,
                 usage_multiplier * func_type->args[i].qty);
         if (not arg)
@@ -461,7 +481,7 @@ expected<expr_t> type_assign_abs(
     ast::qty_t const usage_multiplier)
 {
     auto f_ctx = ctx.extend();
-    auto func_type = check_pi_type(env, f_ctx, location, f.args, f.ret_type.get());
+    auto func_type = check_pi_type(env, f_ctx, location, f.is_mutable, f.args, f.ret_type.get());
     if (not func_type)
         return std::move(func_type.error());
     // If a function has a name it can call itself recursively;
@@ -479,8 +499,8 @@ expected<expr_t> type_assign_abs(
         if (not ok)
             return error_t::from_error(std::move(ok.error()));
     }
-    auto [arg_types, ret_type] = std::get<expr_t::pi_t>(func_type->value);
-    auto body = check_body(f_env, proof_state_t(f_ctx, ret_type.get()), f.body, usage, usage_multiplier);
+    auto [is_mutable, arg_types, ret_type] = std::get<expr_t::pi_t>(func_type->value);
+    auto body = check_body(f_env, proof_state_t(f_ctx, ret_type.get()), f.body, is_mutable, usage, usage_multiplier);
     if (not body)
         return std::move(body.error());
     // so far so good, but we now need to make sure that all branches contain a return statement,
@@ -499,6 +519,7 @@ expected<expr_t> type_assign_abs(
     return make_legal_expr(
         std::move(*func_type),
         expr_t::abs_t{
+            is_mutable,
             std::move(arg_types),
             std::move(ret_type),
             std::move(*body)

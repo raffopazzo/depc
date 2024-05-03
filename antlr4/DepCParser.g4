@@ -34,7 +34,7 @@ module: moduleEntry* EOF;
 moduleEntry: typeDef | axiom | externDecl | funcDecl | funcDef;
 axiom: 'axiom' name=ID funcType ';';
 externDecl: 'extern' name=ID funcType ';';
-funcSig: (primitiveRetType=primitiveType | simpleRetType=typeVar) name=ID '(' (funcArg (',' funcArg)*)? ')'
+funcSig: (primitiveRetType=primitiveType | simpleRetType=typeVar) name=ID '(' (funcArg (',' funcArg)*)? ')' 'mutable'?
     | 'auto' name=ID funcType
     ;
 funcDecl: funcSig ';';
@@ -55,7 +55,7 @@ funcArg: ({one_of("0", "1")}? qty=INT)? ('typename' | expr) name=ID?;
 // Types
 type: primitiveType | funcType | typeVar;
 primitiveType: 'bool' | 'cstr_t' | 'unit_t' | 'i8_t' | 'i16_t' | 'i32_t' | 'i64_t' | 'u8_t' | 'u16_t' | 'u32_t' | 'u64_t';
-funcType: '(' (funcArg (',' funcArg)*)? ')' '->' ('typename' | retType=expr);
+funcType: '(' (funcArg (',' funcArg)*)? ')' 'mutable'? '->' ('typename' | retType=expr);
 typeVar: name=ID;
 
 // Statements

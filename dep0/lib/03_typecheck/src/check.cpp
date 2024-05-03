@@ -103,8 +103,14 @@ expected<type_def_t> check_type_def(env_t& env, parser::type_def_t const& type_d
 
 expected<axiom_t> check_axiom(env_t& env, parser::axiom_t const& axiom)
 {
+    assert(axiom.signature.is_mutable == ast::is_mutable_t::no and "invalid axiom from parser");
     ctx_t ctx;
-    auto pi_type = check_pi_type(env, ctx, axiom.properties, axiom.signature.args, axiom.signature.ret_type.get());
+    auto pi_type =
+        check_pi_type(
+            env, ctx, axiom.properties,
+            axiom.signature.is_mutable,
+            axiom.signature.args,
+            axiom.signature.ret_type.get());
     if (not pi_type)
         return std::move(pi_type.error());
     auto result = make_legal_axiom(axiom.properties, *pi_type, axiom.name, std::get<expr_t::pi_t>(pi_type->value));
@@ -118,7 +124,12 @@ expected<extern_decl_t> check_extern_decl(env_t& env, parser::extern_decl_t cons
     ctx_t ctx;
     if (auto ok = is_c_func_type(decl.signature); not ok)
         return error_t::from_error(std::move(ok.error()));
-    auto pi_type = check_pi_type(env, ctx, decl.properties, decl.signature.args, decl.signature.ret_type.get());
+    auto pi_type =
+        check_pi_type(
+            env, ctx, decl.properties,
+            decl.signature.is_mutable,
+            decl.signature.args,
+            decl.signature.ret_type.get());
     if (not pi_type)
         return std::move(pi_type.error());
     auto result = make_legal_extern_decl(decl.properties, *pi_type, decl.name, std::get<expr_t::pi_t>(pi_type->value));
@@ -130,7 +141,12 @@ expected<extern_decl_t> check_extern_decl(env_t& env, parser::extern_decl_t cons
 expected<func_decl_t> check_func_decl(env_t& env, parser::func_decl_t const& decl)
 {
     ctx_t ctx;
-    auto pi_type = check_pi_type(env, ctx, decl.properties, decl.signature.args, decl.signature.ret_type.get());
+    auto pi_type =
+        check_pi_type(
+            env, ctx, decl.properties,
+            decl.signature.is_mutable,
+            decl.signature.args,
+            decl.signature.ret_type.get());
     if (not pi_type)
         return std::move(pi_type.error());
     auto result = make_legal_func_decl(decl.properties, *pi_type, decl.name, std::get<expr_t::pi_t>(pi_type->value));
@@ -162,10 +178,11 @@ expected<expr_t> check_type(env_t const& env, ctx_t const& ctx, parser::expr_t c
     // TODO try move to a "traditional" 2-step approach: type-assign first and then compare to the expected type;
     // numerical constants might get in the way, if so could maybe pass a "tie-breaker"?
     usage_t usage; // when checking types an empty usage_t works just as fine, because the multiplier is zero anyway
-    auto as_type = check_expr(env, ctx, type, derivation_rules::make_typename(), usage, ast::qty_t::zero);
+    auto const immutable = ast::is_mutable_t::no;
+    auto as_type = check_expr(env, ctx, type, derivation_rules::make_typename(), immutable, usage, ast::qty_t::zero);
     if (as_type)
         return as_type;
-    auto as_kind = check_expr(env, ctx, type, kind_t{}, usage, ast::qty_t::zero);
+    auto as_kind = check_expr(env, ctx, type, kind_t{}, immutable, usage, ast::qty_t::zero);
     if (as_kind)
         return as_kind;
     return error_t::from_error(
@@ -182,6 +199,7 @@ check_body(
     env_t const& env,
     proof_state_t state,
     parser::body_t const& x,
+    ast::is_mutable_t const is_mutable,
     usage_t& usage,
     ast::qty_t const usage_multiplier)
 {
@@ -190,7 +208,7 @@ check_body(
             x.stmts,
             [&] (parser::stmt_t const& s)
             {
-                return check_stmt(env, state, s, usage, usage_multiplier);
+                return check_stmt(env, state, s, is_mutable, usage, usage_multiplier);
             });
     if (stmts)
         return make_legal_body(std::move(*stmts));
@@ -203,6 +221,7 @@ check_stmt(
     env_t const& env,
     proof_state_t& state,
     parser::stmt_t const& s,
+    ast::is_mutable_t const is_mutable,
     usage_t& usage,
     ast::qty_t const usage_multiplier)
 {
@@ -210,14 +229,16 @@ check_stmt(
         s.value,
         [&] (parser::expr_t::app_t const& x) -> expected<stmt_t>
         {
-            if (auto app = type_assign_app(env, state.context, x, s.properties, usage, usage_multiplier))
+            if (auto app = type_assign_app(env, state.context, x, s.properties, is_mutable, usage, usage_multiplier))
                 return make_legal_stmt(std::move(std::get<expr_t::app_t>(app->value)));
             else
                 return std::move(app.error());
         },
         [&] (parser::stmt_t::if_else_t const& x) -> expected<stmt_t>
         {
-            auto cond = check_expr(env, state.context, x.cond, derivation_rules::make_bool(), usage, usage_multiplier);
+            auto cond =
+                check_expr(
+                    env, state.context, x.cond, derivation_rules::make_bool(), is_mutable, usage, usage_multiplier);
             if (not cond)
                 return std::move(cond.error());
             // Variable usage in each branch must be checked separately, starting afresh from the outer scope.
@@ -236,7 +257,7 @@ check_stmt(
                 // we must add `true_t(cond)` to the new context only after we have rewritten `cond=true`,
                 // otherwise the new context will contain `true_t(true)`, which is not helpful to verify array access
                 new_state.context.add_unnamed(derivation_rules::make_true_t(*cond));
-                return check_body(env, std::move(new_state), x.true_branch, true_branch_usage, usage_multiplier);
+                return check_body(env, std::move(new_state), x.true_branch, is_mutable, true_branch_usage, usage_multiplier);
             }();
             if (not true_branch)
                 return std::move(true_branch.error());
@@ -253,7 +274,7 @@ check_stmt(
                 new_state.rewrite(*cond, derivation_rules::make_false());
                 add_true_not_cond(new_state.context);
                 auto false_branch =
-                    check_body(env, std::move(new_state), *x.false_branch, false_branch_usage, usage_multiplier);
+                    check_body(env, std::move(new_state), *x.false_branch, is_mutable, false_branch_usage, usage_multiplier);
                 if (false_branch)
                 {
                     combine_usages();
@@ -297,7 +318,7 @@ check_stmt(
                     return error_t::from_error(dep0::error_t(err.str(), s.properties), env, state.context, state.goal);
                 }
             }
-            else if (auto expr = check_expr(env, state.context, *x.expr, state.goal, usage, usage_multiplier))
+            else if (auto expr = check_expr(env, state.context, *x.expr, state.goal, is_mutable, usage, usage_multiplier))
                 return make_legal_stmt(stmt_t::return_t{std::move(*expr)});
             else
                 return std::move(expr.error());
@@ -408,6 +429,7 @@ check_expr(
     ctx_t const& ctx,
     parser::expr_t const& x,
     sort_t const& expected_type,
+    ast::is_mutable_t const is_mutable,
     usage_t& usage,
     ast::qty_t const usage_multiplier)
 {
@@ -469,9 +491,9 @@ check_expr(
                 x.value,
                 [&] (parser::expr_t::arith_expr_t::plus_t const& x) -> expected<expr_t>
                 {
-                    auto lhs = check_expr(env, ctx, x.lhs.get(), expected_type, usage, usage_multiplier);
+                    auto lhs = check_expr(env, ctx, x.lhs.get(), expected_type, is_mutable, usage, usage_multiplier);
                     if (not lhs) return std::move(lhs.error());
-                    auto rhs = check_expr(env, ctx, x.rhs.get(), expected_type, usage, usage_multiplier);
+                    auto rhs = check_expr(env, ctx, x.rhs.get(), expected_type, is_mutable, usage, usage_multiplier);
                     if (not rhs) return std::move(rhs.error());
                     return make_legal_expr(
                         expected_type,
@@ -532,7 +554,8 @@ check_expr(
                                     list.values,
                                     [&] (parser::expr_t const& v)
                                     {
-                                        return check_expr(env, ctx, v, array.element_type, usage, usage_multiplier);
+                                        return check_expr(
+                                            env, ctx, v, array.element_type, is_mutable, usage, usage_multiplier);
                                     });
                             if (not values)
                                 return std::move(values.error());
@@ -548,7 +571,7 @@ check_expr(
         },
         [&] (auto const&) -> expected<expr_t>
         {
-            auto result = type_assign(env, ctx, x, usage, usage_multiplier);
+            auto result = type_assign(env, ctx, x, is_mutable, usage, usage_multiplier);
             if (result)
                 if (auto eq = is_beta_delta_equivalent(env, ctx, result->properties.sort.get(), expected_type); not eq)
                     return type_error(result->properties.sort.get(), std::move(eq.error()));
@@ -560,6 +583,7 @@ expected<expr_t> check_pi_type(
     env_t const& env,
     ctx_t& ctx,
     source_loc_t const& loc,
+    ast::is_mutable_t const is_mutable,
     std::vector<parser::func_arg_t> const& parser_args,
     parser::expr_t const& parser_ret_type)
 {
@@ -590,7 +614,9 @@ expected<expr_t> check_pi_type(
     if (not ret_type)
         return error_t::from_error(
             dep0::error_t("cannot typecheck function return type", loc, {std::move(ret_type.error())}));
-    return make_legal_expr(ret_type->properties.sort.get(), expr_t::pi_t{std::move(*args), *ret_type});
+    return make_legal_expr(
+        ret_type->properties.sort.get(),
+        expr_t::pi_t{is_mutable, std::move(*args), *ret_type});
 }
 
 } // namespace dep0::typecheck

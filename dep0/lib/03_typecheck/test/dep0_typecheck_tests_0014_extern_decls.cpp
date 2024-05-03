@@ -31,6 +31,7 @@ BOOST_AUTO_TEST_CASE(pass_000)
         auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[2ul]);
         BOOST_TEST_REQUIRE(f);
         BOOST_TEST(f->name == "g");
+        BOOST_TEST(bool(f->value.is_mutable == dep0::ast::is_mutable_t::yes));
         BOOST_TEST(f->value.args.size() == 0ul);
         BOOST_TEST(is_i32(f->value.ret_type.get()));
         BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
@@ -45,5 +46,6 @@ BOOST_AUTO_TEST_CASE(pass_000)
 
 BOOST_AUTO_TEST_CASE(typecheck_error_000) { BOOST_TEST_REQUIRE(fail("0014_extern_decls/typecheck_error_000.depc")); }
 BOOST_AUTO_TEST_CASE(typecheck_error_001) { BOOST_TEST_REQUIRE(fail("0014_extern_decls/typecheck_error_001.depc")); }
+BOOST_AUTO_TEST_CASE(typecheck_error_002) { BOOST_TEST_REQUIRE(fail("0014_extern_decls/typecheck_error_002.depc")); }
 
 BOOST_AUTO_TEST_SUITE_END()

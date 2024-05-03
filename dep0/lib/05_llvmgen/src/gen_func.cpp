@@ -54,6 +54,7 @@ void gen_func_args(
             bool inserted = false;
             if (std::holds_alternative<typecheck::expr_t::pi_t>(arg.type.value))
             {
+                // TODO any useful attributes for mutable function types?
                 assert(llvm_arg.getType()->isPointerTy());
                 auto const function_type = cast<llvm::FunctionType>(llvm_arg.getType()->getPointerElementType());
                 assert(function_type);

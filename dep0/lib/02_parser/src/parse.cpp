@@ -139,12 +139,12 @@ struct parse_visitor_t : dep0::DepCParserVisitor
     {
         assert(ctx);
         assert(ctx->name);
+        auto const loc = get_loc(src, *ctx);
         auto func_type = std::any_cast<expr_t>(visitFuncType(ctx->funcType()));
-        return axiom_t{
-            get_loc(src, *ctx),
-            get_text(src, *ctx->name),
-            std::move(std::get<expr_t::pi_t>(func_type.value))
-            };
+        auto& pi = std::get<expr_t::pi_t>(func_type.value);
+        if (pi.is_mutable == ast::is_mutable_t::yes)
+            throw error_t("axioms cannot be mutable", loc);
+        return axiom_t{loc, get_text(src, *ctx->name), std::move(pi)};
     }
 
     virtual std::any visitExternDecl(DepCParser::ExternDeclContext* ctx) override
@@ -152,11 +152,10 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         assert(ctx);
         assert(ctx->name);
         auto func_type = std::any_cast<expr_t>(visitFuncType(ctx->funcType()));
-        return extern_decl_t{
-            get_loc(src, *ctx),
-            get_text(src, *ctx->name),
-            std::move(std::get<expr_t::pi_t>(func_type.value))
-        };
+        // extern functions are always mutable, even if not expicitly marked so
+        auto& pi = std::get<expr_t::pi_t>(func_type.value);
+        pi.is_mutable = ast::is_mutable_t::yes;
+        return extern_decl_t{get_loc(src, *ctx), get_text(src, *ctx->name), std::move(pi)};
     }
 
     virtual std::any visitFuncSig(DepCParser::FuncSigContext* ctx) override
@@ -174,6 +173,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
             return func_sig_t{
                 name,
                 expr_t::pi_t{
+                    ctx->KW_MUTABLE() ? ast::is_mutable_t::yes : ast::is_mutable_t::no,
                     visitFuncArgs(ctx->funcArg()),
                     [&]
                     {
@@ -207,6 +207,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
             get_loc(src, *ctx),
             std::move(sig.name),
             expr_t::abs_t{
+                sig.func_type.is_mutable,
                 std::move(sig.func_type.args),
                 std::move(sig.func_type.ret_type),
                 std::any_cast<body_t>(visitBody(ctx->body()))
@@ -251,7 +252,8 @@ struct parse_visitor_t : dep0::DepCParserVisitor
                 ctx->KW_TYPENAME() ? visitTypename(ctx->KW_TYPENAME())
                 : throw error_t("unexpected alternative when parsing FuncTypeContext", loc);
         };
-        return expr_t{loc, expr_t::pi_t{visitFuncArgs(ctx->funcArg()), ret_type()}};
+        auto const is_mutable = ctx->KW_MUTABLE() ? ast::is_mutable_t::yes :ast::is_mutable_t::no;
+        return expr_t{loc, expr_t::pi_t{is_mutable, visitFuncArgs(ctx->funcArg()), ret_type()}};
     }
 
     virtual std::any visitTypeVar(DepCParser::TypeVarContext* ctx) override

@@ -448,7 +448,8 @@ struct axiom_t
 
 /**
  * Represents an extern function declaration.
- * It is exactly like a function declaration but for extern functions.
+ * It is exactly like a function declaration but for functions provided by some external library
+ * and written in a different language but with a C interface.
  */
 template <Properties P>
 struct extern_decl_t

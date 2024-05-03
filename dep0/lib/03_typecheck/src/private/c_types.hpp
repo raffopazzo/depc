@@ -1,7 +1,5 @@
 #pragma once
 
-#include "dep0/typecheck/ast.hpp"
-
 #include "dep0/parser/ast.hpp"
 
 #include "dep0/error.hpp"

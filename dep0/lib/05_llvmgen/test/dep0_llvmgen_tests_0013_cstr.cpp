@@ -1,4 +1,4 @@
-#define BOOST_TEST_MODULE dep0_llvmgen_tests_0012_auto_expr
+#define BOOST_TEST_MODULE dep0_llvmgen_tests_0013_cstr
 #include <boost/test/included/unit_test.hpp>
 
 #include "llvmgen_tests_fixture.hpp"
@@ -8,7 +8,7 @@ using namespace dep0::llvmgen::testing;
 
 static auto const nonnull = std::vector{llvm::Attribute::NonNull};
 
-BOOST_FIXTURE_TEST_SUITE(dep0_llvmgen_tests_0012_auto_expr, LLVMGenTestsFixture)
+BOOST_FIXTURE_TEST_SUITE(dep0_llvmgen_tests_0013_cstr, LLVMGenTestsFixture)
 
 BOOST_AUTO_TEST_CASE(pass_000)
 {

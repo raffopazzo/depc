@@ -209,6 +209,18 @@ BOOST_AUTO_TEST_CASE(pass_004)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_005)
+{
+    apply_beta_delta_normalization = false;
+    BOOST_TEST_REQUIRE(pass("0012_auto_expr/pass_005.depc"));
+}
+
+BOOST_AUTO_TEST_CASE(pass_006)
+{
+    apply_beta_delta_normalization = false;
+    BOOST_TEST_REQUIRE(pass("0012_auto_expr/pass_006.depc"));
+}
+
 // BOOST_AUTO_TEST_CASE(typecheck_error_000)
 // BOOST_AUTO_TEST_CASE(typecheck_error_001)
 

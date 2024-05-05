@@ -113,5 +113,7 @@ BOOST_AUTO_TEST_CASE(pass_001)
 BOOST_AUTO_TEST_CASE(typecheck_error_000) { BOOST_TEST_REQUIRE(fail("0014_extern_decl/typecheck_error_000.depc")); }
 BOOST_AUTO_TEST_CASE(typecheck_error_001) { BOOST_TEST_REQUIRE(fail("0014_extern_decl/typecheck_error_001.depc")); }
 BOOST_AUTO_TEST_CASE(typecheck_error_002) { BOOST_TEST_REQUIRE(fail("0014_extern_decl/typecheck_error_002.depc")); }
+BOOST_AUTO_TEST_CASE(typecheck_error_003) { BOOST_TEST_REQUIRE(fail("0014_extern_decl/typecheck_error_003.depc")); }
+BOOST_AUTO_TEST_CASE(typecheck_error_004) { BOOST_TEST_REQUIRE(fail("0014_extern_decl/typecheck_error_004.depc")); }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -61,11 +61,11 @@ INT: [0-9][0-9']*;
 STR: '"' (' ' | '!' | '\\' '"' | [\u0023-\u007E])* '"';
 
 // White Spaces
-BLOCK_COMMENT: '/*' -> skip, pushMode(BlockComment);
-LINE_COMMENT: '//' .*? '\r'? '\n' -> skip;
-WS: [ \n\t\r\f]+ -> skip;
+BLOCK_COMMENT: '/*' -> channel(HIDDEN), pushMode(BlockComment);
+LINE_COMMENT: '//' .*? '\r'? '\n' -> channel(HIDDEN);
+WS: [ \n\t\r\f]+ -> channel(HIDDEN);
 
 mode BlockComment;
-CLOSE_COMMENT: '*/' -> skip, popMode;
-NESTED_COMMENT: '/*' -> skip, pushMode(BlockComment);
-SKIP_COMMENT: . -> skip;
+CLOSE_COMMENT: '*/' -> channel(HIDDEN), popMode;
+NESTED_COMMENT: '/*' -> channel(HIDDEN), pushMode(BlockComment);
+SKIP_COMMENT: . -> channel(HIDDEN);

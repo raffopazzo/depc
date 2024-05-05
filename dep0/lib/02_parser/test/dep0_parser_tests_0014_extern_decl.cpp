@@ -9,7 +9,7 @@ BOOST_FIXTURE_TEST_SUITE(dep0_parser_tests_0014_extern_decl, ParserTestsFixture)
 
 BOOST_AUTO_TEST_CASE(pass_000)
 {
-    BOOST_TEST_REQUIRE(pass("0014_extern_decls/pass_000.depc"));
+    BOOST_TEST_REQUIRE(pass("0014_extern_decl/pass_000.depc"));
     BOOST_TEST_REQUIRE(pass_result->entries.size() == 3ul);
     {
         auto const f = std::get_if<dep0::parser::extern_decl_t>(&pass_result->entries[0ul]);
@@ -46,7 +46,7 @@ BOOST_AUTO_TEST_CASE(pass_000)
 
 BOOST_AUTO_TEST_CASE(typecheck_error_000)
 {
-    BOOST_TEST_REQUIRE(pass("0014_extern_decls/typecheck_error_000.depc"));
+    BOOST_TEST_REQUIRE(pass("0014_extern_decl/typecheck_error_000.depc"));
     BOOST_TEST_REQUIRE(pass_result->entries.size() == 1ul);
     {
         auto const f = std::get_if<dep0::parser::extern_decl_t>(&pass_result->entries[0ul]);
@@ -59,7 +59,7 @@ BOOST_AUTO_TEST_CASE(typecheck_error_000)
 
 BOOST_AUTO_TEST_CASE(typecheck_error_001)
 {
-    BOOST_TEST_REQUIRE(pass("0014_extern_decls/typecheck_error_001.depc"));
+    BOOST_TEST_REQUIRE(pass("0014_extern_decl/typecheck_error_001.depc"));
     BOOST_TEST_REQUIRE(pass_result->entries.size() == 1ul);
     {
         auto const f = std::get_if<dep0::parser::extern_decl_t>(&pass_result->entries[0ul]);
@@ -73,7 +73,7 @@ BOOST_AUTO_TEST_CASE(typecheck_error_001)
 
 BOOST_AUTO_TEST_CASE(typecheck_error_002)
 {
-    BOOST_TEST_REQUIRE(pass("0014_extern_decls/typecheck_error_002.depc"));
+    BOOST_TEST_REQUIRE(pass("0014_extern_decl/typecheck_error_002.depc"));
     BOOST_TEST_REQUIRE(pass_result->entries.size() == 3ul);
     {
         auto const f = std::get_if<dep0::parser::extern_decl_t>(&pass_result->entries[0ul]);

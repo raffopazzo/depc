@@ -66,12 +66,12 @@ dep0::expected<std::true_type> env_t::try_emplace(expr_t::global_t global, value
                 [&] (func_def_t const&) { err << "cannot add function definition "; });
             pretty_print<properties_t>(err << '`', global) << '`';
             auto const origin = match(prev, [] (auto const& x) { return x.properties.origin; });
-            err << ", previously defined at " << origin.line << ':' << origin.col << ", as `";
+            err << ", previously introduced at " << origin.line << ':' << origin.col << " as `";
             match(
                 prev,
                 [&] (type_def_t const& x) { pretty_print(err, x); },
                 [&] (axiom_t const& x) { pretty_print(err, x); },
-                [&] (extern_decl_t const& x) { pretty_print(err, x.properties.sort.get()); },
+                [&] (extern_decl_t const& x) { pretty_print(err, x); },
                 [&] (func_decl_t const& x) { pretty_print(err, x.properties.sort.get()); },
                 [&] (func_def_t const& x) { pretty_print(err, x.properties.sort.get()); });
             err << '`';

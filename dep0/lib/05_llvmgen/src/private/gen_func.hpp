@@ -18,7 +18,7 @@ namespace dep0::llvmgen {
  */
 void gen_extern_decl(
     global_ctx_t&,
-    typecheck::expr_t::global_t const&,
+    typecheck::expr_t::global_t const& name,
     llvm_func_proto_t const&);
 
 /**

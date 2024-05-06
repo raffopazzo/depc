@@ -1,6 +1,7 @@
 #include "private/beta_reduction.hpp"
 
 #include "private/drop_unreachable_stmts.hpp"
+#include "private/is_mutable.hpp"
 #include "private/substitute.hpp"
 
 #include "dep0/destructive_self_assign.hpp"
@@ -95,7 +96,8 @@ bool beta_normalize(expr_t::app_t& app)
     bool changed = beta_normalize(app.func.get());
     for (auto& arg: app.args)
         changed |= beta_normalize(arg);
-    // TODO cannot substitute into mutable arguments
+    if (std::ranges::any_of(app.args, [] (expr_t const& arg) { return is_mutable(arg); }))
+        return changed;
     if (auto* const abs = std::get_if<expr_t::abs_t>(&app.func.get().value))
     {
         if (abs->args.size() > 0ul)

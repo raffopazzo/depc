@@ -141,6 +141,51 @@ BOOST_AUTO_TEST_CASE(pass_002)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_003)
+{
+    apply_beta_delta_normalization = true;
+    BOOST_TEST_REQUIRE(pass("0014_extern_decl/pass_003.depc"));
+    auto const puts = pass_result.value()->getFunction("puts");
+    {
+        auto const f = pass_result.value()->getFunction("f");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(is_i32, "x", sext)}, is_i32, sext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        auto const x = exactly(f->getArg(0));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), add_of(x, x)));
+    }
+    {
+        // inlining produces a duplicate of `f` in this particular circumstance...
+        auto const f = pass_result.value()->getFunction("$_func_0");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(is_i32, "x", sext)}, is_i32, sext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        auto const x = exactly(f->getArg(0));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), add_of(x, x)));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("g");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(pointer_to(is_i8), "s", nonnull)}, is_i32, sext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(
+            is_return_of(f->getEntryBlock().getTerminator(),
+            direct_call_of(
+                exactly(pass_result.value()->getFunction("$_func_0")),
+                call_arg(direct_call_of(exactly(puts), call_arg(exactly(f->getArg(0)))), sext))));
+    }
+}
+
+BOOST_AUTO_TEST_CASE(pass_004)
+{
+    apply_beta_delta_normalization = true;
+    BOOST_TEST_REQUIRE(pass("0014_extern_decl/pass_004.depc"));
+    BOOST_TEST(pass_result.value()->getFunction("f") == nullptr);
+    {
+        auto const f = pass_result.value()->getFunction("g");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, sext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(4)));
+    }
+}
+
 // BOOST_AUTO_TEST_CASE(typecheck_error_000)
 // BOOST_AUTO_TEST_CASE(typecheck_error_001)
 // BOOST_AUTO_TEST_CASE(typecheck_error_002)

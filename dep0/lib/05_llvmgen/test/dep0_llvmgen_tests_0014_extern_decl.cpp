@@ -105,6 +105,42 @@ BOOST_AUTO_TEST_CASE(pass_001)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_002)
+{
+    apply_beta_delta_normalization = true;
+    BOOST_TEST_REQUIRE(pass("0014_extern_decl/pass_002.depc"));
+    auto const puts = pass_result.value()->getFunction("puts");
+    auto const debug_msg = const_expr_of(gep_of(array_of(10, is_i8), global_of(cstr("debug msg")), constant(0)));
+    {
+        auto const f = pass_result.value()->getFunction("debug");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, sext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        auto const inst = get_instructions(f->getEntryBlock());
+        BOOST_TEST_REQUIRE(inst.size() == 2ul);
+        BOOST_TEST(is_direct_call(inst[0], exactly(puts), call_arg(debug_msg)));
+        BOOST_TEST(is_return_of(inst[1], constant(0)));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("g");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, sext));
+        auto const blks = get_blocks(*f);
+        BOOST_TEST_REQUIRE(blks.size() == 2ul);
+        auto const entry = blks[0];
+        auto const cont0 = blks[1];
+        {
+            auto const inst = get_instructions(f->getEntryBlock());
+            BOOST_TEST_REQUIRE(inst.size() == 4ul);
+            BOOST_TEST(is_alloca(inst[0], is_i32, constant(1), align_of(4)));
+            BOOST_TEST(is_direct_call(inst[1], exactly(puts), call_arg(debug_msg)));
+            BOOST_TEST(is_store_of(inst[2], is_i32, constant(0), exactly(inst[0]), align_of(4)));
+            BOOST_TEST(is_unconditional_branch_to(inst[3], exactly(cont0)));
+        }
+        {
+            BOOST_TEST(is_return_of(cont0->getTerminator(), load_of(is_i32, exactly(&entry->front()), align_of(4))));
+        }
+    }
+}
+
 // BOOST_AUTO_TEST_CASE(typecheck_error_000)
 // BOOST_AUTO_TEST_CASE(typecheck_error_001)
 // BOOST_AUTO_TEST_CASE(typecheck_error_002)

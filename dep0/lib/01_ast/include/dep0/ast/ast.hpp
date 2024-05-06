@@ -29,25 +29,28 @@ template <Properties P> struct expr_t;
 
 // enums
 
-/**
- * Represents the keywords `signed` or `unsigned` used inside a user-defined integral type definition.
- */
+/** Represents the keywords `signed` or `unsigned` used inside a user-defined integral type definition. */
 enum class sign_t { signed_v, unsigned_v };
+bool operator<(sign_t, sign_t) = delete;
+bool operator<=(sign_t, sign_t) = delete;
+bool operator>=(sign_t, sign_t) = delete;
+bool operator>(sign_t, sign_t) = delete;
 
-/**
- * Represents the bit width used inside a user-defined integral type definition.
- */
+/** Represents the bit width used inside a user-defined integral type definition. */
 enum class width_t { _8, _16, _32, _64 };
+bool operator<(sign_t, width_t) = delete;
+bool operator<=(width_t, width_t) = delete;
+bool operator>=(width_t, width_t) = delete;
+bool operator>(width_t, width_t) = delete;
 
-/**
- * Strongly typed boolean to track whether functions, variables and references are mutable or not.
- */
-enum class is_mutable_t { no = 0, yes = 1 }; // do not change ordering
+/** Strongly typed boolean to track whether functions, variables and references are mutable or not. */
+enum class is_mutable_t { no, yes };
+bool operator<(is_mutable_t, is_mutable_t) = delete;
+bool operator<=(is_mutable_t, is_mutable_t) = delete;
+bool operator>=(is_mutable_t, is_mutable_t) = delete;
+bool operator>(is_mutable_t, is_mutable_t) = delete;
 
-/**
- * Represents the quantity associated to a function argument;
- * the default is `many`, unless an explicit quantity is specified.
- */
+/** Represents the quantity associated to a function argument; default is `many`, unless specified otherwise. */
 enum class qty_t { zero = 0, one = 1, many = 2 }; // do not change ordering
 
 inline qty_t operator+(qty_t const a, qty_t const b)
@@ -66,10 +69,7 @@ inline qty_t operator*(qty_t const a, qty_t const b)
 
 // definitions
 
-/**
- * Represents a sequence of one or more statements,
- * for example the body of a function or of an if-else branch.
- */
+/** Represents a sequence of one or more statements, for example the body of a function or of an if-else branch. */
 template <Properties P>
 struct body_t
 {
@@ -92,14 +92,10 @@ struct expr_t
     using rec_t = boost::recursive_wrapper<expr_t>;
     using properties_t = typename P::expr_properties_type;
 
-    /**
-     * Represents the `typename` keyword, whose values are types; for example `i32_t` and `bool`.
-     */
+    /** Represents the `typename` keyword, whose values are types; for example `i32_t` and `bool`. */
     struct typename_t {};
 
-    /**
-     * Represents the type constructor `true_t`, whose type is `(bool) -> typename`.
-     */
+    /** Represents the type constructor `true_t`, whose type is `(bool) -> typename`. */
     struct true_t {};
 
     /**
@@ -108,14 +104,10 @@ struct expr_t
      */
     struct auto_t {};
 
-    /**
-     * Represents the primitive type `bool`, whose values are `true` or `false`.
-     */
+    /** Represents the primitive type `bool`, whose values are `true` or `false`. */
     struct bool_t {};
 
-    /**
-     * Represents the primitive type `cstr_t`, whose values are string literals.
-     */
+    /** Represents the primitive type `cstr_t`, whose values are string literals. */
     struct cstr_t {};
 
     /**
@@ -126,19 +118,13 @@ struct expr_t
      */
     struct unit_t {};
 
-    /**
-     * Represents the primitive type `i8_t`, with values from the range `[-128, +127]`.
-     */
+    /** Represents the primitive type `i8_t`, with values from the range `[-128, +127]`. */
     struct i8_t {};
 
-    /**
-     * Represents the primitive type `i16_t`, with values from the range `[-32768, +32767]`.
-     */
+    /** Represents the primitive type `i16_t`, with values from the range `[-32768, +32767]`. */
     struct i16_t {};
 
-    /**
-     * Represents the primitive type `i16_t`, with values from the range `[-2147483648, +2147483647]`.
-     */
+    /** Represents the primitive type `i16_t`, with values from the range `[-2147483648, +2147483647]`. */
     struct i32_t {};
 
     /**
@@ -146,29 +132,19 @@ struct expr_t
      */
     struct i64_t {};
 
-    /**
-     * Represents the primitive type `u8_t`, with values from the range `[0, 255]`.
-     */
+    /** Represents the primitive type `u8_t`, with values from the range `[0, 255]`. */
     struct u8_t {};
 
-    /**
-     * Represents the primitive type `u16_t`, with values from the range `[0, 65535]`.
-     */
+    /** Represents the primitive type `u16_t`, with values from the range `[0, 65535]`. */
     struct u16_t {};
 
-    /**
-     * Represents the primitive type `u32_t`, with values from the range `[0, 4294967295]`.
-     */
+    /** Represents the primitive type `u32_t`, with values from the range `[0, 4294967295]`. */
     struct u32_t {};
 
-    /**
-     * Represents the primitive type `u64_t`, with values from the range `[0, 18446744073709551615]`.
-     */
+    /** Represents the primitive type `u64_t`, with values from the range `[0, 18446744073709551615]`. */
     struct u64_t {};
 
-    /**
-     * Represents the boolean constants `true` or `false`.
-     */
+    /** Represents the boolean constants `true` or `false`. */
     struct boolean_constant_t
     {
         bool value;
@@ -191,17 +167,13 @@ struct expr_t
         boost::multiprecision::cpp_int value;
     };
 
-    /**
-     * Represents string literals, like "" and "Hello \"World\"".
-     */
+    /** Represents string literals, like "" and "Hello \"World\"". */
     struct string_literal_t
     {
         source_text value;
     };
 
-    /**
-     * Represents a boolean expression, for example `x and not y xor is_even(k)`.
-     */
+    /** Represents a boolean expression, for example `x and not y xor is_even(k)`. */
     struct boolean_expr_t
     {
         struct not_t { rec_t expr; };
@@ -212,9 +184,7 @@ struct expr_t
         value_t value;
     };
 
-    /**
-     * Represents a relational expression, for example `x == y`, `x <= y` or `x > f(y)`.
-     */
+    /** Represents a relational expression, for example `x == y`, `x <= y` or `x > f(y)`. */
     struct relation_expr_t
     {
         struct eq_t  { rec_t lhs, rhs; };
@@ -227,9 +197,7 @@ struct expr_t
         value_t value;
     };
 
-    /**
-     * Represents an arithmetic expression, for example `x + y`.
-     */
+    /** Represents an arithmetic expression, for example `x + y`. */
     struct arith_expr_t
     {
         struct plus_t { rec_t lhs, rhs; };
@@ -329,10 +297,7 @@ struct expr_t
         std::vector<expr_t> values;
     };
 
-    /**
-     * Represents an array member access (aka subscript operator),
-     * for example `xs[1]`, where `xs` is an array.
-     */
+    /** Represents an array member access (aka subscript operator), for example `xs[1]`, where `xs` is an array. */
     struct subscript_t
     {
         rec_t array;

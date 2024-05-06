@@ -441,7 +441,7 @@ type_assign_app(
         err << "passed " << app.args.size() << " arguments but was expecting " << func_type->args.size();
         return error(err.str());
     }
-    if (is_mutable_allowed < func_type->is_mutable)
+    if (func_type->is_mutable == ast::is_mutable_t::yes and is_mutable_allowed == ast::is_mutable_t::no)
         return error("cannot invoke mutable function inside immutable context");
     std::vector<expr_t> args;
     for (auto const i: std::views::iota(0ul, func_type->args.size()))

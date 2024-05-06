@@ -70,7 +70,7 @@ expected<func_def_t> check_func_def(env_t&, parser::func_def_t const&);
  *
  * @param is_mutable
  *      Specifies whether the given body appears inside a mutable function;
- *      if so, invoking mutable functions and performing mutable operations is legal.
+ *      if it does, it is legal to invoke other mutable functions.
  *
  * @param usage,usage_multiplier
  *      @see usage
@@ -95,7 +95,7 @@ check_body(
  *
  * @param is_mutable
  *      Specifies whether the given statement appears inside a mutable function;
- *      if so, invoking mutable functions and performing mutable operations is legal.
+ *      if it does, it is legal to invoke other mutable functions.
  *
  * @param usage,usage_multiplier
  *      @see usage
@@ -126,7 +126,7 @@ expected<expr_t> check_type(env_t const&, ctx_t const&, parser::expr_t const&);
  *
  * @param is_mutable
  *      Specifies whether the given expression appears inside a mutable function;
- *      if so, invoking mutable functions and performing mutable operations is legal.
+ *      if it does, it is legal to invoke other mutable functions.
  *
  * @param usage,usage_multiplier
  *      @see usage

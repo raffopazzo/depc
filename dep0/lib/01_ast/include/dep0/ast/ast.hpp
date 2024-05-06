@@ -422,6 +422,7 @@ struct axiom_t
  * Represents an extern function declaration.
  * It is exactly like a function declaration but for functions provided by some external library
  * and written in a different language but with a C interface.
+ * They can only be invoked from functions marked as `mutable`.
  */
 template <Properties P>
 struct extern_decl_t

@@ -252,7 +252,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
                 ctx->KW_TYPENAME() ? visitTypename(ctx->KW_TYPENAME())
                 : throw error_t("unexpected alternative when parsing FuncTypeContext", loc);
         };
-        auto const is_mutable = ctx->KW_MUTABLE() ? ast::is_mutable_t::yes :ast::is_mutable_t::no;
+        auto const is_mutable = ctx->KW_MUTABLE() ? ast::is_mutable_t::yes : ast::is_mutable_t::no;
         return expr_t{loc, expr_t::pi_t{is_mutable, visitFuncArgs(ctx->funcArg()), ret_type()}};
     }
 

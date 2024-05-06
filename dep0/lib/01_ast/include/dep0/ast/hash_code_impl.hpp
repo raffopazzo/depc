@@ -204,15 +204,13 @@ std::size_t hash_code_impl(hash_code_state_t<P>& state, expr_t<P> const& x)
             {
                 return combine(
                     boost::hash_value(x.is_mutable),
-                    hash_code_impl<P>(state, x.args.begin(), x.args.end(), x.ret_type.get(), &x.body)
-                    );
+                    hash_code_impl<P>(state, x.args.begin(), x.args.end(), x.ret_type.get(), &x.body));
             },
             [&] (expr_t<P>::pi_t const& x)
             {
                 return combine(
                     boost::hash_value(x.is_mutable),
-                    hash_code_impl<P>(state, x.args.begin(), x.args.end(), x.ret_type.get(), nullptr)
-                    );
+                    hash_code_impl<P>(state, x.args.begin(), x.args.end(), x.ret_type.get(), nullptr));
             },
             [] (expr_t<P>::array_t const&)
             {

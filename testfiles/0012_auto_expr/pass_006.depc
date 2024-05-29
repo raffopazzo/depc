@@ -1,0 +1,3 @@
+i32_t f1() { return 0; }
+bool f2(i32_t) { return false; }
+bool f3() { return f2(auto); }

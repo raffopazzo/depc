@@ -53,6 +53,7 @@ llvm::Attribute::AttrKind get_sign_ext_attribute(global_ctx_t const& global, typ
         },
         [] (typecheck::expr_t::app_t const&) { return llvm::Attribute::None; },
         [] (typecheck::expr_t::abs_t const&) { return llvm::Attribute::None; },
+        // TODO any useful attributes for mutable function types?
         [] (typecheck::expr_t::pi_t const&) { return llvm::Attribute::None; },
         [] (typecheck::expr_t::array_t const&) { return llvm::Attribute::None; },
         [] (typecheck::expr_t::init_list_t const&) { return llvm::Attribute::None; },

@@ -1,0 +1,15 @@
+extern rand() -> i32_t;
+auto zero() -> i32_t { return 0; }
+
+bool always_true(() -> i32_t f)
+{
+    return f() == f();
+}
+
+bool maybe_true(() mutable -> i32_t f) mutable
+{
+    return f() == f();
+}
+
+bool f1() { return always_true(zero); }
+bool f2() mutable { return maybe_true(rand); }

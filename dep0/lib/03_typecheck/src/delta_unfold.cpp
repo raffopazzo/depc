@@ -2,6 +2,7 @@
 
 #include "private/cpp_int_add.hpp"
 #include "private/derivation_rules.hpp"
+#include "private/is_mutable.hpp"
 
 #include "dep0/destructive_self_assign.hpp"
 #include "dep0/match.hpp"
@@ -94,12 +95,16 @@ bool delta_unfold(env_t const&, ctx_t const&, expr_t::global_t&)
     // We only perform delta-unfolding inside a direct application,
     // eg `f(x)` for some global function `f`, but not everywhere, eg `return f`.
     // The reason for this is that we are interested in delta-unfolding only as
-    // a way to extend beta normalization as far as possible.
+    // a way to extend beta-normalization as far as possible.
     return false;
 }
 
 bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t::app_t& app)
 {
+    if (is_mutable(app))
+        // delta-unfolding is only useful to extend beta-normalization as far as possible,
+        // but mutable operations cannot be reduced to normal-formal anyway
+        return false;
     if (auto const global = std::get_if<expr_t::global_t>(&app.func.get().value))
         if (auto const func_def = std::get_if<func_def_t>(env[*global]))
         {

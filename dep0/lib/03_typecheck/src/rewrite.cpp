@@ -52,6 +52,7 @@ std::optional<expr_t::app_t> rewrite(expr_t const& from, expr_t const& to, expr_
 void rewrite(
     expr_t const& from,
     expr_t const& to,
+    ast::is_mutable_t const is_mutable,
     std::vector<func_arg_t> const& args,
     expr_t const& ret_type,
     body_t const* body,
@@ -205,11 +206,11 @@ std::optional<expr_t> rewrite(expr_t const& from, expr_t const& to, expr_t const
             },
             [&] (expr_t::abs_t const& x)
             {
-                rewrite(from, to, x.args, x.ret_type.get(), &x.body, old.properties, result);
+                rewrite(from, to, x.is_mutable, x.args, x.ret_type.get(), &x.body, old.properties, result);
             },
             [&] (expr_t::pi_t const& x)
             {
-                rewrite(from, to, x.args, x.ret_type.get(), nullptr, old.properties, result);
+                rewrite(from, to, x.is_mutable, x.args, x.ret_type.get(), nullptr, old.properties, result);
             },
             [&] (expr_t::array_t const&)
             {
@@ -242,6 +243,7 @@ std::optional<expr_t::app_t> rewrite(expr_t const& from, expr_t const& to, expr_
 void rewrite(
     expr_t const& from,
     expr_t const& to,
+    ast::is_mutable_t const is_mutable,
     std::vector<func_arg_t> const& old_args,
     expr_t const& old_ret_type,
     body_t const* old_body,
@@ -278,6 +280,7 @@ void rewrite(
             result.emplace(
                 old_properties,
                 expr_t::abs_t{
+                    is_mutable,
                     choose(std::move(new_args), old_args),
                     choose(std::move(new_ret_type), old_ret_type),
                     choose(std::move(new_body), *old_body)});
@@ -286,6 +289,7 @@ void rewrite(
         result.emplace(
             old_properties,
             expr_t::pi_t{
+                is_mutable,
                 choose(std::move(new_args), old_args),
                 choose(std::move(new_ret_type), old_ret_type)});
 }

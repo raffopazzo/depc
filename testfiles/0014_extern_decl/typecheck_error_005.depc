@@ -1,0 +1,6 @@
+i32_t rand() mutable;
+
+i32_t rand() // typecheck error: prevoiusly declared mutable
+{
+    return 0;
+}

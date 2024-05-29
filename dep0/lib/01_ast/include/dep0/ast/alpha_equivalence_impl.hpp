@@ -25,8 +25,8 @@ dep0::expected<std::true_type> is_alpha_equivalent_impl(typename expr_t<P>::app_
 
 template <Properties P>
 dep0::expected<std::true_type> is_alpha_equivalent_impl(
-    std::vector<func_arg_t<P>>& x_args, expr_t<P>& x_ret_type, body_t<P>* x_body,
-    std::vector<func_arg_t<P>>& y_args, expr_t<P>& y_ret_type, body_t<P>* y_body);
+    is_mutable_t x_mutable, std::vector<func_arg_t<P>>& x_args, expr_t<P>& x_ret_type, body_t<P>* x_body,
+    is_mutable_t y_mutable, std::vector<func_arg_t<P>>& y_args, expr_t<P>& y_ret_type, body_t<P>* y_body);
 
 template <Properties P>
 dep0::expected<std::true_type> is_alpha_equivalent_impl(body_t<P>&, body_t<P>&);
@@ -180,12 +180,16 @@ struct alpha_equivalence_visitor
 
     result_t operator()(typename expr_t<P>::abs_t& x, typename expr_t<P>::abs_t& y) const
     {
-        return is_alpha_equivalent_impl(x.args, x.ret_type.get(), &x.body, y.args, y.ret_type.get(), &y.body);
+        return is_alpha_equivalent_impl(
+            x.is_mutable, x.args, x.ret_type.get(), &x.body,
+            y.is_mutable, y.args, y.ret_type.get(), &y.body);
     }
 
     result_t operator()(typename expr_t<P>::pi_t& x, typename expr_t<P>::pi_t& y) const
     {
-        return is_alpha_equivalent_impl<P>(x.args, x.ret_type.get(), nullptr, y.args, y.ret_type.get(), nullptr);
+        return is_alpha_equivalent_impl<P>(
+            x.is_mutable, x.args, x.ret_type.get(), nullptr,
+            y.is_mutable, y.args, y.ret_type.get(), nullptr);
     }
 
     result_t operator()(typename expr_t<P>::array_t&, typename expr_t<P>::array_t&) const
@@ -267,9 +271,14 @@ dep0::expected<std::true_type> is_alpha_equivalent_impl(typename expr_t<P>::app_
 
 template <Properties P>
 dep0::expected<std::true_type> is_alpha_equivalent_impl(
-    std::vector<func_arg_t<P>>& x_args, expr_t<P>& x_ret_type, body_t<P>* x_body,
-    std::vector<func_arg_t<P>>& y_args, expr_t<P>& y_ret_type, body_t<P>* y_body)
+    is_mutable_t const x_mutable, std::vector<func_arg_t<P>>& x_args, expr_t<P>& x_ret_type, body_t<P>* x_body,
+    is_mutable_t const y_mutable, std::vector<func_arg_t<P>>& y_args, expr_t<P>& y_ret_type, body_t<P>* y_body)
 {
+    if (x_mutable != y_mutable)
+        return dep0::error_t(
+            x_mutable == is_mutable_t::yes
+            ? "a mutable function is not alpha-equivalent to an immutable one"
+            : "an immutable function is not alpha-equivalent to a mutable one");
     if (x_args.size() != y_args.size())
     {
         std::ostringstream err;

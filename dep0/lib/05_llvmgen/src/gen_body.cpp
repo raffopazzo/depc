@@ -94,7 +94,7 @@ void gen_stmt(
             auto const dest = arg0 and arg0->hasAttribute(llvm::Attribute::StructRet) ? arg0 : nullptr;
             // always generate a value, even for expressions of type unit_t,
             // because it might be a function call with side effects;
-            // and, if it is, just return 0, without complicating the CFG
+            // and, if it is, just return the unit value, without complicating the CFG
             auto const ret_val = gen_val(global, local, builder, *x.expr, dest);
             if (dest)
                 builder.CreateRetVoid();

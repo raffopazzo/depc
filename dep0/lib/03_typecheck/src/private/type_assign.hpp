@@ -16,6 +16,9 @@ namespace dep0::typecheck {
  * Not all expressions can be assigned a type when taken in isolation;
  * for example numerical expressions and initializer lists.
  *
+ * @param is_mutable_allowed
+ *      Specifies whether it is allowed to invoke mutable functions from the current context.
+ *
  * @param usage,usage_multiplier
  *      @see usage
  * 
@@ -26,6 +29,7 @@ type_assign(
     env_t const&,
     ctx_t const&,
     parser::expr_t const&,
+    ast::is_mutable_t is_mutable_allowed,
     usage_t& usage,
     ast::qty_t usage_multiplier);
 
@@ -35,6 +39,9 @@ type_assign(
  * @param loc
  *      The location in the source file where the expression was found.
  *      If type-assignment fails, it will be copied in the error message.
+ *
+ * @param is_mutable_allowed
+ *      Specifies whether it is allowed to invoke mutable functions from the current context.
  *
  * @param usage,usage_multiplier
  *      @see usage
@@ -47,6 +54,7 @@ type_assign_app(
     ctx_t const&,
     parser::expr_t::app_t const&,
     source_loc_t const& loc,
+    ast::is_mutable_t is_mutable_allowed,
     usage_t& usage,
     ast::qty_t usage_multiplier);
 
@@ -56,7 +64,7 @@ type_assign_app(
  * @param loc
  *      The location in the source file where the expression was found.
  *      If type-assignment fails, it will be copied in the error message.
-
+ *
  * @param name
  *      If the abstraction is given a name, it can call itself recursively.
  *

@@ -1,0 +1,2 @@
+i32_t f(i32_t x, typename) { return x + x; }
+i32_t g() { return f(2, () mutable -> i32_t); }

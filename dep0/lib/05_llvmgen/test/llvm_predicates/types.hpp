@@ -15,6 +15,8 @@ namespace dep0::llvmgen::testing {
 
 namespace impl {
 
+// primitive
+
 boost::test_tools::predicate_result is_i1(llvm::Type const&);
 boost::test_tools::predicate_result is_i1(llvm::Type const*);
 
@@ -29,6 +31,31 @@ boost::test_tools::predicate_result is_i32(llvm::Type const*);
 
 boost::test_tools::predicate_result is_i64(llvm::Type const&);
 boost::test_tools::predicate_result is_i64(llvm::Type const*);
+
+// array
+
+template <Predicate<llvm::Type> F>
+boost::test_tools::predicate_result is_array_of(llvm::ArrayType const& x, std::size_t const size, F&& f)
+{
+    using namespace dep0::testing;
+    if (auto const n = x.getNumElements(); n != size)
+        return failure("array size: ", n, " != ", size);
+    if (auto const result = std::forward<F>(f)(*x.getElementType()); not result)
+        return failure("array element type:", result.message());
+    return true;
+}
+
+template <Predicate<llvm::Type> F>
+boost::test_tools::predicate_result is_array_of(llvm::Type const& x, std::size_t const size, F&& f)
+{
+    using namespace dep0::testing;
+    if (auto const p = llvm::dyn_cast<llvm::ArrayType>(&x))
+        return is_array_of(*p, size, std::forward<F>(f));
+    else
+        return failure("type is not an array");
+}
+
+// pointer
 
 template <Predicate<llvm::Type> F>
 boost::test_tools::predicate_result is_pointer_to(llvm::Type const& x, F&& f)
@@ -48,6 +75,8 @@ boost::test_tools::predicate_result is_pointer_to(llvm::Type const* const p, F&&
         return dep0::testing::failure("type is null");
     return is_pointer_to(*p, std::forward<F>(f));
 }
+
+// struct
 
 template <Predicate<llvm::Type>... Types>
 boost::test_tools::predicate_result is_struct(llvm::StructType const& s, Types&&... types)
@@ -137,6 +166,15 @@ inline constexpr auto is_pointer_to = boost::hana::overload(
         return impl::is_pointer_to(p, std::forward<F>(f));
     }
 );
+
+template <Predicate<llvm::Type> F>
+auto array_of(std::size_t const size, F&& f)
+{
+    return [size, f=std::forward<F>(f)] (llvm::Type const& x)
+    {
+        return impl::is_array_of(x, size, f);
+    };
+}
 
 template <Predicate<llvm::Type> F>
 auto pointer_to(F&& f)

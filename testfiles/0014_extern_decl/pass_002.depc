@@ -1,0 +1,12 @@
+extern puts(cstr_t) -> i32_t;
+
+i32_t debug() mutable
+{
+    puts("debug msg");
+    return 0;
+}
+
+i32_t g() mutable
+{
+    return debug();
+}

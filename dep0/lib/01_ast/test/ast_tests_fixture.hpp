@@ -9,6 +9,7 @@ struct dummy_properties_t
     using module_properties_type = dummy_properties_t;
     using type_def_properties_type = dummy_properties_t;
     using axiom_properties_type = dummy_properties_t;
+    using extern_decl_properties_type = dummy_properties_t;
     using func_decl_properties_type = dummy_properties_t;
     using func_def_properties_type = dummy_properties_t;
     using func_arg_properties_type = dummy_properties_t;
@@ -24,6 +25,7 @@ struct AstTestsFixture
     using module_t = dep0::ast::module_t<dummy_properties_t>;
     using type_def_t = dep0::ast::type_def_t<dummy_properties_t>;
     using axiom_t = dep0::ast::axiom_t<dummy_properties_t>;
+    using extern_decl_t = dep0::ast::extern_decl_t<dummy_properties_t>;
     using func_decl_t = dep0::ast::func_decl_t<dummy_properties_t>;
     using func_def_t = dep0::ast::func_def_t<dummy_properties_t>;
     using func_arg_t = dep0::ast::func_arg_t<dummy_properties_t>;
@@ -32,6 +34,7 @@ struct AstTestsFixture
     using expr_t = dep0::ast::expr_t<dummy_properties_t>;
 
     static func_def_t func_def(char const* const name, std::vector<func_arg_t>, expr_t ret_type, body_t);
+    static func_def_t func_def(is_mutable_t, char const* const name, std::vector<func_arg_t>, expr_t ret_type, body_t);
     static expr_t typename_();
     static expr_t i32();
     static expr_t u32();
@@ -45,7 +48,9 @@ struct AstTestsFixture
     static func_arg_t arg(expr_t type, char const* const var_name = nullptr);
     static func_arg_t arg(qty_t, expr_t type, char const* const var_name = nullptr);
     static expr_t abs(std::vector<func_arg_t> args, expr_t ret_type, body_t body);
+    static expr_t abs(is_mutable_t, std::vector<func_arg_t> args, expr_t ret_type, body_t body);
     static expr_t pi(std::vector<func_arg_t> args, expr_t ret_type);
+    static expr_t pi(is_mutable_t, std::vector<func_arg_t> args, expr_t ret_type);
 };
 
 } // namespace dep0::ast

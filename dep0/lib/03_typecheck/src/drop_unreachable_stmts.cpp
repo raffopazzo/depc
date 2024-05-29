@@ -28,7 +28,7 @@ drop_unreachable_stmts(
                 {
                     return std::holds_alternative<stmt_t::return_t>(x.value);
                 });
-        it != end)
+        it != end and std::next(it) != end)
     {
         changed = true;
         end = std::next(it);
@@ -42,7 +42,7 @@ drop_unreachable_stmts(
                     auto const if_else = std::get_if<stmt_t::if_else_t>(&x.value);
                     return if_else and returns_from_all_branches(*if_else);
                 });
-        it != end)
+        it != end and std::next(it) != end)
     {
         changed = true;
         end = std::next(it);

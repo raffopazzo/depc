@@ -54,7 +54,7 @@ boost::test_tools::predicate_result
         if (call->isIndirectCall())
             return failure("call is indirect but should be direct");
     if (auto const result = std::forward<F>(f)(*call->getCalledOperand()); not result)
-        return failure("called operand predicated failed: ", result.message());
+        return failure("inside invoked function: ", result.message());
     auto result = boost::test_tools::predicate_result(true);
     int next = 0;
     ([&]
@@ -70,7 +70,7 @@ boost::test_tools::predicate_result
             }
             if (auto const tmp = args.predicate(*arg); not tmp)
             {
-                result = failure("call argument ", i, " predicate failed: ", tmp.message());
+                result = failure("inside call argument ", i, ": ", tmp.message());
                 return;
             }
             auto const& actual_attrs = call->getAttributes().getParamAttributes(i);

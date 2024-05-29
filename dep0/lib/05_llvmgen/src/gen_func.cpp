@@ -54,6 +54,7 @@ void gen_func_args(
             bool inserted = false;
             if (std::holds_alternative<typecheck::expr_t::pi_t>(arg.type.value))
             {
+                // TODO any useful attributes for mutable function types?
                 assert(llvm_arg.getType()->isPointerTy());
                 auto const function_type = cast<llvm::FunctionType>(llvm_arg.getType()->getPointerElementType());
                 assert(function_type);
@@ -87,6 +88,14 @@ void gen_func_body(
         // this implies its return type is `unit_t`, so just return `i8 0`.
         snippet.seal_open_blocks(builder, [unit=gen_val_unit(global)] (auto& builder) { builder.CreateRet(unit); });
     }
+}
+
+void gen_extern_decl(
+    global_ctx_t& global,
+    typecheck::expr_t::global_t const& name,
+    llvm_func_proto_t const& proto)
+{
+    gen_func_decl(global, name, proto);
 }
 
 void gen_func_decl(

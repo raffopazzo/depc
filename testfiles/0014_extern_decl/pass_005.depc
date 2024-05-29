@@ -1,0 +1,9 @@
+extern rand() -> i32_t;
+
+i32_t sum(i32_t x, i32_t y) { return x+y; }
+
+i32_t f() mutable
+{
+    sum(rand(), rand());
+    return 0;
+}

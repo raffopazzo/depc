@@ -1,0 +1,6 @@
+extern rand() -> i32_t;
+
+i32_t rand() mutable // typecheck error: cannot implement extern function
+{
+    return 0;
+}

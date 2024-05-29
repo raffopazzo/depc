@@ -97,6 +97,10 @@ bool beta_normalize(expr_t::app_t& app)
     for (auto& arg: app.args)
         changed |= beta_normalize(arg);
     if (std::ranges::any_of(app.args, [] (expr_t const& arg) { return is_mutable(arg); }))
+        // We cannot push any argument inside the body if it is mutable,
+        // otherwise we might alter the original programme if the argument is not used exactly once;
+        // in principle we could try to prove that the argument is used exactly once,
+        // but for now that's extra complexity that we don't need; we can reassess in future.
         return changed;
     if (auto* const abs = std::get_if<expr_t::abs_t>(&app.func.get().value))
     {

@@ -58,7 +58,7 @@ static bool is_mutable(expr_t::abs_t const&)
 {
     // consider something like `[] () mutable -> i32_t { return rand(); }`, this expression in itself is not mutable;
     // invoking this lambda is mutable but the expression generating the lambda is not;
-    // though in future it might become, for example `[x=rand()] () mutable -> i32_t { return x; }` is mutable;
+    // though in future it might become, for example `[x=rand()] () -> i32_t { return x; }` is mutable;
     // each time this expression is evaluated a different lambda might be generated
     return false;
 }

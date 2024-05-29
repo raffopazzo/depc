@@ -50,10 +50,10 @@ dep0::expected<std::true_type> is_c_type(parser::expr_t const& x)
 dep0::expected<std::true_type> is_c_func_type(parser::expr_t::pi_t const& pi)
 {
     for (auto const& arg: pi.args)
-        // TODO allow 0 quantity? eg `f(0 typename t, 0 u64_t n, array_t(t, n) p) -> i32_t` could make p a `void*`?
+        // TODO allow 0 quantity? eg `f(0 typename t, 0 u64_t n, array_t(t, n) p) -> i32_t` could make `p` a `void*`?
         if (auto result = is_c_type(arg.type); not result)
             return result;
-    // TODO what about C-functions return void? shall we allow unit_t for return?
+    // TODO what about C-functions that return void? shall we allow unit_t for the return type?
     return is_c_type(pi.ret_type.get());
 }
 

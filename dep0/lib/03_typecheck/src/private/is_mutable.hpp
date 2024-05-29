@@ -16,7 +16,8 @@ bool is_mutable(expr_t const&);
  * in other words, if multiple evaluations of this expression may result in different values.
  * For example:
  *   - a call to a mutable function, either with or without arguments;
- *   - a call to an immutable function if any argument is the result of a mutable function call.
+ *   - a call to an immutable function if any argument is the result of a mutable function call;
+ *   - a call to an immutable function if any argument is the result of any other mutable operation.
  */
 bool is_mutable(expr_t::app_t const&);
 

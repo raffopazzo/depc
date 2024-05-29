@@ -123,21 +123,11 @@ BOOST_AUTO_TEST_CASE(pass_002)
     {
         auto const f = pass_result.value()->getFunction("g");
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, sext));
-        auto const blks = get_blocks(*f);
-        BOOST_TEST_REQUIRE(blks.size() == 2ul);
-        auto const entry = blks[0];
-        auto const cont0 = blks[1];
-        {
-            auto const inst = get_instructions(f->getEntryBlock());
-            BOOST_TEST_REQUIRE(inst.size() == 4ul);
-            BOOST_TEST(is_alloca(inst[0], is_i32, constant(1), align_of(4)));
-            BOOST_TEST(is_direct_call(inst[1], exactly(puts), call_arg(debug_msg)));
-            BOOST_TEST(is_store_of(inst[2], is_i32, constant(0), exactly(inst[0]), align_of(4)));
-            BOOST_TEST(is_unconditional_branch_to(inst[3], exactly(cont0)));
-        }
-        {
-            BOOST_TEST(is_return_of(cont0->getTerminator(), load_of(is_i32, exactly(&entry->front()), align_of(4))));
-        }
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(
+            is_return_of(
+                f->getEntryBlock().getTerminator(),
+                direct_call_of(exactly(pass_result.value()->getFunction("debug")))));
     }
 }
 
@@ -154,21 +144,13 @@ BOOST_AUTO_TEST_CASE(pass_003)
         BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), add_of(x, x)));
     }
     {
-        // inlining produces a duplicate of `f` in this particular circumstance...
-        auto const f = pass_result.value()->getFunction("$_func_0");
-        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(is_i32, "x", sext)}, is_i32, sext));
-        BOOST_TEST_REQUIRE(f->size() == 1ul);
-        auto const x = exactly(f->getArg(0));
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), add_of(x, x)));
-    }
-    {
         auto const f = pass_result.value()->getFunction("g");
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(pointer_to(is_i8), "s", nonnull)}, is_i32, sext));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
         BOOST_TEST(
             is_return_of(f->getEntryBlock().getTerminator(),
             direct_call_of(
-                exactly(pass_result.value()->getFunction("$_func_0")),
+                exactly(pass_result.value()->getFunction("f")),
                 call_arg(direct_call_of(exactly(puts), call_arg(exactly(f->getArg(0)))), sext))));
     }
 }
@@ -183,6 +165,47 @@ BOOST_AUTO_TEST_CASE(pass_004)
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, sext));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
         BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(4)));
+    }
+}
+
+BOOST_AUTO_TEST_CASE(pass_005)
+{
+    apply_beta_delta_normalization = true;
+    BOOST_TEST_REQUIRE(pass("0014_extern_decl/pass_005.depc"));
+    {
+        auto const f = pass_result.value()->getFunction("rand");
+        BOOST_TEST(is_function_of(f, std::tuple{}, is_i32, sext));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("sum");
+        BOOST_TEST_REQUIRE(
+            is_function_of(
+                f,
+                std::tuple{
+                    arg_of(is_i32, "x", sext),
+                    arg_of(is_i32, "y", sext)},
+                is_i32, sext));
+        auto const x = exactly(f->getArg(0));
+        auto const y = exactly(f->getArg(1));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), add_of(x, y)));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("f");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, sext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        auto const rand = pass_result.value()->getFunction("rand");
+        auto const sum  = pass_result.value()->getFunction("sum");
+        auto const inst = get_instructions(f->getEntryBlock());
+        BOOST_TEST_REQUIRE(inst.size() == 4ul);
+        BOOST_TEST(is_direct_call(inst[0], exactly(rand)));
+        BOOST_TEST(is_direct_call(inst[1], exactly(rand)));
+        BOOST_TEST(
+            is_direct_call(
+                inst[2],
+                exactly(sum),
+                call_arg(exactly(inst[0]), sext),
+                call_arg(exactly(inst[1]), sext)));
+        BOOST_TEST(is_return_of(inst[3], constant(0)));
     }
 }
 

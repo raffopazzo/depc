@@ -30,7 +30,6 @@ static bool is_mutable(expr_t::relation_expr_t const&);
 static bool is_mutable(expr_t::arith_expr_t const&);
 static bool is_mutable(expr_t::var_t const&) { return false; }
 static bool is_mutable(expr_t::global_t const&) { return false; }
-static bool is_mutable(expr_t::app_t const&);
 static bool is_mutable(expr_t::abs_t const&);
 static bool is_mutable(expr_t::pi_t const&);
 static bool is_mutable(expr_t::array_t const&) { return false; }
@@ -53,13 +52,6 @@ static bool is_mutable(expr_t::relation_expr_t const& x)
 static bool is_mutable(expr_t::arith_expr_t const& x)
 {
     return match(x.value, [] (auto const& x) { return is_mutable(x.lhs.get()) or is_mutable(x.rhs.get()); });
-}
-
-static bool is_mutable(expr_t::app_t const& x)
-{
-    auto const& func_type = std::get<expr_t>(x.func.get().properties.sort.get());
-    return std::get<expr_t::pi_t>(func_type.value).is_mutable == ast::is_mutable_t::yes or
-        std::ranges::any_of(x.args, [] (expr_t const& arg) { return is_mutable(arg); });
 }
 
 static bool is_mutable(expr_t::abs_t const&)
@@ -91,7 +83,17 @@ static bool is_mutable(expr_t::subscript_t const& x)
 
 bool is_mutable(expr_t const& x)
 {
-    return match(x.value, [] (auto const& x) { return impl::is_mutable(x); });
+    return match(
+        x.value,
+        [] (expr_t::app_t const& app) { return is_mutable(app); },
+        [] (auto const& x) { return impl::is_mutable(x); });
+}
+
+bool is_mutable(expr_t::app_t const& x)
+{
+    auto const& func_type = std::get<expr_t>(x.func.get().properties.sort.get());
+    return std::get<expr_t::pi_t>(func_type.value).is_mutable == ast::is_mutable_t::yes or
+        std::ranges::any_of(x.args, [] (expr_t const& arg) { return is_mutable(arg); });
 }
 
 } // namespace dep0::typecheck

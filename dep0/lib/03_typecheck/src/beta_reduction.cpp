@@ -180,12 +180,9 @@ bool beta_normalize(body_t& body)
             it->value,
             [&] (expr_t::app_t const& app)
             {
-                // calls to immutable functions can be removed since they do nothing; keep anything else
-                if (auto const type = std::get_if<expr_t>(&app.func.get().properties.sort.get()))
-                    if (auto const pi = std::get_if<expr_t::pi_t>(&type->value))
-                        if (pi->is_mutable == ast::is_mutable_t::no)
-                            return body.stmts.erase(it);
-                return std::next(it);
+                // calls to immutable functions with immutable arguments can be removed since they do nothing;
+                // keep anything else
+                return is_mutable(app) ? std::next(it) : body.stmts.erase(it);
             },
             [&] (stmt_t::if_else_t& if_)
             {

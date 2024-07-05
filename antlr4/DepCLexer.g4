@@ -12,12 +12,14 @@ KW_AXIOM: 'axiom';
 KW_BOOL: 'bool';
 KW_CSTR_T: 'cstr_t';
 KW_ELSE: 'else';
+KW_EXTERN: 'extern';
 KW_FALSE: 'false';
 KW_I16_T: 'i16_t';
 KW_I32_T: 'i32_t';
 KW_I64_T: 'i64_t';
 KW_I8_T: 'i8_t';
 KW_IF: 'if';
+KW_MUTABLE: 'mutable';
 KW_NOT: 'not';
 KW_OR: 'or';
 KW_RETURN: 'return';
@@ -59,11 +61,11 @@ INT: [0-9][0-9']*;
 STR: '"' (' ' | '!' | '\\' '"' | [\u0023-\u007E])* '"';
 
 // White Spaces
-BLOCK_COMMENT: '/*' -> skip, pushMode(BlockComment);
-LINE_COMMENT: '//' .*? '\r'? '\n' -> skip;
-WS: [ \n\t\r\f]+ -> skip;
+BLOCK_COMMENT: '/*' -> channel(HIDDEN), pushMode(BlockComment);
+LINE_COMMENT: '//' .*? '\r'? '\n' -> channel(HIDDEN);
+WS: [ \n\t\r\f]+ -> channel(HIDDEN);
 
 mode BlockComment;
-CLOSE_COMMENT: '*/' -> skip, popMode;
-NESTED_COMMENT: '/*' -> skip, pushMode(BlockComment);
-SKIP_COMMENT: . -> skip;
+CLOSE_COMMENT: '*/' -> channel(HIDDEN), popMode;
+NESTED_COMMENT: '/*' -> channel(HIDDEN), pushMode(BlockComment);
+SKIP_COMMENT: . -> channel(HIDDEN);

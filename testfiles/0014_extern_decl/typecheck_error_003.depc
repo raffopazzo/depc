@@ -1,0 +1,8 @@
+extern rand() -> i32_t;
+
+bool f(i32_t) { return true; }
+
+bool g()
+{
+    return f(auto); // typecheck error: cannot find value of type i32_t (because rand is not viable since mutable)
+}

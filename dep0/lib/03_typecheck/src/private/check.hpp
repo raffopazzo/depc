@@ -36,6 +36,14 @@ expected<type_def_t> check_type_def(env_t&, parser::type_def_t const&);
 expected<axiom_t> check_axiom(env_t&, parser::axiom_t const&);
 
 /**
+ * Checks whether an extern function declaration is legal;
+ * if it is, the declaration is stored in the given environment.
+ *
+ * @return A legal extern function declaration or an error.
+ */
+expected<extern_decl_t> check_extern_decl(env_t&, parser::extern_decl_t const&);
+
+/**
  * Checks whether a function declaration is legal;
  * if it is, the declaration is stored in the given environment.
  *
@@ -60,6 +68,10 @@ expected<func_def_t> check_func_def(env_t&, parser::func_def_t const&);
  * means that the `if` condition was false once execution gets past the `if` statement;
  * this knowledge can be used to refine the current proof state.
  *
+ * @param is_mutable
+ *      Specifies whether the given body appears inside a mutable function;
+ *      if it does, it is legal to invoke other mutable functions.
+ *
  * @param usage,usage_multiplier
  *      @see usage
  *
@@ -70,6 +82,7 @@ check_body(
     env_t const&,
     proof_state_t,
     parser::body_t const&,
+    ast::is_mutable_t is_mutable,
     usage_t& usage,
     ast::qty_t usage_multiplier);
 
@@ -79,6 +92,10 @@ check_body(
  * This function might refine the proof state of the enclosing body.
  * For example, an `if` statement without the `false` branch which returns from all paths of the `true` branch,
  * means that the `if` condition was false once execution gets past the `if` statement.
+ *
+ * @param is_mutable
+ *      Specifies whether the given statement appears inside a mutable function;
+ *      if it does, it is legal to invoke other mutable functions.
  *
  * @param usage,usage_multiplier
  *      @see usage
@@ -90,6 +107,7 @@ check_stmt(
     env_t const&,
     proof_state_t&,
     parser::stmt_t const&,
+    ast::is_mutable_t is_mutable,
     usage_t& usage,
     ast::qty_t usage_multiplier);
 
@@ -106,6 +124,10 @@ expected<expr_t> check_type(env_t const&, ctx_t const&, parser::expr_t const&);
  * @param expected_type
  *      The type/kind that the expression must have.
  *
+ * @param is_mutable
+ *      Specifies whether the given expression appears inside a mutable function;
+ *      if it does, it is legal to invoke other mutable functions.
+ *
  * @param usage,usage_multiplier
  *      @see usage
  *
@@ -117,6 +139,7 @@ check_expr(
     ctx_t const&,
     parser::expr_t const&,
     sort_t const& expected_type,
+    ast::is_mutable_t is_mutable,
     usage_t& usage,
     ast::qty_t usage_multiplier);
 
@@ -150,6 +173,9 @@ expected<expr_t> check_numeric_expr(
  *      The location in the source file where the expression was found.
  *      If type-checking fails, it will be copied in the error message.
  *
+ * @param is_mutable
+ *      If the resulting Pi-type is legal, it will be assigned the given mutability modifier.
+ *
  * @param args
  *      The arguments of the Pi-type.
  *
@@ -162,6 +188,7 @@ expected<expr_t> check_pi_type(
     env_t const&,
     ctx_t& ctx,
     source_loc_t const& loc,
+    ast::is_mutable_t is_mutable,
     std::vector<parser::func_arg_t> const& args,
     parser::expr_t const& ret_ty);
 

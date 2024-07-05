@@ -18,6 +18,9 @@ namespace dep0::typecheck {
  */
 struct search_state_t;
 
+/** @return True if mutable functions are viable proof terms; false otherwise. */
+bool is_mutable_allowed(search_state_t const&);
+
 /**
  * Search for a value of the given type in the given environment and context.
  * If none can be found, returns an empty optional.
@@ -29,6 +32,9 @@ struct search_state_t;
  * in other words, the search is performed using a temporary usage object;
  * only once a term is found all usages are added to the input usage object.
  *
+ * @param is_mutable_allowed
+ *      Specifies whether mutable functions are viable proof terms.
+ *
  * @param usage,usage_multiplier
  *      @see usage
  */
@@ -37,6 +43,7 @@ start_proof_search(
     env_t const&,
     ctx_t const&,
     expr_t const& type,
+    ast::is_mutable_t is_mutable_allowed,
     usage_t& usage,
     ast::qty_t usage_multiplier);
 

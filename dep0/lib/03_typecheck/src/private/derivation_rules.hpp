@@ -61,6 +61,17 @@ axiom_t make_legal_axiom(source_loc_t const origin, sort_t sort, Args&&... args)
 }
 
 template <typename... Args>
+extern_decl_t make_legal_extern_decl(source_loc_t const origin, sort_t sort, Args&&... args)
+{
+    return extern_decl_t{
+        origin,
+        derivation_rules::make_derivation<extern_decl_t>(),
+        std::move(sort),
+        std::forward<Args>(args)...
+    };
+}
+
+template <typename... Args>
 func_decl_t make_legal_func_decl(source_loc_t const origin, sort_t sort, Args&&... args)
 {
     return func_decl_t{

@@ -24,7 +24,15 @@ struct search_state_t
     using value_t = std::variant<in_progress_t, result_t>;
     using cache_t = std::unordered_map<expr_t, value_t, hash_t, eq_t>;
     cache_t cache;
+    ast::is_mutable_t is_mutable_allowed;
+
+    explicit search_state_t(ast::is_mutable_t const m) : is_mutable_allowed(m) {}
 };
+
+bool is_mutable_allowed(search_state_t const& s)
+{
+    return s.is_mutable_allowed == ast::is_mutable_t::yes;
+}
 
 bool search_state_t::eq_t::operator()(expr_t const& x, expr_t const& y) const
 {
@@ -57,10 +65,11 @@ start_proof_search(
     env_t const& env,
     ctx_t const& ctx,
     expr_t const& type,
+    ast::is_mutable_t const is_mutable_allowed,
     usage_t& usage,
     ast::qty_t const usage_multiplier)
 {
-    search_state_t search_state;
+    search_state_t search_state(is_mutable_allowed);
     return continue_proof_search(env, ctx, type, search_state, usage, usage_multiplier);
 
 }

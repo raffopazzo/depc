@@ -108,6 +108,12 @@ bool beta_delta_normalize(module_t& m)
                 assert(ok.has_value());
                 return result;
             },
+            [] (extern_decl_t&)
+            {
+                // extern declarations cannot contain dependencies or other type-expressions,
+                // so there is nothing to normalize here
+                return false;
+            },
             [&] (func_decl_t& decl)
             {
                 bool const result = impl::beta_delta_normalize(env, decl);

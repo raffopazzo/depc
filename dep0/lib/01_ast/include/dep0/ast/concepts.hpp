@@ -11,6 +11,7 @@ concept Properties = requires(T)
     typename T::module_properties_type;
     typename T::type_def_properties_type;
     typename T::axiom_properties_type;
+    typename T::extern_decl_properties_type;
     typename T::func_decl_properties_type;
     typename T::func_def_properties_type;
     typename T::func_arg_properties_type;

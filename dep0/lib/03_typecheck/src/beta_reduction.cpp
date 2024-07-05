@@ -1,6 +1,7 @@
 #include "private/beta_reduction.hpp"
 
 #include "private/drop_unreachable_stmts.hpp"
+#include "private/is_mutable.hpp"
 #include "private/substitute.hpp"
 
 #include "dep0/destructive_self_assign.hpp"
@@ -95,6 +96,12 @@ bool beta_normalize(expr_t::app_t& app)
     bool changed = beta_normalize(app.func.get());
     for (auto& arg: app.args)
         changed |= beta_normalize(arg);
+    if (std::ranges::any_of(app.args, [] (expr_t const& arg) { return is_mutable(arg); }))
+        // We cannot push any argument inside the body if it is mutable,
+        // otherwise we might alter the original programme if the argument is not used exactly once;
+        // in principle we could try to prove that the argument is used exactly once,
+        // but for now that's extra complexity that we don't need; we can reassess in future.
+        return changed;
     if (auto* const abs = std::get_if<expr_t::abs_t>(&app.func.get().value))
     {
         if (abs->args.size() > 0ul)
@@ -175,12 +182,11 @@ bool beta_normalize(body_t& body)
         changed |= impl::beta_normalize(*it);
         it = match(
             it->value,
-            [&] (expr_t::app_t const&)
+            [&] (expr_t::app_t const& app)
             {
-                // currently all functions are immutable and can be dropped right away;
-                // eventually we'll have to keep calls to mutable functions,
-                // in order to retain their side effects
-                return body.stmts.erase(it);
+                // calls to immutable functions with immutable arguments can be removed since they do nothing;
+                // keep anything else
+                return is_mutable(app) ? std::next(it) : body.stmts.erase(it);
             },
             [&] (stmt_t::if_else_t& if_)
             {

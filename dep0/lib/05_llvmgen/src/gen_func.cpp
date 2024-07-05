@@ -89,6 +89,14 @@ void gen_func_body(
     }
 }
 
+void gen_extern_decl(
+    global_ctx_t& global,
+    typecheck::expr_t::global_t const& name,
+    llvm_func_proto_t const& proto)
+{
+    gen_func_decl(global, name, proto);
+}
+
 void gen_func_decl(
     global_ctx_t& global,
     typecheck::expr_t::global_t const& name,

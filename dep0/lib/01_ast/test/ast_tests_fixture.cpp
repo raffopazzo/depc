@@ -7,10 +7,21 @@ namespace dep0::ast {
 AstTestsFixture::func_def_t
 AstTestsFixture::func_def(char const* const name, std::vector<func_arg_t> args, expr_t ret_type, body_t body)
 {
+    return func_def(is_mutable_t::no, name, std::move(args), std::move(ret_type), std::move(body));
+}
+
+AstTestsFixture::func_def_t
+AstTestsFixture::func_def(
+    is_mutable_t const m,
+    char const* const name,
+    std::vector<func_arg_t> args,
+    expr_t ret_type,
+    body_t body)
+{
     return func_def_t{
         dummy_properties_t{},
         testing::literal_string(name),
-        expr_t::abs_t{std::move(args), std::move(ret_type), std::move(body)}
+        expr_t::abs_t{m, std::move(args), std::move(ret_type), std::move(body)}
     };
 }
 
@@ -70,12 +81,23 @@ AstTestsFixture::func_arg_t AstTestsFixture::arg(qty_t const qty, expr_t type, c
 
 AstTestsFixture::expr_t AstTestsFixture::abs(std::vector<func_arg_t> args, expr_t ret_type, body_t body)
 {
-    return expr_t{dummy_properties_t{}, expr_t::abs_t{std::move(args), std::move(ret_type), std::move(body)}};
+    return abs(is_mutable_t::no, std::move(args), std::move(ret_type), std::move(body));
+}
+
+AstTestsFixture::expr_t
+AstTestsFixture::abs(is_mutable_t const m, std::vector<func_arg_t> args, expr_t ret_type, body_t body)
+{
+    return expr_t{dummy_properties_t{}, expr_t::abs_t{m, std::move(args), std::move(ret_type), std::move(body)}};
 }
 
 AstTestsFixture::expr_t AstTestsFixture::pi(std::vector<func_arg_t> args, expr_t ret_type)
 {
-    return expr_t{dummy_properties_t{}, expr_t::pi_t{std::move(args), std::move(ret_type)}};
+    return pi(is_mutable_t::no, std::move(args), std::move(ret_type));
+}
+
+AstTestsFixture::expr_t AstTestsFixture::pi(is_mutable_t const m, std::vector<func_arg_t> args, expr_t ret_type)
+{
+    return expr_t{dummy_properties_t{}, expr_t::pi_t{m, std::move(args), std::move(ret_type)}};
 }
 
 } // namespace dep0::ast

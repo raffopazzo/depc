@@ -1,0 +1,1 @@
+extern f(typename) -> i32_t; // typecheck error: typename not a c-type

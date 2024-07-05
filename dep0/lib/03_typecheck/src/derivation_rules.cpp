@@ -9,6 +9,7 @@ expr_t derivation_rules::make_true_t()
         make_legal_expr(
             kind_t{}, // TODO need to add a test to make sure this is correct
             expr_t::pi_t{
+                ast::is_mutable_t::no,
                 std::vector{make_legal_func_arg(ast::qty_t::zero, make_bool())},
                 make_typename()}),
         expr_t::true_t{});
@@ -55,6 +56,7 @@ expr_t derivation_rules::make_array()
         make_legal_expr(
             kind_t{}, // TODO need to add a test to make sure this is correct
             expr_t::pi_t{
+                ast::is_mutable_t::no,
                 std::vector{
                     make_legal_func_arg(ast::qty_t::zero, make_typename()),
                     make_legal_func_arg(ast::qty_t::zero, make_u64())

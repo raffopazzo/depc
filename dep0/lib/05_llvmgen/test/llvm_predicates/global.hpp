@@ -56,7 +56,7 @@ auto global_of(F&& f)
 {
     return [f=std::forward<F>(f)] (llvm::Value const& x)
     {
-        return impl::is_global_of(f);
+        return impl::is_global_of(x, f);
     };
 }
 

@@ -16,7 +16,7 @@ namespace dep0::typecheck {
 class env_t
 {
 public:
-    using value_type = std::variant<type_def_t, axiom_t, func_decl_t, func_def_t>;
+    using value_type = std::variant<type_def_t, axiom_t, extern_decl_t, func_decl_t, func_def_t>;
 
     env_t() = default;
     env_t(env_t const&) = default;

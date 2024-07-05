@@ -148,28 +148,29 @@ std::ostream& pretty_print(std::ostream& os, type_def_t<P> const& type_def, std:
 template <Properties P>
 std::ostream& pretty_print(std::ostream& os, axiom_t<P> const& axiom, std::size_t const indent)
 {
-    os << "axiom " << axiom.name;
-    auto const& signature = axiom.signature;
-    pretty_print(os, signature.args.begin(), signature.args.end(), signature.ret_type.get(), indent);
-    return os << ';';
+    return pretty_print<P>(os << "axiom " << axiom.name, axiom.signature) << ';';
+}
+
+template <Properties P>
+std::ostream& pretty_print(std::ostream& os, extern_decl_t<P> const& extern_decl, std::size_t const indent)
+{
+    return pretty_print<P>(os << "extern " << extern_decl.name, extern_decl.signature) << ';';
 }
 
 template <Properties P>
 std::ostream& pretty_print(std::ostream& os, func_decl_t<P> const& func_decl, std::size_t const indent)
 {
-    os << "auto " << func_decl.name;
-    auto const& signature = func_decl.signature;
-    pretty_print(os, signature.args.begin(), signature.args.end(), signature.ret_type.get(), indent);
-    return os << ';';
+    return pretty_print<P>(os << "auto " << func_decl.name, func_decl.signature) << ';';
 }
 
 template <Properties P>
 std::ostream& pretty_print(std::ostream& os, func_def_t<P> const& func_def, std::size_t const indent)
 {
     os << "auto " << func_def.name;
-    pretty_print(os, func_def.value.args.begin(), func_def.value.args.end(), func_def.value.ret_type.get(), indent);
+    auto const& abs = func_def.value;
+    pretty_print(os, abs.is_mutable, abs.args.begin(), abs.args.end(), abs.ret_type.get(), indent);
     detail::new_line(os, indent);
-    pretty_print(os, func_def.value.body, indent);
+    pretty_print(os, abs.body, indent);
     return os;
 }
 
@@ -466,7 +467,7 @@ template <Properties P>
 std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::abs_t const& x, std::size_t const indent)
 {
     os << "[] ";
-    pretty_print(os, x.args.begin(), x.args.end(), x.ret_type.get(), indent);
+    pretty_print(os, x.is_mutable, x.args.begin(), x.args.end(), x.ret_type.get(), indent);
     detail::new_line(os, indent);
     pretty_print(os, x.body, indent);
     return os;
@@ -475,7 +476,7 @@ std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::abs_t const& x,
 template <Properties P>
 std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::pi_t const& x, std::size_t const indent)
 {
-    return pretty_print(os, x.args.begin(), x.args.end(), x.ret_type.get(), indent);
+    return pretty_print(os, x.is_mutable, x.args.begin(), x.args.end(), x.ret_type.get(), indent);
 }
 
 template <Properties P>
@@ -516,6 +517,7 @@ std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::subscript_t con
 template <Properties P>
 std::ostream& pretty_print(
     std::ostream& os,
+    is_mutable_t const is_mutable,
     typename std::vector<func_arg_t<P>>::const_iterator const begin,
     typename std::vector<func_arg_t<P>>::const_iterator const end,
     expr_t<P> const& ret_type,
@@ -538,10 +540,12 @@ std::ostream& pretty_print(
         pretty_print(os, arg, indent + 1ul);
     }
     if (args_on_separate_lines)
-        detail::new_line(os, indent) << ") -> ";
+        detail::new_line(os, indent) << (is_mutable == is_mutable_t::yes ? ") mutable -> " : ") -> ");
     else
     {
         os << ')';
+        if (is_mutable == is_mutable_t::yes)
+            os << " mutable ";
         (detail::needs_new_line(ret_type) ? detail::new_line(os, indent + 1ul) : os) << " -> ";
     }
     pretty_print(os, ret_type, indent + 1ul); // +1 to help distinguish return type and body

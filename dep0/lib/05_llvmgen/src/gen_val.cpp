@@ -356,18 +356,15 @@ llvm::Value* gen_val(
                 {
                     // found an immediately-invoked-lambda: inline it!
                     if (abs->body.stmts.empty())
-                        // if body is empty, gen_body() would produce an open block,
-                        // which would then break MergeBlockIntoPredecessor();
-                        // but this is only possible if the lambda has return type unit_t,
-                        // so can just generate the unit value
+                        // if body is empty, gen_body produces an open block, which breaks MergeBlockIntoPredecessor;
+                        // but this is only possible if return type is unit_t, so just generate the unit value
                         return storeOrReturn(gen_val_unit(global));
                     auto const current_func = builder.GetInsertBlock()->getParent();
                     auto const gen_inlined_body = [&] (llvm::Value* const inlined_result)
                     {
                         auto snippet = gen_body(global, local, abs->body, "inlined", current_func, inlined_result);
                         builder.CreateBr(snippet.entry_block);
-                        bool const merged = llvm::MergeBlockIntoPredecessor(snippet.entry_block);
-                        assert(merged and "llvm could not merge inlined entry block");
+                        // MergeBlockIntoPredecessor requires a valid block, so seal everything before calling it
                         auto const next_block = llvm::BasicBlock::Create(global.llvm_ctx, "cont", current_func);
                         snippet.seal_open_blocks(
                             builder,
@@ -375,6 +372,8 @@ llvm::Value* gen_val(
                             {
                                 builder.CreateBr(next_block);
                             });
+                        bool const merged = llvm::MergeBlockIntoPredecessor(snippet.entry_block);
+                        assert(merged and "llvm could not merge inlined entry block");
                         builder.SetInsertPoint(next_block);
                     };
                     auto const dest2 = dest ? dest : gen_alloca_if_needed(global, local, builder, abs->ret_type.get());

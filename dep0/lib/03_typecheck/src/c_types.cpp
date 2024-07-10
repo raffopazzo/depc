@@ -41,20 +41,27 @@ dep0::expected<std::true_type> is_c_type(parser::expr_t const& x)
             return app and is_c_type(app->args[0]) ? yes : no();
         },
         [&] (parser::expr_t::abs_t const&) { return no(); },
-        [&] (parser::expr_t::pi_t const& pi) { return is_c_func_type(pi); },
+        [&] (parser::expr_t::pi_t const& pi) { return is_c_func_type(pi, x.properties); },
         [&] (parser::expr_t::array_t const&) { return no(); },
         [&] (parser::expr_t::init_list_t const&) { return no(); },
-        [&] (parser::expr_t::subscript_t const&) { return no(); });
+        [&] (parser::expr_t::subscript_t const&) { return no(); },
+        [&] (parser::expr_t::because_t const& x) { return is_c_type(x.value.get()); });
 }
 
-dep0::expected<std::true_type> is_c_func_type(parser::expr_t::pi_t const& pi)
+dep0::expected<std::true_type> is_c_func_type(parser::expr_t::pi_t const& pi, source_loc_t const origin)
 {
+    std::vector<error_t> reasons;
     for (auto const& arg: pi.args)
         // TODO allow 0 quantity? eg `f(0 typename t, 0 u64_t n, array_t(t, n) p) -> i32_t` could make `p` a `void*`?
         if (auto result = is_c_type(arg.type); not result)
-            return result;
+            reasons.push_back(std::move(result.error()));
     // TODO what about C-functions that return void? shall we allow unit_t for the return type?
-    return is_c_type(pi.ret_type.get());
+    if (auto result = is_c_type(pi.ret_type.get()); not result)
+        reasons.push_back(std::move(result.error()));
+    if (reasons.empty())
+        return {};
+    else
+        return dep0::error_t("not a valid C-function", origin, std::move(reasons));
 }
 
 } // namespace dep0::typecheck

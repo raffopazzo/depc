@@ -304,6 +304,29 @@ struct expr_t
         rec_t index;
     };
 
+    /**
+     * Represents an expression of the form `value because reason`,
+     * where `reason` is some auxillary proof that the compiler can use
+     * to verify that `value` is legal.
+     *
+     * @remarks
+     *      Because of "proof irrelevance", two because-expressions whose values
+     *      are alpha-equivalent are treated as alpha-equivalent, regardless of the two reasons.
+     *      For example `xs[i] because proof1` and `xs[i] because proof2`
+     *      are considered alpha-equivalent, since both prove that `i` is a valid index
+     *      and the exact reason why the index is valid is irrelevant.
+     *      A similar argument applies even if one of the expressions is not `because`;
+     *      for example, in a context where `xs` is an array of 2 elements,
+     *      both `xs[0]` and `xs[0] because true_t(0 < 2)` are alpha-equivalent,
+     *      because whatever proof the compiler used in the first expression is just as
+     *      good as the auxillary proof explicitly supplied in the second one.
+     */
+    struct because_t
+    {
+        rec_t value;
+        rec_t reason;
+    };
+
     using value_t =
         std::variant<
             typename_t, true_t, auto_t,
@@ -311,7 +334,7 @@ struct expr_t
             boolean_constant_t, numeric_constant_t, string_literal_t,
             boolean_expr_t, relation_expr_t, arith_expr_t,
             var_t, global_t, app_t, abs_t, pi_t,
-            array_t, init_list_t, subscript_t
+            array_t, init_list_t, subscript_t, because_t
         >;
 
     properties_t properties;

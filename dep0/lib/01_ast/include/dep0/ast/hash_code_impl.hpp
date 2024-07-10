@@ -226,6 +226,10 @@ std::size_t hash_code_impl(hash_code_state_t<P>& state, expr_t<P> const& x)
             [&] (expr_t<P>::subscript_t const& x)
             {
                 return combine(hash_code_impl(state, x.array.get()), hash_code_impl(state, x.index.get()));
+            },
+            [&] (expr_t<P>::because_t const& x)
+            {
+                return combine(hash_code_impl(state, x.value.get()), hash_code_impl(state, x.reason.get()));
             }));
 }
 

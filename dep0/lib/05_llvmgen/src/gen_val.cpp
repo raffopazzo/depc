@@ -472,6 +472,10 @@ llvm::Value* gen_val(
                 is_array(std::get<typecheck::expr_t>(expr.properties.sort.get()))
                     ? ptr
                     : builder.CreateLoad(type, ptr));
+        },
+        [&] (typecheck::expr_t::because_t const& x) -> llvm::Value*
+        {
+            return gen_val(global, local, builder, x.value.get(), dest);
         });
 }
 

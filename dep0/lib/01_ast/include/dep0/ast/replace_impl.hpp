@@ -131,6 +131,11 @@ void replace(typename expr_t<P>::var_t const& from, typename expr_t<P>::var_t co
         {
             replace(from, to, subscript.array.get());
             replace(from, to, subscript.index.get());
+        },
+        [&] (typename expr_t<P>::because_t& x)
+        {
+            replace(from, to, x.value.get());
+            replace(from, to, x.reason.get());
         });
 }
 

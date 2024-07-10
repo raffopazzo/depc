@@ -182,6 +182,10 @@ llvm::Type* gen_type(global_ctx_t& global, typecheck::expr_t const& x)
         {
             assert(false and "cannot generate a type for subscript expression");
             __builtin_unreachable();
+        },
+        [&] (typecheck::expr_t::because_t const& x) -> llvm::Type*
+        {
+            return gen_type(global, x.value.get());
         });
 }
 

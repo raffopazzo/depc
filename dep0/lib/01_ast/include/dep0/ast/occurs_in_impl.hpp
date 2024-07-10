@@ -135,6 +135,10 @@ bool occurs_in(typename expr_t<P>::var_t const& var, expr_t<P> const& x, occurre
         [&] (expr_t<P>::subscript_t const& x)
         {
             return occurs_in(var, x.array.get(), style) or occurs_in(var, x.index.get(), style);
+        },
+        [&] (expr_t<P>::because_t const& x)
+        {
+            return occurs_in(var, x.value.get(), style) or occurs_in(var, x.reason.get(), style);
         });
 }
 

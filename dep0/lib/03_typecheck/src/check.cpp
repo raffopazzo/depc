@@ -122,7 +122,7 @@ expected<axiom_t> check_axiom(env_t& env, parser::axiom_t const& axiom)
 expected<extern_decl_t> check_extern_decl(env_t& env, parser::extern_decl_t const& decl)
 {
     ctx_t ctx;
-    if (auto ok = is_c_func_type(decl.signature); not ok)
+    if (auto ok = is_c_func_type(decl.signature, decl.properties); not ok)
         return error_t::from_error(std::move(ok.error()));
     auto pi_type =
         check_pi_type(
@@ -568,6 +568,20 @@ check_expr(
                     pretty_print(err << "type mismatch between initializer list and `", kind_t{}) << '`';
                     return error_t::from_error(dep0::error_t(err.str(), loc), env, ctx, expected_type);
                 });
+        },
+        [&] (parser::expr_t::because_t const& x) -> expected<expr_t>
+        {
+            // reasons consume zero resources and can contain mutable operations (its type cannot; but the value can)
+            auto reason = type_assign(env, ctx, x.reason.get(), ast::is_mutable_t::yes, usage, ast::qty_t::zero);
+            if (not reason)
+                return std::move(reason.error());
+            auto ctx2 = ctx.extend();
+            if (auto const reason_type = std::get_if<expr_t>(&reason->properties.sort.get()))
+                ctx2.add_unnamed(*reason_type);
+            auto value = check_expr(env, ctx2, x.value.get(), expected_type, is_mutable, usage, usage_multiplier);
+            if (not value)
+                return std::move(value.error());
+            return make_legal_expr(expected_type, expr_t::because_t{std::move(*value), std::move(*reason)});
         },
         [&] (auto const&) -> expected<expr_t>
         {

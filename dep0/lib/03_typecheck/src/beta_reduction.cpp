@@ -50,6 +50,7 @@ static bool beta_normalize(expr_t::pi_t&);
 static bool beta_normalize(expr_t::array_t&) { return false; }
 static bool beta_normalize(expr_t::init_list_t&);
 static bool beta_normalize(expr_t::subscript_t&);
+static bool beta_normalize(expr_t::because_t&);
 
 bool beta_normalize(stmt_t& stmt)
 {
@@ -160,6 +161,11 @@ bool beta_normalize(expr_t::init_list_t& init_list)
 bool beta_normalize(expr_t::subscript_t& subscript)
 {
     return beta_normalize(subscript.array.get()) | beta_normalize(subscript.index.get());
+}
+
+bool beta_normalize(expr_t::because_t& x)
+{
+    return beta_normalize(x.value.get()) | beta_normalize(x.reason.get());
 }
 
 } // namespace impl

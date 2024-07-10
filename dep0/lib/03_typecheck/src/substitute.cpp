@@ -127,6 +127,11 @@ void substitute(expr_t::var_t const& var, expr_t const& expr, expr_t& x)
         {
             substitute(var, expr, x.array.get());
             substitute(var, expr, x.index.get());
+        },
+        [&] (expr_t::because_t& x)
+        {
+            substitute(var, expr, x.value.get());
+            substitute(var, expr, x.reason.get());
         });
 }
 

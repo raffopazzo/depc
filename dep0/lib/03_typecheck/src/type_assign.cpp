@@ -401,6 +401,21 @@ type_assign(
                     pretty_print(err << "cannot index into expression of sort `", kind_t{}) << '`';
                     return error_t::from_error(dep0::error_t(err.str(), loc));
                 });
+        },
+        [&] (parser::expr_t::because_t const& x) -> expected<expr_t>
+        {
+            // reasons consume zero resources and can contain mutable operations (its type cannot; but the value can)
+            auto reason = type_assign(env, ctx, x.reason.get(), ast::is_mutable_t::yes, usage, ast::qty_t::zero);
+            if (not reason)
+                return std::move(reason.error());
+            auto ctx2 = ctx.extend();
+            if (auto const reason_type = std::get_if<expr_t>(&reason->properties.sort.get()))
+                ctx2.add_unnamed(*reason_type);
+            auto value = type_assign(env, ctx2, x.value.get(), is_mutable_allowed, usage, usage_multiplier);
+            if (not value)
+                return std::move(value.error());
+            auto sort = value->properties.sort.get();
+            return make_legal_expr(std::move(sort), expr_t::because_t{std::move(*value), std::move(*reason)});
         });
 }
 

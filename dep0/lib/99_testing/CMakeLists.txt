@@ -4,6 +4,7 @@ add_library(dep0_testing_lib
     include/dep0/testing/ast_predicates/arith_expr.hpp
     include/dep0/testing/ast_predicates/array.hpp
     include/dep0/testing/ast_predicates/auto.hpp
+    include/dep0/testing/ast_predicates/because.hpp
     include/dep0/testing/ast_predicates/boolean_expr.hpp
     include/dep0/testing/ast_predicates/constants.hpp
     include/dep0/testing/ast_predicates/func_arg.hpp
@@ -28,6 +29,7 @@ add_library(dep0_testing_lib
     src/ast_predicates/arith_expr.cpp
     src/ast_predicates/array.cpp
     src/ast_predicates/auto.cpp
+    src/ast_predicates/because.cpp
     src/ast_predicates/boolean_expr.cpp
     src/ast_predicates/constants.cpp
     src/ast_predicates/func_arg.cpp

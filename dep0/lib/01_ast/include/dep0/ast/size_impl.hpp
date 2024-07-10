@@ -154,6 +154,10 @@ std::size_t size(expr_t<P> const& x)
         [] (expr_t<P>::subscript_t const& x)
         {
             return 1ul + std::max(size(x.array.get()), size(x.index.get()));
+        },
+        [] (expr_t<P>::because_t const& x)
+        {
+            return 1ul + std::max(size(x.value.get()), size(x.reason.get()));
         });
 }
 

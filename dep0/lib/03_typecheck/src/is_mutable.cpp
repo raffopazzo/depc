@@ -35,6 +35,7 @@ static bool is_mutable(expr_t::pi_t const&);
 static bool is_mutable(expr_t::array_t const&) { return false; }
 static bool is_mutable(expr_t::init_list_t const&);
 static bool is_mutable(expr_t::subscript_t const&);
+static bool is_mutable(expr_t::because_t const&);
 
 static bool is_mutable(expr_t::boolean_expr_t const& x)
 {
@@ -77,6 +78,13 @@ static bool is_mutable(expr_t::init_list_t const& x)
 static bool is_mutable(expr_t::subscript_t const& x)
 {
     return is_mutable(x.array.get()) or is_mutable(x.index.get());
+}
+
+static bool is_mutable(expr_t::because_t const& x)
+{
+    // reason can contain a mutable expression but it is erased at runtime,
+    // so what matters is whether the value itself is mutable
+    return is_mutable(x.value.get());
 }
 
 } // namespace impl

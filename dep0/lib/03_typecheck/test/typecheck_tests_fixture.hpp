@@ -42,6 +42,12 @@ struct TypecheckTestsFixture
     }
 
     template <typename... Args>
+    static constexpr auto because_of(Args&&... args)
+    {
+        return dep0::testing::because_of<dep0::typecheck::properties_t>(std::forward<Args>(args)...);
+    }
+
+    template <typename... Args>
     static constexpr auto init_list_of(Args&&... args)
     {
         return dep0::testing::init_list_of<dep0::typecheck::properties_t>(std::forward<Args>(args)...);

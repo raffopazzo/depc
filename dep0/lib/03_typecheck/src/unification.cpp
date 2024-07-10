@@ -90,6 +90,8 @@ bool unify(expr_t const& from, expr_t const& to, std::map<expr_t::var_t, expr_t>
                 if (not is_beta_delta_equivalent({}, {}, from.properties.sort.get(), to.properties.sort.get()))
                     return false;
                 bool const inserted = result.try_emplace(x, to).second;
+                // TODO I saw this assert fail once via some axiom returning `true_t(a < a)` or similar,
+                // probably a missing "occurs check" as per any standard unification algorithm
                 assert(inserted);
                 return true;
             },
@@ -124,6 +126,13 @@ bool unify(expr_t const& from, expr_t const& to, std::map<expr_t::var_t, expr_t>
             [&] (expr_t::subscript_t const& x, expr_t::subscript_t const& y)
             {
                 return unify(x.array.get(), y.array.get(), result) and unify(x.index.get(), y.index.get(), result);
+            },
+            [&] (expr_t::because_t const& x, expr_t::because_t const& y)
+            {
+                // the reason why two expressions are legal is irrelevant to
+                // whether they can be unified and what the required substitution is,
+                // so we only unify inside the values
+                return unify(x.value.get(), y.value.get(), result);
             }),
         from.value, to.value);
 }

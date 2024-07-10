@@ -1,0 +1,23 @@
+axiom trans(u64_t a, u64_t b, u64_t c, true_t(a < b), true_t(b < c)) -> true_t(a < c);
+
+extern rand() -> i32_t;
+
+// these functions exercise type-checking,
+// whilst those in pass_001 exercise type-assignment
+
+i32_t f1(u64_t n, array_t(i32_t, n) xs, 0 true_t(2 < n))
+{
+    return xs[0] because trans(0, 2, n, auto, auto);
+}
+
+i32_t f2(1 u64_t i, 1 u64_t n, array_t(i32_t, n) xs, 0 true_t(i < 2), 0 true_t(2 < n))
+{
+    return xs[i] because trans(i, 2, n, auto, auto);
+}
+
+i32_t f3(u64_t n, array_t(i32_t, n) xs, 0 true_t(0 < n))
+{
+    // invoking mutable functions to produce a proof is fine,
+    // only types cannot depend on mutable functions
+    return xs[0] because rand();
+}

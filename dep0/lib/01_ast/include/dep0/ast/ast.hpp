@@ -304,6 +304,19 @@ struct expr_t
         rec_t index;
     };
 
+    /**
+     * Represents an expression of the form `value because reason`,
+     * where `reason` is some proof that the compiler is supposed to use
+     * in order to verify that `value` is legal in the surronding context.
+     * An expression with a reason is equivalent to a normal expression
+     * with the reason stored in the surronding context with multiplicity 0.
+     */
+    struct because_t
+    {
+        rec_t value;
+        rec_t reason;
+    };
+
     using value_t =
         std::variant<
             typename_t, true_t, auto_t,
@@ -311,7 +324,7 @@ struct expr_t
             boolean_constant_t, numeric_constant_t, string_literal_t,
             boolean_expr_t, relation_expr_t, arith_expr_t,
             var_t, global_t, app_t, abs_t, pi_t,
-            array_t, init_list_t, subscript_t
+            array_t, init_list_t, subscript_t, because_t
         >;
 
     properties_t properties;

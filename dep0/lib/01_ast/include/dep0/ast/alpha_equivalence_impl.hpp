@@ -220,6 +220,14 @@ struct alpha_equivalence_visitor
         return eq;
     }
 
+    result_t operator()(typename expr_t<P>::because_t& x, typename expr_t<P>::because_t& y) const
+    {
+        auto eq = is_alpha_equivalent_impl(x.value.get(), y.value.get());
+        if (eq)
+            eq = is_alpha_equivalent_impl(x.reason.get(), y.reason.get());
+        return eq;
+    }
+
     result_t operator()(typename stmt_t<P>::if_else_t& x, typename stmt_t<P>::if_else_t& y) const
     {
         auto eq = is_alpha_equivalent_impl(x.cond, y.cond);

@@ -50,6 +50,7 @@ static bool delta_unfold(env_t const&, ctx_t const&, expr_t::pi_t&);
 static bool delta_unfold(env_t const&, ctx_t const&, expr_t::array_t&) { return false; }
 static bool delta_unfold(env_t const&, ctx_t const&, expr_t::init_list_t&);
 static bool delta_unfold(env_t const&, ctx_t const&, expr_t::subscript_t&);
+static bool delta_unfold(env_t const&, ctx_t const&, expr_t::because_t&);
 
 bool delta_unfold(env_t const& env, ctx_t const& ctx, stmt_t& stmt)
 {
@@ -159,6 +160,11 @@ bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t::init_list_t& init_
 bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t::subscript_t& subscript)
 {
     return delta_unfold(env, ctx, subscript.array.get()) or delta_unfold(env, ctx, subscript.index.get());
+}
+
+bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t::because_t& x)
+{
+    return delta_unfold(env, ctx, x.value.get()) or delta_unfold(env, ctx, x.reason.get());
 }
 
 } // namespace impl

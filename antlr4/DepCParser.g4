@@ -70,8 +70,9 @@ returnStmt: 'return' expr? ';';
 
 // Expressions
 expr:
-    func=expr '(' (expr (',' expr)*)? ')' # funcCallExpr
+      func=expr '(' (expr (',' expr)*)? ')' # funcCallExpr
     | expr '[' expr ']' # subscriptExpr
+    | value=expr 'because' reason=expr # becauseExpr
     | 'not' expr # notExpr
     | lhs=expr '+' rhs=expr # plusExpr
     | lhs=expr op=('<' | '<=' | '>' | '>=') rhs=expr # relationExpr

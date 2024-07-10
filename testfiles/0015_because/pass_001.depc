@@ -1,0 +1,24 @@
+extern rand() -> i32_t;
+
+// these functions exercise type-assignment,
+// whilst those in pass_000 exercise type-checking
+
+i32_t f1()
+{
+    // false is a proof that boolean exists,
+    // which is simply irrelevant in this case
+    return 0 because (false because true);
+}
+
+i32_t f2(1 i32_t x)
+{
+    // the `x` inside the reason does not count as runtime usage
+    return x because (true because x);
+}
+
+i32_t f3()
+{
+    // invoking mutable functions to produce a proof is fine,
+    // only types cannot depend on mutable functions
+    return 0 because (true because rand());
+}

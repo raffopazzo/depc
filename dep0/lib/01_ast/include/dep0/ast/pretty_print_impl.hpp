@@ -48,6 +48,7 @@ template <Properties P> bool needs_new_line(typename expr_t<P>::pi_t const&);
 template <Properties P> bool needs_new_line(typename expr_t<P>::array_t const&) { return false; }
 template <Properties P> bool needs_new_line(typename expr_t<P>::init_list_t const&);
 template <Properties P> bool needs_new_line(typename expr_t<P>::subscript_t const&);
+template <Properties P> bool needs_new_line(typename expr_t<P>::because_t const&);
 /** @} */
 
 /**
@@ -86,6 +87,7 @@ template <Properties P> bool needs_parenthesis(typename expr_t<P>::pi_t const&) 
 template <Properties P> bool needs_parenthesis(typename expr_t<P>::array_t const&) { return false; }
 template <Properties P> bool needs_parenthesis(typename expr_t<P>::init_list_t const&) { return false; }
 template <Properties P> bool needs_parenthesis(typename expr_t<P>::subscript_t const&) { return false; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::because_t const&) { return false; }
 /** @} */
 
 inline std::ostream& new_line(std::ostream& os, std::size_t const indent)
@@ -515,6 +517,14 @@ std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::subscript_t con
 }
 
 template <Properties P>
+std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::because_t const& x, std::size_t const indent)
+{
+    pretty_print(os, x.value.get(), indent) << " because ";
+    pretty_print(os, x.reason.get(), indent);
+    return os;
+}
+
+template <Properties P>
 std::ostream& pretty_print(
     std::ostream& os,
     is_mutable_t const is_mutable,
@@ -642,6 +652,12 @@ template <Properties P>
 bool needs_new_line(typename expr_t<P>::subscript_t const& x)
 {
     return needs_new_line(x.array.get()) or needs_new_line(x.index.get());
+}
+
+template <Properties P>
+bool needs_new_line(typename expr_t<P>::because_t const& x)
+{
+    return needs_new_line(x.value.get()) or needs_new_line(x.reason.get());
 }
 
 } // namespace detail

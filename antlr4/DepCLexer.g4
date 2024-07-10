@@ -9,6 +9,7 @@ KW_AND: 'and';
 KW_ARRAY: 'array_t';
 KW_AUTO: 'auto';
 KW_AXIOM: 'axiom';
+KW_BECAUSE: 'because';
 KW_BOOL: 'bool';
 KW_CSTR_T: 'cstr_t';
 KW_ELSE: 'else';

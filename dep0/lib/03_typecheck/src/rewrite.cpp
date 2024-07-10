@@ -224,6 +224,11 @@ std::optional<expr_t> rewrite(expr_t const& from, expr_t const& to, expr_t const
             {
                 rewrite(from, to, x.array.get());
                 rewrite(from, to, x.index.get());
+            },
+            [&] (expr_t::because_t const& x)
+            {
+                rewrite(from, to, x.value.get());
+                rewrite(from, to, x.reason.get());
             });
     return result;
 }

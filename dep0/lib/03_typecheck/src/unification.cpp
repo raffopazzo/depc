@@ -2,6 +2,8 @@
 
 #include "private/beta_delta_equivalence.hpp"
 
+#include "dep0/ast/alpha_equivalence.hpp"
+
 #include <boost/hana.hpp>
 
 #include <ranges>
@@ -89,11 +91,8 @@ bool unify(expr_t const& from, expr_t const& to, std::map<expr_t::var_t, expr_t>
                 // TODO should also consider non-empty environments and contexts
                 if (not is_beta_delta_equivalent({}, {}, from.properties.sort.get(), to.properties.sort.get()))
                     return false;
-                bool const inserted = result.try_emplace(x, to).second;
-                // TODO I saw this assert fail once via some axiom returning `true_t(a < a)` or similar,
-                // probably a missing "occurs check" as per any standard unification algorithm
-                assert(inserted);
-                return true;
+                auto const [it, inserted] = result.try_emplace(x, to);
+                return inserted or ast::is_alpha_equivalent(to, it->second).has_value();
             },
             [] (expr_t::global_t const& x, expr_t::global_t const& y)
             {

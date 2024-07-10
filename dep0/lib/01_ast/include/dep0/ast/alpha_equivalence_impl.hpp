@@ -222,10 +222,7 @@ struct alpha_equivalence_visitor
 
     result_t operator()(typename expr_t<P>::because_t& x, typename expr_t<P>::because_t& y) const
     {
-        auto eq = is_alpha_equivalent_impl(x.value.get(), y.value.get());
-        if (eq)
-            eq = is_alpha_equivalent_impl(x.reason.get(), y.reason.get());
-        return eq;
+        return is_alpha_equivalent_impl(x.value.get(), y.value.get());
     }
 
     result_t operator()(typename stmt_t<P>::if_else_t& x, typename stmt_t<P>::if_else_t& y) const
@@ -256,7 +253,16 @@ struct alpha_equivalence_visitor
 template <Properties P>
 dep0::expected<std::true_type> is_alpha_equivalent_impl(expr_t<P>& x, expr_t<P>& y)
 {
-    return std::visit(alpha_equivalence_visitor<P>{}, x.value, y.value);
+    auto const because_x = std::get_if<typename expr_t<P>::because_t>(&x.value);
+    auto const because_y = std::get_if<typename expr_t<P>::because_t>(&y.value);
+    if (because_x and because_y)
+        return is_alpha_equivalent_impl(because_x->value.get(), because_y->value.get());
+    else if (because_x or because_y)
+        return because_x
+            ? is_alpha_equivalent_impl(because_x->value.get(), y)
+            : is_alpha_equivalent_impl(x, because_y->value.get());
+    else
+        return std::visit(alpha_equivalence_visitor<P>{}, x.value, y.value);
 }
 
 template <Properties P>

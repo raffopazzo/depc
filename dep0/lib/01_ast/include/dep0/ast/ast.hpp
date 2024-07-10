@@ -306,10 +306,20 @@ struct expr_t
 
     /**
      * Represents an expression of the form `value because reason`,
-     * where `reason` is some proof that the compiler is supposed to use
-     * in order to verify that `value` is legal in the surronding context.
-     * An expression with a reason is equivalent to a normal expression
-     * with the reason stored in the surronding context with multiplicity 0.
+     * where `reason` is some auxillary proof that the compiler can use
+     * to verify that `value` is legal.
+     *
+     * @remarks
+     *      Because of "proof irrelevance", two because-expressions whose values
+     *      are alpha-equivalent are treated as alpha-equivalent, regardless of the two reasons.
+     *      For example `xs[i] because proof1` and `xs[i] because proof2`
+     *      are considered alpha-equivalent, since both prove that `i` is a valid index
+     *      and the exact reason why the index is valid is irrelevant.
+     *      A similar argument applies even if one of the expressions is not `because`;
+     *      for example, in a context where `xs` is an array of 2 elements,
+     *      both `xs[0]` and `xs[0] because true_t(0 < 2)` are alpha-equivalent,
+     *      because whatever proof the compiler used in the first expression is just as
+     *      good as the auxillary proof explicitly supplied in the second one.
      */
     struct because_t
     {

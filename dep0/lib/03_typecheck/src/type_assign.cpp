@@ -411,10 +411,7 @@ type_assign(
             auto ctx2 = ctx.extend();
             if (auto const reason_type = std::get_if<expr_t>(&reason->properties.sort.get()))
                 ctx2.add_unnamed(*reason_type);
-            auto value =
-                type_assign(
-                    env, ctx2, x.value.get(), is_mutable_allowed,
-                    usage, usage_multiplier * ast::qty_t::many);
+            auto value = type_assign(env, ctx2, x.value.get(), is_mutable_allowed, usage, usage_multiplier);
             if (not value)
                 return std::move(value.error());
             auto sort = value->properties.sort.get();

@@ -27,7 +27,7 @@ $ ./tools/devbox/devbox.sh
 ...$ conan install . --install-folder build --build=antlr4-cppruntime --build=boost --build=llvm-core
 ...$ cmake . -Bbuild -DCMAKE_MODULE_PATH=$PWD/build
 ...$ cmake --build build -j
-...$ ctest --test-dir build -VV
+...$ ctest --test-dir build --output-on-failure --timeout 30
 ...$ exit
 ```
 
@@ -39,7 +39,7 @@ $ ./tools/devbox/devbox.sh conan profile update settings.compiler.libcxx=libstdc
 $ ./tools/devbox/devbox.sh conan install . --install-folder build --build=antlr4-cppruntime --build=boost --build=llvm-core
 $ ./tools/devbox/devbox.sh cmake . -Bbuild -DCMAKE_MODULE_PATH=$PWD/build
 $ ./tools/devbox/devbox.sh cmake --build build -j
-$ ./tools/devbox/devbox.sh ctest --test-dir build -VV
+$ ./tools/devbox/devbox.sh ctest --test-dir build --output-on-failure --timeout 30
 ```
 
 # How to without devbox

@@ -30,7 +30,7 @@ class source_handle_t
     { }
 
     template <typename U, typename... Args>
-    friend source_handle_t make_handle(Args&&... args);
+    friend source_handle_t make_source_handle(Args&&... args);
 
     void acquire(state_t*);
     void release();
@@ -57,12 +57,12 @@ public:
 
 /**
  * Construct a handle to some source code buffer,
- * for example `make_handle<std::string>("...")` for some runtime-generated source code,
- * or `make_handle<boost::iostreams::mapped_file_source>(...)` for an mmap'd file.
+ * for example `make_source_handle<std::string>("...")` for some runtime-generated source code,
+ * or `make_source_handle<boost::iostreams::mapped_file_source>(...)` for an mmap'd file.
  * Instances of `source_text` act as a view into the source code keeping the underlying buffer alive.
  */
 template <typename U, typename... Args>
-source_handle_t make_handle(Args&&... args)
+source_handle_t make_source_handle(Args&&... args)
 {
     return source_handle_t(U{std::forward<Args>(args)...});
 }
@@ -85,11 +85,7 @@ public:
      *
      * @remarks It is undefined behaviour to pass a string that is not a literal C-string.
      */
-    template <std::size_t N> requires (N > 0)
-    static source_text from_literal(char const(&s)[N])
-    {
-        return source_text(source_handle_t(source_handle_t::literal_string_tag_t{}), std::string_view(s, N-1));
-    }
+    static source_text from_literal(char const*);
 
     source_text(source_handle_t, std::string_view);
     source_text(source_text const&) = default;

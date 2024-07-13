@@ -40,10 +40,11 @@ public:
     // non-const member functions
     /**
      * Import all exported symbols from the given module into the current environment.
-     * Each imported symbol `sym` from the imported module will be reachable via `name::sym`.
-     * The prelude module should be imported with an empty name `""`.
+     * For each exported symbol `sym`, a new entry with the qualified identifier `module_name::sym`
+     * will be added to the current environment.
+     * The prelude module should be imported with an empty module name `""`.
      */
-    dep0::expected<std::true_type> import(source_text name, module_t const&);
+    dep0::expected<std::true_type> import(source_text module_name, module_t const&);
 
     dep0::expected<std::true_type> try_emplace(expr_t::global_t, value_type);
 

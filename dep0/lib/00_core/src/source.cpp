@@ -43,11 +43,6 @@ source_handle_t& source_handle_t::operator=(source_handle_t&& that)
 
 // implementation of source_text
 
-source_text source_text::from_literal(std::string_view const txt)
-{
-    return source_text(source_handle_t(source_handle_t::literal_string_tag_t{}), txt);
-}
-
 source_text::source_text(source_handle_t hdl, std::string_view const txt) :
     hdl(std::move(hdl)),
     txt(txt)

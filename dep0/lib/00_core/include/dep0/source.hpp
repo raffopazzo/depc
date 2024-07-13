@@ -85,7 +85,11 @@ public:
      *
      * @remarks It is undefined behaviour to pass a string that is not a literal C-string.
      */
-    static source_text from_literal(std::string_view);
+    template <std::size_t N> requires (N > 0)
+    static source_text from_literal(char const(&s)[N])
+    {
+        return source_text(source_handle_t(source_handle_t::literal_string_tag_t{}), std::string_view(s, N-1));
+    }
 
     source_text(source_handle_t, std::string_view);
     source_text(source_text const&) = default;

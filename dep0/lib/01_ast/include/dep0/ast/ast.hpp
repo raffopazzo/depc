@@ -225,21 +225,24 @@ struct expr_t
     };
 
     /**
-     * Represents the name of a global symbol, defined either:
-     *   - in the current module, for example `f` or `int`;
-     *   - or in some imported module, for example `mylib::f` or `mylib::int`.
+     * Represents a (possibly qualified) name of a global symbol, defined either:
+     *   - in the current module, for example `f` or `int` (in which case it is unqualified);
+     *   - in some imported module, for example `mylib::f` or `mylib::int`;
+     *   - in the prelude module, for example `::basic_axiom`.
+     * Note that only the 1st one is an unqualified identifier;
+     * the other two are qualified (and the prelude module is referred to by the empty string).
      *
      * The module name can be:
      *   - an empty optional, for globals defined in the current module;
-     *   - an empty string, for symbols found in the prelude module;
-     *   - the name of the imported module in which the symbol was found.
+     *   - an empty string, for globals defined in the prelude module;
+     *   - the name of the imported module that defines the global.
      *
      * @remarks
      *      Without knowledge of the current environment and context,
-     *      a simple identifier (say `f') could refer to either:
+     *      an unqualified identifier (say `f') could refer to either:
      *        - a global symbol from the current module
      *        - or a local variable of the current function.
-     *      The parser does not currently track this, so it will always emit a `var_t`;
+     *      The parser does not currently track this, so it will always emit a `var_t` for an unqualified identifier;
      *      during type-checking, if `f` refers to a global, the `var_t` is "upgraded" to a `global_t`.
      */
     struct global_t

@@ -11,11 +11,21 @@
 namespace dep0::typecheck {
 
 /**
- * An environment contains the definitions that can be unfolded during delta-reduction.
+ * An environment contains global symbols such as:
+ *   - type definitions
+ *   - axioms
+ *   - extern declarations
+ *   - function declarations and their definitions
+ *   - etc.
+ * These symbols can be introduced by:
+ *   - the current moduble being compiled
+ *   - or any other imported module.
  */
 class env_t
 {
 public:
+
+    /** The type of entries that can be stored in an environment. */
     using value_type = std::variant<type_def_t, axiom_t, extern_decl_t, func_decl_t, func_def_t>;
 
     /** Build an empty environment containing no definitions, not even from the prelude module. */
@@ -27,6 +37,12 @@ public:
     env_t& operator=(env_t&&) = default;
 
     // const member functions
+
+    /**
+     * Return a new environment inheriting from the current one, allowing new symbols to shadow existing ones.
+     * The new environment will "see" all symbols from the parent environment,
+     * but the parent environment will not see new symbols added to the new environment.
+     */
     env_t extend() const;
 
     /**
@@ -35,6 +51,10 @@ public:
      */
     std::set<expr_t::global_t> globals() const;
 
+    /**
+     * Return the entry referred to by the given global symbol or `nullptr` if none is found.
+     * @remarks The returned pointer is guaranteed stable, i.e. it is not invalidated when new entries are added.
+     */
     value_type const* operator[](expr_t::global_t const&) const;
 
     // non-const member functions
@@ -46,6 +66,7 @@ public:
      */
     dep0::expected<std::true_type> import(source_text module_name, module_t const&);
 
+    /** Add a new entry to the current module, returning an error if the insertion fails. */
     dep0::expected<std::true_type> try_emplace(expr_t::global_t, value_type);
 
 private:

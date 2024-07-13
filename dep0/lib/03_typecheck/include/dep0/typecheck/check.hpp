@@ -15,7 +15,7 @@ namespace dep0::typecheck {
  *   2. type-checking the prelude module.
  * The input environment should be:
  *   - completely empty (i.e. default-constructed) when type-checking the prelude module
- *   - or the base environment with prelude pre-imported when type-checking a user module.
+ *   - or the base environment (i.e. with prelude pre-imported) when type-checking a user module.
  */
 expected<module_t> check(env_t const&, parser::module_t const&) noexcept;
 

@@ -18,7 +18,9 @@ class env_t
 public:
     using value_type = std::variant<type_def_t, axiom_t, extern_decl_t, func_decl_t, func_def_t>;
 
+    /** Build an empty environment containing no definitions, not even from the prelude module. */
     env_t() = default;
+
     env_t(env_t const&) = default;
     env_t& operator=(env_t const&) = default;
     env_t(env_t&&) = default;
@@ -56,5 +58,8 @@ private:
         scope_map<expr_t::global_t, value_type> fwd_decls,
         scope_map<expr_t::global_t, value_type> definitions);
 };
+
+/** Build a new environment with the prelude module already pre-imported, suitable as a base for user modules. */
+dep0::expected<env_t> make_base_env();
 
 } // namespace dep0::typecheck

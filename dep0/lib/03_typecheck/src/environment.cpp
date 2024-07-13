@@ -1,6 +1,7 @@
 #include "dep0/typecheck/environment.hpp"
 
 #include "private/beta_delta_equivalence.hpp"
+#include "private/prelude.hpp"
 
 #include "dep0/ast/pretty_print.hpp"
 #include "dep0/match.hpp"
@@ -183,6 +184,17 @@ dep0::expected<std::true_type> env_t::try_emplace(expr_t::global_t global, value
             else
                 return accept(m_definitions);
         });
+}
+
+dep0::expected<env_t> make_base_env()
+{
+    dep0::typecheck::env_t base_env;
+    auto const prelude = dep0::typecheck::build_prelude_module();
+    if (not prelude)
+        return prelude.error();
+    if (auto const imported = base_env.import(dep0::source_text::from_literal(""), *prelude); not imported)
+        return imported.error();
+    return std::move(base_env);
 }
 
 } // namespace dep0::typecheck

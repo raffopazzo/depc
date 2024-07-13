@@ -1,4 +1,4 @@
-#include "dep0/typecheck/prelude.hpp"
+#include "private/prelude.hpp"
 
 #include "dep0/typecheck/check.hpp"
 

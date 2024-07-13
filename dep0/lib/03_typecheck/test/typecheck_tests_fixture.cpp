@@ -1,7 +1,7 @@
 #include "typecheck_tests_fixture.hpp"
 
 #include "dep0/typecheck/check.hpp"
-#include "dep0/typecheck/prelude.hpp"
+#include "dep0/typecheck/environment.hpp"
 
 #include "dep0/parser/parse.hpp"
 
@@ -14,9 +14,7 @@ boost::test_tools::predicate_result TypecheckTestsFixture::pass(std::filesystem:
         dep0::pretty_print(res.message().stream(), parse_result.error());
         return res;
     }
-    dep0::typecheck::env_t env;
-    auto const ok = env.import(dep0::source_text::from_literal(""), dep0::typecheck::build_prelude_module().value());
-    assert(ok.has_value());
+    auto const env = dep0::typecheck::make_base_env().value();
     auto check_result = dep0::typecheck::check(env, *parse_result);
     if (check_result.has_error())
     {
@@ -37,9 +35,7 @@ boost::test_tools::predicate_result TypecheckTestsFixture::fail(std::filesystem:
         dep0::pretty_print(res.message().stream(), parse_result.error());
         return res;
     }
-    dep0::typecheck::env_t env;
-    auto const ok = env.import(dep0::source_text::from_literal(""), dep0::typecheck::build_prelude_module().value());
-    assert(ok.has_value());
+    auto const env = dep0::typecheck::make_base_env().value();
     auto check_result = dep0::typecheck::check(env, *parse_result);
     if (check_result.has_value())
     {

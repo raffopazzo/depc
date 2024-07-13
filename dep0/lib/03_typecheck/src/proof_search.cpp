@@ -10,6 +10,7 @@
 
 #include "dep0/match.hpp"
 
+#include <chrono>
 #include <unordered_map>
 
 namespace dep0::typecheck {
@@ -25,6 +26,8 @@ struct search_state_t
     using cache_t = std::unordered_map<expr_t, value_t, hash_t, eq_t>;
     cache_t cache;
     ast::is_mutable_t is_mutable_allowed;
+    std::chrono::steady_clock::time_point deadline = std::chrono::steady_clock::now() + std::chrono::seconds(3);
+    std::size_t depth = 0;
 
     explicit search_state_t(ast::is_mutable_t const m) : is_mutable_allowed(m) {}
 };
@@ -83,6 +86,9 @@ continue_proof_search(
     usage_t& usage,
     ast::qty_t const usage_multiplier)
 {
+    if (st.depth >= 10 or std::chrono::steady_clock::now() > st.deadline)
+        return std::nullopt;
+    ++st.depth;
     std::optional<expr_t> result;
     auto const [it, inserted] = st.cache.try_emplace(type, search_state_t::in_progress_t{});
     if (inserted)
@@ -103,6 +109,7 @@ continue_proof_search(
     // Otherwise a previous search succeeded and we can return the previous result.
     else if (auto const prev_result = std::get_if<expr_t>(&it->second))
         result.emplace(*prev_result);
+    --st.depth;
     return result;
 }
 

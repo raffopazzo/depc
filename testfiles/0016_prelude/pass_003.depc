@@ -1,0 +1,12 @@
+i32_t f(bool a, 0 true_t(not not a))
+{
+    return 1;
+}
+
+i32_t g(bool a)
+{
+    if (a)
+        return f(a, ::double_neg_intro(a, auto));
+    else
+        return 0;
+}

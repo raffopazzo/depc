@@ -232,7 +232,7 @@ struct expr_t
      * Note that only the 1st one is an unqualified identifier;
      * the other two are qualified (and the prelude module is referred to by the empty string).
      *
-     * The module name can be:
+     * Therefore `module_name` can be:
      *   - an empty optional, for globals defined in the current module;
      *   - an empty string, for globals defined in the prelude module;
      *   - the name of the imported module that defines the global.

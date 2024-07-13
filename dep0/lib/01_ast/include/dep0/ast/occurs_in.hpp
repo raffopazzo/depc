@@ -14,7 +14,7 @@ enum class occurrence_style
 template <Properties P>
 bool occurs_in(typename expr_t<P>::var_t const&, expr_t<P> const&, occurrence_style);
 
-/** @return true if the given variable name appears (free or anywhere) in the type of any function argument. */
+/** @return true if the given variable name appears (free or anywhere) in any function argument. */
 template <Properties P>
 bool occurs_in(
     typename expr_t<P>::var_t const&,
@@ -24,7 +24,7 @@ bool occurs_in(
 
 /**
  * @return true if the given variable name appears (either free or anywhere) in:
- *   - the type of any function argument
+ *   - any function argument
  *   - the function return type
  *   - the function body, if one is supplied.
  */

@@ -27,9 +27,9 @@
 
 namespace dep0::typecheck {
 
-expected<module_t> check(parser::module_t const& x) noexcept
+expected<module_t> check(env_t const& base_env, parser::module_t const& x) noexcept
 {
-    env_t env;
+    auto env = base_env.extend();
     std::vector<expr_t::global_t> decls; // we must check that all function declarations have been defined
     auto entries =
         fmap_or_error(
@@ -46,7 +46,7 @@ expected<module_t> check(parser::module_t const& x) noexcept
                     {
                         auto const& result = check_func_decl(env, x);
                         if (result)
-                            decls.push_back(expr_t::global_t{x.name});
+                            decls.push_back(expr_t::global_t{std::nullopt, x.name});
                         return result;
                     },
                     [&] (parser::func_def_t const& f) -> expected<entry_t> { return check_func_def(env, f); });
@@ -95,7 +95,7 @@ expected<type_def_t> check_type_def(env_t& env, parser::type_def_t const& type_d
                 make_legal_type_def(
                     type_def.properties,
                     type_def_t::integer_t{x.name, x.sign, x.width, x.max_abs_value});
-            if (auto ok = env.try_emplace(expr_t::global_t{x.name}, result); not ok)
+            if (auto ok = env.try_emplace(expr_t::global_t{std::nullopt, x.name}, result); not ok)
                 return error_t::from_error(std::move(ok.error()));
             return result;
         });
@@ -114,7 +114,7 @@ expected<axiom_t> check_axiom(env_t& env, parser::axiom_t const& axiom)
     if (not pi_type)
         return std::move(pi_type.error());
     auto result = make_legal_axiom(axiom.properties, *pi_type, axiom.name, std::get<expr_t::pi_t>(pi_type->value));
-    if (auto ok = env.try_emplace(expr_t::global_t{axiom.name}, result); not ok)
+    if (auto ok = env.try_emplace(expr_t::global_t{std::nullopt, axiom.name}, result); not ok)
         return error_t::from_error(std::move(ok.error()));
     return result;
 }
@@ -133,7 +133,7 @@ expected<extern_decl_t> check_extern_decl(env_t& env, parser::extern_decl_t cons
     if (not pi_type)
         return std::move(pi_type.error());
     auto result = make_legal_extern_decl(decl.properties, *pi_type, decl.name, std::get<expr_t::pi_t>(pi_type->value));
-    if (auto ok = env.try_emplace(expr_t::global_t{decl.name}, result); not ok)
+    if (auto ok = env.try_emplace(expr_t::global_t{std::nullopt, decl.name}, result); not ok)
         return error_t::from_error(std::move(ok.error()));
     return result;
 }
@@ -150,7 +150,7 @@ expected<func_decl_t> check_func_decl(env_t& env, parser::func_decl_t const& dec
     if (not pi_type)
         return std::move(pi_type.error());
     auto result = make_legal_func_decl(decl.properties, *pi_type, decl.name, std::get<expr_t::pi_t>(pi_type->value));
-    if (auto ok = env.try_emplace(expr_t::global_t{decl.name}, result); not ok)
+    if (auto ok = env.try_emplace(expr_t::global_t{std::nullopt, decl.name}, result); not ok)
         return error_t::from_error(std::move(ok.error()));
     return result;
 }
@@ -168,7 +168,7 @@ expected<func_def_t> check_func_def(env_t& env, parser::func_def_t const& f)
             abs->properties.sort.get(),
             f.name,
             std::move(std::get<expr_t::abs_t>(abs->value)));
-    if (auto ok = env.try_emplace(expr_t::global_t{f.name}, result); not ok)
+    if (auto ok = env.try_emplace(expr_t::global_t{std::nullopt, f.name}, result); not ok)
         return error_t::from_error(std::move(ok.error()));
     return result;
 }

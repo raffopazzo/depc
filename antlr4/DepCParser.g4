@@ -84,6 +84,7 @@ expr:
     | sign=('+' | '-')? value=INT # numericConstant
     | value=('true'|'false') # booleanConstant
     | ('array_t' | 'true_t' | 'auto') # kwExpr
+    | module_name=ID? '::' symbol_name=ID # globalExpr
     | var=ID # varExpr
     | type # typeExpr // in an expression `f(x)` x should be parsed as `var` so this rule must come after `var`
     | '(' expr ')' # subExpr

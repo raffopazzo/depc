@@ -24,7 +24,7 @@ expected<unique_ref<llvm::Module>>
             [&] (typecheck::type_def_t const& def)
             {
                 auto const& name = match(def.value, [] (auto const& x) -> auto const& { return x.name; });
-                bool const inserted = global.try_emplace(typecheck::expr_t::global_t{name}, def).second;
+                bool const inserted = global.try_emplace(typecheck::expr_t::global_t{std::nullopt, name}, def).second;
                 assert(inserted);
             },
             [] (typecheck::axiom_t const&)
@@ -34,7 +34,7 @@ expected<unique_ref<llvm::Module>>
             [&] (typecheck::extern_decl_t const& decl)
             {
                 if (auto proto = llvm_func_proto_t::from_pi(decl.signature))
-                    gen_extern_decl(global, typecheck::expr_t::global_t{decl.name}, *proto);
+                    gen_extern_decl(global, typecheck::expr_t::global_t{std::nullopt, decl.name}, *proto);
             },
             // LLVM can only generate functions for 1st order abstractions;
             // for 2nd order abstractions we rely on beta-delta normalization to produce
@@ -42,12 +42,12 @@ expected<unique_ref<llvm::Module>>
             [&] (typecheck::func_decl_t const& decl)
             {
                 if (auto proto = llvm_func_proto_t::from_pi(decl.signature))
-                    gen_func_decl(global, typecheck::expr_t::global_t{decl.name}, *proto);
+                    gen_func_decl(global, typecheck::expr_t::global_t{std::nullopt, decl.name}, *proto);
             },
             [&] (typecheck::func_def_t const& def)
             {
                 if (auto proto = llvm_func_proto_t::from_abs(def.value))
-                    gen_func(global, typecheck::expr_t::global_t{def.name}, *proto, def.value);
+                    gen_func(global, typecheck::expr_t::global_t{std::nullopt, def.name}, *proto, def.value);
             });
     std::string err;
     llvm::raw_string_ostream ostream(err);

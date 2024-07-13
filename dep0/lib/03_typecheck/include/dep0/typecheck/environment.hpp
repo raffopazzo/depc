@@ -36,6 +36,13 @@ public:
     value_type const* operator[](expr_t::global_t const&) const;
 
     // non-const member functions
+    /**
+     * Import all exported symbols from the given module into the current environment.
+     * Each imported symbol `sym` from the imported module will be reachable via `name::sym`.
+     * The prelude module should be imported with an empty name `""`.
+     */
+    dep0::expected<std::true_type> import(source_text name, module_t const&);
+
     dep0::expected<std::true_type> try_emplace(expr_t::global_t, value_type);
 
 private:

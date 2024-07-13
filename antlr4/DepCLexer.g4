@@ -38,6 +38,7 @@ KW_XOR: 'xor';
 // Punctuation
 ARROW: '->';
 COMMA: ',';
+DOUBLE_COLON: '::';
 ELLIPSIS: '...';
 EQ: '=';
 EQ2: '==';

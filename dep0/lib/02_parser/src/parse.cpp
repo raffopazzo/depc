@@ -472,6 +472,18 @@ struct parse_visitor_t : dep0::DepCParserVisitor
             }};
     }
 
+    virtual std::any visitGlobalExpr(DepCParser::GlobalExprContext* ctx) override
+    {
+        assert(ctx);
+        assert(ctx->symbol_name);
+        return expr_t{
+            get_loc(src, *ctx),
+            expr_t::global_t{
+                ctx->module_name ? get_text(src, *ctx->module_name) : source_text::from_literal(""),
+                get_text(src, *ctx->symbol_name)
+            }};
+    }
+
     virtual std::any visitVarExpr(DepCParser::VarExprContext* ctx) override
     {
         assert(ctx);
@@ -600,6 +612,8 @@ struct parse_visitor_t : dep0::DepCParserVisitor
             return std::any_cast<expr_t>(visitBooleanConstant(p));
         if (auto const p = dynamic_cast<DepCParser::KwExprContext*>(ctx))
             return std::any_cast<expr_t>(visitKwExpr(p));
+        if (auto const p = dynamic_cast<DepCParser::GlobalExprContext*>(ctx))
+            return std::any_cast<expr_t>(visitGlobalExpr(p));
         if (auto const p = dynamic_cast<DepCParser::VarExprContext*>(ctx))
             return std::any_cast<expr_t>(visitVarExpr(p));
         if (auto const p = dynamic_cast<DepCParser::TypeExprContext*>(ctx))
@@ -686,12 +700,17 @@ struct FirstErrorListener : antlr4::ANTLRErrorListener
 
 expected<module_t> parse(std::filesystem::path const& path) noexcept
 {
-    auto source = mmap(path);
-    if (not source)
+    if (auto source = mmap(path))
+        return parse(std::move(*source));
+    else
         return source.error();
-    auto input = antlr4::ANTLRInputStream(*source);
+}
+
+expected<module_t> parse(source_text source) noexcept
+{
+    auto input = antlr4::ANTLRInputStream(source);
     dep0::DepCLexer lexer(&input);
-    FirstErrorListener error_listener{*source};
+    FirstErrorListener error_listener{source};
     lexer.removeErrorListeners();
     lexer.addErrorListener(&error_listener);
     antlr4::CommonTokenStream tokens(&lexer);
@@ -706,7 +725,7 @@ expected<module_t> parse(std::filesystem::path const& path) noexcept
         return std::move(*error_listener.error);
     try
     {
-        parse_visitor_t visitor(*source);
+        parse_visitor_t visitor(source);
         return std::any_cast<module_t>(module->accept(&visitor));
     }
     catch (error_t const& e) // we don't like to throw... this is an exceptional case (pun not intended)

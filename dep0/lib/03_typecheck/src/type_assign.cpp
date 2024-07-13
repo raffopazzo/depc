@@ -63,6 +63,37 @@ type_assign(
     ast::qty_t const usage_multiplier)
 {
     auto const loc = expr.properties;
+    // common code between var_t and global_t cases
+    auto const try_lookup_global_def = [&] (expr_t::global_t global) -> expected<expr_t>
+    {
+        auto const def = env[global];
+        if (not def)
+            return error_t::from_error(dep0::error_t("global symbol not found", loc));
+        return match(
+            *def,
+            [&] (type_def_t const&) -> expected<expr_t>
+            {
+                return make_legal_expr(derivation_rules::make_typename(), std::move(global));
+            },
+            [&] (axiom_t const& x) -> expected<expr_t>
+            {
+                if (usage_multiplier > ast::qty_t::zero)
+                    return error_t::from_error(dep0::error_t("axiom cannot be used at run-time", loc));
+                return make_legal_expr(x.properties.sort.get(), std::move(global));
+            },
+            [&] (extern_decl_t const& x) -> expected<expr_t>
+            {
+                return make_legal_expr(x.properties.sort.get(), std::move(global));
+            },
+            [&] (func_decl_t const& x) -> expected<expr_t>
+            {
+                return make_legal_expr(x.properties.sort.get(), std::move(global));
+            },
+            [&] (func_def_t const& x) -> expected<expr_t>
+            {
+                return make_legal_expr(x.properties.sort.get(), std::move(global));
+            });
+    };
     return match(
         expr.value,
         [] (parser::expr_t::typename_t) -> expected<expr_t> { return derivation_rules::make_typename(); },
@@ -251,71 +282,47 @@ type_assign(
         },
         [&] (parser::expr_t::var_t const& x) -> expected<expr_t>
         {
+            auto var = expr_t::var_t{x.name};
+            auto const expr = ctx[var];
+            if (not expr)
             {
-                auto var = expr_t::var_t{x.name};
-                if (auto const expr = ctx[var])
+                if (auto global = try_lookup_global_def(expr_t::global_t{std::nullopt, x.name}))
+                    return std::move(global);
+                else
+                    return error_t::from_error(dep0::error_t("unknown variable", loc));
+            }
+            else
+            {
+                // if multiplier is zero nothing is really used and type-assignment always succeeds;
+                // so don't even bother looking up things and adding them up
+                if (usage_multiplier > ast::qty_t::zero)
                 {
-                    // if multiplier is zero nothing is really used and type-assignment always succeeds;
-                    // so don't even bother looking up things and adding them up
-                    if (usage_multiplier > ast::qty_t::zero)
+                    auto const prev = usage[var];
+                    if (usage.add(var, ast::qty_t::one * usage_multiplier) > expr->value.qty)
                     {
-                        auto const prev = usage[var];
-                        if (usage.add(var, ast::qty_t::one * usage_multiplier) > expr->value.qty)
-                        {
-                            // The user has now used something more than they could;
-                            // let's try to give them a sensible error message.
-                            // Firstly, this must mean that the context allowed for only either `zero` or `one`.
-                            // So there are overall two cases:
-                            // 1. if the context allowed for zero uses,
-                            //    then they must have attempted to use the thing at run-time;
-                            // 2. otherwise the context allowed for only one use and, in that case:
-                            //    a. either they tried to pass the variable to a function argument
-                            //       with multiplicity `many` (or something similar to that)
-                            //    b. or they used the thing more than once.
-                            char const* msg =
-                                expr->value.qty == ast::qty_t::zero ? "variable cannot be used at run-time"
-                                : prev == ast::qty_t::zero ? "cannot use linear variable in non-linear context"
-                                : "variable has already been used once";
-                            return error_t::from_error(dep0::error_t(msg, loc));
-                        }
+                        // The user has now used something more than they could;
+                        // let's try to give them a sensible error message.
+                        // Firstly, this must mean that the context allowed for only either `zero` or `one`.
+                        // So there are overall two cases:
+                        // 1. if the context allowed for zero uses,
+                        //    then they must have attempted to use the thing at run-time;
+                        // 2. otherwise the context allowed for only one use and, in that case:
+                        //    a. either they tried to pass the variable to a function argument
+                        //       with multiplicity `many` (or something similar to that)
+                        //    b. or they used the thing more than once.
+                        char const* msg =
+                            expr->value.qty == ast::qty_t::zero ? "variable cannot be used at run-time"
+                            : prev == ast::qty_t::zero ? "cannot use linear variable in non-linear context"
+                            : "variable has already been used once";
+                        return error_t::from_error(dep0::error_t(msg, loc));
                     }
-                    return make_legal_expr(expr->value.type, std::move(var));
                 }
+                return make_legal_expr(expr->value.type, std::move(var));
             }
-            {
-                auto global = expr_t::global_t{x.name};
-                if (auto const def = env[global])
-                    return match(
-                        *def,
-                        [&] (type_def_t const&) -> expected<expr_t>
-                        {
-                            return make_legal_expr(derivation_rules::make_typename(), std::move(global));
-                        },
-                        [&] (axiom_t const& x) -> expected<expr_t>
-                        {
-                            if (usage_multiplier > ast::qty_t::zero)
-                                return error_t::from_error(dep0::error_t("axiom cannot be used at run-time", loc));
-                            return make_legal_expr(x.properties.sort.get(), std::move(global));
-                        },
-                        [&] (extern_decl_t const& x) -> expected<expr_t>
-                        {
-                            return make_legal_expr(x.properties.sort.get(), std::move(global));
-                        },
-                        [&] (func_decl_t const& x) -> expected<expr_t>
-                        {
-                            return make_legal_expr(x.properties.sort.get(), std::move(global));
-                        },
-                        [&] (func_def_t const& x) -> expected<expr_t>
-                        {
-                            return make_legal_expr(x.properties.sort.get(), std::move(global));
-                        });
-            }
-            return error_t::from_error(dep0::error_t("unknown variable", loc));
         },
-        [&] (parser::expr_t::global_t const& x) -> expected<expr_t>
+        [&] (parser::expr_t::global_t const& global) -> expected<expr_t>
         {
-            return error_t::from_error(dep0::error_t(
-                "unexpected global name from parser. This is a bug; please report it!", loc));
+            return try_lookup_global_def(expr_t::global_t{global.module_name, global.name});
         },
         [&] (parser::expr_t::app_t const& x) -> expected<expr_t>
         {
@@ -509,7 +516,7 @@ expected<expr_t> type_assign_abs(
     {
         auto ok =
             f_env.try_emplace(
-                expr_t::global_t{*name},
+                expr_t::global_t{std::nullopt, *name},
                 make_legal_func_decl(location, *func_type, *name, std::get<expr_t::pi_t>(func_type->value)));
         if (not ok)
             return error_t::from_error(std::move(ok.error()));

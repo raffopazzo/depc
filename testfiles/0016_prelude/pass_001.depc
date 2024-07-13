@@ -1,0 +1,19 @@
+i32_t f(bool a, 0 true_t(a))
+{
+    return 1;
+}
+
+i32_t g(bool a, bool b)
+{
+    if (a and b)
+        return f(a, ::conj_elim_a(a, b, auto)) + f(b, ::conj_elim_b(a, b, auto));
+    return 0;
+}
+
+// i32_t h(bool a, bool b, bool c)
+// {
+//     if (a and b)
+//         if (a and c)
+//             return f(a, auto) + f(b, auto);
+//     return 0;
+// }

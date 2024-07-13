@@ -225,18 +225,31 @@ struct expr_t
     };
 
     /**
-     * Represents the name of a global identifier,
-     * for example `f` or `int` for some globally defined function `f` and type `int`.
+     * Represents the name of a global symbol, defined either:
+     *   - in the current module, for example `f` or `int`;
+     *   - or in some imported module, for example `mylib::f` or `mylib::int`.
      *
-     * Note that `global_t` is never produced by the parsing stage;
-     * the parser will always only produce a `var_t` for all identifiers.
-     * Later, during type-checking, a `var_t` can be "upgraded" to a `global_t` depending
-     * on whether the look-up of `f` was resolved from the global environment or the local context.
+     * The module name can be:
+     *   - an empty optional, for globals defined in the current module;
+     *   - an empty string, for symbols found in the prelude module;
+     *   - the name of the imported module in which the symbol was found.
+     *
+     * @remarks
+     *      Without knowledge of the current environment and context,
+     *      a simple identifier (say `f') could refer to either:
+     *        - a global symbol from the current module
+     *        - or a local variable of the current function.
+     *      The parser does not currently track this, so it will always emit a `var_t`;
+     *      during type-checking, if `f` refers to a global, the `var_t` is "upgraded" to a `global_t`.
      */
     struct global_t
     {
+        std::optional<source_text> module_name;
         source_text name;
-        bool operator<(global_t const& that) const { return name < that.name; }
+        bool operator<(global_t const& that) const
+        {
+            return std::tie(module_name, name) < std::tie(that.module_name, that.name);
+        }
         bool operator==(global_t const&) const = default;
     };
 

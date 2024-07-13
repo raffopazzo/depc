@@ -2,6 +2,7 @@
 #include "dep0/ast/pretty_print.hpp"
 #include "dep0/parser/parse.hpp"
 #include "dep0/typecheck/check.hpp"
+#include "dep0/typecheck/prelude.hpp"
 #include "dep0/transform/run.hpp"
 #include "dep0/transform/beta_delta_normalization.hpp"
 #include "dep0/llvmgen/gen.hpp"
@@ -103,6 +104,17 @@ int main(int argc, char** argv)
         file_type == llvm::CodeGenFileType::CGFT_AssemblyFile
         ? (emit_llvm ? ".ll" : ".s")
         : ".o";
+    dep0::typecheck::env_t base_env;
+    auto const prelude = dep0::typecheck::build_prelude_module();
+    if (not prelude)
+    {
+        std::ostringstream str;
+        dep0::pretty_print(str, prelude.error());
+        llvm::WithColor::error(llvm::errs(), "[prelude]") << str.str() << '\n';
+        return 1;
+    }
+    auto const ok = base_env.import(dep0::source_text::from_literal(""), *prelude);
+    assert(ok.has_value());
     for (auto const& f: input_files)
     {
         auto const parsed_module = dep0::parser::parse(f);
@@ -113,7 +125,7 @@ int main(int argc, char** argv)
             llvm::WithColor::error(llvm::errs(), f) << "parse error: " << str.str() << '\n';
             return 1;
         }
-        auto typechecked_module = dep0::typecheck::check(*parsed_module);
+        auto typechecked_module = dep0::typecheck::check(base_env, *parsed_module);
         if (not typechecked_module)
         {
             std::ostringstream str;

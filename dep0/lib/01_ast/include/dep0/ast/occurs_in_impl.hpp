@@ -147,8 +147,6 @@ bool occurs_in(
     typename expr_t<P>::var_t const& var,
     typename std::vector<func_arg_t<P>>::const_iterator begin,
     typename std::vector<func_arg_t<P>>::const_iterator end,
-    expr_t<P> const& ret_type,
-    body_t<P> const* body,
     occurrence_style const style)
 {
     for (auto const& arg: std::ranges::subrange(begin, end))
@@ -161,9 +159,22 @@ bool occurs_in(
             // since any later occurrence is now bound to this argument.
             return style == occurrence_style::anywhere;
     }
-    if (occurs_in(var, ret_type, style))
-        return true;
-    return body and impl::occurs_in(var, *body, style);
+    return false;
+}
+
+template <Properties P>
+bool occurs_in(
+    typename expr_t<P>::var_t const& var,
+    typename std::vector<func_arg_t<P>>::const_iterator begin,
+    typename std::vector<func_arg_t<P>>::const_iterator end,
+    expr_t<P> const& ret_type,
+    body_t<P> const* body,
+    occurrence_style const style)
+{
+    return
+        occurs_in<P>(var, begin, end, style) or
+        occurs_in(var, ret_type, style) or
+        body and impl::occurs_in(var, *body, style);
 }
 
 } // namespace dep0::ast

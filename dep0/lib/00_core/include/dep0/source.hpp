@@ -7,8 +7,13 @@
 
 namespace dep0 {
 
-// Type-erased, single-threaded, reference-counted handle to some source dode, eg a mmap'd file or a string input.
-// Conceptually similar to `std::shared_ptr<std::any>` but cheaper and removes `nullptr` from its inhabitants.
+/**
+ * Type-erased, single-threaded, reference-counted handle to some source dode,
+ * for example an mmap'd file or a runtime-generated string.
+ * It is conceptually similar to `std::shared_ptr<std::any>`,
+ * but cheaper and removes `nullptr` from its inhabitants,
+ * so you never have to test `if (hdl)` for example.
+ */
 class source_handle_t
 {
     struct state_t
@@ -19,8 +24,6 @@ class source_handle_t
 
     state_t* state = nullptr;
 
-    source_handle_t(std::nullptr_t);
-
     template <typename T>
     source_handle_t(T x) :
         state(new state_t{1ul, std::move(x)})
@@ -29,34 +32,61 @@ class source_handle_t
     template <typename U, typename... Args>
     friend source_handle_t make_handle(Args&&... args);
 
-    friend source_handle_t make_null_handle();
-
     void acquire(state_t*);
     void release();
 
 public:
+    /**
+     * A tag type used by `source_text` whenever the source code is a compile-time C-string literal.
+     * In this case, there is no state to keep around, allowing further optimisations.
+     */
+    class literal_string_tag_t
+    {
+        literal_string_tag_t() = default;
+        friend class source_text;
+    };
+
     ~source_handle_t();
+    explicit source_handle_t(literal_string_tag_t);
     source_handle_t(source_handle_t const&);
     source_handle_t(source_handle_t&&);
     source_handle_t& operator=(source_handle_t const&);
     source_handle_t& operator=(source_handle_t&&);
+
 };
 
+/**
+ * Construct a handle to some source code,
+ * for example `make_handle<std::string>("...")` for some runtime-generated source code,
+ * or `make_handle<boost::iostreams::mapped_file_source>(...)` for an mmap'd file.
+ * Instances of `source_text` act as a view into the source code keeping alive all underlying memory.
+ */
 template <typename U, typename... Args>
 source_handle_t make_handle(Args&&... args)
 {
     return source_handle_t(U{std::forward<Args>(args)...});
 }
 
-source_handle_t make_null_handle();
-
-// Like `std::string_view` but guarantees that the source is still open.
+/**
+ * A piece of text from some source code.
+ * Taking copies is very cheap so it is encouraged to pass by-value.
+ * This is conceptually similar to a `std::string_view` but it also
+ * guarantees that the underlying buffer of the source code is kept alive.
+ */
 class source_text
 {
     source_handle_t hdl;
     std::string_view txt;
 
 public:
+
+    /**
+     * Helper method to construct a source text backed by a literal C-string.
+     *
+     * @remarks It is undefined behaviour to pass a string that is not a literal C-string.
+     */
+    static source_text from_literal(std::string_view);
+
     source_text(source_handle_t, std::string_view);
     source_text(source_text const&) = default;
     source_text(source_text&&) = default;

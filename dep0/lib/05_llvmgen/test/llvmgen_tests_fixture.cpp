@@ -2,6 +2,7 @@
 
 #include "dep0/parser/parse.hpp"
 #include "dep0/typecheck/check.hpp"
+#include "dep0/typecheck/prelude.hpp"
 #include "dep0/transform/beta_delta_normalization.hpp"
 
 #include "dep0/llvmgen/gen.hpp"
@@ -33,7 +34,10 @@ boost::test_tools::predicate_result LLVMGenTestsFixture::pass(std::filesystem::p
         dep0::pretty_print(res.message().stream(), parse_result.error());
         return res;
     }
-    auto check_result = dep0::typecheck::check(*parse_result);
+    dep0::typecheck::env_t env;
+    auto const ok = env.import(dep0::source_text::from_literal(""), dep0::typecheck::build_prelude_module().value());
+    assert(ok.has_value());
+    auto check_result = dep0::typecheck::check(env, *parse_result);
     if (check_result.has_error())
     {
         auto res = boost::test_tools::predicate_result(false);

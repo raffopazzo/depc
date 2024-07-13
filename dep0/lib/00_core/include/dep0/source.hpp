@@ -8,7 +8,7 @@
 namespace dep0 {
 
 /**
- * Type-erased, single-threaded, reference-counted handle to some source dode,
+ * Type-erased, single-threaded, reference-counted handle to some source code,
  * for example an mmap'd file or a runtime-generated string.
  * It is conceptually similar to `std::shared_ptr<std::any>`,
  * but cheaper and removes `nullptr` from its inhabitants,
@@ -38,7 +38,7 @@ class source_handle_t
 public:
     /**
      * A tag type used by `source_text` whenever the source code is a compile-time C-string literal.
-     * In this case, there is no state to keep around, allowing further optimisations.
+     * In this case there is no state to keep around, which might allow further optimisations.
      */
     class literal_string_tag_t
     {
@@ -56,10 +56,10 @@ public:
 };
 
 /**
- * Construct a handle to some source code,
+ * Construct a handle to some source code buffer,
  * for example `make_handle<std::string>("...")` for some runtime-generated source code,
  * or `make_handle<boost::iostreams::mapped_file_source>(...)` for an mmap'd file.
- * Instances of `source_text` act as a view into the source code keeping alive all underlying memory.
+ * Instances of `source_text` act as a view into the source code keeping the underlying buffer alive.
  */
 template <typename U, typename... Args>
 source_handle_t make_handle(Args&&... args)

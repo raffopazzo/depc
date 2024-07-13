@@ -47,7 +47,7 @@ env_t::value_type const* env_t::operator[](expr_t::global_t const& global) const
 
 // non-const member functions
 
-dep0::expected<std::true_type> env_t::import(source_text module_name, module_t const& m)
+dep0::expected<std::true_type> env_t::import(source_text const module_name, module_t const& m)
 {
     auto const build_symbol_name = [&module_name] (module_t::entry_t const& entry)
     {

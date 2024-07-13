@@ -4,7 +4,6 @@
 #include "dep0/testing/pretty_name.hpp"
 
 #include "dep0/ast/ast.hpp"
-#include "dep0/ast/pretty_print.hpp"
 
 #include <boost/test/tools/assertion_result.hpp>
 
@@ -19,7 +18,9 @@ boost::test_tools::predicate_result is_global(ast::expr_t<P> const& expr, std::s
     auto const s = [&]
     {
         std::ostringstream buf;
-        dep0::ast::pretty_print<P>(buf, *g);
+        if (g->module_name)
+            buf << *g->module_name << "::";
+        buf << g->name;
         return buf.str();
     }();
     if (s != name)

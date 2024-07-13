@@ -14,6 +14,8 @@ dep0::expected<module_t> build_prelude_module()
     axiom conj_intro(bool a, bool b, true_t(a), true_t(b)) -> true_t(a and b);
     axiom conj_elim_a(bool a, bool b, true_t(a and b)) -> true_t(a);
     axiom conj_elim_b(bool a, bool b, true_t(a and b)) -> true_t(b);
+    axiom disj_intro_a(bool a, bool b, true_t(a)) -> true_t(a or b);
+    axiom disj_intro_b(bool a, bool b, true_t(b)) -> true_t(a or b);
     axiom double_neg_intro(bool a, true_t(a)) -> true_t(not not a);
     axiom double_neg_elim(bool a, true_t(not not a)) -> true_t(a);
 

@@ -148,6 +148,47 @@ BOOST_AUTO_TEST_CASE(pass_003)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_004)
+{
+    BOOST_TEST_REQUIRE(pass("0016_prelude/pass_004.depc"));
+    BOOST_TEST_REQUIRE(pass_result->entries.size() == 2ul);
+    {
+        auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[0ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "f");
+        BOOST_TEST_REQUIRE(f->value.args.size() == 3ul);
+        BOOST_TEST(is_arg(f->value.args[0], is_bool, "a"));
+        BOOST_TEST(is_arg(f->value.args[1], is_bool, "b"));
+        BOOST_TEST(is_arg(f->value.args[2], true_t_of(or_of(var("a"), var("b"))), std::nullopt, zero));
+        BOOST_TEST(is_i32(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0], constant(1)));
+    }
+    {
+        auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[1ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "g");
+        BOOST_TEST_REQUIRE(f->value.args.size() == 2ul);
+        BOOST_TEST(is_arg(f->value.args[0], is_bool, "a"));
+        BOOST_TEST(is_arg(f->value.args[1], is_bool, "b"));
+        BOOST_TEST(is_i32(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 3ul);
+        BOOST_TEST(is_if_else(
+            f->value.body.stmts[0],
+            var("a"),
+            std::tuple{return_of(
+                app_of(var("f"), var("a"), var("b"), app_of(global("::disj_intro_a"), var("a"), var("b"), is_auto))
+            )}));
+        BOOST_TEST(is_if_else(
+            f->value.body.stmts[1],
+            var("b"),
+            std::tuple{return_of(
+                app_of(var("f"), var("a"), var("b"), app_of(global("::disj_intro_b"), var("a"), var("b"), is_auto))
+            )}));
+        BOOST_TEST(is_return_of(f->value.body.stmts[2], constant(0)));
+    }
+}
+
 BOOST_AUTO_TEST_CASE(typecheck_000)
 {
     BOOST_TEST_REQUIRE(pass("0016_prelude/typecheck_000.depc"));

@@ -37,27 +37,27 @@ search_app(
             auto arg_val = [&] () -> std::optional<expr_t>
             {
                 func_arg_t const& arg = *arg_it;
-                auto const it = arg.var ? substitutions->find(*arg.var) : substitutions->end();
+                using node_type = decltype(substitutions->extract(*arg.var));
                 auto const next_arg = std::next(arg_it);
-                if (it != substitutions->end())
+                if (auto const node = arg.var ? substitutions->extract(*arg.var) : node_type{})
                 {
                     substitute(
-                        it->first,
-                        it->second,
+                        *arg.var,
+                        node.mapped(),
                         next_arg,
                         args_end,
                         app_type.ret_type.get(),
                         nullptr);
-                    return std::move(it->second);
+                    return std::move(node.mapped());
                 }
-                // We do not know what the "correct" substitution for this argument is,
-                // but if this argument is not used to form types of later arguments,
+                // We do not know what the "correct" substitution is for this argument,
+                // but if later arguments do not depend on it,
                 // then its value is irrelevant and any "random" value will be fine.
                 bool const irrelevant =
                     not arg.var or
                     not ast::occurs_in<properties_t>(*arg.var, next_arg, args_end, ast::occurrence_style::free);
                 if (irrelevant)
-                    // TODO for irrelevant arguments of primitive types, we could use any random value
+                    // TODO for irrelevant arguments of primitive types, we could use any random value, eg 0 for i32_t
                     return continue_proof_search(env, ctx, arg.type, st, tmp_usage, usage_multiplier);
                 return std::nullopt;
             }();

@@ -6,6 +6,8 @@
 #include "dep0/ast/pretty_print.hpp"
 #include "dep0/match.hpp"
 
+#include <boost/core/ignore_unused.hpp>
+
 #include <cassert>
 #include <ranges>
 #include <sstream>
@@ -47,22 +49,22 @@ env_t::value_type const* env_t::operator[](expr_t::global_t const& global) const
 
 dep0::expected<std::true_type> env_t::import(source_text module_name, module_t const& m)
 {
-    auto const get_symbol_name = [] (module_t::entry_t const& entry)
+    auto const build_symbol_name = [&module_name] (module_t::entry_t const& entry)
     {
-        return match(
-            entry,
-            [&] (type_def_t const& x) -> source_text { return match(x.value, [] (auto const& x) { return x.name; }); },
-            [&] (axiom_t const& x) -> source_text { return x.name; },
-            [&] (extern_decl_t const& x) -> source_text { return x.name; },
-            [&] (func_decl_t const& x) -> source_text { return x.name; },
-            [&] (func_def_t const& x) -> source_text { return x.name; });
+        return expr_t::global_t{
+            module_name,
+            match(
+                entry,
+                [&] (type_def_t const& x) { return match(x.value, [] (auto const& x) { return x.name; }); },
+                [&] (auto const& x) { return x.name; })
+        };
     };
     // before importing anything check that none of the entries already exist,
     // otherwise we might leave the module in a corrupted state
     std::vector<dep0::error_t> reasons;
     for (auto const& entry: m.entries)
     {
-        auto const global = expr_t::global_t{module_name, get_symbol_name(entry)};
+        auto const global = build_symbol_name(entry);
         if (this->operator[](global))
         {
             std::ostringstream err;
@@ -73,11 +75,8 @@ dep0::expected<std::true_type> env_t::import(source_text module_name, module_t c
     if (not reasons.empty())
         return dep0::error_t("cannot import module", std::move(reasons));
     for (auto const& entry: m.entries)
-    {
-        auto const global = expr_t::global_t{module_name, get_symbol_name(entry)};
-        auto const ok = try_emplace(global, entry);
-        assert(ok.has_value());
-    }
+        // we have already checked that none of the names already exist, so insertion will not fail
+        boost::ignore_unused(try_emplace(build_symbol_name(entry), entry));
     return {};
 }
 

@@ -108,6 +108,12 @@ std::optional<stmt_t> rewrite(expr_t const& from, expr_t const& to, stmt_t const
             if (ret.expr)
                 if (auto new_expr = rewrite(from, to, *ret.expr))
                     result.emplace(old.properties, stmt_t::return_t{std::move(*new_expr)});
+        },
+        [&] (stmt_t::impossible_t const& x)
+        {
+            if (x.reason)
+                if (auto new_reason = rewrite(from, to, *x.reason))
+                    result.emplace(old.properties, stmt_t::impossible_t{std::move(*new_reason)});
         });
     return result;
 }

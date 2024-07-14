@@ -40,6 +40,11 @@ void replace(typename expr_t<P>::var_t const& from, typename expr_t<P>::var_t co
             {
                 if (ret.expr)
                     replace(from, to, *ret.expr);
+            },
+            [&] (typename stmt_t<P>::impossible_t& x)
+            {
+                if (x.reason)
+                    replace(from, to, *x.reason);
             });
 }
 

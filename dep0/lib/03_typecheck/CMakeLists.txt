@@ -20,6 +20,7 @@ add_library(dep0_typecheck_lib
   src/private/delta_unfold.hpp
   src/private/derivation_rules.hpp
   src/private/drop_unreachable_stmts.hpp
+  src/private/is_impossible.hpp
   src/private/is_mutable.hpp
   src/private/proof_search.hpp
   src/private/proof_state.hpp
@@ -45,6 +46,7 @@ add_library(dep0_typecheck_lib
   src/drop_unreachable_stmts.cpp
   src/environment.cpp
   src/error.cpp
+  src/is_impossible.cpp
   src/is_mutable.cpp
   src/list_initialization.cpp
   src/proof_search.cpp

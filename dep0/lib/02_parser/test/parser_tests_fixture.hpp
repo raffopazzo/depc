@@ -63,6 +63,12 @@ struct ParserTestsFixture
     }
 
     template <typename... Args>
+    static constexpr auto impossible_of(Args&&... args)
+    {
+        return dep0::testing::impossible_of<dep0::parser::properties_t>(std::forward<Args>(args)...);
+    }
+
+    template <typename... Args>
     static constexpr auto subscript_of(Args&&... args)
     {
         return dep0::testing::subscript_of<dep0::parser::properties_t>(std::forward<Args>(args)...);

@@ -22,6 +22,7 @@
 #include "llvm_predicates/select.hpp"
 #include "llvm_predicates/store.hpp"
 #include "llvm_predicates/types.hpp"
+#include "llvm_predicates/unreachable.hpp"
 #include "llvm_predicates/xor.hpp"
 #include "llvm_predicates/zeroinitializer.hpp"
 

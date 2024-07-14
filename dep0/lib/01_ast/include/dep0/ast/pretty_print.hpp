@@ -49,6 +49,9 @@ template <Properties P>
 std::ostream& pretty_print(std::ostream&, typename stmt_t<P>::return_t const&, std::size_t indent = 0ul);
 
 template <Properties P>
+std::ostream& pretty_print(std::ostream&, typename stmt_t<P>::impossible_t const&, std::size_t indent = 0ul);
+
+template <Properties P>
 std::ostream& pretty_print(std::ostream&, expr_t<P> const&, std::size_t indent = 0ul);
 
 template <Properties P>

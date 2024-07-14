@@ -102,6 +102,10 @@ void gen_stmt(
                 builder.CreateRet(gen_val_unit(global));
             else
                 builder.CreateRet(ret_val);
+        },
+        [&] (typecheck::stmt_t::impossible_t const&)
+        {
+            builder.CreateUnreachable();
         });
 }
 

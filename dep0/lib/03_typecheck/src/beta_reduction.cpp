@@ -1,6 +1,8 @@
 #include "private/beta_reduction.hpp"
 
+#include "private/derivation_rules.hpp"
 #include "private/drop_unreachable_stmts.hpp"
+#include "private/is_impossible.hpp"
 #include "private/is_mutable.hpp"
 #include "private/substitute.hpp"
 
@@ -21,6 +23,7 @@ namespace impl {
 static bool beta_normalize(stmt_t&);
 static bool beta_normalize(stmt_t::if_else_t&);
 static bool beta_normalize(stmt_t::return_t&);
+static bool beta_normalize(stmt_t::impossible_t&);
 
 static bool beta_normalize(expr_t::typename_t&) { return false; }
 static bool beta_normalize(expr_t::true_t&) { return false; }
@@ -69,6 +72,11 @@ bool beta_normalize(stmt_t::if_else_t& if_)
 bool beta_normalize(stmt_t::return_t& ret)
 {
     return ret.expr and beta_normalize(*ret.expr);
+}
+
+bool beta_normalize(stmt_t::impossible_t& x)
+{
+    return x.reason and beta_normalize(*x.reason);
 }
 
 bool beta_normalize(expr_t::boolean_expr_t& x)
@@ -186,6 +194,13 @@ bool beta_normalize(body_t& body)
     while (it != body.stmts.end())
     {
         changed |= impl::beta_normalize(*it);
+        if (is_impossible(*it))
+        {
+            // TODO this is wrong because the impossible statement might be inside an implicit else-branch
+            body.stmts.clear();
+            body.stmts.push_back(make_legal_stmt(stmt_t::impossible_t{}));
+            break;
+        }
         it = match(
             it->value,
             [&] (expr_t::app_t const& app)
@@ -210,7 +225,8 @@ bool beta_normalize(body_t& body)
                 else
                     return std::next(it);
             },
-            [&] (stmt_t::return_t const&) { return std::next(it); });
+            [&] (stmt_t::return_t const&) { return std::next(it); },
+            [&] (stmt_t::impossible_t const&) { return std::next(it); });
     }
     return changed;
 }

@@ -387,17 +387,39 @@ struct stmt_t
     using properties_t = typename P::stmt_properties_type;
     using body_t = ast::body_t<P>;
     using expr_t = ast::expr_t<P>;
+
+    /** Represents an `if` or `if-else` statement, whose condition must be of type `bool`. */
     struct if_else_t
     {
         expr_t cond;
         body_t true_branch;
         std::optional<body_t> false_branch;
     };
+
+    /**
+     * Represents a `return` statement, which can be empty only inside functions returning `unit_t`,
+     * otherwise a value of the expected return type must be supplied.
+     * @remarks Because of dependent types, the return type of a function may be different in different branches.
+     */
     struct return_t
     {
         std::optional<expr_t> expr;
     };
-    using value_t = std::variant<typename expr_t::app_t, if_else_t, return_t>;
+
+    /**
+     * The `impossible` statement marks as unreachable the current branch of execution.
+     * A proof of false, i.e. a value of type `true_t(false)`, is required to type-check this statement.
+     * The compiler is allowed to remove all code leading to an `impossible` statement.
+     * For example, if `impossible` is inside the `false` branch of an `if` statement,
+     * this branch can be removed, possibly removing the condition too.
+     * An alternative form `impossible because expr` can also be used to explicitly provide a proof of false.
+     */
+    struct impossible_t
+    {
+        std::optional<expr_t> reason;
+    };
+
+    using value_t = std::variant<typename expr_t::app_t, if_else_t, return_t, impossible_t>;
 
     properties_t properties;
     value_t value;

@@ -19,6 +19,7 @@ drop_unreachable_stmts(
     std::vector<stmt_t>::iterator const begin, // the first statement is always reachable
     std::vector<stmt_t>::iterator end)
 {
+    // TODO drop everything that contains the impossible statement
     bool changed = false;
     // 1. all statements after the first return are unreachable;
     if (auto const it =

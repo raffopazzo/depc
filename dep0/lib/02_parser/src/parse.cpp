@@ -301,6 +301,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         if (ctx->funcCallStmt()) return std::any_cast<stmt_t>(visitFuncCallStmt(ctx->funcCallStmt()));
         if (ctx->ifElse()) return std::any_cast<stmt_t>(visitIfElse(ctx->ifElse()));
         if (ctx->returnStmt()) return std::any_cast<stmt_t>(visitReturnStmt(ctx->returnStmt()));
+        if (ctx->impossibleStmt()) return std::any_cast<stmt_t>(visitImpossibleStmt(ctx->impossibleStmt()));
         throw error_t("unexpected alternative when parsing StmtContext", get_loc(src, *ctx));
     }
 
@@ -340,9 +341,24 @@ struct parse_visitor_t : dep0::DepCParserVisitor
     virtual std::any visitReturnStmt(DepCParser::ReturnStmtContext* ctx) override
     {
         assert(ctx);
+        // for `return expr;` capture the whole statement otherwise just the `return` bit, no semicolon
+        auto const loc = ctx->expr() ? get_loc(src, *ctx) : get_loc(src, *ctx->KW_RETURN()->getSymbol());
         return stmt_t{
-            get_loc(src, *ctx),
+            loc,
             stmt_t::return_t{
+                ctx->expr()
+                    ? std::optional{visitExpr(ctx->expr())}
+                    : std::nullopt}};
+    }
+
+    virtual std::any visitImpossibleStmt(DepCParser::ImpossibleStmtContext* ctx) override
+    {
+        assert(ctx);
+        // for `impossible because expr` capture the whole statement otherwise just the `impossible` bit, no semicolon
+        auto const loc = ctx->expr() ? get_loc(src, *ctx) : get_loc(src, *ctx->KW_IMPOSSIBLE()->getSymbol());
+        return stmt_t{
+            loc,
+            stmt_t::impossible_t{
                 ctx->expr()
                     ? std::optional{visitExpr(ctx->expr())}
                     : std::nullopt}};

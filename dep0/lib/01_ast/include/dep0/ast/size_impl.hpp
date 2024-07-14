@@ -50,6 +50,10 @@ std::size_t size(stmt_t<P> const& x)
         [] (stmt_t<P>::return_t const& ret)
         {
             return ret.expr ? 1ul + size(*ret.expr) : 1ul;
+        },
+        [] (stmt_t<P>::impossible_t const& x)
+        {
+            return x.reason ? 1ul + size(*x.reason) : 1ul;
         });
 }
 

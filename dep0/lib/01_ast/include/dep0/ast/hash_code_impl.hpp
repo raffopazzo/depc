@@ -96,6 +96,10 @@ std::size_t hash_code_impl(hash_code_state_t<P>& state, stmt_t<P> const& x)
             [&] (stmt_t<P>::return_t const& ret)
             {
                 return ret.expr ? hash_code_impl(state, *ret.expr) : 0ul;
+            },
+            [&] (stmt_t<P>::impossible_t const& x)
+            {
+                return x.reason ? hash_code_impl(state, *x.reason) : 0ul;
             }));
 }
 

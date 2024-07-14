@@ -61,12 +61,13 @@ typeVar: name=ID;
 // Statements
 body: '{' stmt* '}';
 
-stmt: funcCallStmt | ifElse | returnStmt;
+stmt: funcCallStmt | ifElse | returnStmt | impossibleStmt;
 
 funcCallStmt: func=expr '(' (expr (',' expr)*)? ')' ';';
 ifElse: 'if' '(' cond=expr ')' true_branch=bodyOrStmt ('else' false_branch=bodyOrStmt)?;
 bodyOrStmt: body | stmt;
 returnStmt: 'return' expr? ';';
+impossibleStmt: 'impossible' ('because' expr)?';';
 
 // Expressions
 expr:

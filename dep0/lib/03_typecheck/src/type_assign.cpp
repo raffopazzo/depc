@@ -64,7 +64,7 @@ type_assign(
 {
     auto const loc = expr.properties;
     // common code between var_t and global_t cases
-    auto const lookup_global = [&] (expr_t::global_t global) -> expected<expr_t>
+    auto const type_assign_global = [&] (expr_t::global_t global) -> expected<expr_t>
     {
         auto const def = env[global];
         if (not def)
@@ -310,13 +310,14 @@ type_assign(
                 }
                 return make_legal_expr(expr->value.type, std::move(var));
             }
-            if (auto global = lookup_global(expr_t::global_t{std::nullopt, x.name}))
-                return std::move(global);
-            return error_t::from_error(dep0::error_t("unknown variable", loc));
+            if (auto const global = expr_t::global_t{std::nullopt, x.name}; env[global])
+                return type_assign_global(global);
+            else
+                return error_t::from_error(dep0::error_t("unknown variable", loc));
         },
         [&] (parser::expr_t::global_t const& global) -> expected<expr_t>
         {
-            return lookup_global(expr_t::global_t{global.module_name, global.name});
+            return type_assign_global(expr_t::global_t{global.module_name, global.name});
         },
         [&] (parser::expr_t::app_t const& x) -> expected<expr_t>
         {

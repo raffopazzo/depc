@@ -145,8 +145,9 @@ constexpr auto return_of(F&& f)
     };
 }
 
-template <ast::Properties P>
-boost::test_tools::predicate_result is_impossible(ast::stmt_t<P> const& stmt)
+inline constexpr auto is_impossible =
+[] <ast::Properties P> (ast::stmt_t<P> const& stmt)
+-> boost::test_tools::predicate_result
 {
     auto const x = std::get_if<typename ast::stmt_t<P>::impossible_t>(&stmt.value);
     if (not x)
@@ -154,7 +155,7 @@ boost::test_tools::predicate_result is_impossible(ast::stmt_t<P> const& stmt)
     if (x->reason.has_value())
         return failure("impossible statement contains an explicit reason but it should not");
     return true;
-}
+};
 
 template <ast::Properties P, Predicate<ast::expr_t<P>> F>
 boost::test_tools::predicate_result is_impossible_of(ast::stmt_t<P> const& stmt, F&& f)

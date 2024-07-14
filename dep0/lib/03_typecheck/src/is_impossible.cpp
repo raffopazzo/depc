@@ -8,8 +8,6 @@ namespace dep0::typecheck {
 
 namespace impl {
 
-static bool is_impossible(body_t const&);
-
 static bool is_impossible(expr_t const&);
 static bool is_impossible(expr_t::typename_t const&) { return false; }
 static bool is_impossible(expr_t::true_t const&) { return false; }
@@ -50,23 +48,6 @@ static bool is_impossible(
     return std::any_of(begin, end, [] (func_arg_t const& x) { return is_impossible(x.type); })
         or is_impossible(ret_type)
         or (body and is_impossible(*body));
-}
-
-bool is_impossible(body_t const& body)
-{
-    for (auto const& stmt: body.stmts)
-    {
-        if (is_impossible(stmt))
-            return true;
-        // An `if` without else-branch whose both condition and true-branch are possible,
-        // means that the entire body is possible.
-        // Perhaps the remaining statements below the `if` (i.e. the implicit else-branch)
-        // are impossible (and should be removed) but the body as a whole is still possible.
-        if (auto const if_else = std::get_if<stmt_t::if_else_t>(&stmt.value); not if_else->false_branch)
-            if (not is_impossible(if_else->cond) and not is_impossible(if_else->true_branch))
-                return false;
-    }
-    return false;
 }
 
 bool is_impossible(expr_t const& x)
@@ -141,6 +122,24 @@ bool is_impossible(expr_t::because_t const& x)
 
 } // namespace impl
 
+bool is_impossible(body_t const& body)
+{
+    for (auto const& stmt: body.stmts)
+    {
+        if (is_impossible(stmt))
+            return true;
+        // An `if` without else-branch whose both condition and true-branch are possible,
+        // means that the entire body is possible.
+        // Perhaps the remaining statements below the `if` (i.e. the implicit else-branch)
+        // are impossible (and should be removed) but the body as a whole is still possible.
+        if (auto const if_else = std::get_if<stmt_t::if_else_t>(&stmt.value))
+            if (not if_else->false_branch)
+                if (not impl::is_impossible(if_else->cond) and not is_impossible(if_else->true_branch))
+                    return false;
+    }
+    return false;
+}
+
 bool is_impossible(stmt_t const& s)
 {
     return match(
@@ -148,11 +147,13 @@ bool is_impossible(stmt_t const& s)
         [] (expr_t::app_t const& x) { return impl::is_impossible(x); },
         [] (stmt_t::if_else_t const& x)
         {
-            // an if statement is impossible only if both branches are present and both impossible
+            // an if-statement is impossible if the condition is impossible or
+            // both branches are present and both impossible.
+            if (impl::is_impossible(x.cond))
+                return true;
             return x.false_branch
-                and impl::is_impossible(x.cond)
-                and impl::is_impossible(x.true_branch)
-                and impl::is_impossible(*x.false_branch);
+                and is_impossible(x.true_branch)
+                and is_impossible(*x.false_branch);
         },
         [] (stmt_t::return_t const& x)
         {

@@ -222,6 +222,11 @@ bool beta_normalize(body_t& body)
                     else
                         return body.stmts.erase(it);
                 }
+                else if (if_.false_branch and is_impossible(*if_.false_branch) and not is_mutable(if_.cond))
+                    // the false-branch is impossible and the boolean condition is immutable,
+                    // we can then just lift the entire true-branch
+                    return replace_with(it, std::move(if_.true_branch.stmts));
+                // TODO handle the opposite case (that the true-branch is impossible)
                 else
                     return std::next(it);
             },

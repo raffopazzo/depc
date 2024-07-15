@@ -326,12 +326,12 @@ check_stmt(
         },
         [&] (parser::stmt_t::impossible_t const& x) -> expected<stmt_t>
         {
-            auto const check_impossible_stmt = [&] (ctx_t const& ctx) -> expected<stmt_t>
+            auto const check_impossible_stmt = [&] (ctx_t const& ctx, std::optional<expr_t> reason) -> expected<stmt_t>
             {
                 auto const false_type = sort_t{derivation_rules::make_true_t(derivation_rules::make_false())};
                 for (auto const& v: ctx.vars())
                     if (is_beta_delta_equivalent(env, ctx, ctx[v]->value.type, false_type))
-                        return make_legal_stmt(stmt_t::impossible_t{});
+                        return make_legal_stmt(stmt_t::impossible_t{std::move(reason)});
                 return error_t::from_error(dep0::error_t("proof of false not found", loc), env, ctx, state.goal);
             };
             if (x.reason)
@@ -343,10 +343,10 @@ check_stmt(
                 auto ctx2 = state.context.extend();
                 if (auto const reason_type = std::get_if<expr_t>(&reason->properties.sort.get()))
                     ctx2.add_unnamed(*reason_type);
-                return check_impossible_stmt(ctx2);
+                return check_impossible_stmt(ctx2, std::move(*reason));
             }
             else
-                return check_impossible_stmt(state.context);
+                return check_impossible_stmt(state.context, std::nullopt);
         });
 }
 

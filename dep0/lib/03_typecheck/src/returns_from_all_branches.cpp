@@ -12,10 +12,10 @@ bool returns_from_all_branches(body_t const& body)
         bool operator()(stmt_t::impossible_t const&) const
         {
             // Reaching the impossible statement is absurd, proving that we return from it: ex falso quodlibet.
-            // More usefully, in general this check is used to make some deductions;
-            // for example after an `if` statement that returns from all branches we can deduce that:
-            //   - if there is an `else` branch, then all statements after the `if-else` are unreachable
-            //   - otherwise the condition must have been false.
+            // More usefully, this function is generally used to make some deductions, for example:
+            //   - all statements after an `if-else` branch which returns from all sub-branches are unreachable;
+            //   - or if the else-branch is missing but the true-branch returns from all sub-branches,
+            //     then once we get past the `if` statement it means that the condition was false.
             // Other kinds of reasoning may me possible knowing that a body returns from all branches,
             // but in general the impossible statement can be treated as if it returns; again ex falso quodlibet.
             return true;

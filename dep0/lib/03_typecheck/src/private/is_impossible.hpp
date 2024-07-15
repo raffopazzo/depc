@@ -5,7 +5,7 @@
 namespace dep0::typecheck {
 
 /**
- * Return true if all branches of execution inside given body contain impossible statements.
+ * Return true if all branches of execution inside the given body contain impossible statements.
  * If all branches are impossible, the entire body can be removed from the final programme.
  */
 bool is_impossible(body_t const&);

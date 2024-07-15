@@ -97,9 +97,12 @@ std::size_t hash_code_impl(hash_code_state_t<P>& state, stmt_t<P> const& x)
             {
                 return ret.expr ? hash_code_impl(state, *ret.expr) : 0ul;
             },
-            [&] (stmt_t<P>::impossible_t const& x)
+            [] (stmt_t<P>::impossible_t const&)
             {
-                return x.reason ? hash_code_impl(state, *x.reason) : 0ul;
+                // two alpha-equivalent statements must have the same hash,
+                // so ignore `reason` since we ignore it for alpha-equivalence too
+                // also, make sure it has a distinct value from an empty return statement
+                return 1ul;
             }));
 }
 
@@ -233,7 +236,9 @@ std::size_t hash_code_impl(hash_code_state_t<P>& state, expr_t<P> const& x)
             },
             [&] (expr_t<P>::because_t const& x)
             {
-                return combine(hash_code_impl(state, x.value.get()), hash_code_impl(state, x.reason.get()));
+                // two alpha-equivalent expressions must have the same hash,
+                // so ignore `reason` since we ignore it for alpha-equivalence too
+                return hash_code_impl(state, x.value.get());
             }));
 }
 

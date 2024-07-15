@@ -91,13 +91,22 @@ bool is_impossible(expr_t::arith_expr_t const& x)
 
 bool is_impossible(expr_t::app_t const& x)
 {
-    return is_impossible(x.func.get())
-       or std::ranges::any_of(x.args, [] (expr_t const& x) { return is_impossible(x); });
+    if (is_impossible(x.func.get()))
+        return true;
+    // special case for a lambda that contains an impossible body
+    if (auto const abs = std::get_if<expr_t::abs_t>(&x.func.get().value))
+        if (is_impossible(abs->body))
+            return true;
+    return std::ranges::any_of(x.args, [] (expr_t const& x) { return is_impossible(x); });
 }
 
 bool is_impossible(expr_t::abs_t const& x)
 {
-    return is_impossible(x.args.begin(), x.args.end(), x.ret_type.get(), &x.body);
+    // Passing nullptr to body because constructing a lambda is impossible only if
+    // its arguments or return type are impossible to construct.
+    // It is still possible to construct a lambda whose body is impossible;
+    // it is impossible to invoke it, but it can still be constructed.
+    return is_impossible(x.args.begin(), x.args.end(), x.ret_type.get(), nullptr);
 }
 
 bool is_impossible(expr_t::pi_t const& x)

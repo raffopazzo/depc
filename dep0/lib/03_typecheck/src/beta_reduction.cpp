@@ -1,8 +1,10 @@
 #include "private/beta_reduction.hpp"
 
 #include "private/drop_unreachable_stmts.hpp"
-#include "private/is_mutable.hpp"
 #include "private/substitute.hpp"
+
+#include "dep0/typecheck/is_impossible.hpp"
+#include "dep0/typecheck/is_mutable.hpp"
 
 #include "dep0/destructive_self_assign.hpp"
 #include "dep0/match.hpp"
@@ -21,6 +23,7 @@ namespace impl {
 static bool beta_normalize(stmt_t&);
 static bool beta_normalize(stmt_t::if_else_t&);
 static bool beta_normalize(stmt_t::return_t&);
+static bool beta_normalize(stmt_t::impossible_t&);
 
 static bool beta_normalize(expr_t::typename_t&) { return false; }
 static bool beta_normalize(expr_t::true_t&) { return false; }
@@ -69,6 +72,11 @@ bool beta_normalize(stmt_t::if_else_t& if_)
 bool beta_normalize(stmt_t::return_t& ret)
 {
     return ret.expr and beta_normalize(*ret.expr);
+}
+
+bool beta_normalize(stmt_t::impossible_t& x)
+{
+    return x.reason and beta_normalize(*x.reason);
 }
 
 bool beta_normalize(expr_t::boolean_expr_t& x)
@@ -181,11 +189,13 @@ bool beta_normalize(body_t& body)
         body.stmts.erase(new_end, body.stmts.end());
         return it; // the first statement is obviously reachable, so `it` is still valid
     };
+    // First pass: drop all unreachable statements and normalize those that survive.
     bool changed = drop_unreachable_stmts(body);
-    auto it = body.stmts.begin();
-    while (it != body.stmts.end())
-    {
-        changed |= impl::beta_normalize(*it);
+    for (auto& s: body.stmts)
+        changed |= impl::beta_normalize(s);
+    // Second pass: drop unnecessary statements, like immutable function calls or dead branches.
+    // This may occasionally benefit from a look-ahead so we do it after the normalization pass above.
+    for (auto it = body.stmts.begin(); it != body.stmts.end();)
         it = match(
             it->value,
             [&] (expr_t::app_t const& app)
@@ -207,11 +217,36 @@ bool beta_normalize(body_t& body)
                     else
                         return body.stmts.erase(it);
                 }
+                else if (is_mutable(if_.cond))
+                    // if the condition is mutable we don't want to mess around with things;
+                    // this could be improved in future but for now it's fine like this
+                    return std::next(it);
+                else if (is_impossible(if_.true_branch))
+                {
+                    changed = true;
+                    return if_.false_branch
+                        ? replace_with(it, std::move(if_.false_branch->stmts))
+                        : body.stmts.erase(it);
+                }
+                else if (if_.false_branch and is_impossible(*if_.false_branch))
+                {
+                    changed = true;
+                    return replace_with(it, std::move(if_.true_branch.stmts));
+                }
+                else if (not if_.false_branch and is_impossible(std::next(it), body.stmts.end()))
+                {
+                    // the implicit else-branch is impossible so remove all that code and lift the true-branch
+                    // NOTE this is quite inefficient, especially for code that does not contain the impossible
+                    // statement as every `if` without else will trigger this scan, potentially O(n^2)!
+                    // For now it's fine but we may have to look into this in the future.
+                    body.stmts.erase(std::next(it), body.stmts.end());
+                    return replace_with(it, std::move(if_.true_branch.stmts));
+                }
                 else
                     return std::next(it);
             },
-            [&] (stmt_t::return_t const&) { return std::next(it); });
-    }
+            [&] (stmt_t::return_t const&) { return std::next(it); },
+            [&] (stmt_t::impossible_t const&) { return std::next(it); });
     return changed;
 }
 

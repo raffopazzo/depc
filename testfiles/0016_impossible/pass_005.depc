@@ -1,0 +1,17 @@
+axiom nothing_bigger_than_true(bool a, true_t(a > true)) -> true_t(false);
+
+i32_t a_gt_b_implies_a(bool a, bool b, 0 true_t(a > b))
+{
+    if (b)
+        impossible because nothing_bigger_than_true(a, auto);
+    else if (a)
+        return 0;
+    else
+        impossible;
+        
+}
+
+i32_t f(bool a, bool b, 0 true_t(a > b))
+{
+    return a_gt_b_implies_a(a, b, auto);
+}

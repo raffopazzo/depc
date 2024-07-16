@@ -145,4 +145,38 @@ constexpr auto return_of(F&& f)
     };
 }
 
+inline constexpr auto is_impossible =
+[] <ast::Properties P> (ast::stmt_t<P> const& stmt)
+-> boost::test_tools::predicate_result
+{
+    auto const x = std::get_if<typename ast::stmt_t<P>::impossible_t>(&stmt.value);
+    if (not x)
+        return failure("statement is not impossible but ", pretty_name(stmt.value));
+    if (x->reason.has_value())
+        return failure("impossible statement contains an explicit reason but it should not");
+    return true;
+};
+
+template <ast::Properties P, Predicate<ast::expr_t<P>> F>
+boost::test_tools::predicate_result is_impossible_of(ast::stmt_t<P> const& stmt, F&& f)
+{
+    auto const x = std::get_if<typename ast::stmt_t<P>::impossible_t>(&stmt.value);
+    if (not x)
+        return failure("statement is not impossible but ", pretty_name(stmt.value));
+    if (not x->reason.has_value())
+        return failure("impossible statement does not contain an explicit reason");
+    if (auto const result = std::forward<F>(f)(*x->reason); not result)
+        return failure("inside impossible statement: ", result.message());
+    return true;
+}
+
+template <ast::Properties P, Predicate<ast::expr_t<P>> F>
+constexpr auto impossible_of(F&& f)
+{
+    return [f=std::forward<F>(f)] (ast::stmt_t<P> const& x)
+    {
+        return is_impossible_of(x, f);
+    };
+}
+
 } // namespace dep0::testing

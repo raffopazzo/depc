@@ -51,6 +51,8 @@ add_library(dep0_llvmgen_tests_fixture
     llvm_predicates/to_string.cpp
     llvm_predicates/types.hpp
     llvm_predicates/types.cpp
+    llvm_predicates/unreachable.hpp
+    llvm_predicates/unreachable.cpp
     llvm_predicates/xor.hpp
     llvm_predicates/xor.cpp
     llvm_predicates/zeroinitializer.hpp
@@ -92,4 +94,5 @@ add_dep0_llvmgen_test(0012_auto_expr)
 add_dep0_llvmgen_test(0013_cstr)
 add_dep0_llvmgen_test(0014_extern_decl)
 add_dep0_llvmgen_test(0015_because)
+add_dep0_llvmgen_test(0016_impossible)
 add_dep0_llvmgen_test(0016_prelude)

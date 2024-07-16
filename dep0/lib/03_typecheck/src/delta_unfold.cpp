@@ -2,7 +2,8 @@
 
 #include "private/cpp_int_add.hpp"
 #include "private/derivation_rules.hpp"
-#include "private/is_mutable.hpp"
+
+#include "dep0/typecheck/is_mutable.hpp"
 
 #include "dep0/destructive_self_assign.hpp"
 #include "dep0/match.hpp"
@@ -21,6 +22,7 @@ namespace impl {
 static bool delta_unfold(env_t const&, ctx_t const&, stmt_t&);
 static bool delta_unfold(env_t const&, ctx_t const&, stmt_t::if_else_t&);
 static bool delta_unfold(env_t const&, ctx_t const&, stmt_t::return_t&);
+static bool delta_unfold(env_t const&, ctx_t const&, stmt_t::impossible_t&);
 
 static bool delta_unfold(env_t const&, ctx_t const&, expr_t::typename_t&) { return false; }
 static bool delta_unfold(env_t const&, ctx_t const&, expr_t::true_t&) { return false; }
@@ -67,6 +69,11 @@ bool delta_unfold(env_t const& env, ctx_t const& ctx, stmt_t::if_else_t& if_)
 bool delta_unfold(env_t const& env, ctx_t const& ctx, stmt_t::return_t& ret)
 {
     return ret.expr and delta_unfold(env, ctx, *ret.expr);
+}
+
+bool delta_unfold(env_t const& env, ctx_t const& ctx, stmt_t::impossible_t& x)
+{
+    return x.reason and delta_unfold(env, ctx, *x.reason);
 }
 
 bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t::boolean_expr_t& x)

@@ -9,6 +9,8 @@ add_library(dep0_typecheck_lib
   include/dep0/typecheck/derivation.hpp
   include/dep0/typecheck/environment.hpp
   include/dep0/typecheck/error.hpp
+  include/dep0/typecheck/is_impossible.hpp
+  include/dep0/typecheck/is_mutable.hpp
   include/dep0/typecheck/list_initialization.hpp
   # private headers
   src/private/beta_delta_equivalence.hpp
@@ -20,7 +22,7 @@ add_library(dep0_typecheck_lib
   src/private/delta_unfold.hpp
   src/private/derivation_rules.hpp
   src/private/drop_unreachable_stmts.hpp
-  src/private/is_mutable.hpp
+  src/private/is_terminator.hpp
   src/private/prelude.hpp
   src/private/proof_search.hpp
   src/private/proof_state.hpp
@@ -46,7 +48,9 @@ add_library(dep0_typecheck_lib
   src/drop_unreachable_stmts.cpp
   src/environment.cpp
   src/error.cpp
+  src/is_impossible.cpp
   src/is_mutable.cpp
+  src/is_terminator.cpp
   src/list_initialization.cpp
   src/prelude.cpp
   src/proof_search.cpp

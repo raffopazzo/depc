@@ -35,6 +35,11 @@ void substitute(expr_t::var_t const& var, expr_t const& expr, body_t& body)
             {
                 if (ret.expr)
                     substitute(var, expr, *ret.expr);
+            },
+            [&] (stmt_t::impossible_t& x)
+            {
+                if (x.reason)
+                    substitute(var, expr, *x.reason);
             });
 }
 

@@ -241,6 +241,15 @@ std::ostream& pretty_print(std::ostream& os, typename stmt_t<P>::return_t const&
 }
 
 template <Properties P>
+std::ostream& pretty_print(std::ostream& os, typename stmt_t<P>::impossible_t const& x, std::size_t const indent)
+{
+    os << "impossible";
+    if (x.reason)
+        pretty_print(os << " because ", *x.reason);
+    return os << ';';
+}
+
+template <Properties P>
 std::ostream& pretty_print(std::ostream& os, expr_t<P> const& x, std::size_t const indent)
 {
     match(x.value, [&] (auto const& x) { pretty_print<P>(os, x, indent); });

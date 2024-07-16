@@ -218,7 +218,8 @@ bool beta_normalize(body_t& body)
                         return body.stmts.erase(it);
                 }
                 else if (is_mutable(if_.cond))
-                    // if the condition is mutable we don't want to mess around with things
+                    // if the condition is mutable we don't want to mess around with things;
+                    // this could be improved in future but for now it's fine like this
                     return std::next(it);
                 else if (is_impossible(if_.true_branch))
                 {

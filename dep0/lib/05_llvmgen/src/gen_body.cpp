@@ -29,7 +29,7 @@ static bool has_unit_type(typecheck::expr_t const& expr)
  *      All generated blocks will be added to this LLVM function.
  *
  * @param inlined_result
- *      If not nullptr and If this is a return statement,
+ *      If not `nullptr` and if this is a return statement,
  *      this function will emit appropriate IR instructions to
  *      store/memcpy/memset the resulting LLVM value at the runtime location
  *      pointed by this LLVM value, which must be of pointer type.

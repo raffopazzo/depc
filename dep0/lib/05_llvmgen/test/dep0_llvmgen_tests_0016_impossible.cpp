@@ -6,7 +6,6 @@
 
 using namespace dep0::llvmgen::testing;
 
-// static auto const nonnull = std::vector{llvm::Attribute::NonNull};
 static auto const sext = std::vector{llvm::Attribute::SExt};
 static auto const zext = std::vector{llvm::Attribute::ZExt};
 

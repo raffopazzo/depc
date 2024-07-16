@@ -2,9 +2,10 @@
 
 #include "private/derivation_rules.hpp"
 #include "private/drop_unreachable_stmts.hpp"
-#include "private/is_impossible.hpp"
-#include "private/is_mutable.hpp"
 #include "private/substitute.hpp"
+
+#include "dep0/typecheck/is_impossible.hpp"
+#include "dep0/typecheck/is_mutable.hpp"
 
 #include "dep0/destructive_self_assign.hpp"
 #include "dep0/match.hpp"
@@ -194,13 +195,6 @@ bool beta_normalize(body_t& body)
     while (it != body.stmts.end())
     {
         changed |= impl::beta_normalize(*it);
-        if (is_impossible(*it))
-        {
-            // TODO this is wrong because the impossible statement might be inside an implicit else-branch
-            body.stmts.clear();
-            body.stmts.push_back(make_legal_stmt(stmt_t::impossible_t{}));
-            break;
-        }
         it = match(
             it->value,
             [&] (expr_t::app_t const& app)
@@ -222,11 +216,21 @@ bool beta_normalize(body_t& body)
                     else
                         return body.stmts.erase(it);
                 }
-                else if (if_.false_branch and is_impossible(*if_.false_branch) and not is_mutable(if_.cond))
-                    // the false-branch is impossible and the boolean condition is immutable,
-                    // we can then just lift the entire true-branch
+                else if (is_mutable(if_.cond))
+                    // if the condition is mutable we don't want to mess around with things
+                    return std::next(it);
+                else if (is_impossible(if_.true_branch))
+                {
+                    changed = true;
+                    return if_.false_branch
+                        ? replace_with(it, std::move(if_.false_branch->stmts))
+                        : body.stmts.erase(it);
+                }
+                else if (if_.false_branch and is_impossible(*if_.false_branch))
+                {
+                    changed = true;
                     return replace_with(it, std::move(if_.true_branch.stmts));
-                // TODO handle the opposite case (that the true-branch is impossible)
+                }
                 else
                     return std::next(it);
             },

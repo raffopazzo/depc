@@ -1,0 +1,17 @@
+bool id(bool x) { return x; }
+
+auto f(bool a, 0 true_t(id(a))) -> i32_t
+{
+    if (id(a))
+        return 0;
+    else
+        impossible;
+}
+
+auto g(bool a, 0 true_t(not id(a))) -> i32_t
+{
+    if (id(a))
+        impossible;
+    else
+        return 0;
+}

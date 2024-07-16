@@ -2,7 +2,8 @@
 
 #include "private/cpp_int_add.hpp"
 #include "private/derivation_rules.hpp"
-#include "private/is_mutable.hpp"
+
+#include "dep0/typecheck/is_mutable.hpp"
 
 #include "dep0/destructive_self_assign.hpp"
 #include "dep0/match.hpp"

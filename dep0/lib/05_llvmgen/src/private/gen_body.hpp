@@ -76,32 +76,4 @@ snippet_t gen_body(
     llvm::Function* parent_function,
     llvm::Value* inlined_result);
 
-/**
- * Generate IR code for a DepC statement.
- * This function will use the given IR builder, instead of a new one.
- *
- * @param current_snippet
- *      If this function produces new open blocks, they will be appended to this snippet.
- *
- * @param builder
- *      The builder used to generate IR code.
- *
- * @param parent_function
- *      All generated blocks will be added to this LLVM function.
- *
- * @param inlined_result
- *      If not nullptr and If this is a return statement,
- *      this function will emit appropriate IR instructions to
- *      store/memcpy/memset the resulting LLVM value at the runtime location
- *      pointed by this LLVM value, which must be of pointer type.
- */
-void gen_stmt(
-    global_ctx_t&,
-    local_ctx_t const&,
-    snippet_t& current_snippet,
-    llvm::IRBuilder<>& builder,
-    typecheck::stmt_t const&,
-    llvm::Function* parent_function,
-    llvm::Value* inlined_result);
-
 } // namespace dep0::llvmgen

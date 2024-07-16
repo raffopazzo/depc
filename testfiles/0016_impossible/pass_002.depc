@@ -1,0 +1,12 @@
+axiom nothing_bigger_than_true(bool a, true_t(a > true)) -> true_t(false);
+
+auto a_gt_b_implies_a(bool a, bool b, 0 true_t(a > b)) -> true_t(a)
+{
+    if (b)
+        impossible because nothing_bigger_than_true(a, auto);
+    else if (a)
+        return {};
+    else
+        impossible;
+        
+}

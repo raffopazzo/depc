@@ -1,4 +1,4 @@
-#include "private/is_impossible.hpp"
+#include "dep0/typecheck/is_impossible.hpp"
 
 #include "dep0/match.hpp"
 

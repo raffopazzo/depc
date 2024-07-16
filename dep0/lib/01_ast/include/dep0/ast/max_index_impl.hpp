@@ -48,6 +48,10 @@ std::size_t max_index(body_t<P> const& x)
                     [] (stmt_t<P>::return_t const& ret)
                     {
                         return ret.expr ? max_index(*ret.expr) : 0ul;
+                    },
+                    [](stmt_t<P>::impossible_t const& x)
+                    {
+                        return x.reason ? max_index(*x.reason) : 0ul;
                     }));
         });
 }

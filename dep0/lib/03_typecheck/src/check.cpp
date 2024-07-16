@@ -225,11 +225,12 @@ check_stmt(
     usage_t& usage,
     ast::qty_t const usage_multiplier)
 {
+    auto const loc = s.properties;
     return match(
         s.value,
         [&] (parser::expr_t::app_t const& x) -> expected<stmt_t>
         {
-            if (auto app = type_assign_app(env, state.context, x, s.properties, is_mutable, usage, usage_multiplier))
+            if (auto app = type_assign_app(env, state.context, x, loc, is_mutable, usage, usage_multiplier))
                 return make_legal_stmt(std::move(std::get<expr_t::app_t>(app->value)));
             else
                 return std::move(app.error());
@@ -315,13 +316,37 @@ check_stmt(
                 {
                     std::ostringstream err;
                     pretty_print(err << "expecting expression of type `", state.goal) << '`';
-                    return error_t::from_error(dep0::error_t(err.str(), s.properties), env, state.context, state.goal);
+                    return error_t::from_error(dep0::error_t(err.str(), loc), env, state.context, state.goal);
                 }
             }
             else if (auto expr = check_expr(env, state.context, *x.expr, state.goal, is_mutable, usage, usage_multiplier))
                 return make_legal_stmt(stmt_t::return_t{std::move(*expr)});
             else
                 return std::move(expr.error());
+        },
+        [&] (parser::stmt_t::impossible_t const& x) -> expected<stmt_t>
+        {
+            auto const check_impossible_stmt = [&] (ctx_t const& ctx, std::optional<expr_t> reason) -> expected<stmt_t>
+            {
+                auto const false_type = sort_t{derivation_rules::make_true_t(derivation_rules::make_false())};
+                for (auto const& v: ctx.vars())
+                    if (is_beta_delta_equivalent(env, ctx, ctx[v]->value.type, false_type))
+                        return make_legal_stmt(stmt_t::impossible_t{std::move(reason)});
+                return error_t::from_error(dep0::error_t("proof of false not found", loc), env, ctx, state.goal);
+            };
+            if (x.reason)
+            {
+                // reasons consume no resources and can contain mutable operations (its type cannot; but the value can)
+                auto reason = type_assign(env, state.context, *x.reason, ast::is_mutable_t::yes, usage, ast::qty_t::zero);
+                if (not reason)
+                    return std::move(reason.error());
+                auto ctx2 = state.context.extend();
+                if (auto const reason_type = std::get_if<expr_t>(&reason->properties.sort.get()))
+                    ctx2.add_unnamed(*reason_type);
+                return check_impossible_stmt(ctx2, std::move(*reason));
+            }
+            else
+                return check_impossible_stmt(state.context, std::nullopt);
         });
 }
 

@@ -1,0 +1,9 @@
+auto absurd(typename t, 0 true_t(false)) -> t
+{
+    impossible;
+}
+
+i32_t f(0 true_t(false) p)
+{
+    return absurd(i32_t, p);
+}

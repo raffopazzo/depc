@@ -38,6 +38,10 @@ bool occurs_in(typename expr_t<P>::var_t const& var, body_t<P> const& x, occurre
                 [&] (stmt_t<P>::return_t const& ret)
                 {
                     return ret.expr and occurs_in(var, *ret.expr, style);
+                },
+                [&] (stmt_t<P>::impossible_t const& x)
+                {
+                    return x.reason and occurs_in(var, *x.reason, style);
                 });
         });
 }

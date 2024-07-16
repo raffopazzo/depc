@@ -248,6 +248,13 @@ struct alpha_equivalence_visitor
             return is_alpha_equivalent_impl(*x.expr, *y.expr);
         return {};
     }
+
+    result_t operator()(typename stmt_t<P>::impossible_t&, typename stmt_t<P>::impossible_t&) const
+    {
+        // whether an explicit proof of false is supplied or not is irrelevant,
+        // both forms are alpha-equivalent to each other
+        return {};
+    }
 };
 
 template <Properties P>

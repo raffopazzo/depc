@@ -1,0 +1,31 @@
+axiom nothing_smaller_than_false(bool a, true_t(a < false)) -> true_t(false);
+
+i32_t a_lt_b_implies_b(bool a, bool b, 0 true_t(a < b))
+{
+    if (b)
+        return 0;
+    else if (a < false)
+        impossible because nothing_smaller_than_false(a, auto);
+    else
+        impossible;
+}
+
+i32_t f(bool a, bool b, 0 true_t(a < b))
+{
+    return a_lt_b_implies_b(a, b, auto);
+}
+
+// same but with implicit else-branches
+i32_t a_lt_b_implies_b2(bool a, bool b, 0 true_t(a < b))
+{
+    if (b)
+        return 0;
+    if (a < false)
+        impossible because nothing_smaller_than_false(a, auto);
+    impossible;
+}
+
+i32_t f2(bool a, bool b, 0 true_t(a < b))
+{
+    return a_lt_b_implies_b2(a, b, auto);
+}

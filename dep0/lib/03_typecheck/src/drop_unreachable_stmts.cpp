@@ -1,6 +1,6 @@
 #include "private/drop_unreachable_stmts.hpp"
 
-#include "private/returns_from_all_branches.hpp"
+#include "private/is_terminator.hpp"
 
 #include <algorithm>
 #include <ranges>
@@ -19,35 +19,15 @@ drop_unreachable_stmts(
     std::vector<stmt_t>::iterator const begin, // the first statement is always reachable
     std::vector<stmt_t>::iterator end)
 {
-    // TODO drop everything that contains the impossible statement
     bool changed = false;
-    // 1. all statements after the first return are unreachable;
-    if (auto const it =
-            std::find_if(
-                begin, end,
-                [] (stmt_t const& x)
-                {
-                    return std::holds_alternative<stmt_t::return_t>(x.value);
-                });
-        it != end and std::next(it) != end)
-    {
-        changed = true;
-        end = std::next(it);
-    }
-    // 1bis. similarly to (1) all statements after an if-else that returns from all branches are also unreachable;
-    if (auto const it =
-            std::find_if(
-                begin, end,
-                [] (stmt_t const& x)
-                {
-                    auto const if_else = std::get_if<stmt_t::if_else_t>(&x.value);
-                    return if_else and returns_from_all_branches(*if_else);
-                });
-        it != end and std::next(it) != end)
-    {
-        changed = true;
-        end = std::next(it);
-    }
+    // 1. all statements after the first terminator are unreachable;
+    if (auto const it = std::find_if(begin, end, [] (stmt_t const& x) { return is_terminator(x); }); it != end)
+        // keep the terminator but set `changed` only if `end` actually changed
+        if (auto const new_end = std::next(it); new_end != end)
+        {
+            changed = true;
+            end = new_end;
+        }
     // 2. drop unreachable if-else bodies, i.e. bodies guarded by a boolean constant of the opposite value
     for (auto& stmt: std::ranges::subrange(begin, end))
         if (auto* const if_else = std::get_if<stmt_t::if_else_t>(&stmt.value))

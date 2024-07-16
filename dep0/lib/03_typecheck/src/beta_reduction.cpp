@@ -1,6 +1,5 @@
 #include "private/beta_reduction.hpp"
 
-#include "private/derivation_rules.hpp"
 #include "private/drop_unreachable_stmts.hpp"
 #include "private/substitute.hpp"
 

@@ -8,6 +8,8 @@ namespace dep0::typecheck {
 
 namespace impl {
 
+static bool is_impossible(stmt_t const&);
+
 static bool is_impossible(expr_t const&);
 static bool is_impossible(expr_t::typename_t const&) { return false; }
 static bool is_impossible(expr_t::true_t const&) { return false; }
@@ -43,11 +45,31 @@ static bool is_impossible(
     std::vector<func_arg_t>::const_iterator begin,
     std::vector<func_arg_t>::const_iterator end,
     expr_t const& ret_type,
-    body_t const* body)
+    body_t const*);
+
+bool is_impossible(stmt_t const& s)
 {
-    return std::any_of(begin, end, [] (func_arg_t const& x) { return is_impossible(x.type); })
-        or is_impossible(ret_type)
-        or (body and is_impossible(*body));
+    return match(
+        s.value,
+        [] (expr_t::app_t const& x) { return impl::is_impossible(x); },
+        [] (stmt_t::if_else_t const& x)
+        {
+            // an if-statement is impossible if the condition is impossible or
+            // both branches are present and both impossible.
+            if (impl::is_impossible(x.cond))
+                return true;
+            return x.false_branch
+                and is_impossible(x.true_branch)
+                and is_impossible(*x.false_branch);
+        },
+        [] (stmt_t::return_t const& x)
+        {
+            return x.expr and impl::is_impossible(*x.expr);
+        },
+        [] (stmt_t::impossible_t const&)
+        {
+            return true;
+        });
 }
 
 bool is_impossible(expr_t const& x)
@@ -129,13 +151,24 @@ bool is_impossible(expr_t::because_t const& x)
     return is_impossible(x.value.get());
 }
 
+bool is_impossible(
+    std::vector<func_arg_t>::const_iterator begin,
+    std::vector<func_arg_t>::const_iterator end,
+    expr_t const& ret_type,
+    body_t const* body)
+{
+    return std::any_of(begin, end, [] (func_arg_t const& x) { return is_impossible(x.type); })
+        or is_impossible(ret_type)
+        or (body and is_impossible(*body));
+}
+
 } // namespace impl
 
 bool is_impossible(body_t const& body)
 {
     for (auto const& stmt: body.stmts)
     {
-        if (is_impossible(stmt))
+        if (impl::is_impossible(stmt))
             return true;
         // An `if` without else-branch whose both condition and true-branch are possible,
         // means that the entire body is possible.
@@ -147,31 +180,6 @@ bool is_impossible(body_t const& body)
                     return false;
     }
     return false;
-}
-
-bool is_impossible(stmt_t const& s)
-{
-    return match(
-        s.value,
-        [] (expr_t::app_t const& x) { return impl::is_impossible(x); },
-        [] (stmt_t::if_else_t const& x)
-        {
-            // an if-statement is impossible if the condition is impossible or
-            // both branches are present and both impossible.
-            if (impl::is_impossible(x.cond))
-                return true;
-            return x.false_branch
-                and is_impossible(x.true_branch)
-                and is_impossible(*x.false_branch);
-        },
-        [] (stmt_t::return_t const& x)
-        {
-            return x.expr and impl::is_impossible(*x.expr);
-        },
-        [] (stmt_t::impossible_t const&)
-        {
-            return true;
-        });
 }
 
 } // namespace dep0::typecheck

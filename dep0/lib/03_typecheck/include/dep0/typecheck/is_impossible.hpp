@@ -10,10 +10,4 @@ namespace dep0::typecheck {
  */
 bool is_impossible(body_t const&);
 
-/**
- * Return true if the given statement is (or otherwise contains) the impossible statement.
- * For example `return absurd(t, proof_of_false);` contains the impossible statement.
- */
-bool is_impossible(stmt_t const&);
-
 } // namespace dep0::typecheck

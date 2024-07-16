@@ -57,11 +57,8 @@ bool is_impossible(stmt_t const& s)
         {
             // an if-statement is impossible if the condition is impossible or
             // both branches are present and both impossible.
-            if (impl::is_impossible(x.cond))
-                return true;
-            return x.false_branch
-                and is_impossible(x.true_branch)
-                and is_impossible(*x.false_branch);
+            return impl::is_impossible(x.cond) or
+                x.false_branch and is_impossible(x.true_branch) and is_impossible(*x.false_branch);
         },
         [] (stmt_t::return_t const& x)
         {

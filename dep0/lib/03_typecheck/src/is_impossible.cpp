@@ -123,7 +123,7 @@ bool is_impossible(expr_t::app_t const& x)
 bool is_impossible(expr_t::abs_t const& x)
 {
     // Passing nullptr to body because constructing a lambda is impossible only if
-    // its arguments or return type are impossible to construct.
+    // its argument types or return type are impossible to construct.
     // It is still possible to construct a lambda whose body is impossible;
     // it is impossible to invoke it, but it can still be constructed.
     return is_impossible(x.args.begin(), x.args.end(), x.ret_type.get(), nullptr);
@@ -157,7 +157,7 @@ bool is_impossible(
 {
     return std::any_of(begin, end, [] (func_arg_t const& x) { return is_impossible(x.type); })
         or is_impossible(ret_type)
-        or (body and is_impossible(*body));
+        or body and is_impossible(*body);
 }
 
 } // namespace impl
@@ -174,7 +174,7 @@ bool is_impossible(std::vector<stmt_t>::const_iterator const begin, std::vector<
         if (impl::is_impossible(stmt))
             return true;
         // An `if` without else-branch whose both condition and true-branch are possible,
-        // means that the entire body is possible.
+        // means that the entire body is possible, because a possible execution path exists.
         // Perhaps the remaining statements below the `if` (i.e. the implicit else-branch)
         // are impossible (and should be removed) but the body as a whole is still possible.
         if (auto const if_else = std::get_if<stmt_t::if_else_t>(&stmt.value))

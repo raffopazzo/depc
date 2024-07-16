@@ -3,6 +3,7 @@
 #include "dep0/match.hpp"
 
 #include <algorithm>
+#include <ranges>
 
 namespace dep0::typecheck {
 
@@ -166,7 +167,12 @@ bool is_impossible(
 
 bool is_impossible(body_t const& body)
 {
-    for (auto const& stmt: body.stmts)
+    return is_impossible(body.stmts.begin(), body.stmts.end());
+}
+
+bool is_impossible(std::vector<stmt_t>::const_iterator const begin, std::vector<stmt_t>::const_iterator const end)
+{
+    for (auto const& stmt: std::ranges::subrange(begin, end))
     {
         if (impl::is_impossible(stmt))
             return true;

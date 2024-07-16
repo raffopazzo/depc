@@ -189,11 +189,13 @@ bool beta_normalize(body_t& body)
         body.stmts.erase(new_end, body.stmts.end());
         return it; // the first statement is obviously reachable, so `it` is still valid
     };
+    // First pass: drop all unreachable statements and normalize those that survive.
     bool changed = drop_unreachable_stmts(body);
-    auto it = body.stmts.begin();
-    while (it != body.stmts.end())
-    {
-        changed |= impl::beta_normalize(*it);
+    for (auto& s: body.stmts)
+        changed |= impl::beta_normalize(s);
+    // Second pass: drop unnecessary statements, like immutable function calls or dead branches.
+    // This may occasionally benefit from a look-ahead so we do it after the normalization pass above.
+    for (auto it = body.stmts.begin(); it != body.stmts.end();)
         it = match(
             it->value,
             [&] (expr_t::app_t const& app)
@@ -230,12 +232,20 @@ bool beta_normalize(body_t& body)
                     changed = true;
                     return replace_with(it, std::move(if_.true_branch.stmts));
                 }
+                else if (not if_.false_branch and is_impossible(std::next(it), body.stmts.end()))
+                {
+                    // the implicit else-branch is impossible so remove all that code and lift the true-branch
+                    // NOTE this is quite inefficient, especially for code that does not contain the impossible
+                    // statement as every `if` without else will trigger this scan, potentially O(n^2)!
+                    // For now it's fine but we may have to look into this in the future.
+                    body.stmts.erase(std::next(it), body.stmts.end());
+                    return replace_with(it, std::move(if_.true_branch.stmts));
+                }
                 else
                     return std::next(it);
             },
             [&] (stmt_t::return_t const&) { return std::next(it); },
             [&] (stmt_t::impossible_t const&) { return std::next(it); });
-    }
     return changed;
 }
 

@@ -381,7 +381,7 @@ type_assign(
                         derivation_rules::make_true_t(
                             derivation_rules::make_relation_expr(
                                 expr_t::relation_expr_t::lt_t{*index, app->args[1]}));
-                    if (start_proof_search(env, ctx, proof_type, is_mutable_allowed, usage, ast::qty_t::zero))
+                    if (search_proof(env, ctx, proof_type, is_mutable_allowed, usage, ast::qty_t::zero))
                     {
                         // we're about to move from `array`, which holds the element type; so must take a copy
                         auto element_type = app->args.at(0ul);

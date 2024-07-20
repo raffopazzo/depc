@@ -72,6 +72,7 @@ static void try_apply(search_task_t& task, expr_t::global_t const& name, sort_t 
                 args.push_back(std::nullopt);
             else
                 // could not find some relevant argument, so this search failed
+                // TODO try unify arguments with context from right to left, then take intersection
                 return;
         }
     }

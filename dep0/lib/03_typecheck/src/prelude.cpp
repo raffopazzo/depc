@@ -38,6 +38,72 @@ auto disj_intro_b(bool a, bool b, 0 true_t(b)) -> true_t(a or b)
     if (b)  if (a) return {};   else return {};
     else    impossible;
 }
+auto de_morgan_a(bool a, bool b, 0 true_t(not (a and b))) -> true_t(not a or not b)
+{
+    if (a)  if (b) impossible;  else return {};
+    else    if (b) return {};   else return {};
+}
+auto de_morgan_b(bool a, bool b, 0 true_t(not (a or b))) -> true_t(not a and not b)
+{
+    if (a)  if (b) impossible;  else impossible;
+    else    if (b) impossible;   else return {};
+}
+auto modus_ponens(bool a, bool b, 0 true_t(a) p, (0 true_t(a)) -> true_t(b) f) -> true_t(b)
+{
+    if (a)
+        return f(p);
+    else
+        impossible;
+}
+auto modus_tollens(bool a, bool b, 0 true_t(not b) q, (0 true_t(a)) -> true_t(b) f) -> true_t(not a)
+{
+    if (a)
+        impossible because contradiction(b, f({}), q);
+    else
+        return {};
+}
+auto conjunctive_syllogism_a(bool a, bool b, 0 true_t(not (a and b)), 0 true_t(b)) -> true_t(not a)
+{
+    if (b)  if (a) impossible;  else return {};
+    else    if (a) impossible;  else return {};
+}
+auto conjunctive_syllogism_b(bool a, bool b, 0 true_t(not (a and b)), 0 true_t(a)) -> true_t(not b)
+{
+    if (a)  if (b) impossible;  else return {};
+    else    if (b) impossible;  else return {};
+}
+auto disjunctive_syllogism_a(bool a, bool b, 0 true_t(a or b), 0 true_t(not b)) -> true_t(a)
+{
+    if (a)  return {};
+    else    if (b) impossible;  else impossible;
+}
+auto disjunctive_syllogism_b(bool a, bool b, 0 true_t(a or b), 0 true_t(not a)) -> true_t(b)
+{
+    if (b)  return {};
+    else    if (a) impossible;  else impossible;
+}
+auto dilemma(
+    bool a, bool b, bool c,
+    (0 true_t(a)) -> true_t(c) f,
+    (0 true_t(b)) -> true_t(c) g,
+    0 true_t(a or b)
+)
+-> true_t(c)
+{
+    if (a)          return f({});
+    else    if (b)  return g({});
+            else    impossible;
+}
+auto reductio_ad_absurdum(bool a, (0 true_t(a)) -> true_t(false) f) -> true_t(not a)
+{
+    if (a)  return f({});
+    else    return {};
+}
+auto material_implication(bool a, bool b, (0 true_t(a)) -> true_t(b) f) -> true_t(not a or b)
+{
+    if (a)  if (b)  return {}; else impossible because f({});
+    else    if (b)  return {}; else return {};
+}
 
 // bool (==)
 auto eq_refl_bool(bool a) -> true_t(a == a) { if (a) return {}; else return {}; }

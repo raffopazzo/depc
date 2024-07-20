@@ -105,6 +105,42 @@ auto material_implication(bool a, bool b, (0 true_t(a)) -> true_t(b) f) -> true_
     else    if (b)  return {}; else return {};
 }
 
+// bool (and)
+auto and_symm_bool(bool a, bool b, 0 true_t(a and b)) -> true_t(b and a)
+{
+    if (a)  if (b) return {};   else impossible;
+    else    if (b) impossible;  else impossible;
+}
+auto and_trans_bool(bool a, bool b, bool c, 0 true_t(a and b), 0 true_t(b and c)) -> true_t(a and c)
+{
+    if (a)
+        if (b)  if (c) return {};   else impossible;
+        else    if (c) impossible;  else impossible;
+    else
+        if (b)  impossible;
+        else    impossible;
+}
+auto and_true_intro(bool a, 0 true_t(a)) -> true_t(a and true) { if (a) return {}; else impossible; }
+auto and_true_elim(bool a, true_t(a and true)) -> true_t(a) { if (a) return {}; else impossible; }
+
+// bool (or)
+auto or_symm_bool(bool a, bool b, 0 true_t(a or b)) -> true_t(b or a)
+{
+    if (a)  if (b) return {};   else return {};
+    else    if (b) return {};  else impossible;
+}
+auto or_false_intro(bool a, 0 true_t(a)) -> true_t(a or false) { if (a) return {}; else impossible; }
+auto or_false_elim(bool a, 0 true_t(a or false)) -> true_t(a) { if (a) return {}; else impossible; }
+
+// bool (xor)
+auto xor_symm_bool(bool a, bool b, 0 true_t(a xor b)) -> true_t(b xor a)
+{
+    if (a)  if (b) impossible;  else return {};
+    else    if (b) return {};   else impossible;
+}
+auto xor_false_intro(bool a, 0 true_t(a)) -> true_t(a xor false) { if (a) return {}; else impossible; }
+auto xor_false_elim(bool a, 0 true_t(a xor false)) -> true_t(a) { if (a) return {}; else impossible; }
+
 // bool (==)
 auto eq_refl_bool(bool a) -> true_t(a == a) { if (a) return {}; else return {}; }
 auto eq_symm_bool(bool a, bool b, 0 true_t(a == b)) -> true_t(b == a)

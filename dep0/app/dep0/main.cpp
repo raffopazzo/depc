@@ -139,6 +139,8 @@ int main(int argc, char** argv)
         if (typecheck_only or file_type == llvm::CodeGenFileType::CGFT_Null)
         {
             llvm::WithColor::note(llvm::outs(), f) << "typechecks correctly" << '\n';
+            if (print_ast)
+                dep0::ast::pretty_print(std::cout, *typechecked_module) << std::endl;
             continue;
         }
         if (not skip_transformations)

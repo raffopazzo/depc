@@ -20,7 +20,7 @@ namespace dep0::typecheck {
  *      Specifies whether it is allowed to invoke mutable functions from the current context.
  *
  * @param usage,usage_multiplier
- *      @see usage
+ *      @see usage_t
  * 
  * @return The new expression with its type assigned in the properties field.
  */
@@ -44,7 +44,7 @@ type_assign(
  *      Specifies whether it is allowed to invoke mutable functions from the current context.
  *
  * @param usage,usage_multiplier
- *      @see usage
+ *      @see usage_t
  *
  * @return The new expression with its type assigned in the properties field.
  */
@@ -69,7 +69,7 @@ type_assign_app(
  *      If the abstraction is given a name, it can call itself recursively.
  *
  * @param usage,usage_multiplier
- *      @see usage
+ *      @see usage_t
  *
  * @return The new expression with its type assigned in the properties field.
  */

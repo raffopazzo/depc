@@ -152,7 +152,7 @@ public:
  *      Specifies whether mutable functions are viable proof terms.
  *
  * @param usage,usage_multiplier
- *      @see usage
+ *      @see usage_t
  */
 std::optional<expr_t>
 search_proof(

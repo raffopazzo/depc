@@ -11,81 +11,173 @@ namespace {
 auto constexpr prelude_text = R"(
 // bool (first order logic)
 auto contradiction(bool a, 0 true_t(a), 0 true_t(not a)) -> true_t(false) { if (a) impossible; else impossible; }
-axiom double_neg_intro(bool a, true_t(a)) -> true_t(not not a);
-axiom double_neg_elim(bool a, true_t(not not a)) -> true_t(a);
-axiom conj_intro(bool a, bool b, true_t(a), true_t(b)) -> true_t(a and b);
-axiom conj_elim_a(bool a, bool b, true_t(a and b)) -> true_t(a);
-axiom conj_elim_b(bool a, bool b, true_t(a and b)) -> true_t(b);
-axiom disj_intro_a(bool a, bool b, true_t(a)) -> true_t(a or b);
-axiom disj_intro_b(bool a, bool b, true_t(b)) -> true_t(a or b);
+auto double_neg_intro(bool a, 0 true_t(a)) -> true_t(not not a) { if (a) return {}; else impossible; }
+auto double_neg_elim(bool a, 0 true_t(not not a)) -> true_t(a) { if (a) return {}; else impossible; }
+auto conj_intro(bool a, bool b, 0 true_t(a), 0 true_t(b)) -> true_t(a and b)
+{
+    if (a)  if (b) return {};   else impossible;
+    else    impossible;
+}
+auto conj_elim_a(bool a, bool b, 0 true_t(a and b)) -> true_t(a)
+{
+    if (a)  return {};
+    else    if (b) impossible;  else impossible;
+}
+auto conj_elim_b(bool a, bool b, 0 true_t(a and b)) -> true_t(b)
+{
+    if (b)  return {};
+    else    if (a) impossible;  else impossible;
+}
+auto disj_intro_a(bool a, bool b, 0 true_t(a)) -> true_t(a or b)
+{
+    if (a)  if (b) return {};   else return {};
+    else    impossible;
+}
+auto disj_intro_b(bool a, bool b, 0 true_t(b)) -> true_t(a or b)
+{
+    if (b)  if (a) return {};   else return {};
+    else    impossible;
+}
 
 // bool (==)
-axiom eq_refl_bool(bool a) -> true_t(a == a);
-axiom eq_symm_bool(bool a, bool b, true_t(a == b)) -> true_t(b == a);
-axiom eq_trans_bool(bool a, bool b, bool c, true_t(a == b), true_t(b == c)) -> true_t(a == c);
+auto eq_refl_bool(bool a) -> true_t(a == a) { if (a) return {}; else return {}; }
+auto eq_symm_bool(bool a, bool b, 0 true_t(a == b)) -> true_t(b == a)
+{
+    if (a)  if (b) return {};   else impossible;
+    else    if (b) impossible;  else return {};
+}
+auto eq_trans_bool(bool a, bool b, bool c, 0 true_t(a == b), 0 true_t(b == c)) -> true_t(a == c)
+{
+    if (a)
+        if (b)  if (c) return {};   else impossible;
+        else    if (a) impossible;  else impossible;
+    else
+        if (b)  if (c) impossible;  else impossible;
+        else    if (c) impossible;  else return {};
+}
 auto eq_true_intro(bool a, 0 true_t(a)) -> true_t(a == true) { if (a) return {}; else impossible; }
 auto eq_true_elim(bool a, 0 true_t(a == true)) -> true_t(a) { if (a) return {}; else impossible; }
 auto eq_false_intro(bool a, 0 true_t(not a)) -> true_t(a == false) { if (a) impossible; else return {}; }
 auto eq_false_elim(bool a, 0 true_t(a == false)) -> true_t(not a) { if (a) impossible; else return {}; }
-axiom not_eq_intro(bool a, bool b, true_t(a != b)) -> true_t(not (a == b));
-axiom not_eq_elim(bool a, bool b, true_t(not (a == b))) -> true_t(a != b);
+auto not_eq_intro(bool a, bool b, 0 true_t(a != b)) -> true_t(not (a == b))
+{
+    if (a)  if (b) impossible;  else return {};
+    else    if (b) return {};   else impossible;
+}
+auto not_eq_elim(bool a, bool b, 0 true_t(not (a == b))) -> true_t(a != b)
+{
+    if (a)  if (b) impossible;  else return {};
+    else    if (b) return {};   else impossible;
+}
 auto not_eq_true_intro(bool a, 0 true_t(not a)) -> true_t(not (a == true)) { if (a) impossible; else return {}; }
 auto not_eq_true_elim(bool a, 0 true_t(not (a == true))) -> true_t(not a) { if (a) impossible; else return {}; }
 auto not_eq_false_intro(bool a, 0 true_t(a)) -> true_t(not (a == false)) { if (a) return {}; else impossible; }
 auto not_eq_false_elim(bool a, 0 true_t(not (a == false))) -> true_t(a) { if (a) return {}; else impossible; }
 
 // bool (!=)
-axiom neq_symm_bool(bool a, bool b, true_t(a != b)) -> true_t(b != a);
+auto neq_symm_bool(bool a, bool b, 0 true_t(a != b)) -> true_t(b != a)
+{
+    if (a)  if (b) impossible;  else return {};
+    else    if (b) return {};   else impossible;
+}
 auto neq_true_intro(bool a, 0 true_t(not a)) -> true_t(a != true) { if (a) impossible; else return {}; }
 auto neq_true_elim(bool a, 0 true_t(a != true)) -> true_t(not a) { if (a) impossible; else return {}; }
 auto neq_false_intro(bool a, 0 true_t(a)) -> true_t(a != false) { if (a) return {}; else impossible; }
 auto neq_false_elim(bool a, 0 true_t(a != false)) -> true_t(a) { if (a) return {}; else impossible; }
-axiom not_neq_intro(bool a, bool b, true_t(a == b)) -> true_t(not (a != b));
-axiom not_neq_elim(bool a, bool b, true_t(not (a != b))) -> true_t(a == b);
+auto not_neq_intro(bool a, bool b, 0 true_t(a == b)) -> true_t(not (a != b))
+{
+    if (a)  if (b) return {};   else impossible;
+    else    if (b) impossible;  else return {};
+}
+auto not_neq_elim(bool a, bool b, 0 true_t(not (a != b))) -> true_t(a == b)
+{
+    if (a)  if (b) return {};   else impossible;
+    else    if (b) impossible;  else return {};
+}
 auto not_neq_true_intro(bool a, 0 true_t(a)) -> true_t(not (a != true)) { if (a) return {}; else impossible; }
 
 // bool (<)
-axiom nothing_smaller_than_false(bool a, true_t(a < false)) -> true_t(false);
-axiom not_lt_intro(bool a, bool b, true_t(a >= b)) -> true_t(not (a < b));
-axiom not_lt_elim(bool a, bool b, true_t(not (a < b))) -> true_t(a >= b);
+auto nothing_smaller_than_false(bool a, 0 true_t(a < false)) -> true_t(false) { if (a) impossible; else impossible; }
+auto not_lt_intro(bool a, bool b, 0 true_t(a >= b)) -> true_t(not (a < b))
+{
+    if (a)  if (b)  return {};  else return {};
+    else    if (b)  impossible; else return {};
+}
+auto not_lt_elim(bool a, bool b, 0 true_t(not (a < b))) -> true_t(a >= b)
+{
+    if (a)  if (b) return {};   else return {};
+    else    if (b) impossible;  else return {};
+}
 auto a_lt_b_implies_b(bool a, bool b, 0 true_t(a < b)) -> true_t(b)
 {
-    if (b)
-        return {};
-    else if (a < false)
-        impossible because nothing_smaller_than_false(a, auto);
-    else
-        impossible;
+    if (a)  if (b) impossible;  else impossible;
+    else    if (b) return {};   else impossible;
 }
 
 // bool (<=)
-axiom lte_refl_bool(bool a) -> true_t(a <= a);
-axiom lte_tran_bool(bool a, bool b, bool c, true_t(a <= b), true_t(b <= c)) -> true_t(a <= c);
-axiom true_biggest_bool(bool a) -> true_t(a <= true);
-axiom false_smallest_bool(bool a) -> true_t(false <= a);
+auto lte_refl_bool(bool a) -> true_t(a <= a) { if (a) return {}; else return {}; }
+auto lte_trans_bool(bool a, bool b, bool c, 0 true_t(a <= b), 0 true_t(b <= c)) -> true_t(a <= c)
+{
+    if (a)
+        if (b)  if (c) return{};    else impossible;
+        else    if (c) impossible;  else impossible;
+    else
+        if (b)  if (c) return{};    else impossible;
+        else    if (c) return{};    else return{};
+}
+auto true_biggest_bool(bool a) -> true_t(a <= true) { if (a) return {}; else return {}; }
+auto false_smallest_bool(bool a) -> true_t(false <= a) { if (a) return {}; else return {}; }
 
 // bool (>)
-axiom nothing_bigger_than_true(bool a, true_t(a > true)) -> true_t(false);
-axiom not_gt_intro(bool a, bool b, true_t(a <= b)) -> true_t(not (a > b));
-axiom not_gt_elim(bool a, bool b, true_t(not (a > b))) -> true_t(a <= b);
+auto nothing_bigger_than_true(bool a, 0 true_t(a > true)) -> true_t(false) { if (a) impossible; else impossible; }
+auto not_gt_intro(bool a, bool b, 0 true_t(a <= b)) -> true_t(not (a > b))
+{
+    if (a)  if (b) return {};   else impossible;
+    else    if (b) return {};   else return {};
+}
+auto not_gt_elim(bool a, bool b, 0 true_t(not (a > b))) -> true_t(a <= b)
+{
+    if (a)  if (b) return {};   else impossible;
+    else    if (b) return {};   else return {};
+}
 auto a_gt_b_implies_a(bool a, bool b, 0 true_t(a > b)) -> true_t(a)
 {
-    if (b)
-        impossible because nothing_bigger_than_true(a, auto);
-    else if (a)
-        return {};
-    else
-        impossible;
+    if (a)  if (b) impossible; else return {};
+    else    if (b) impossible; else impossible;
 }
 
 // bool (>=)
-axiom gte_refl_bool(bool a) -> true_t(a >= a);
-axiom gte_tran_bool(bool a, bool b, bool c, true_t(a >= b), true_t(b >= c)) -> true_t(a >= c);
+auto gte_refl_bool(bool a) -> true_t(a >= a) { if (a) return {}; else return {}; }
+auto gte_trans_bool(bool a, bool b, bool c, 0 true_t(a >= b), 0 true_t(b >= c)) -> true_t(a >= c)
+{
+    if (a)
+        if (b)  if (c) return {};   else return {};
+        else    if (c) impossible;  else return {};
+    else
+        if (b)  if (c) impossible;  else impossible;
+        else    if (c) impossible;  else return {};
+}
 
-axiom lt_gt_commute_bool(bool a, bool b, true_t(a < b)) -> true_t(b > a);
-axiom lte_gte_commute_bool(bool a, bool b, true_t(a <= b)) -> true_t(b >= a);
-axiom gt_lt_commute_bool(bool a, bool b, true_t(a > b)) -> true_t(b < a);
-axiom gte_lte_commute_bool(bool a, bool b, true_t(a >= b)) -> true_t(b <= a);
+auto lt_gt_commute_bool(bool a, bool b, 0 true_t(a < b)) -> true_t(b > a)
+{
+    if (a)  if (b) impossible;  else impossible;
+    else    if (b) return {};   else impossible;
+}
+auto lte_gte_commute_bool(bool a, bool b, 0 true_t(a <= b)) -> true_t(b >= a)
+{
+    if (a)  if (b) return {};   else impossible;
+    else    if (b) return {};   else return {};
+}
+auto gt_lt_commute_bool(bool a, bool b, 0 true_t(a > b)) -> true_t(b < a)
+{
+    if (a)  if (b) impossible;  else return {};
+    else    if (b) impossible;  else impossible;
+}
+auto gte_lte_commute_bool(bool a, bool b, 0 true_t(a >= b)) -> true_t(b <= a)
+{
+    if (a)  if (b) return {};   else return {};
+    else    if (b) impossible;  else return {};
+}
 )";
 } // namespace
 

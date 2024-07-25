@@ -1,0 +1,10 @@
+i32_t f(bool a, 0 true_t(a))
+{
+    return 1;
+}
+
+i32_t g(bool a)
+{
+    // this is testing that the compiler does not get stuck trying to apply the same basic axioms recursively
+    return f(a, auto);
+}

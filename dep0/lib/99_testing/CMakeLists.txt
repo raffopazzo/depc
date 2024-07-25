@@ -20,7 +20,6 @@ add_library(dep0_testing_lib
     include/dep0/testing/ast_predicates/var.hpp
     include/dep0/testing/ast_predicates.hpp
     include/dep0/testing/failure.hpp
-    include/dep0/testing/literal_string.hpp
     include/dep0/testing/ostream.hpp
     include/dep0/testing/predicate.hpp
     include/dep0/testing/pretty_name.hpp
@@ -45,7 +44,6 @@ add_library(dep0_testing_lib
     src/ast_predicates/var.cpp
     src/ast_predicates.cpp
     src/failure.cpp
-    src/literal_string.cpp
     src/ostream.cpp
     src/predicate.cpp
     src/pretty_name.cpp

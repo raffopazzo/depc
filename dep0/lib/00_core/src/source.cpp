@@ -4,7 +4,7 @@ namespace dep0 {
 
 // implementation of source_handle_t
 
-source_handle_t::source_handle_t(std::nullptr_t) : state(nullptr) { }
+source_handle_t::source_handle_t(source_handle_t::literal_string_tag_t) : state(nullptr) { }
 
 void source_handle_t::acquire(state_t* const s)
 {
@@ -41,9 +41,12 @@ source_handle_t& source_handle_t::operator=(source_handle_t&& that)
     return *this;
 }
 
-source_handle_t make_null_handle() { return source_handle_t(nullptr); }
-
 // implementation of source_text
+
+source_text source_text::from_literal(char const* const s)
+{
+    return source_text(source_handle_t(source_handle_t::literal_string_tag_t{}), s);
+}
 
 source_text::source_text(source_handle_t hdl, std::string_view const txt) :
     hdl(std::move(hdl)),

@@ -14,13 +14,6 @@ namespace dep0::typecheck {
 /**
  * Search for a value of the given type by applying axioms and theorems (aka functions) from the given environment.
  */
-std::optional<expr_t>
-search_app(
-    env_t const&,
-    ctx_t const&,
-    expr_t const& type,
-    search_state_t&,
-    usage_t&,
-    ast::qty_t usage_multiplier);
+void search_app(search_task_t&);
 
 } // namespace dep0::typecheck

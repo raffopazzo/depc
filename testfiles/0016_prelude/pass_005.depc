@@ -1,0 +1,18 @@
+i32_t one(bool a, 0 true_t(a)) { return 1; }
+i32_t zero(bool a, 0 true_t(not a)) { return 0; }
+
+i32_t f1(bool a)
+{
+    if (a == true)
+        return one(a, auto);
+    else
+        return zero(a, auto);
+}
+
+i32_t f2(bool a)
+{
+    if (a == false)
+        return zero(a, auto);
+    else
+        return one(a, auto);
+}

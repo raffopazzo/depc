@@ -1,7 +1,5 @@
 #include "ast_tests_fixture.hpp"
 
-#include "dep0/testing/literal_string.hpp"
-
 namespace dep0::ast {
 
 AstTestsFixture::func_def_t
@@ -20,7 +18,7 @@ AstTestsFixture::func_def(
 {
     return func_def_t{
         dummy_properties_t{},
-        testing::literal_string(name),
+        source_text::from_literal(name),
         expr_t::abs_t{m, std::move(args), std::move(ret_type), std::move(body)}
     };
 }
@@ -51,7 +49,7 @@ AstTestsFixture::expr_t AstTestsFixture::numeric_constant(int const value)
 
 AstTestsFixture::expr_t AstTestsFixture::string_literal(char const* const value)
 {
-    return expr_t{dummy_properties_t{}, expr_t::string_literal_t{testing::literal_string(value)}};
+    return expr_t{dummy_properties_t{}, expr_t::string_literal_t{source_text::from_literal(value)}};
 }
 
 AstTestsFixture::expr_t AstTestsFixture::var(char const* const name)
@@ -61,7 +59,7 @@ AstTestsFixture::expr_t AstTestsFixture::var(char const* const name)
 
 AstTestsFixture::expr_t::var_t AstTestsFixture::var_t(char const* const name)
 {
-    return expr_t::var_t{testing::literal_string(name)};
+    return expr_t::var_t{source_text::from_literal(name)};
 }
 
 AstTestsFixture::func_arg_t AstTestsFixture::arg(expr_t type, char const* const var_name)

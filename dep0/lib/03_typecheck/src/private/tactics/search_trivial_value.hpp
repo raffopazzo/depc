@@ -15,13 +15,6 @@ namespace dep0::typecheck {
  * If the given type is inhabited by a single value, return that value.
  * For example, user-defined integral whose only value is 0 or `array_t(t, 0)` whose only value is `{}`.
  */
-std::optional<expr_t>
-search_trivial_value(
-    env_t const&,
-    ctx_t const&,
-    expr_t const&,
-    search_state_t&,
-    usage_t&,
-    ast::qty_t usage_multiplier);
+void search_trivial_value(search_task_t&);
 
 } // namespace dep0::typecheck

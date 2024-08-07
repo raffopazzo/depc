@@ -189,7 +189,7 @@ BOOST_AUTO_TEST_CASE(pass_004)
     }
 }
 
-BOOST_AUTO_TEST(pass_005) { BOOST_TEST(pass("0016_prelude/pass_005.depc")); }
+BOOST_AUTO_TEST_CASE(pass_005) { BOOST_TEST(pass("0016_prelude/pass_005.depc")); }
 
 BOOST_AUTO_TEST_CASE(typecheck_000)
 {

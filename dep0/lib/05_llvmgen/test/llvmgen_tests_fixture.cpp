@@ -20,24 +20,6 @@ static dep0::typecheck::env_t const& get_base_env()
     return env;
 }
 
-std::vector<llvm::BasicBlock const*> LLVMGenTestsFixture::get_blocks(llvm::Function const& f)
-{
-    std::vector<llvm::BasicBlock const*> blocks;
-    blocks.reserve(f.size());
-    for (llvm::BasicBlock const& b: f)
-        blocks.push_back(&b);
-    return blocks;
-}
-
-std::vector<llvm::Instruction const*> LLVMGenTestsFixture::get_instructions(llvm::BasicBlock const& b)
-{
-    std::vector<llvm::Instruction const*> instructions;
-    instructions.reserve(b.size());
-    for (llvm::Instruction const& x: b)
-        instructions.push_back(&x);
-    return instructions;
-}
-
 boost::test_tools::predicate_result LLVMGenTestsFixture::pass(std::filesystem::path const file)
 {
     auto parse_result = dep0::parser::parse(testfiles / file);

@@ -2,6 +2,7 @@
 #include <boost/test/included/unit_test.hpp>
 
 #include "llvmgen_tests_fixture.hpp"
+#include "llvm_helpers.hpp"
 #include "llvm_predicates.hpp"
 
 using namespace dep0::llvmgen::testing;

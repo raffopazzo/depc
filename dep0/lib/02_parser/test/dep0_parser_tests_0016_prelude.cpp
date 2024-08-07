@@ -191,6 +191,46 @@ BOOST_AUTO_TEST_CASE(pass_004)
 
 BOOST_AUTO_TEST_CASE(pass_005) { BOOST_TEST(pass("0016_prelude/pass_005.depc")); }
 
+BOOST_AUTO_TEST_CASE(pass_006)
+{
+    BOOST_TEST_REQUIRE(pass("0016_prelude/pass_006.depc"));
+    BOOST_TEST_REQUIRE(pass_result->entries.size() == 2ul);
+    {
+        auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[0ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "f");
+        BOOST_TEST_REQUIRE(f->value.args.size() == 3ul);
+        BOOST_TEST(is_arg(f->value.args[0], is_u64, "n", zero));
+        BOOST_TEST(is_arg(f->value.args[1], true_t_of(gte(var("n"), constant(2))), std::nullopt, zero));
+        BOOST_TEST(is_arg(f->value.args[2], array_of(is_i32, var("n")), "xs"));
+        BOOST_TEST(is_i32(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(
+            is_return_of(
+                f->value.body.stmts[0],
+                because_of(
+                    subscript_of(var("xs"), constant(0)),
+                    app_of(global("::lt_trans_u64"), constant(0), constant(1), var("n"), is_auto, is_auto))));
+    }
+    {
+        auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[1ul]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "g");
+        BOOST_TEST_REQUIRE(f->value.args.size() == 3ul);
+        BOOST_TEST(is_arg(f->value.args[0], is_u64, "n", zero));
+        BOOST_TEST(is_arg(f->value.args[1], true_t_of(gte(var("n"), constant(2))), std::nullopt, zero));
+        BOOST_TEST(is_arg(f->value.args[2], array_of(is_i32, var("n")), "xs"));
+        BOOST_TEST(is_i32(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(
+            is_return_of(
+                f->value.body.stmts[0],
+                because_of(
+                    subscript_of(var("xs"), constant(0)),
+                    app_of(global("::gt_trans_u64"), var("n"), constant(1), constant(0), is_auto, is_auto))));
+    }
+}
+
 BOOST_AUTO_TEST_CASE(typecheck_000)
 {
     BOOST_TEST_REQUIRE(pass("0016_prelude/typecheck_000.depc"));

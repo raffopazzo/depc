@@ -280,6 +280,237 @@ auto gte_lte_commute_bool(bool a, bool b, 0 true_t(a >= b)) -> true_t(b <= a)
     if (a)  if (b) return {};   else return {};
     else    if (b) impossible;  else return {};
 }
+
+// integers (==)
+axiom eq_refl_i8 ( i8_t a) -> true_t(a == a);
+axiom eq_refl_i16(i16_t a) -> true_t(a == a);
+axiom eq_refl_i32(i32_t a) -> true_t(a == a);
+axiom eq_refl_i64(i64_t a) -> true_t(a == a);
+axiom eq_refl_u8 ( u8_t a) -> true_t(a == a);
+axiom eq_refl_u16(u16_t a) -> true_t(a == a);
+axiom eq_refl_u32(u32_t a) -> true_t(a == a);
+axiom eq_refl_u64(u64_t a) -> true_t(a == a);
+
+axiom eq_symm_i8 ( i8_t a,  i8_t b, true_t(a == b)) -> true_t(b == a);
+axiom eq_symm_i16(i16_t a, i16_t b, true_t(a == b)) -> true_t(b == a);
+axiom eq_symm_i32(i32_t a, i32_t b, true_t(a == b)) -> true_t(b == a);
+axiom eq_symm_i64(i64_t a, i64_t b, true_t(a == b)) -> true_t(b == a);
+axiom eq_symm_u8 ( u8_t a,  u8_t b, true_t(a == b)) -> true_t(b == a);
+axiom eq_symm_u16(u16_t a, u16_t b, true_t(a == b)) -> true_t(b == a);
+axiom eq_symm_u32(u32_t a, u32_t b, true_t(a == b)) -> true_t(b == a);
+axiom eq_symm_u64(u64_t a, u64_t b, true_t(a == b)) -> true_t(b == a);
+
+axiom eq_trans_i8 ( i8_t a,  i8_t b,  i8_t c, true_t(a == b), true_t(b == c)) -> true_t(a == c);
+axiom eq_trans_i16(i16_t a, i16_t b, i16_t c, true_t(a == b), true_t(b == c)) -> true_t(a == c);
+axiom eq_trans_i32(i32_t a, i32_t b, i32_t c, true_t(a == b), true_t(b == c)) -> true_t(a == c);
+axiom eq_trans_i64(i64_t a, i64_t b, i64_t c, true_t(a == b), true_t(b == c)) -> true_t(a == c);
+axiom eq_trans_u8 ( u8_t a,  u8_t b,  u8_t c, true_t(a == b), true_t(b == c)) -> true_t(a == c);
+axiom eq_trans_u16(u16_t a, u16_t b, u16_t c, true_t(a == b), true_t(b == c)) -> true_t(a == c);
+axiom eq_trans_u32(u32_t a, u32_t b, u32_t c, true_t(a == b), true_t(b == c)) -> true_t(a == c);
+axiom eq_trans_u64(u64_t a, u64_t b, u64_t c, true_t(a == b), true_t(b == c)) -> true_t(a == c);
+
+axiom eq_intro_i8 ( i8_t a,  i8_t b, true_t(not (a != b))) -> true_t(a == b);
+axiom eq_intro_i16(i16_t a, i16_t b, true_t(not (a != b))) -> true_t(a == b);
+axiom eq_intro_i32(i32_t a, i32_t b, true_t(not (a != b))) -> true_t(a == b);
+axiom eq_intro_i64(i64_t a, i64_t b, true_t(not (a != b))) -> true_t(a == b);
+axiom eq_intro_u8 ( u8_t a,  u8_t b, true_t(not (a != b))) -> true_t(a == b);
+axiom eq_intro_u16(u16_t a, u16_t b, true_t(not (a != b))) -> true_t(a == b);
+axiom eq_intro_u32(u32_t a, u32_t b, true_t(not (a != b))) -> true_t(a == b);
+axiom eq_intro_u64(u64_t a, u64_t b, true_t(not (a != b))) -> true_t(a == b);
+
+axiom eq_elim_i8 ( i8_t a,  i8_t b, true_t(a == b)) -> true_t(not (a != b));
+axiom eq_elim_i16(i16_t a, i16_t b, true_t(a == b)) -> true_t(not (a != b));
+axiom eq_elim_i32(i32_t a, i32_t b, true_t(a == b)) -> true_t(not (a != b));
+axiom eq_elim_i64(i64_t a, i64_t b, true_t(a == b)) -> true_t(not (a != b));
+axiom eq_elim_u8 ( u8_t a,  u8_t b, true_t(a == b)) -> true_t(not (a != b));
+axiom eq_elim_u16(u16_t a, u16_t b, true_t(a == b)) -> true_t(not (a != b));
+axiom eq_elim_u32(u32_t a, u32_t b, true_t(a == b)) -> true_t(not (a != b));
+axiom eq_elim_u64(u64_t a, u64_t b, true_t(a == b)) -> true_t(not (a != b));
+
+// integers (!=)
+axiom neq_symm_i8 ( i8_t a,  i8_t b, true_t(a != b)) -> true_t(b != a);
+axiom neq_symm_i16(i16_t a, i16_t b, true_t(a != b)) -> true_t(b != a);
+axiom neq_symm_i32(i32_t a, i32_t b, true_t(a != b)) -> true_t(b != a);
+axiom neq_symm_i64(i64_t a, i64_t b, true_t(a != b)) -> true_t(b != a);
+axiom neq_symm_u8 ( u8_t a,  u8_t b, true_t(a != b)) -> true_t(b != a);
+axiom neq_symm_u16(u16_t a, u16_t b, true_t(a != b)) -> true_t(b != a);
+axiom neq_symm_u32(u32_t a, u32_t b, true_t(a != b)) -> true_t(b != a);
+axiom neq_symm_u64(u64_t a, u64_t b, true_t(a != b)) -> true_t(b != a);
+
+axiom neq_intro_i8 ( i8_t a,  i8_t b, true_t(not (a == b))) -> true_t(a != b);
+axiom neq_intro_i16(i16_t a, i16_t b, true_t(not (a == b))) -> true_t(a != b);
+axiom neq_intro_i32(i32_t a, i32_t b, true_t(not (a == b))) -> true_t(a != b);
+axiom neq_intro_i64(i64_t a, i64_t b, true_t(not (a == b))) -> true_t(a != b);
+axiom neq_intro_u8 ( u8_t a,  u8_t b, true_t(not (a == b))) -> true_t(a != b);
+axiom neq_intro_u16(u16_t a, u16_t b, true_t(not (a == b))) -> true_t(a != b);
+axiom neq_intro_u32(u32_t a, u32_t b, true_t(not (a == b))) -> true_t(a != b);
+axiom neq_intro_u64(u64_t a, u64_t b, true_t(not (a == b))) -> true_t(a != b);
+
+axiom neq_elim_i8 ( i8_t a,  i8_t b, true_t(a != b)) -> true_t(not (a == b));
+axiom neq_elim_i16(i16_t a, i16_t b, true_t(a != b)) -> true_t(not (a == b));
+axiom neq_elim_i32(i32_t a, i32_t b, true_t(a != b)) -> true_t(not (a == b));
+axiom neq_elim_i64(i64_t a, i64_t b, true_t(a != b)) -> true_t(not (a == b));
+axiom neq_elim_u8 ( u8_t a,  u8_t b, true_t(a != b)) -> true_t(not (a == b));
+axiom neq_elim_u16(u16_t a, u16_t b, true_t(a != b)) -> true_t(not (a == b));
+axiom neq_elim_u32(u32_t a, u32_t b, true_t(a != b)) -> true_t(not (a == b));
+axiom neq_elim_u64(u64_t a, u64_t b, true_t(a != b)) -> true_t(not (a == b));
+
+// integers (<)
+axiom lt_trans_i8 ( i8_t a,  i8_t b,  i8_t c, true_t(a < b), true_t(b < c)) -> true_t(a < c);
+axiom lt_trans_i16(i16_t a, i16_t b, i16_t c, true_t(a < b), true_t(b < c)) -> true_t(a < c);
+axiom lt_trans_i32(i32_t a, i32_t b, i32_t c, true_t(a < b), true_t(b < c)) -> true_t(a < c);
+axiom lt_trans_i64(i64_t a, i64_t b, i64_t c, true_t(a < b), true_t(b < c)) -> true_t(a < c);
+axiom lt_trans_u8 ( u8_t a,  u8_t b,  u8_t c, true_t(a < b), true_t(b < c)) -> true_t(a < c);
+axiom lt_trans_u16(u16_t a, u16_t b, u16_t c, true_t(a < b), true_t(b < c)) -> true_t(a < c);
+axiom lt_trans_u32(u32_t a, u32_t b, u32_t c, true_t(a < b), true_t(b < c)) -> true_t(a < c);
+axiom lt_trans_u64(u64_t a, u64_t b, u64_t c, true_t(a < b), true_t(b < c)) -> true_t(a < c);
+
+axiom lt_intro_i8 ( i8_t a,  i8_t b, true_t(not (a >= b))) -> true_t(a < b);
+axiom lt_intro_i16(i16_t a, i16_t b, true_t(not (a >= b))) -> true_t(a < b);
+axiom lt_intro_i32(i32_t a, i32_t b, true_t(not (a >= b))) -> true_t(a < b);
+axiom lt_intro_i64(i64_t a, i64_t b, true_t(not (a >= b))) -> true_t(a < b);
+axiom lt_intro_u8 ( u8_t a,  u8_t b, true_t(not (a >= b))) -> true_t(a < b);
+axiom lt_intro_u16(u16_t a, u16_t b, true_t(not (a >= b))) -> true_t(a < b);
+axiom lt_intro_u32(u32_t a, u32_t b, true_t(not (a >= b))) -> true_t(a < b);
+axiom lt_intro_u64(u64_t a, u64_t b, true_t(not (a >= b))) -> true_t(a < b);
+
+axiom lt_elim_i8 ( i8_t a,  i8_t b, true_t(a < b)) -> true_t(not (a >= b));
+axiom lt_elim_i16(i16_t a, i16_t b, true_t(a < b)) -> true_t(not (a >= b));
+axiom lt_elim_i32(i32_t a, i32_t b, true_t(a < b)) -> true_t(not (a >= b));
+axiom lt_elim_i64(i64_t a, i64_t b, true_t(a < b)) -> true_t(not (a >= b));
+axiom lt_elim_u8 ( u8_t a,  u8_t b, true_t(a < b)) -> true_t(not (a >= b));
+axiom lt_elim_u16(u16_t a, u16_t b, true_t(a < b)) -> true_t(not (a >= b));
+axiom lt_elim_u32(u32_t a, u32_t b, true_t(a < b)) -> true_t(not (a >= b));
+axiom lt_elim_u64(u64_t a, u64_t b, true_t(a < b)) -> true_t(not (a >= b));
+
+axiom lt_gt_commute_i8 ( i8_t a,  i8_t b, true_t(a < b)) -> true_t(b > a);
+axiom lt_gt_commute_i16(i16_t a, i16_t b, true_t(a < b)) -> true_t(b > a);
+axiom lt_gt_commute_i32(i32_t a, i32_t b, true_t(a < b)) -> true_t(b > a);
+axiom lt_gt_commute_i64(i64_t a, i64_t b, true_t(a < b)) -> true_t(b > a);
+axiom lt_gt_commute_u8 ( u8_t a,  u8_t b, true_t(a < b)) -> true_t(b > a);
+axiom lt_gt_commute_u16(u16_t a, u16_t b, true_t(a < b)) -> true_t(b > a);
+axiom lt_gt_commute_u32(u32_t a, u32_t b, true_t(a < b)) -> true_t(b > a);
+axiom lt_gt_commute_u64(u64_t a, u64_t b, true_t(a < b)) -> true_t(b > a);
+
+// integers (<=)
+axiom lte_trans_i8 ( i8_t a,  i8_t b,  i8_t c, true_t(a <= b), true_t(b <= c)) -> true_t(a <= c);
+axiom lte_trans_i16(i16_t a, i16_t b, i16_t c, true_t(a <= b), true_t(b <= c)) -> true_t(a <= c);
+axiom lte_trans_i32(i32_t a, i32_t b, i32_t c, true_t(a <= b), true_t(b <= c)) -> true_t(a <= c);
+axiom lte_trans_i64(i64_t a, i64_t b, i64_t c, true_t(a <= b), true_t(b <= c)) -> true_t(a <= c);
+axiom lte_trans_u8 ( u8_t a,  u8_t b,  u8_t c, true_t(a <= b), true_t(b <= c)) -> true_t(a <= c);
+axiom lte_trans_u16(u16_t a, u16_t b, u16_t c, true_t(a <= b), true_t(b <= c)) -> true_t(a <= c);
+axiom lte_trans_u32(u32_t a, u32_t b, u32_t c, true_t(a <= b), true_t(b <= c)) -> true_t(a <= c);
+axiom lte_trans_u64(u64_t a, u64_t b, u64_t c, true_t(a <= b), true_t(b <= c)) -> true_t(a <= c);
+
+axiom lte_intro_i8 ( i8_t a,  i8_t b, true_t(not (a > b))) -> true_t(a <= b);
+axiom lte_intro_i16(i16_t a, i16_t b, true_t(not (a > b))) -> true_t(a <= b);
+axiom lte_intro_i32(i32_t a, i32_t b, true_t(not (a > b))) -> true_t(a <= b);
+axiom lte_intro_i64(i64_t a, i64_t b, true_t(not (a > b))) -> true_t(a <= b);
+axiom lte_intro_u8 ( u8_t a,  u8_t b, true_t(not (a > b))) -> true_t(a <= b);
+axiom lte_intro_u16(u16_t a, u16_t b, true_t(not (a > b))) -> true_t(a <= b);
+axiom lte_intro_u32(u32_t a, u32_t b, true_t(not (a > b))) -> true_t(a <= b);
+axiom lte_intro_u64(u64_t a, u64_t b, true_t(not (a > b))) -> true_t(a <= b);
+
+axiom lte_elim_i8 ( i8_t a,  i8_t b, true_t(a <= b)) -> true_t(not (a > b));
+axiom lte_elim_i16(i16_t a, i16_t b, true_t(a <= b)) -> true_t(not (a > b));
+axiom lte_elim_i32(i32_t a, i32_t b, true_t(a <= b)) -> true_t(not (a > b));
+axiom lte_elim_i64(i64_t a, i64_t b, true_t(a <= b)) -> true_t(not (a > b));
+axiom lte_elim_u8 ( u8_t a,  u8_t b, true_t(a <= b)) -> true_t(not (a > b));
+axiom lte_elim_u16(u16_t a, u16_t b, true_t(a <= b)) -> true_t(not (a > b));
+axiom lte_elim_u32(u32_t a, u32_t b, true_t(a <= b)) -> true_t(not (a > b));
+axiom lte_elim_u64(u64_t a, u64_t b, true_t(a <= b)) -> true_t(not (a > b));
+
+axiom lte_gte_commute_i8 ( i8_t a,  i8_t b, true_t(a <= b)) -> true_t(b >= a);
+axiom lte_gte_commute_i16(i16_t a, i16_t b, true_t(a <= b)) -> true_t(b >= a);
+axiom lte_gte_commute_i32(i32_t a, i32_t b, true_t(a <= b)) -> true_t(b >= a);
+axiom lte_gte_commute_i64(i64_t a, i64_t b, true_t(a <= b)) -> true_t(b >= a);
+axiom lte_gte_commute_u8 ( u8_t a,  u8_t b, true_t(a <= b)) -> true_t(b >= a);
+axiom lte_gte_commute_u16(u16_t a, u16_t b, true_t(a <= b)) -> true_t(b >= a);
+axiom lte_gte_commute_u32(u32_t a, u32_t b, true_t(a <= b)) -> true_t(b >= a);
+axiom lte_gte_commute_u64(u64_t a, u64_t b, true_t(a <= b)) -> true_t(b >= a);
+
+axiom plus_1_lte_implies_lt_i8 ( i8_t a,  i8_t b, true_t(a + 1 <= b), true_t(a < 127)) -> true_t(a < b);
+axiom plus_1_lte_implies_lt_i16(i16_t a, i16_t b, true_t(a + 1 <= b), true_t(a < 32767)) -> true_t(a < b);
+axiom plus_1_lte_implies_lt_i32(i32_t a, i32_t b, true_t(a + 1 <= b), true_t(a < 2147483647)) -> true_t(a < b);
+axiom plus_1_lte_implies_lt_i64(i64_t a, i64_t b, true_t(a + 1 <= b), true_t(a < 9223372036854775807)) -> true_t(a < b);
+axiom plus_1_lte_implies_lt_u8 ( u8_t a,  u8_t b, true_t(a + 1 <= b), true_t(a < 255)) -> true_t(a < b);
+axiom plus_1_lte_implies_lt_u16(u16_t a, u16_t b, true_t(a + 1 <= b), true_t(a < 65535)) -> true_t(a < b);
+axiom plus_1_lte_implies_lt_u32(u32_t a, u32_t b, true_t(a + 1 <= b), true_t(a < 4294967295)) -> true_t(a < b);
+axiom plus_1_lte_implies_lt_u64(u64_t a, u64_t b, true_t(a + 1 <= b), true_t(a < 18446744073709551615)) -> true_t(a < b);
+
+// integers (>)
+axiom gt_trans_i8 ( i8_t a,  i8_t b,  i8_t c, true_t(a > b), true_t(b > c)) -> true_t(a > c);
+axiom gt_trans_i16(i16_t a, i16_t b, i16_t c, true_t(a > b), true_t(b > c)) -> true_t(a > c);
+axiom gt_trans_i32(i32_t a, i32_t b, i32_t c, true_t(a > b), true_t(b > c)) -> true_t(a > c);
+axiom gt_trans_i64(i64_t a, i64_t b, i64_t c, true_t(a > b), true_t(b > c)) -> true_t(a > c);
+axiom gt_trans_u8 ( u8_t a,  u8_t b,  u8_t c, true_t(a > b), true_t(b > c)) -> true_t(a > c);
+axiom gt_trans_u16(u16_t a, u16_t b, u16_t c, true_t(a > b), true_t(b > c)) -> true_t(a > c);
+axiom gt_trans_u32(u32_t a, u32_t b, u32_t c, true_t(a > b), true_t(b > c)) -> true_t(a > c);
+axiom gt_trans_u64(u64_t a, u64_t b, u64_t c, true_t(a > b), true_t(b > c)) -> true_t(a > c);
+
+axiom gt_intro_i8 ( i8_t a,  i8_t b, true_t(not (a <= b))) -> true_t(a > b);
+axiom gt_intro_i16(i16_t a, i16_t b, true_t(not (a <= b))) -> true_t(a > b);
+axiom gt_intro_i32(i32_t a, i32_t b, true_t(not (a <= b))) -> true_t(a > b);
+axiom gt_intro_i64(i64_t a, i64_t b, true_t(not (a <= b))) -> true_t(a > b);
+axiom gt_intro_u8 ( u8_t a,  u8_t b, true_t(not (a <= b))) -> true_t(a > b);
+axiom gt_intro_u16(u16_t a, u16_t b, true_t(not (a <= b))) -> true_t(a > b);
+axiom gt_intro_u32(u32_t a, u32_t b, true_t(not (a <= b))) -> true_t(a > b);
+axiom gt_intro_u64(u64_t a, u64_t b, true_t(not (a <= b))) -> true_t(a > b);
+
+axiom gt_elim_i8 ( i8_t a,  i8_t b, true_t(a > b)) -> true_t(not (a <= b));
+axiom gt_elim_i16(i16_t a, i16_t b, true_t(a > b)) -> true_t(not (a <= b));
+axiom gt_elim_i32(i32_t a, i32_t b, true_t(a > b)) -> true_t(not (a <= b));
+axiom gt_elim_i64(i64_t a, i64_t b, true_t(a > b)) -> true_t(not (a <= b));
+axiom gt_elim_u8 ( u8_t a,  u8_t b, true_t(a > b)) -> true_t(not (a <= b));
+axiom gt_elim_u16(u16_t a, u16_t b, true_t(a > b)) -> true_t(not (a <= b));
+axiom gt_elim_u32(u32_t a, u32_t b, true_t(a > b)) -> true_t(not (a <= b));
+axiom gt_elim_u64(u64_t a, u64_t b, true_t(a > b)) -> true_t(not (a <= b));
+
+axiom gt_lt_commute_i8 ( i8_t a,  i8_t b, true_t(a > b)) -> true_t(b < a);
+axiom gt_lt_commute_i16(i16_t a, i16_t b, true_t(a > b)) -> true_t(b < a);
+axiom gt_lt_commute_i32(i32_t a, i32_t b, true_t(a > b)) -> true_t(b < a);
+axiom gt_lt_commute_i64(i64_t a, i64_t b, true_t(a > b)) -> true_t(b < a);
+axiom gt_lt_commute_u8 ( u8_t a,  u8_t b, true_t(a > b)) -> true_t(b < a);
+axiom gt_lt_commute_u16(u16_t a, u16_t b, true_t(a > b)) -> true_t(b < a);
+axiom gt_lt_commute_u32(u32_t a, u32_t b, true_t(a > b)) -> true_t(b < a);
+axiom gt_lt_commute_u64(u64_t a, u64_t b, true_t(a > b)) -> true_t(b < a);
+
+// integers (>=)
+axiom gte_trans_i8 ( i8_t a,  i8_t b,  i8_t c, true_t(a >= b), true_t(b >= c)) -> true_t(a >= c);
+axiom gte_trans_i16(i16_t a, i16_t b, i16_t c, true_t(a >= b), true_t(b >= c)) -> true_t(a >= c);
+axiom gte_trans_i32(i32_t a, i32_t b, i32_t c, true_t(a >= b), true_t(b >= c)) -> true_t(a >= c);
+axiom gte_trans_i64(i64_t a, i64_t b, i64_t c, true_t(a >= b), true_t(b >= c)) -> true_t(a >= c);
+axiom gte_trans_u8 ( u8_t a,  u8_t b,  u8_t c, true_t(a >= b), true_t(b >= c)) -> true_t(a >= c);
+axiom gte_trans_u16(u16_t a, u16_t b, u16_t c, true_t(a >= b), true_t(b >= c)) -> true_t(a >= c);
+axiom gte_trans_u32(u32_t a, u32_t b, u32_t c, true_t(a >= b), true_t(b >= c)) -> true_t(a >= c);
+axiom gte_trans_u64(u64_t a, u64_t b, u64_t c, true_t(a >= b), true_t(b >= c)) -> true_t(a >= c);
+
+axiom gte_intro_i8 ( i8_t a,  i8_t b, true_t(not (a < b))) -> true_t(a >= b);
+axiom gte_intro_i16(i16_t a, i16_t b, true_t(not (a < b))) -> true_t(a >= b);
+axiom gte_intro_i32(i32_t a, i32_t b, true_t(not (a < b))) -> true_t(a >= b);
+axiom gte_intro_i64(i64_t a, i64_t b, true_t(not (a < b))) -> true_t(a >= b);
+axiom gte_intro_u8 ( u8_t a,  u8_t b, true_t(not (a < b))) -> true_t(a >= b);
+axiom gte_intro_u16(u16_t a, u16_t b, true_t(not (a < b))) -> true_t(a >= b);
+axiom gte_intro_u32(u32_t a, u32_t b, true_t(not (a < b))) -> true_t(a >= b);
+axiom gte_intro_u64(u64_t a, u64_t b, true_t(not (a < b))) -> true_t(a >= b);
+
+axiom gte_elim_i8 ( i8_t a,  i8_t b, true_t(a >= b)) -> true_t(not (a < b));
+axiom gte_elim_i16(i16_t a, i16_t b, true_t(a >= b)) -> true_t(not (a < b));
+axiom gte_elim_i32(i32_t a, i32_t b, true_t(a >= b)) -> true_t(not (a < b));
+axiom gte_elim_i64(i64_t a, i64_t b, true_t(a >= b)) -> true_t(not (a < b));
+axiom gte_elim_u8 ( u8_t a,  u8_t b, true_t(a >= b)) -> true_t(not (a < b));
+axiom gte_elim_u16(u16_t a, u16_t b, true_t(a >= b)) -> true_t(not (a < b));
+axiom gte_elim_u32(u32_t a, u32_t b, true_t(a >= b)) -> true_t(not (a < b));
+axiom gte_elim_u64(u64_t a, u64_t b, true_t(a >= b)) -> true_t(not (a < b));
+
+axiom gte_lte_commute_i8 ( i8_t a,  i8_t b, true_t(a >= b)) -> true_t(b <= a);
+axiom gte_lte_commute_i16(i16_t a, i16_t b, true_t(a >= b)) -> true_t(b <= a);
+axiom gte_lte_commute_i32(i32_t a, i32_t b, true_t(a >= b)) -> true_t(b <= a);
+axiom gte_lte_commute_i64(i64_t a, i64_t b, true_t(a >= b)) -> true_t(b <= a);
+axiom gte_lte_commute_u8 ( u8_t a,  u8_t b, true_t(a >= b)) -> true_t(b <= a);
+axiom gte_lte_commute_u16(u16_t a, u16_t b, true_t(a >= b)) -> true_t(b <= a);
+axiom gte_lte_commute_u32(u32_t a, u32_t b, true_t(a >= b)) -> true_t(b <= a);
+axiom gte_lte_commute_u64(u64_t a, u64_t b, true_t(a >= b)) -> true_t(b <= a);
 )";
 } // namespace
 

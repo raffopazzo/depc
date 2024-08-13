@@ -16,6 +16,10 @@
 
 namespace dep0::typecheck {
 
+/**
+ * Extract all expressions from the given vector keeping the initial order;
+ * if any is missing return nothing and leave the input vector unchanged.
+ */
 static std::optional<std::vector<expr_t>> all_or_nothing(std::vector<std::optional<expr_t>>& xs)
 {
     std::optional<std::vector<expr_t>> result;

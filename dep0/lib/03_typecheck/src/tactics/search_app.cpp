@@ -112,12 +112,11 @@ static void try_apply(search_task_t& task, expr_t::global_t const& name, sort_t 
             mutable -> expr_t
             {
                 for (
-                    auto it = std::pair{sub_task_results.begin(), indices.begin()};
-                    it.first != sub_task_results.end() and it.second != indices.end();
-                    ++it.first, ++it.second
+                    auto [it_task, it_idx] = std::pair{sub_task_results.begin(), indices.begin()};
+                    it_task != sub_task_results.end() and it_idx != indices.end();
+                    ++it_task, ++it_idx
                 )
                 {
-                    auto& [it_task, it_idx] = it;
                     auto& arg = args[*it_idx];
                     assert(not arg.has_value());
                     arg.emplace(std::move(*it_task));

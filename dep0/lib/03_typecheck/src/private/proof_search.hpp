@@ -29,11 +29,10 @@ struct search_state_t;
  * Some tactics are terminal, meaning that they either succeed or fail.
  * Other tactics require to spawn many sub-tasks in either of 2 fashions:
  *   1. if any sub-task succeeds, the overall task succeeds, typically because any alternative is equally valid;
- *   2. all sub-task must succeed for the overall task to succeed and their results must be combined in some way.
+ *   2. all sub-tasks must succeed for the overall task to succeed and their results must be combined in some way.
  */
 class search_task_t
 {
-public:
     /**
      * A task of this kind will apply one individual tactic.
      * If the tactic needs to spawn some sub-tasks, it will do so
@@ -69,7 +68,6 @@ public:
         std::function<expr_t(std::vector<expr_t>)> build_result;
     };
 
-private:
     /**
      * Tag that indicates that the current task is still in progress.
      * A task may get stuck and remain forever in progress.

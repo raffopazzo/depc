@@ -7,18 +7,14 @@
 
 namespace dep0::typecheck {
 
-/**
- * If the given expression is some `true_t(cond)` return a pointer to `cond`; null otherwise.
- */
+/** If the given expression is some `true_t(cond)` return a pointer to `cond`; null otherwise. */
 static expr_t const* try_extract_condition(expr_t const& x)
 {
     auto const app = std::get_if<expr_t::app_t>(&x.value);
     return app and std::holds_alternative<expr_t::true_t>(app->func.get().value) ? &app->args[0] : nullptr;
 }
 
-/**
- * @return True if the given expression is the boolean constant `true`; false otherwise.
- */
+/** Return true if the given expression is the boolean constant `true`; false otherwise. */
 static bool is_true(expr_t const& x)
 {
     auto const c = std::get_if<expr_t::boolean_constant_t>(&x.value);

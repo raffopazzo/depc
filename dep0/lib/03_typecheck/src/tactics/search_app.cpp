@@ -90,7 +90,7 @@ static void try_apply(search_task_t& task, expr_t::global_t const& name, sort_t 
         // They must be proof-irrelevant, otherwise we would have failed earlier.
         // So schedule some sub-tasks to find some suitable value.
         std::vector<search_task_t> sub_tasks;
-        std::vector<std::size_t> indices; // tracks where exaclty the results go in `args`
+        std::vector<std::size_t> indices; // tracks where exactly the results go in `args`
         for (auto const idx: std::views::iota(0ul, args.size()))
             if (not args[idx])
             {

@@ -89,9 +89,9 @@ search_task_t::search_task_t(
     std::size_t const depth,
     search_state_t& st,
     std::shared_ptr<expr_t const> target,
-    ast::is_mutable_t is_mutable_allowed,
+    ast::is_mutable_t const is_mutable_allowed,
     usage_t const& usage,
-    ast::qty_t usage_multiplier,
+    ast::qty_t const usage_multiplier,
     std::function<void(search_task_t&)> task)
 :   depth(depth),
     state(st),
@@ -141,22 +141,16 @@ void search_task_t::run()
     if (done())
         return;
     if (depth > 10 or state.expired())
-    {
-        set_failed();
-        return;
-    }
-
+        return set_failed();
     match(
         m_kind,
         [this] (one_t& one)
         {
             one.tactic(*this);
-            if (succeeded() or failed())
-                // if the task has expliclity succeeded or failed, there's nothing else left to do
-                return;
-            else if (std::holds_alternative<one_t>(m_kind))
-                // otherwise it has implicitly failed, unless it's changed to a different kind of task
-                set_failed();
+            if (not done() and std::holds_alternative<one_t>(m_kind))
+                // the only reason this task can still be in progress is if it changed itself to a different kind;
+                // otherwise it has implicitly failed
+                return set_failed();
         },
         [this] (any_t& any)
         {
@@ -181,10 +175,7 @@ void search_task_t::run()
                 {
                     t.run();
                     if (t.failed())
-                    {
-                        set_failed(); // if any sub-tasks fails, the parent task automatically fails
-                        return;
-                    }
+                        return set_failed(); // if any sub-tasks fails, the parent task automatically fails
                 }
             if (std::ranges::all_of(all.sub_tasks, [] (search_task_t const& t) { return t.done(); }))
             {

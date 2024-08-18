@@ -61,10 +61,14 @@ class search_task_t
      * A task of this kind will succeed only if all sub-tasks succeed.
      * The result of this task is produced by calling `build_result` with the results of all sub-tasks.
      * If any sub-task fails, this task will fail.
+     * A temporary usage object is shared by all sub-tasks;
+     * if all sub-tasks succeed the total usage from all sub-tasks is added to the main usage count;
+     * otherwise the usage count from any partial success is discarded without affecting the main usage count.
      */
     struct all_t
     {
         std::vector<search_task_t> sub_tasks;
+        std::shared_ptr<usage_t> temp_usage;
         std::function<expr_t(std::vector<expr_t>)> build_result;
     };
 
@@ -91,14 +95,14 @@ public:
     std::shared_ptr<expr_t const> const target; // TODO use some `shared_ref` since can never be nullptr
     ast::is_mutable_t const is_mutable_allowed;
     ast::qty_t const usage_multiplier;
-    usage_t usage; /**< Each task keeps its own usage count. When a sub-task succeeds it is added to the parent one. */
+    std::shared_ptr<usage_t> usage;
 
     search_task_t(
         std::size_t depth,
         search_state_t&,
         std::shared_ptr<expr_t const> target,
         ast::is_mutable_t is_mutable_allowed,
-        usage_t const&,
+        std::shared_ptr<usage_t>,
         ast::qty_t usage_multiplier,
         std::function<void(search_task_t&)>);
 
@@ -126,9 +130,19 @@ public:
 
     /**
      * Transform the current task into one that awaits all of the given sub-tasks.
-     * When all of them succeed, their result is passed to the given function to produce the final result.
+     *
+     * @param temp_usage
+     *      All sub-tasks must share the same usage object.
+     *      If any sub-task fails the usage from a partial success is discarded.
+     *      If all sub-tasks succeed, their total usage is added to the usage count of the parent task.
+     *
+     * @param build_result
+     *      If all sub-tasks succeed, their result is passed to this function to produce the final result of the task.
      */
-    void when_all(std::vector<search_task_t>, std::function<expr_t(std::vector<expr_t>)>);
+    void when_all(
+        std::vector<search_task_t>,
+        std::shared_ptr<usage_t> temp_usage,
+        std::function<expr_t(std::vector<expr_t>)> build_result);
 
     /**
      * Transform the current task into one that awaits any of the given sub-tasks.

@@ -222,7 +222,14 @@ BOOST_AUTO_TEST_CASE(pass_006)
     BOOST_TEST_REQUIRE(pass("0012_auto_expr/pass_006.depc"));
 }
 
+BOOST_AUTO_TEST_CASE(pass_007)
+{
+    apply_beta_delta_normalization = false;
+    BOOST_TEST_REQUIRE(pass("0012_auto_expr/pass_007.depc"));
+}
+
 // BOOST_AUTO_TEST_CASE(typecheck_error_000)
 // BOOST_AUTO_TEST_CASE(typecheck_error_001)
+// BOOST_AUTO_TEST_CASE(typecheck_error_002)
 
 BOOST_AUTO_TEST_SUITE_END()

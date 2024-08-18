@@ -91,6 +91,7 @@ static void try_apply(search_task_t& task, expr_t::global_t const& name, sort_t 
         // So schedule some sub-tasks to find some suitable value.
         std::vector<search_task_t> sub_tasks;
         std::vector<std::size_t> indices; // tracks where exactly the results go in `args`
+        auto temp_usage = std::make_shared<usage_t>(*task.usage);
         for (auto const idx: std::views::iota(0ul, args.size()))
             if (not args[idx])
             {
@@ -100,13 +101,14 @@ static void try_apply(search_task_t& task, expr_t::global_t const& name, sort_t 
                     task.state,
                     std::make_shared<expr_t>(app_type.args[idx].type),
                     task.is_mutable_allowed,
-                    task.usage,
+                    temp_usage,
                     task.usage_multiplier,
                     proof_search
                 });
             }
         task.when_all(
             std::move(sub_tasks),
+            std::move(temp_usage),
             [name, func_type, target=task.target, args=std::move(args), indices=std::move(indices)]
             (std::vector<expr_t> sub_task_results)
             mutable -> expr_t

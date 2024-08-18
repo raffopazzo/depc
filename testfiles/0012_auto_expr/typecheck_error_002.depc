@@ -1,0 +1,6 @@
+i16_t f1(1 i32_t, 1 i32_t) { return 1; }
+u32_t f2(1 i16_t) { return 2; }
+u32_t f3(1 i32_t n)
+{
+    return f2(auto); // `f1(n, n)` is not viable because `n` cannot be used twice
+}

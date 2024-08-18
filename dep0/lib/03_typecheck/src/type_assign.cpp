@@ -285,7 +285,7 @@ type_assign(
             if (auto var = expr_t::var_t{x.name}; auto const expr = ctx[var])
             {
                 // if multiplier is zero nothing is really used and type-assignment always succeeds;
-                // so don't even bother looking up things and adding them up
+                // so usage is only checked when multiplier is non-zero
                 if (usage_multiplier > ast::qty_t::zero)
                 {
                     auto const prev = usage[var];

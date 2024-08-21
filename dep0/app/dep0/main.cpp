@@ -67,6 +67,11 @@ int main(int argc, char** argv)
         cl::opt<std::string>(
             "mtriple",
             cl::desc("Override target triple for module"));
+    auto const no_prelude =
+        cl::opt<bool>(
+            "no-prelude",
+            cl::desc("Do not pre-import the prelude module"),
+            cl::init(false));
     auto const print_ast =
         cl::opt<bool>(
             "print-ast",
@@ -125,7 +130,7 @@ int main(int argc, char** argv)
         file_type == llvm::CodeGenFileType::CGFT_AssemblyFile
         ? (emit_llvm ? ".ll" : ".s")
         : ".o";
-    auto const base_env = dep0::typecheck::make_base_env();
+    auto const base_env = no_prelude ? dep0::expected<dep0::typecheck::env_t>{} : dep0::typecheck::make_base_env();
     for (auto const& f: input_files)
     {
         if (not base_env)

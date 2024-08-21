@@ -1,9 +1,12 @@
 #include "dep0/typecheck/environment.hpp"
 
 #include "private/beta_delta_equivalence.hpp"
+#include "private/prelude.hpp"
 
 #include "dep0/ast/pretty_print.hpp"
 #include "dep0/match.hpp"
+
+#include <boost/core/ignore_unused.hpp>
 
 #include <cassert>
 #include <ranges>
@@ -43,6 +46,39 @@ env_t::value_type const* env_t::operator[](expr_t::global_t const& global) const
 }
 
 // non-const member functions
+
+dep0::expected<std::true_type> env_t::import(source_text const module_name, module_t const& m)
+{
+    auto const build_symbol_name = [&module_name] (module_t::entry_t const& entry)
+    {
+        return expr_t::global_t{
+            module_name,
+            match(
+                entry,
+                [&] (type_def_t const& x) { return match(x.value, [] (auto const& x) { return x.name; }); },
+                [&] (auto const& x) { return x.name; })
+        };
+    };
+    // before importing anything check that none of the entries already exist,
+    // otherwise we might leave the module in a corrupted state
+    std::vector<dep0::error_t> reasons;
+    for (auto const& entry: m.entries)
+    {
+        auto const global = build_symbol_name(entry);
+        if (this->operator[](global))
+        {
+            std::ostringstream err;
+            pretty_print<properties_t>(err << '`', global) << '`' << " already exists in current environment";
+            reasons.push_back(dep0::error_t(err.str()));
+        }
+    }
+    if (not reasons.empty())
+        return dep0::error_t("cannot import module", std::move(reasons));
+    for (auto const& entry: m.entries)
+        // we have already checked that none of the names already exist, so insertion will not fail
+        boost::ignore_unused(try_emplace(build_symbol_name(entry), entry));
+    return {};
+}
 
 dep0::expected<std::true_type> env_t::try_emplace(expr_t::global_t global, value_type v)
 {
@@ -147,6 +183,17 @@ dep0::expected<std::true_type> env_t::try_emplace(expr_t::global_t global, value
             else
                 return accept(m_definitions);
         });
+}
+
+dep0::expected<env_t> make_base_env()
+{
+    dep0::typecheck::env_t base_env;
+    auto const prelude = dep0::typecheck::build_prelude_module();
+    if (not prelude)
+        return prelude.error();
+    if (auto const imported = base_env.import(dep0::source_text::from_literal(""), *prelude); not imported)
+        return imported.error();
+    return std::move(base_env);
 }
 
 } // namespace dep0::typecheck

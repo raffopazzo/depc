@@ -151,8 +151,6 @@ bool occurs_in(
     typename expr_t<P>::var_t const& var,
     typename std::vector<func_arg_t<P>>::const_iterator begin,
     typename std::vector<func_arg_t<P>>::const_iterator end,
-    expr_t<P> const& ret_type,
-    body_t<P> const* body,
     occurrence_style const style)
 {
     for (auto const& arg: std::ranges::subrange(begin, end))
@@ -160,14 +158,37 @@ bool occurs_in(
         if (occurs_in(var, arg.type, style))
             return true;
         if (arg.var == var)
-            // If we are looking for occurrences anywhere then this is a valid occurrence; return true.
-            // If we are looking for free occurrences only then we can immediately return false,
-            // since any later occurrence is now bound to this argument.
+            // If we are looking for occurrences anywhere, return true because this is a valid one.
+            // If we are looking for free occurrences, return false because any later occurrence is now bound.
             return style == occurrence_style::anywhere;
     }
-    if (occurs_in(var, ret_type, style))
-        return true;
-    return body and impl::occurs_in(var, *body, style);
+    return false;
+}
+
+template <Properties P>
+bool occurs_in(
+    typename expr_t<P>::var_t const& var,
+    typename std::vector<func_arg_t<P>>::const_iterator begin,
+    typename std::vector<func_arg_t<P>>::const_iterator end,
+    expr_t<P> const& ret_type,
+    body_t<P> const* body,
+    occurrence_style const style)
+{
+    // NB cannot remove duplication by invoking the above overload,
+    // because if we are looking for free occurrences,
+    // we have to fail immediately when a shadowing argument is introduced,
+    // otherwise we might erroneously determine that a variable
+    // occurs free in the return type when it is actually bound.
+    for (auto const& arg: std::ranges::subrange(begin, end))
+    {
+        if (occurs_in(var, arg.type, style))
+            return true;
+        if (arg.var == var)
+            // If we are looking for occurrences anywhere, return true because this is a valid one.
+            // If we are looking for free occurrences, return false because any later occurrence is now bound.
+            return style == occurrence_style::anywhere;
+    }
+    return occurs_in(var, ret_type, style) or (body and impl::occurs_in(var, *body, style));
 }
 
 } // namespace dep0::ast

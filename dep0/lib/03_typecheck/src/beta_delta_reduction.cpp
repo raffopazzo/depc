@@ -97,14 +97,14 @@ bool beta_delta_normalize(module_t& m)
             {
                 // nothing to normalize but still need to add the definition in the environment
                 auto const& name = match(def.value, [&] (auto const& x) { return x.name; });
-                auto const ok = env.try_emplace(expr_t::global_t{name}, def);
+                auto const ok = env.try_emplace(expr_t::global_t{std::nullopt, name}, def);
                 assert(ok.has_value());
                 return false;
             },
             [&] (axiom_t& axiom)
             {
                 bool const result = impl::beta_delta_normalize(env, axiom);
-                auto const ok = env.try_emplace(expr_t::global_t{axiom.name}, axiom);
+                auto const ok = env.try_emplace(expr_t::global_t{std::nullopt, axiom.name}, axiom);
                 assert(ok.has_value());
                 return result;
             },
@@ -117,14 +117,14 @@ bool beta_delta_normalize(module_t& m)
             [&] (func_decl_t& decl)
             {
                 bool const result = impl::beta_delta_normalize(env, decl);
-                auto const ok = env.try_emplace(expr_t::global_t{decl.name}, decl);
+                auto const ok = env.try_emplace(expr_t::global_t{std::nullopt, decl.name}, decl);
                 assert(ok.has_value());
                 return result;
             },
             [&] (func_def_t& def)
             {
                 bool const result = impl::beta_delta_normalize(env, def);
-                auto const ok = env.try_emplace(expr_t::global_t{def.name}, def);
+                auto const ok = env.try_emplace(expr_t::global_t{std::nullopt, def.name}, def);
                 assert(ok.has_value());
                 return result;
             });

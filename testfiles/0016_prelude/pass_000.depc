@@ -1,0 +1,12 @@
+i32_t f(bool a, bool b, 0 true_t(a and b))
+{
+    return 1;
+}
+
+i32_t g(bool a, bool b)
+{
+    if (a)
+        if(b)
+            return f(a, b, ::conj_intro(a, b, auto, auto));
+    return 0;
+}

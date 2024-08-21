@@ -1,0 +1,13 @@
+i32_t f(bool a, bool b, 0 true_t(a or b))
+{
+    return 1;
+}
+
+i32_t g(bool a, bool b)
+{
+    if (a)
+        return f(a, b, ::disj_intro_a(a, b, auto));
+    if (b)
+        return f(a, b, ::disj_intro_b(a, b, auto));
+    return 0;
+}

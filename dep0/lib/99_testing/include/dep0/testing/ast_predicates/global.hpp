@@ -15,10 +15,18 @@ boost::test_tools::predicate_result is_global(ast::expr_t<P> const& expr, std::s
     auto const g = std::get_if<typename ast::expr_t<P>::global_t>(&expr.value);
     if (not g)
         return failure("expression is not global_t but ", pretty_name(expr.value));
-    if (g->name.view() != name)
+    auto const s = [&]
+    {
+        std::ostringstream buf;
+        if (g->module_name)
+            buf << *g->module_name << "::";
+        buf << g->name;
+        return buf.str();
+    }();
+    if (s != name)
     {
         auto failed = boost::test_tools::predicate_result(false);
-        failed.message().stream() << g->name << " != " << name;
+        failed.message().stream() << s << " != " << name;
         return failed;
     }
     return true;

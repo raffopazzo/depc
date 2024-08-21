@@ -2,6 +2,7 @@
 #include "dep0/ast/pretty_print.hpp"
 #include "dep0/parser/parse.hpp"
 #include "dep0/typecheck/check.hpp"
+#include "dep0/typecheck/environment.hpp"
 #include "dep0/transform/run.hpp"
 #include "dep0/transform/beta_delta_normalization.hpp"
 #include "dep0/llvmgen/gen.hpp"
@@ -22,6 +23,33 @@
 #include <iostream>
 
 static llvm::codegen::RegisterCodeGenFlags WTF;
+
+static int failure(std::string_view const msg)
+{
+    llvm::WithColor::error(llvm::errs()) << msg << '\n';
+    return 1;
+}
+static int failure(std::string_view const file_name, std::string_view const msg)
+{
+    llvm::WithColor::error(llvm::errs(), file_name) << msg << '\n';
+    return 1;
+}
+
+static int failure(std::string_view const file_name, std::string_view const msg, dep0::error_t const& error)
+{
+    std::ostringstream str;
+    dep0::pretty_print(str, error);
+    llvm::WithColor::error(llvm::errs(), file_name) << msg << ": " << str.str() << '\n';
+    return 1;
+}
+
+static int failure(std::string_view const file_name, std::string_view const msg, dep0::typecheck::error_t const& error)
+{
+    std::ostringstream str;
+    dep0::typecheck::pretty_print(str, error);
+    llvm::WithColor::error(llvm::errs(), file_name) << msg << ": " << str.str() << '\n';
+    return 1;
+}
 
 int main(int argc, char** argv)
 {
@@ -77,10 +105,7 @@ int main(int argc, char** argv)
             : llvm::Triple::normalize(mtriple));
     llvm::Target const* const target = llvm::TargetRegistry::lookupTarget(llvm::codegen::getMArch(), target_triple, err);
     if (not target)
-    {
-        llvm::WithColor::error(llvm::errs()) << err << '\n';
-        return 1;
-    }
+        return failure(err);
     llvm::TargetMachine* const machine =
         target->createTargetMachine(
             target_triple.getTriple(),
@@ -89,10 +114,7 @@ int main(int argc, char** argv)
             llvm::codegen::InitTargetOptionsFromCodeGenFlags(target_triple),
             llvm::Optional<llvm::Reloc::Model>(llvm::codegen::getRelocModel()));
     if (not machine)
-    {
-        llvm::WithColor::error(llvm::errs()) << "failed to create target machine\n";
-        return 1;
-    }
+        return failure("failed to create target machine");
     llvm::LLVMContext llvm_context;
     auto const file_type = llvm::codegen::getFileType();
     auto const oflags =
@@ -103,27 +125,22 @@ int main(int argc, char** argv)
         file_type == llvm::CodeGenFileType::CGFT_AssemblyFile
         ? (emit_llvm ? ".ll" : ".s")
         : ".o";
+    auto const base_env = dep0::typecheck::make_base_env();
     for (auto const& f: input_files)
     {
+        if (not base_env)
+            return failure(f, "prelude error", base_env.error());
         auto const parsed_module = dep0::parser::parse(f);
         if (not parsed_module)
-        {
-            std::ostringstream str;
-            dep0::pretty_print(str, parsed_module.error());
-            llvm::WithColor::error(llvm::errs(), f) << "parse error: " << str.str() << '\n';
-            return 1;
-        }
-        auto typechecked_module = dep0::typecheck::check(*parsed_module);
+            return failure(f, "parse error", parsed_module.error());
+        auto typechecked_module = dep0::typecheck::check(*base_env, *parsed_module);
         if (not typechecked_module)
-        {
-            std::ostringstream str;
-            dep0::typecheck::pretty_print(str, typechecked_module.error());
-            llvm::WithColor::error(llvm::errs(), f) << "typecheck error: " << str.str() << '\n';
-            return 1;
-        }
+            return failure(f, "typecheck error", typechecked_module.error());
         if (typecheck_only or file_type == llvm::CodeGenFileType::CGFT_Null)
         {
             llvm::WithColor::note(llvm::outs(), f) << "typechecks correctly" << '\n';
+            if (print_ast)
+                dep0::ast::pretty_print(std::cout, *typechecked_module) << std::endl;
             continue;
         }
         if (not skip_transformations)
@@ -149,22 +166,14 @@ int main(int argc, char** argv)
                 *typechecked_module,
                 unverified ? dep0::llvmgen::verify_t::no : dep0::llvmgen::verify_t::yes);
         if (not llvm_module)
-        {
-            std::ostringstream str;
-            dep0::pretty_print(str, llvm_module.error());
-            llvm::WithColor::error(llvm::errs(), f) << "codegen error: " << str.str() << '\n';
-            return 1;
-        }
+            return failure(f, "codegen error", llvm_module.error());
         std::error_code ec;
         auto out = llvm::ToolOutputFile(f + suffix, ec, oflags);
         llvm::legacy::PassManager pass_manager;
         if (file_type == llvm::CodeGenFileType::CGFT_AssemblyFile and emit_llvm)
             pass_manager.add(llvm::createPrintModulePass(out.os()));
         else if (machine->addPassesToEmitFile(pass_manager, out.os(), nullptr, file_type))
-        {
-            llvm::WithColor::error(llvm::errs(), f) << "no support for file type\n";
-            return 1;
-        }
+            return failure(f, "no support for file type");
         pass_manager.run(llvm_module->get());
         out.keep();
     }

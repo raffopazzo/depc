@@ -70,7 +70,7 @@ void ctx_t::add_unnamed(expr_t type)
 void ctx_t::add_unnamed(var_decl_t decl)
 {
     static std::size_t next_id = 1ul;
-    static const source_text empty = source_text(make_null_handle(), "auto");
+    static const source_text empty = source_text::from_literal("auto");
     // an unnamed variable can only be used via proof-search, so it better have zero quantity
     decl.qty = ast::qty_t::zero;
     do

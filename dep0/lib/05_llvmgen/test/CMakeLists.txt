@@ -3,6 +3,8 @@ add_custom_target(dep0_llvmgen_tests)
 add_library(dep0_llvmgen_tests_fixture
     llvmgen_tests_fixture.hpp
     llvmgen_tests_fixture.cpp
+    llvm_helpers.hpp
+    llvm_helpers.cpp
     llvm_predicates/add.hpp
     llvm_predicates/add.cpp
     llvm_predicates/align.hpp
@@ -95,3 +97,4 @@ add_dep0_llvmgen_test(0013_cstr)
 add_dep0_llvmgen_test(0014_extern_decl)
 add_dep0_llvmgen_test(0015_because)
 add_dep0_llvmgen_test(0016_impossible)
+add_dep0_llvmgen_test(0016_prelude)

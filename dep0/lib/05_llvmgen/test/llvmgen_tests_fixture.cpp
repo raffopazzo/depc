@@ -2,26 +2,22 @@
 
 #include "dep0/parser/parse.hpp"
 #include "dep0/typecheck/check.hpp"
+#include "dep0/typecheck/environment.hpp"
 #include "dep0/transform/beta_delta_normalization.hpp"
 
 #include "dep0/llvmgen/gen.hpp"
 
-std::vector<llvm::BasicBlock const*> LLVMGenTestsFixture::get_blocks(llvm::Function const& f)
+/**
+ * Helper function used to ensure that the base environment is constructed only once for an entire test suite.
+ * This is helpful because constructing a fresh base environment for each test would make running the test suite
+ * unnecessarily slow, because we would need to parse and check the prelude for each test.
+ * Moreover, instead of using a global variable, a function with a static local is preferred because apparently
+ * ANTLR4 seems to also initialise some global which might not have been initialised yet when parsing the prelude.
+ */
+static dep0::typecheck::env_t const& get_base_env()
 {
-    std::vector<llvm::BasicBlock const*> blocks;
-    blocks.reserve(f.size());
-    for (llvm::BasicBlock const& b: f)
-        blocks.push_back(&b);
-    return blocks;
-}
-
-std::vector<llvm::Instruction const*> LLVMGenTestsFixture::get_instructions(llvm::BasicBlock const& b)
-{
-    std::vector<llvm::Instruction const*> instructions;
-    instructions.reserve(b.size());
-    for (llvm::Instruction const& x: b)
-        instructions.push_back(&x);
-    return instructions;
+    static auto const env = dep0::typecheck::make_base_env().value();
+    return env;
 }
 
 boost::test_tools::predicate_result LLVMGenTestsFixture::pass(std::filesystem::path const file)
@@ -33,7 +29,7 @@ boost::test_tools::predicate_result LLVMGenTestsFixture::pass(std::filesystem::p
         dep0::pretty_print(res.message().stream(), parse_result.error());
         return res;
     }
-    auto check_result = dep0::typecheck::check(*parse_result);
+    auto check_result = dep0::typecheck::check(get_base_env(), *parse_result);
     if (check_result.has_error())
     {
         auto res = boost::test_tools::predicate_result(false);

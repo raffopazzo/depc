@@ -449,6 +449,8 @@ std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::var_t const& x,
 template <Properties P>
 std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::global_t const& x, std::size_t)
 {
+    if (x.module_name)
+        os << *x.module_name << "::";
     return os << x.name;
 }
 

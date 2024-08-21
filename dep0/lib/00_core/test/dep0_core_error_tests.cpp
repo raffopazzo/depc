@@ -15,7 +15,7 @@ static std::string to_string(dep0::error_t const& x)
 // WARN if argument is not a global literal we'll eventually crash!
 static dep0::source_text from_literal(char const* s)
 {
-    return {dep0::make_handle<char const*>(s), s};
+    return {dep0::make_source_handle<char const*>(s), s};
 }
 
 BOOST_AUTO_TEST_SUITE(dep0_core_tests)

@@ -19,13 +19,6 @@ namespace dep0::typecheck {
  * the returned value will be a `var_t` referring to it.
  * Otherwise search fails and `std::nullopt` is returned.
  */
-std::optional<expr_t>
-search_var(
-    env_t const&,
-    ctx_t const&,
-    expr_t const& type,
-    search_state_t&,
-    usage_t&,
-    ast::qty_t usage_multiplier);
+void search_var(search_task_t&);
 
 } // namespace dep0::typecheck

@@ -73,7 +73,7 @@ expected<func_def_t> check_func_def(env_t&, parser::func_def_t const&);
  *      if it does, it is legal to invoke other mutable functions.
  *
  * @param usage,usage_multiplier
- *      @see usage
+ *      @see usage_t
  *
  * @return A legal body or an error.
  */
@@ -98,7 +98,7 @@ check_body(
  *      if it does, it is legal to invoke other mutable functions.
  *
  * @param usage,usage_multiplier
- *      @see usage
+ *      @see usage_t
  *
  * @return A legal statement or an error.
  */
@@ -129,7 +129,7 @@ expected<expr_t> check_type(env_t const&, ctx_t const&, parser::expr_t const&);
  *      if it does, it is legal to invoke other mutable functions.
  *
  * @param usage,usage_multiplier
- *      @see usage
+ *      @see usage_t
  *
  * @return A legal expression or an error.
  */

@@ -91,7 +91,7 @@ int main(int argc, char** argv)
     auto unverified =
         cl::opt<bool>(
             "unverified",
-            cl::desc("Emit unverivied LLVM IR; only useful when debugging the llvmgen module"),
+            cl::desc("Emit unverified LLVM IR; only useful when debugging the llvmgen module"),
             cl::init(false));
     auto const alias_u = cl::alias("u", cl::desc("alias for --unverified"), cl::aliasopt(unverified));
 

@@ -88,18 +88,18 @@ class search_task_t
     std::variant<in_progress_t, failed_t, succeeded_t> m_status;
 
 public:
-    std::size_t const depth; /**< Level of depth in the search path; if too deep this task will fail. */
     search_state_t& state;
+    std::size_t const depth; /**< Level of depth in the search path; if too deep this task will fail. */
     env_t const& env;
     ctx_t const& ctx;
-    std::shared_ptr<expr_t const> const target; // TODO use some `shared_ref` since can never be nullptr
+    std::shared_ptr<expr_t const> const target; // TODO use some `shared_ref` since can never be nullptr or `type_t`
     ast::is_mutable_t const is_mutable_allowed;
     ast::qty_t const usage_multiplier;
     std::shared_ptr<usage_t> usage;
 
     search_task_t(
-        std::size_t depth,
         search_state_t&,
+        std::size_t depth,
         std::shared_ptr<expr_t const> target,
         ast::is_mutable_t is_mutable_allowed,
         std::shared_ptr<usage_t>,

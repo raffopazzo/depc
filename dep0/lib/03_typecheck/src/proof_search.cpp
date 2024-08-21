@@ -40,14 +40,14 @@ struct search_state_t
         env_t const& env,
         ctx_t const& ctx,
         expr_t const& target,
-        ast::is_mutable_t is_mutable_allowed,
+        ast::is_mutable_t const is_mutable_allowed,
         std::shared_ptr<usage_t> usage,
         ast::qty_t const usage_multiplier)
     :   env(env),
         ctx(ctx),
         main_task(
-            0ul,
             *this,
+            0ul,
             std::make_shared<expr_t>(target),
             is_mutable_allowed,
             std::move(usage),
@@ -86,16 +86,16 @@ std::size_t search_state_t::hash_t::operator()(expr_t const& x) const
 }
 
 search_task_t::search_task_t(
-    std::size_t const depth,
     search_state_t& st,
+    std::size_t const depth,
     std::shared_ptr<expr_t const> target,
     ast::is_mutable_t const is_mutable_allowed,
     std::shared_ptr<usage_t> usage,
     ast::qty_t const usage_multiplier,
     std::function<void(search_task_t&)> task)
 :   m_kind(one_t{std::move(task)}),
-    depth(depth),
     state(st),
+    depth(depth),
     env(st.env),
     ctx(st.ctx),
     target(std::move(target)),
@@ -147,9 +147,8 @@ void search_task_t::run()
         [this] (one_t& one)
         {
             one.tactic(*this);
-            if (not done() and std::holds_alternative<one_t>(m_kind))
-                // the only reason this task can still be in progress is if it changed itself to a different kind;
-                // otherwise it has implicitly failed
+            bool const implicitly_failed = not done() and std::holds_alternative<one_t>(m_kind);
+            if (implicitly_failed)
                 return set_failed();
         },
         [this] (any_t& any)
@@ -164,7 +163,7 @@ void search_task_t::run()
                     return;
                 }
             }
-            if (std::ranges::all_of(any.sub_tasks, [] (search_task_t const& t) { return t.done(); }))
+            if (std::ranges::all_of(any.sub_tasks, [] (search_task_t const& t) { return t.failed(); }))
                 set_failed();
         },
         [this] (all_t& all)
@@ -176,17 +175,12 @@ void search_task_t::run()
                     if (t.failed())
                         return set_failed(); // if any sub-tasks fails, the parent task automatically fails
                 }
-            if (std::ranges::all_of(all.sub_tasks, [] (search_task_t const& t) { return t.done(); }))
+            if (std::ranges::all_of(all.sub_tasks, [] (search_task_t const& t) { return t.succeeded(); }))
             {
                 std::vector<expr_t> results;
                 results.reserve(all.sub_tasks.size());
                 for (auto& t: all.sub_tasks)
-                {
-                    // at this point all sub-tasks must have succeeded,
-                    // because if one failed we would have returned earlier
-                    assert(t.succeeded());
                     results.push_back(std::move(t.result()));
-                }
                 *usage += *all.temp_usage;
                 set_result(all.build_result(std::move(results)));
             }
@@ -218,7 +212,14 @@ search_proof(
     usage_t& usage,
     ast::qty_t const usage_multiplier)
 {
-    auto st = search_state_t(env, ctx, target, is_mutable_allowed, std::make_shared<usage_t>(usage), usage_multiplier);
+    auto st =
+        search_state_t(
+            env,
+            ctx,
+            target,
+            is_mutable_allowed,
+            std::make_shared<usage_t>(usage.extend()),
+            usage_multiplier);
     do
         st.main_task.run();
     while (not st.main_task.done());
@@ -236,8 +237,8 @@ std::vector<search_task_t> make_sub_tasks(search_task_t& task, T&&... tactics)
 {
     return {
         search_task_t(
-            task.depth + 1,
             task.state,
+            task.depth + 1,
             task.target,
             task.is_mutable_allowed,
             task.usage,

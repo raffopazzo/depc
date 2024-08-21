@@ -158,10 +158,7 @@ void search_task_t::run()
                 if (not t.done())
                     t.run();
                 if (t.succeeded())
-                {
-                    set_result(std::move(t.result()));
-                    return;
-                }
+                    return set_result(std::move(t.result()));
             }
             if (std::ranges::all_of(any.sub_tasks, [] (search_task_t const& t) { return t.failed(); }))
                 set_failed();

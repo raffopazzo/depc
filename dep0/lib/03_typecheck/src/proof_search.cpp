@@ -178,7 +178,8 @@ void search_task_t::run()
                 results.reserve(all.sub_tasks.size());
                 for (auto& t: all.sub_tasks)
                     results.push_back(std::move(t.result()));
-                *usage += *all.temp_usage;
+                if (not usage->try_add(ctx, *all.temp_usage))
+                    return set_failed();
                 set_result(all.build_result(std::move(results)));
             }
         });
@@ -222,10 +223,8 @@ search_proof(
     while (not st.main_task.done());
     std::optional<expr_t> result;
     if (st.main_task.succeeded())
-    {
-        usage += *st.main_task.usage;
-        result.emplace(std::move(st.main_task.result()));
-    }
+        if (usage.try_add(ctx, *st.main_task.usage))
+            result.emplace(std::move(st.main_task.result()));
     return result;
 }
 

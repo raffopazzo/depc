@@ -45,11 +45,18 @@ type_assign_pair(
     auto tmp_usage_a = usage.extend();
     auto tmp_usage_b = usage.extend();
     auto a = type_assign(env, ctx, lhs, is_mutable_allowed, tmp_usage_a, usage_multiplier);
+    if (a)
+        if (auto ok = usage.try_add(ctx, tmp_usage_a); not ok)
+            return {ok.error(), ok.error()};
     auto b = a
-        ? check_expr(env, ctx, rhs, a->properties.sort.get(), is_mutable_allowed, usage += tmp_usage_a, usage_multiplier)
+        ? check_expr(env, ctx, rhs, a->properties.sort.get(), is_mutable_allowed, usage, usage_multiplier)
         : type_assign(env, ctx, rhs, is_mutable_allowed, tmp_usage_b, usage_multiplier);
     if (b and not a)
-        a = check_expr(env, ctx, lhs, b->properties.sort.get(), is_mutable_allowed, usage += tmp_usage_b, usage_multiplier);
+    {
+        if (auto ok = usage.try_add(ctx, tmp_usage_b); not ok)
+            return {ok.error(), ok.error()};
+        a = check_expr(env, ctx, lhs, b->properties.sort.get(), is_mutable_allowed, usage, usage_multiplier);
+    }
     return std::pair{std::move(a), std::move(b)};
 }
 
@@ -282,32 +289,11 @@ type_assign(
         },
         [&] (parser::expr_t::var_t const& x) -> expected<expr_t>
         {
-            if (auto var = expr_t::var_t{x.name}; auto const expr = ctx[var])
+            if (auto lookup = context_lookup(ctx, expr_t::var_t{x.name}))
             {
-                // if multiplier is zero type-assignment always succeeds, so check only if multiplier is non-zero
-                if (usage_multiplier > ast::qty_t::zero)
-                {
-                    auto const prev = usage[var];
-                    if (usage.add(var, ast::qty_t::one * usage_multiplier) > expr->value.qty)
-                    {
-                        // The user has now used something more than they could;
-                        // let's try to give them a sensible error message.
-                        // Firstly, this must mean that the context allowed for only either `zero` or `one`.
-                        // So there are overall two cases:
-                        // 1. if the context allowed for zero uses,
-                        //    then they must have attempted to use the thing at run-time;
-                        // 2. otherwise the context allowed for only one use and, in that case:
-                        //    a. either they tried to pass the variable to a function argument
-                        //       with multiplicity `many` (or something similar to that)
-                        //    b. or they used the thing more than once.
-                        char const* msg =
-                            expr->value.qty == ast::qty_t::zero ? "variable cannot be used at run-time"
-                            : prev == ast::qty_t::zero ? "cannot use linear variable in non-linear context"
-                            : "variable has already been used once";
-                        return error_t::from_error(dep0::error_t(msg, loc));
-                    }
-                }
-                return make_legal_expr(expr->value.type, std::move(var));
+                if (auto ok = usage.try_add(*lookup, usage_multiplier, loc); not ok)
+                    return ok.error();
+                return make_legal_expr(lookup->decl.type, lookup->var);
             }
             if (auto const global = expr_t::global_t{std::nullopt, x.name}; env[global])
                 return type_assign_global(global);

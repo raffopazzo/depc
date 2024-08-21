@@ -248,8 +248,15 @@ check_stmt(
             auto false_branch_usage = usage.extend();
             auto const combine_usages = [&]
             {
-                usage += true_branch_usage;
-                usage += false_branch_usage;
+                auto const& combined =
+                    usage_t::merge(
+                        true_branch_usage,
+                        false_branch_usage,
+                        [] (expr_t::var_t const&, ast::qty_t const a, ast::qty_t const b)
+                        {
+                            return std::max(a, b);
+                        });
+                return usage.try_add(state.context, combined);
             };
             auto true_branch = [&]
             {
@@ -278,7 +285,8 @@ check_stmt(
                     check_body(env, std::move(new_state), *x.false_branch, is_mutable, false_branch_usage, usage_multiplier);
                 if (false_branch)
                 {
-                    combine_usages();
+                    if (auto ok = combine_usages(); not ok)
+                        return std::move(ok.error());
                     return make_legal_stmt(
                         stmt_t::if_else_t{
                             std::move(*cond),
@@ -298,7 +306,8 @@ check_stmt(
                 state.rewrite(*cond, derivation_rules::make_false());
                 add_true_not_cond(state.context);
             }
-            combine_usages();
+            if (auto ok = combine_usages(); not ok)
+                return std::move(ok.error());
             return make_legal_stmt(
                 stmt_t::if_else_t{
                     std::move(*cond),

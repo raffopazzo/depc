@@ -50,7 +50,8 @@ static void try_apply(search_task_t& task, expr_t::global_t const& name, sort_t 
         auto const next_arg = std::next(arg_it);
         if (auto const node = func_arg.var ? substitutions->extract(*func_arg.var) : node_type{})
         {
-            // TODO need to account for all usages resulting from the substitution and fail accordingly
+            if (auto ok = task.usage->try_add(task.ctx, node.mapped(), task.usage_multiplier); not ok)
+                return task.set_failed();
             substitute(
                 *func_arg.var,
                 node.mapped(),

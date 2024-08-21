@@ -2,6 +2,8 @@
 
 #include "dep0/ast/pretty_print.hpp"
 
+#include "dep0/match.hpp"
+
 #include <sstream>
 
 namespace dep0::typecheck {
@@ -26,6 +28,12 @@ usage_t usage_t::merge(
 usage_t usage_t::extend() const
 {
     return usage_t{count.extend()};
+}
+
+ast::qty_t usage_t::operator[](expr_t::var_t const& var) const
+{
+    ast::qty_t const* const old = count[var];
+    return old ? *old : ast::qty_t::zero;
 }
 
 expected<std::true_type>
@@ -66,10 +74,121 @@ usage_t::try_add(
     }
 }
 
-ast::qty_t usage_t::operator[](expr_t::var_t const& var) const
+expected<std::true_type> usage_t::try_add(ctx_t const& ctx, expr_t const& expr, ast::qty_t const usage_multiplier)
 {
-    ast::qty_t const* const old = count[var];
-    return old ? *old : ast::qty_t::zero;
+    if (usage_multiplier == ast::qty_t::zero) // anything is allowed in an erased context
+        return {};
+    expected<std::true_type> ok;
+    auto old_count = count; // take a copy, in case we need to rollback
+    auto const result = match(
+        expr.value,
+        [&] (expr_t::typename_t const&) { return ok; },
+        [&] (expr_t::true_t const&) { return ok; },
+        [&] (expr_t::auto_t const&) { return ok; },
+        [&] (expr_t::bool_t const&) { return ok; },
+        [&] (expr_t::cstr_t const&) { return ok; },
+        [&] (expr_t::unit_t const&) { return ok; },
+        [&] (expr_t::i8_t const&) { return ok; },
+        [&] (expr_t::i16_t const&) { return ok; },
+        [&] (expr_t::i32_t const&) { return ok; },
+        [&] (expr_t::i64_t const&) { return ok; },
+        [&] (expr_t::u8_t const&) { return ok; },
+        [&] (expr_t::u16_t const&) { return ok; },
+        [&] (expr_t::u32_t const&) { return ok; },
+        [&] (expr_t::u64_t const&) { return ok; },
+        [&] (expr_t::boolean_constant_t const&) { return ok; },
+        [&] (expr_t::numeric_constant_t const&) { return ok; },
+        [&] (expr_t::string_literal_t const&) { return ok; },
+        [&] (expr_t::boolean_expr_t const& x)
+        {
+            return match(
+                x.value,
+                [&] (expr_t::boolean_expr_t::not_t const& x)
+                {
+                    return try_add(ctx, x.expr.get(), usage_multiplier);
+                },
+                [&] (auto const& x)
+                {
+                    auto result = try_add(ctx, x.lhs.get(), usage_multiplier);
+                    if (result)
+                        result = try_add(ctx, x.rhs.get(), usage_multiplier);
+                    return result;
+                });
+        },
+        [&] (expr_t::relation_expr_t const& x)
+        {
+            return match(
+                x.value,
+                [&] (auto const& x)
+                {
+                    auto result = try_add(ctx, x.lhs.get(), usage_multiplier);
+                    if (result)
+                        result = try_add(ctx, x.rhs.get(), usage_multiplier);
+                    return result;
+                });
+        },
+        [&] (expr_t::arith_expr_t const& x)
+        {
+            return match(
+                x.value,
+                [&] (auto const& x)
+                {
+                    auto result = try_add(ctx, x.lhs.get(), usage_multiplier);
+                    if (result)
+                        result = try_add(ctx, x.rhs.get(), usage_multiplier);
+                    return result;
+                });
+        },
+        [&] (expr_t::var_t const& v) -> expected<std::true_type>
+        {
+            if (auto lookup = context_lookup(ctx, v))
+                return try_add(*lookup, usage_multiplier);
+            else
+            {
+                std::ostringstream err;
+                pretty_print<properties_t>(err << "unknown variable `", v) << "` when adding usages";
+                return error_t::from_error(dep0::error_t(err.str()));
+            }
+        },
+        [&] (expr_t::global_t const&) { return ok; },
+        [&] (expr_t::app_t const& x)
+        {
+            auto result = try_add(ctx, x.func.get(), usage_multiplier);
+            for (auto const& arg: x.args)
+                if (result)
+                    result = try_add(ctx, arg, usage_multiplier);
+            return result;
+        },
+        [] (expr_t::abs_t const& x) -> expected<std::true_type>
+        {
+            // TODO look inside the body
+            return error_t::from_error(dep0::error_t("adding usages of abs_t not yet implemented"));
+        },
+        [&] (expr_t::pi_t const&) { return ok; }, // types never really use anything
+        [&] (expr_t::array_t const&) { return ok; },
+        [&] (expr_t::init_list_t const& x)
+        {
+            auto result = ok;
+            for (auto const& v: x.values)
+                if (result)
+                    result = try_add(ctx, v, usage_multiplier);
+            return result;
+        },
+        [&] (expr_t::subscript_t const& x)
+        {
+            auto result = try_add(ctx, x.array.get(), usage_multiplier);
+            if (result)
+                result = try_add(ctx, x.index.get(), usage_multiplier);
+            return result;
+        },
+        [&] (expr_t::because_t const& x)
+        {
+            // reasons never use anything, so add usages from the value
+            return try_add(ctx, x.value.get(), usage_multiplier);
+        });
+    if (not result)
+        count = std::move(old_count);
+    return result;
 }
 
 expected<std::true_type> usage_t::try_add(ctx_t const& ctx, usage_t const& that)
@@ -88,7 +207,6 @@ expected<std::true_type> usage_t::try_add(ctx_t const& ctx, usage_t const& that)
         {
             std::ostringstream err;
             pretty_print<properties_t>(err << "unknown variable `", var) << "` when adding usages";
-            err << ". This is a bug, please report it!";
             count = std::move(old_count);
             return error_t::from_error(dep0::error_t(err.str()));
         }

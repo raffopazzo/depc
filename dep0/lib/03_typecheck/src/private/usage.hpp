@@ -52,8 +52,8 @@ public:
     /**
      * Add 1 usage of a variable, times the given multiplier, to its total count unless
      * the context in which it was declared does not allow for it.
-     * For example, in a context where `x` is declared with quantity 0, any usage is not allowed,
-     * unless the usage multiplier is also 0 (aka erased context).
+     * For example, it is not allowed to use `x` in a context where its multiplicity is 0,
+     * unless the usage multiplier is also 0.
      *
      * @remarks If usage is not allowed, the current usage count is left unchanged.
      *
@@ -70,6 +70,17 @@ public:
         context_lookup_t const& context_lookup,
         ast::qty_t usage_multiplier,
         std::optional<source_loc_t> loc = std::nullopt);
+
+    /**
+     * Add all usages of variables that appear inside the given expression, times the given multiplier, and
+     * check that the result is allowed by the given context.
+     * For example, it is not allowed to use the expression `x + x`
+     * in a context where `x` has multiplicity 1,
+     * unless the multiplier is 0.
+     *
+     * @remarks If usage is not allowed, the current usage count is left unchanged.
+     */
+    expected<std::true_type> try_add(ctx_t const&, expr_t const&, ast::qty_t usage_multiplier);
 
     /**
      * Add all uses from the given usage object to the current one and

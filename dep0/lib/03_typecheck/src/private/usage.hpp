@@ -20,6 +20,10 @@ namespace dep0::typecheck {
  * if it is passed to a function argument with multiplicity `zero`, then overall it counts as `zero`;
  * conversely, if the function argument had multiplicity `many` then `x` should count as `many`.
  * Applying the correct "usage multiplier" is the responsiblity of the caller.
+ * Moreover, usage objects can be nested inside other usage objects via the method `extend`.
+ * This allows to keep track of "direct" usages, say from inside an if-else branch, whilst
+ * still being able to lookup the total usage as-of before entering the branch.
+ * Because of this, we talk about "direct" vs "inherited" usage count.
  */
 class usage_t
 {
@@ -31,7 +35,10 @@ public:
 
     usage_t() = default;
 
-    /** Merge two usage objects into one using the given function to resolve conflicts. */
+    /**
+     * Merge two usage objects into one using the given function to resolve conflicts.
+     * @remarks Only direct usages are merged; inherited usages are ignored.
+     */
     static usage_t merge(
         usage_t const&,
         usage_t const&,

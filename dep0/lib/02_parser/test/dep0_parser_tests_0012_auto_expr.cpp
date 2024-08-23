@@ -391,4 +391,6 @@ BOOST_AUTO_TEST_CASE(typecheck_error_002)
     }
 }
 
+BOOST_AUTO_TEST_CASE(typecheck_error_003) { BOOST_TEST_REQUIRE(pass("0012_auto_expr/typecheck_error_003.depc")); }
+
 BOOST_AUTO_TEST_SUITE_END()

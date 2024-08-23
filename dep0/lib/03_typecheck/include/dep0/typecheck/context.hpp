@@ -83,6 +83,28 @@ private:
     ctx_t(scope_map<expr_t::var_t, value_type>);
 };
 
+/** Proof that a variable exists inside some context, returned from `context_lookup`. */
+class context_lookup_t
+{
+    context_lookup_t(ctx_t const&, expr_t::var_t, ctx_t::var_decl_t const&);
+
+public:
+    ctx_t const& ctx; /**< The context in which the variable was declared. */
+    expr_t::var_t const var; /**< The variable that was declared. */
+    ctx_t::var_decl_t const& decl; /**< The declaration bound to the given variable. */
+
+    /**
+     * Checks whether the given variable is declared inside the given context and
+     * returns a proof of this fact or an empty optional otherwise.
+     *
+     * @remarks
+     *      The returned proof stores a reference to the context and the declaration,
+     *      so passing a temporary context will lead to undefined behaviour.
+     */
+    friend std::optional<context_lookup_t> context_lookup(ctx_t const&, expr_t::var_t const&);
+};
+std::optional<context_lookup_t> context_lookup(ctx_t const&, expr_t::var_t const&);
+
 // non-member functions
 std::ostream& pretty_print(std::ostream&, ctx_t const&);
 

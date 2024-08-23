@@ -102,6 +102,17 @@ ctx_t::try_emplace(std::optional<expr_t::var_t> name, std::optional<source_loc_t
     }
 }
 
+context_lookup_t::context_lookup_t(ctx_t const& ctx, expr_t::var_t var, ctx_t::var_decl_t const& decl) :
+    ctx(ctx), var(std::move(var)), decl(decl) { }
+
+std::optional<context_lookup_t> context_lookup(ctx_t const& ctx, expr_t::var_t const& var)
+{
+    if (auto const val = ctx[var])
+        return context_lookup_t(ctx, var, val->value);
+    else
+        return std::nullopt;
+}
+
 // non-member functions
 
 template <typename R, typename F>

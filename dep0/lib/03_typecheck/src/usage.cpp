@@ -4,6 +4,8 @@
 
 #include "dep0/match.hpp"
 
+#include <boost/scope/scope_exit.hpp>
+
 #include <sstream>
 
 namespace dep0::typecheck {
@@ -78,27 +80,27 @@ expected<std::true_type> usage_t::try_add(ctx_t const& ctx, expr_t const& expr, 
 {
     if (usage_multiplier == ast::qty_t::zero) // anything is allowed in an erased context
         return {};
-    expected<std::true_type> ok;
-    auto old_count = count; // take a copy, in case we need to rollback
+    auto const ok = [] { return expected<std::true_type>{}; };
+    auto rollback = boost::scope::make_scope_exit([old=count, this] () mutable { count = std::move(old); });
     auto const result = match(
         expr.value,
-        [&] (expr_t::typename_t const&) { return ok; },
-        [&] (expr_t::true_t const&) { return ok; },
-        [&] (expr_t::auto_t const&) { return ok; },
-        [&] (expr_t::bool_t const&) { return ok; },
-        [&] (expr_t::cstr_t const&) { return ok; },
-        [&] (expr_t::unit_t const&) { return ok; },
-        [&] (expr_t::i8_t const&) { return ok; },
-        [&] (expr_t::i16_t const&) { return ok; },
-        [&] (expr_t::i32_t const&) { return ok; },
-        [&] (expr_t::i64_t const&) { return ok; },
-        [&] (expr_t::u8_t const&) { return ok; },
-        [&] (expr_t::u16_t const&) { return ok; },
-        [&] (expr_t::u32_t const&) { return ok; },
-        [&] (expr_t::u64_t const&) { return ok; },
-        [&] (expr_t::boolean_constant_t const&) { return ok; },
-        [&] (expr_t::numeric_constant_t const&) { return ok; },
-        [&] (expr_t::string_literal_t const&) { return ok; },
+        [&] (expr_t::typename_t const&) { return ok(); },
+        [&] (expr_t::true_t const&) { return ok(); },
+        [&] (expr_t::auto_t const&) { return ok(); },
+        [&] (expr_t::bool_t const&) { return ok(); },
+        [&] (expr_t::cstr_t const&) { return ok(); },
+        [&] (expr_t::unit_t const&) { return ok(); },
+        [&] (expr_t::i8_t const&) { return ok(); },
+        [&] (expr_t::i16_t const&) { return ok(); },
+        [&] (expr_t::i32_t const&) { return ok(); },
+        [&] (expr_t::i64_t const&) { return ok(); },
+        [&] (expr_t::u8_t const&) { return ok(); },
+        [&] (expr_t::u16_t const&) { return ok(); },
+        [&] (expr_t::u32_t const&) { return ok(); },
+        [&] (expr_t::u64_t const&) { return ok(); },
+        [&] (expr_t::boolean_constant_t const&) { return ok(); },
+        [&] (expr_t::numeric_constant_t const&) { return ok(); },
+        [&] (expr_t::string_literal_t const&) { return ok(); },
         [&] (expr_t::boolean_expr_t const& x)
         {
             return match(
@@ -150,7 +152,7 @@ expected<std::true_type> usage_t::try_add(ctx_t const& ctx, expr_t const& expr, 
                 return error_t::from_error(dep0::error_t(err.str()));
             }
         },
-        [&] (expr_t::global_t const&) { return ok; },
+        [&] (expr_t::global_t const&) { return ok(); },
         [&] (expr_t::app_t const& x)
         {
             auto result = try_add(ctx, x.func.get(), usage_multiplier);
@@ -164,11 +166,11 @@ expected<std::true_type> usage_t::try_add(ctx_t const& ctx, expr_t const& expr, 
             // TODO look inside the body
             return error_t::from_error(dep0::error_t("adding usages of abs_t not yet implemented"));
         },
-        [&] (expr_t::pi_t const&) { return ok; }, // types never really use anything
-        [&] (expr_t::array_t const&) { return ok; },
+        [&] (expr_t::pi_t const&) { return ok(); }, // types never really use anything
+        [&] (expr_t::array_t const&) { return ok(); },
         [&] (expr_t::init_list_t const& x)
         {
-            auto result = ok;
+            auto result = ok();
             for (auto const& v: x.values)
                 if (result)
                     result = try_add(ctx, v, usage_multiplier);
@@ -186,30 +188,26 @@ expected<std::true_type> usage_t::try_add(ctx_t const& ctx, expr_t const& expr, 
             // reasons never use anything, so add usages from the value
             return try_add(ctx, x.value.get(), usage_multiplier);
         });
-    if (not result)
-        count = std::move(old_count);
+    rollback.set_active(result.has_error());
     return result;
 }
 
 expected<std::true_type> usage_t::try_add(ctx_t const& ctx, usage_t const& that)
 {
-    auto old_count = count; // take a copy, in case we need to rollback
+    auto rollback = boost::scope::make_scope_exit([old=count, this] () mutable { count = std::move(old); });
     for (auto const& [var, qty]: that.count)
         if (auto lookup = context_lookup(ctx, var))
         {
             if (auto result = try_add(*lookup, ast::qty_t::one); not result)
-            {
-                count = std::move(old_count);
                 return result;
-            }
         }
         else
         {
             std::ostringstream err;
             pretty_print<properties_t>(err << "unknown variable `", var) << "` when adding usages";
-            count = std::move(old_count);
             return error_t::from_error(dep0::error_t(err.str()));
         }
+    rollback.set_active(false);
     return {};
 }
 

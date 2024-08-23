@@ -67,8 +67,8 @@ usage_t::try_add(
         //       with multiplicity `many` (or something similar to that)
         //    b. or they are trying to use the thing more than once.
         char const* msg =
-            lookup.decl.qty == ast::qty_t::zero ? "variable cannot be used at run-time"
-            : old_qty == ast::qty_t::zero ? "cannot use linear variable in non-linear context"
+            lookup.decl.qty == zero ? "variable cannot be used at run-time"
+            : old_qty == zero ? "cannot use linear variable in non-linear context"
             : "variable has already been used once";
         return error_t::from_error(dep0::error_t(msg, loc));
     }

@@ -254,6 +254,8 @@ type_assign(
                                 })(boost::hana::type_c<T>));
                     else if (lhs.has_error() xor rhs.has_error()) // if only 1 error, just forward that one
                         return error_t::from_error(std::move(lhs.has_error() ? lhs.error() : rhs.error()));
+                    else if (lhs.error() == rhs.error()) // ...or if the error message is the same
+                        return error_t::from_error(std::move(lhs.error()));
                     else
                         return error_t::from_error(dep0::error_t(
                             "relation expression cannot be assigned a type",
@@ -281,6 +283,8 @@ type_assign(
                     }
                     else if (lhs.has_error() xor rhs.has_error()) // if only 1 error, just forward that one
                         return error_t::from_error(std::move(lhs.has_error() ? lhs.error() : rhs.error()));
+                    else if (lhs.error() == rhs.error()) // ...or if the error message is the same
+                        return error_t::from_error(std::move(lhs.error()));
                     else
                         return error_t::from_error(dep0::error_t(
                             "arithmetic expression cannot be assigned a type",

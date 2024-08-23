@@ -20,7 +20,12 @@ usage_t usage_t::merge(
     usage_t const& b,
     std::function<ast::qty_t(expr_t::var_t const&, ast::qty_t, ast::qty_t)> f)
 {
-    auto total_count = a.count;
+    auto total_count = scope_map<expr_t::var_t, ast::qty_t>{};
+    for (auto const& [var, qty]: a.count)
+    {
+        auto const inserted = total_count.try_emplace(var, qty).second;
+        assert(inserted);
+    }
     for (auto const& [var, qty]: b.count)
         if (auto const [it, inserted] = total_count.try_emplace(var, qty); not inserted)
             it->second = f(it->first, it->second, qty);

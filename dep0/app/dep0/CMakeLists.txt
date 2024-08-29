@@ -9,5 +9,6 @@ target_link_libraries(dep0
     DepC::Dep0::TypeCheck
     DepC::Dep0::Transform
     DepC::Dep0::LLVMGen
+    DepC::Dep0::Linker
     ${LLVM_COMPONENTS}
     )

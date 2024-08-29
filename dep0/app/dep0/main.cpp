@@ -6,6 +6,7 @@
 #include "dep0/transform/run.hpp"
 #include "dep0/transform/beta_delta_normalization.hpp"
 #include "dep0/llvmgen/gen.hpp"
+#include "dep0/linker/link.hpp"
 
 #include <llvm/CodeGen/CommandFlags.h>
 #include <llvm/IR/IRPrintingPasses.h>
@@ -103,6 +104,7 @@ int main(int argc, char** argv)
     cl::ParseCommandLineOptions(argc, argv, "dep0 - DepC Bootstrapping Compiler");
 
     std::string err;
+    auto const host_triple = llvm::Triple(llvm::sys::getProcessTriple());
     auto target_triple =
         llvm::Triple(
             mtriple.empty()
@@ -131,6 +133,7 @@ int main(int argc, char** argv)
         ? (emit_llvm ? ".ll" : ".s")
         : ".o";
     auto const base_env = no_prelude ? dep0::expected<dep0::typecheck::env_t>{} : dep0::typecheck::make_base_env();
+    std::vector<std::string> object_files;
     for (auto const& f: input_files)
     {
         if (not base_env)
@@ -156,11 +159,7 @@ int main(int argc, char** argv)
                     dep0::transform::beta_delta_normalization_t{}
                 );
             if (not transform_result)
-            {
-                std::ostringstream str;
-                dep0::pretty_print(str, transform_result.error());
-                llvm::WithColor::error(llvm::errs(), f) << "transformation error: " << str.str() << '\n';
-            }
+                return failure(f, "transformation error", transform_result.error());
         }
         if (print_ast)
             dep0::ast::pretty_print(std::cout, *typechecked_module) << std::endl;
@@ -173,7 +172,8 @@ int main(int argc, char** argv)
         if (not llvm_module)
             return failure(f, "codegen error", llvm_module.error());
         std::error_code ec;
-        auto out = llvm::ToolOutputFile(f + suffix, ec, oflags);
+        auto const obj_file_name = f + suffix;
+        auto out = llvm::ToolOutputFile(obj_file_name, ec, oflags);
         llvm::legacy::PassManager pass_manager;
         if (file_type == llvm::CodeGenFileType::CGFT_AssemblyFile and emit_llvm)
             pass_manager.add(llvm::createPrintModulePass(out.os()));
@@ -181,7 +181,12 @@ int main(int argc, char** argv)
             return failure(f, "no support for file type");
         pass_manager.run(llvm_module->get());
         out.keep();
+        if (file_type == llvm::CodeGenFileType::CGFT_ObjectFile)
+            object_files.push_back(obj_file_name);
     }
+    auto const out_file_name = "a.out";
+    if (object_files.size())
+        if (auto const ok = dep0::linker::link(object_files, target_triple, host_triple, out_file_name); not ok)
+            return failure(out_file_name, "linker error", ok.error());
     return 0;
 }
-

@@ -230,7 +230,7 @@ int main(int argc, char** argv)
     llvm::InitializeAllAsmPrinters();
     llvm::InitializeAllAsmParsers();
 
-    // options for the top-level sub-command only
+    // options which we want to hide alongside all LLVM options (see below)
     auto const mtriple = cl::opt<std::string>("mtriple", cl::desc("Override target triple for module"));
 
     // LLVM is nasty enough to register all codegen and target options as visible in the default option category.

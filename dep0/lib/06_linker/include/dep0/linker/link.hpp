@@ -4,8 +4,7 @@
 
 #include <llvm/ADT/Triple.h>
 
-#include <string>
-#include <string_view>
+#include <filesystem>
 #include <type_traits>
 #include <vector>
 
@@ -27,10 +26,10 @@ namespace dep0::linker {
  *      The preferred file name for the output executable.
  */
 expected<std::true_type> link(
-    std::vector<std::string> const& object_files,
+    std::vector<std::filesystem::path> const& object_files,
     llvm::Triple target_triple,
     llvm::Triple host_triple,
-    std::string_view output_file_name
+    std::filesystem::path output_file_name
 ) noexcept;
 
 } // namespace dep0::linker

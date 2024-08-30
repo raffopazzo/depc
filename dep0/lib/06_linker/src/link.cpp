@@ -5,10 +5,10 @@
 namespace dep0::linker {
 
 expected<std::true_type> link(
-    std::vector<std::string> const& object_files,
+    std::vector<std::filesystem::path> const& object_files,
     llvm::Triple const target_triple,
     llvm::Triple const host_triple,
-    std::string_view const output_file_name
+    std::filesystem::path const output_file_name
 ) noexcept
 {
     using enum llvm::Triple::ArchType;

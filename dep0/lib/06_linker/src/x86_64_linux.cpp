@@ -6,12 +6,13 @@
 
 #include <algorithm>
 #include <iterator>
+#include <string>
 
 namespace dep0::linker::x86_64_linux {
 
 expected<std::true_type> link(
-    std::vector<std::string> const& object_files,
-    std::string_view output_file_name
+    std::vector<std::filesystem::path> const& object_files,
+    std::filesystem::path output_file_name
 ) noexcept
 {
     auto const ld = boost::process::v2::environment::find_executable("ld");

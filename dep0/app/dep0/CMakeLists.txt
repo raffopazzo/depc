@@ -1,6 +1,16 @@
 find_package(LLVM REQUIRED)
 
-add_executable(dep0 main.cpp pipeline.hpp pipeline.cpp)
+add_executable(dep0
+  main.cpp
+  # hdr
+  failure.hpp
+  job.hpp
+  pipeline.hpp
+  # src
+  failure.cpp
+  job.cpp
+  pipeline.cpp
+  )
 target_compile_features(dep0 PRIVATE cxx_std_20)
 target_link_libraries(dep0
   PRIVATE

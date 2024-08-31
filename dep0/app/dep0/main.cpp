@@ -282,6 +282,9 @@ int main(int argc, char** argv)
         /*EnvVar*/ nullptr,
         /*LongOptionsUseDoubleDash*/ true);
 
+    if (input_files.empty())
+        return failure("no input files");
+
     std::vector<std::filesystem::path> input_file_paths;
     for (auto const& f: input_files)
         input_file_paths.push_back(f);

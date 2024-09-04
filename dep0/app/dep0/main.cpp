@@ -42,59 +42,80 @@ int main(int argc, char** argv)
     llvm::InitializeAllAsmPrinters();
     llvm::InitializeAllAsmParsers();
 
-    // options which we want to hide alongside all LLVM options (see below)
-    auto const mtriple = cl::opt<std::string>("mtriple", cl::desc("Override target triple for module"));
-
     // LLVM is nasty enough to register all codegen and target options as visible in the default option category.
     // This clutters up the output of a simple `--help` making it difficult to see DepC options.
-    // So let's start afresh by hiding all LLVM options; they can still be retrieved via `--help-hidden`.
+    // So put all LLVM options in its own category and hide them; they can still be retrieved via `--help-hidden`.
+    cl::OptionCategory llvmCat("LLVM Options", "Options available by default with LLVM");
     for (auto const& opt: cl::getRegisteredOptions())
+    {
         opt.getValue()->setHiddenFlag(cl::OptionHidden::Hidden);
+        opt.getValue()->addCategory(llvmCat);
+    }
 
-    // options for all sub-commands
-    auto const input_files = cl::list<std::string>(cl::Positional, cl::desc("<input-files>"));
-    auto const assemble_only =
+    // main options - sorted by the actual command line argument
+    cl::OptionCategory mainCat("Main Options", "These options are the most commonly used ones");
+    auto const compile_only =
         cl::opt<bool>(
             "S",
             cl::init(false),
-            cl::desc("Stop after generating assembly code; do not write object code"));
-    auto const compile_only =
+            cl::cat(mainCat),
+            cl::desc("Compile only; do not assemble or link"));
+    auto const compile_and_assemble =
         cl::opt<bool>(
             "c",
             cl::init(false),
-            cl::desc("Stop after compiling the input files into object code; do not link the final executable"));
-    auto const typecheck_only =
-        cl::opt<bool>(
-            "t",
-            cl::init(false),
-            cl::desc("Stop after typechecking the input files"));
-    auto const print_ast =
-        cl::opt<bool>(
-            "print-ast",
-            cl::init(false),
-            cl::desc(
-                "Print the typechecked AST to screen after applying all transformations"
-                " (unless --skip-transformations is set)"));
+            cl::cat(mainCat),
+            cl::desc("Compile and assemble; but do not link"));
     auto const emit_llvm =
         cl::opt<bool>(
             "emit-llvm",
             cl::init(false),
-            cl::desc("Emit (verified) LLVM IR code"));
+            cl::cat(mainCat),
+            cl::desc("Compile only and emit verified LLVM IR code; but do not assemble or link"));
     auto const emit_llvm_unverified =
         cl::opt<bool>(
             "emit-llvm-unverified",
             cl::init(false),
-            cl::desc("Emit unverified LLVM IR code; only useful when debugging the llvmgen module"));
+            cl::cat(mainCat),
+            cl::desc(
+                "Compile only and emit unverified LLVM IR code; but do not assemble or link.\n"
+                "This is only useful when debugging the llvmgen module"));
+    auto const typecheck_only =
+        cl::opt<bool>(
+            "t",
+            cl::init(false),
+            cl::cat(mainCat),
+            cl::desc("Typecheck only; do not compile, assemble or link"));
+
+    // extra options - sorted by the actual command line argument
+    cl::OptionCategory extraCat("Secondary Options", "These are extra options that can be useful occasionally");
+    auto const mtriple =
+        cl::opt<std::string>(
+            "mtriple",
+            cl::cat(extraCat),
+            cl::desc("Override the target triple used during compilation and assembly stages"));
     auto const no_prelude =
         cl::opt<bool>(
             "no-prelude",
             cl::init(false),
+            cl::cat(extraCat),
             cl::desc("Do not pre-import the prelude module"));
+    auto const print_ast =
+        cl::opt<bool>(
+            "print-ast",
+            cl::init(false),
+            cl::cat(extraCat),
+            cl::desc(
+                "When using -t, print the resulting AST.\n"
+                "The AST is printed after the transformation stage, unless --skip-transformations is also set"));
     auto const skip_transformations =
         cl::opt<bool>(
             "skip-transformations",
             cl::init(false),
-            cl::desc("Skip the transformations pipeline stage"));
+            cl::cat(extraCat),
+            cl::desc("Skip the transformations pipeline stage, for example beta-delta normalization"));
+
+    auto const input_files = cl::list<std::string>(cl::Positional, cl::desc("<input-files>"));
 
     cl::ParseCommandLineOptions(
         argc, argv,
@@ -141,7 +162,7 @@ int main(int argc, char** argv)
             .skip_transformations = skip_transformations,
             .unverified = emit_llvm_unverified
         }});
-    if (file_type == llvm::CodeGenFileType::CGFT_AssemblyFile or assemble_only)
+    if (compile_only or file_type == llvm::CodeGenFileType::CGFT_AssemblyFile)
         return run(job_t{job_t::compile_only_t{
             .input_files = input_file_paths,
             .no_prelude = no_prelude,
@@ -149,7 +170,7 @@ int main(int argc, char** argv)
             .machine = std::ref(*machine),
             .file_type = llvm::CodeGenFileType::CGFT_AssemblyFile
         }});
-    if (compile_only)
+    if (compile_and_assemble)
         return run(job_t{job_t::compile_only_t{
             .input_files = input_file_paths,
             .no_prelude = no_prelude,

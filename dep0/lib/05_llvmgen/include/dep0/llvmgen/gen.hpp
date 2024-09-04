@@ -38,6 +38,11 @@ enum class verify_t { yes, no };
  *      allowing the broken module to be saved to a file for manual inspection.
  *
  * @return The generated LLVM module or an error; if verification was performed this will be a valid LLVM module.
+ *
+ * @remarks
+ *      This function cannot simply return an `expected<llvm::Module>` because
+ *      the llvm objects created during codegen will store pointers/references to the llvm module which
+ *      can be invalidated if the llvm module gets moved around.
  */
 expected<unique_ref<llvm::Module>> gen(
     llvm::LLVMContext& ctx,

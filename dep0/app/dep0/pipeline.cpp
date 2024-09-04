@@ -5,10 +5,7 @@
 #include "dep0/typecheck/check.hpp"
 #include "dep0/transform/run.hpp"
 #include "dep0/transform/beta_delta_normalization.hpp"
-
-#include <llvm/IR/LegacyPassManager.h>
-#include <llvm/Support/FileSystem.h>
-#include <llvm/Support/ToolOutputFile.h>
+#include "dep0/compile/compile.hpp"
 
 // parser stage
 parser_pipeline_t::pipeline_t(parser_stage_t)
@@ -93,19 +90,7 @@ dep0::expected<std::filesystem::path> compile_pipeline_t::run(std::filesystem::p
     auto module = llvmgen_pipeline_t::run(f);
     if (not module)
         return module.error();
-    auto const [suffix, oflags] =
-        options.out_file_type == llvm::CodeGenFileType::CGFT_AssemblyFile
-        ? std::pair{".s", llvm::sys::fs::OF_Text}
-        : std::pair{".o", llvm::sys::fs::OF_None};
-    std::filesystem::path const output_file(f.native() + suffix);
-    std::error_code ec;
-    auto out = llvm::ToolOutputFile(output_file.native(), ec, oflags);
-    if (ec)
-        return dep0::error_t("error opening the output file");
-    llvm::legacy::PassManager pass_manager;
-    if (options.machine.get().addPassesToEmitFile(pass_manager, out.os(), nullptr, options.out_file_type))
-        return dep0::error_t("cannot emit the desired file type for the target machine");
-    pass_manager.run(module->get());
-    out.keep();
-    return output_file;
+    return options.out_file_type == llvm::CodeGenFileType::CGFT_AssemblyFile
+        ? dep0::compile::compile_only(module->get(), options.machine, std::filesystem::path(f.native() + ".s"))
+        : dep0::compile::compile_and_assemble(module->get(), options.machine, std::filesystem::path(f.native() + ".o"));
 }

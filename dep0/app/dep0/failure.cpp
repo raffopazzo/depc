@@ -2,7 +2,7 @@
 
 #include <llvm/Support/WithColor.h>
 
-#include <iostream>
+#include <sstream>
 
 int failure(std::string_view const msg)
 {

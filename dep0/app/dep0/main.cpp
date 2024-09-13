@@ -52,7 +52,7 @@ int main(int argc, char** argv)
         opt.getValue()->addCategory(llvmCat);
     }
 
-    // main options - sorted by the actual command line argument
+    // main options - sorted by the actual command line argument, i.e. `--a` before `--b`
     cl::OptionCategory mainCat("Main Options", "These options are the most commonly used ones");
     auto const compile_only =
         cl::opt<bool>(
@@ -87,7 +87,7 @@ int main(int argc, char** argv)
             cl::cat(mainCat),
             cl::desc("Typecheck only; do not compile, assemble or link"));
 
-    // extra options - sorted by the actual command line argument
+    // extra options - also sorted as above
     cl::OptionCategory extraCat("Secondary Options", "These are extra options that can be useful occasionally");
     auto const mtriple =
         cl::opt<std::string>(

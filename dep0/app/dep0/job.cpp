@@ -108,8 +108,18 @@ int run(job_t const& job)
                         .out_file_type = job.file_type
                     });
             for (auto const& f: job.input_files)
-                if (auto const result = pipeline.run(f); not result)
-                    return failure(f, "compile error", result.error());
+                if (auto obj = pipeline.run(f))
+                {
+                    auto const dest =
+                        std::filesystem::path(
+                            job.file_type == llvm::CodeGenFileType::CGFT_AssemblyFile
+                            ? f.native() + ".s"
+                            : f.native() + ".o");
+                    if (auto const rename = obj->rename_and_keep(dest); not rename)
+                        return failure(f, "compile error", rename.error());
+                }
+                else
+                    return failure(f, "compile error", obj.error());
             return 0;
         },
         [] (job_t::compile_and_link_t const& job)
@@ -131,19 +141,26 @@ int run(job_t const& job)
                     compile_stage_t{
                         .machine = job.machine
                     });
-            std::vector<std::filesystem::path> obj_files;
+            std::vector<dep0::temp_file_t> obj_files; // automatically delete object files after linking
+            std::vector<std::filesystem::path> obj_file_paths;
             for (auto const& f: job.input_files)
-                if (auto const result = pipeline.run(f))
-                    obj_files.push_back(*result);
+                if (auto obj = pipeline.run(f))
+                {
+                    obj_file_paths.push_back(obj->path());
+                    obj_files.push_back(std::move(*obj));
+                }
                 else
-                    return failure(f, "compile error", result.error());
+                    return failure(f, "compile error", obj.error());
             auto const host_triple = llvm::Triple(llvm::sys::getProcessTriple());
-            auto const ok =
+            auto result =
                 dep0::linker::link(
-                    obj_files,
+                    obj_file_paths,
                     job.machine.get().getTargetTriple(),
-                    host_triple,
-                    job.out_file_name);
-            return ok ? 0 : failure(job.out_file_name, "linker error", ok.error());
+                    host_triple);
+            if (not result)
+                return failure(job.out_file_name, "linker error", result.error());
+            if (auto const rename = result->rename_and_keep(job.out_file_name); not rename)
+                return failure(job.out_file_name, "linker error", rename.error());
+            return 0;
         });
 }

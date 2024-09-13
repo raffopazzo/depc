@@ -6,6 +6,7 @@
 #include "dep0/llvmgen/gen.hpp"
 
 #include "dep0/error.hpp"
+#include "dep0/temp_file.hpp"
 #include "dep0/unique_ref.hpp"
 
 #include <llvm/IR/LLVMContext.h>
@@ -115,7 +116,7 @@ struct pipeline_t<parser_stage_t, typecheck_stage_t, transform_stage_t, llvmgen_
 
     pipeline_t(parser_stage_t, typecheck_stage_t, transform_stage_t, llvmgen_stage_t, compile_stage_t);
 
-    dep0::expected<std::filesystem::path> run(std::filesystem::path const&) const;
+    dep0::expected<dep0::temp_file_t> run(std::filesystem::path const&) const;
 };
 
 template <typename... Stages>

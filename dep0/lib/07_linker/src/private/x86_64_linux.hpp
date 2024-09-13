@@ -1,6 +1,7 @@
 #pragma once
 
 #include "dep0/error.hpp"
+#include "dep0/temp_file.hpp"
 
 #include <filesystem>
 #include <type_traits>
@@ -8,9 +9,6 @@
 
 namespace dep0::linker::x86_64_linux {
 
-expected<std::true_type> link(
-    std::vector<std::filesystem::path> const& object_files,
-    std::filesystem::path output_file_name
-) noexcept;
+expected<temp_file_t> link(std::vector<std::filesystem::path> const& object_files) noexcept;
 
 } // namespace dep0::linker::x86_64_linux

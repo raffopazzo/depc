@@ -8,6 +8,7 @@ add_library(dep0_core_lib
     include/dep0/mmap.hpp
     include/dep0/scope_map.hpp
     include/dep0/source.hpp
+    include/dep0/temp_file.hpp
     include/dep0/unique_ref.hpp
     include/dep0/vector_splice.hpp
     src/destructive_self_assign.cpp
@@ -18,6 +19,7 @@ add_library(dep0_core_lib
     src/mmap.cpp
     src/scope_map.cpp
     src/source.cpp
+    src/temp_file.cpp
     src/unique_ref.cpp
     src/vector_splice.cpp
     )

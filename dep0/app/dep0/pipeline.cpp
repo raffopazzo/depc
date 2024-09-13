@@ -85,12 +85,13 @@ compile_pipeline_t::pipeline_t(
 {
 }
 
-dep0::expected<std::filesystem::path> compile_pipeline_t::run(std::filesystem::path const& f) const
+dep0::expected<dep0::temp_file_t> compile_pipeline_t::run(std::filesystem::path const& f) const
 {
     auto module = llvmgen_pipeline_t::run(f);
     if (not module)
         return module.error();
-    return options.out_file_type == llvm::CodeGenFileType::CGFT_AssemblyFile
-        ? dep0::compile::compile_only(module->get(), options.machine, std::filesystem::path(f.native() + ".s"))
-        : dep0::compile::compile_and_assemble(module->get(), options.machine, std::filesystem::path(f.native() + ".o"));
+    return
+        options.out_file_type == llvm::CodeGenFileType::CGFT_AssemblyFile
+        ? dep0::compile::compile_only(module->get(), options.machine)
+        : dep0::compile::compile_and_assemble(module->get(), options.machine);
 }

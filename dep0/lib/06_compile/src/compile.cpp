@@ -10,41 +10,35 @@
 namespace dep0::compile {
 
 static
-expected<std::filesystem::path>
+expected<temp_file_t>
 compile(
     llvm::Module& module,
     llvm::TargetMachine& machine,
-    llvm::CodeGenFileType const output_file_type,
-    std::filesystem::path const& output_file_name)
+    llvm::CodeGenFileType const output_file_type)
 {
-    using enum llvm::sys::fs::OpenFlags;
-    auto const oflags = output_file_type == llvm::CodeGenFileType::CGFT_AssemblyFile ? OF_Text : OF_None;
-    std::error_code ec;
-    auto out = llvm::ToolOutputFile(output_file_name.native(), ec, oflags);
-    if (ec)
-    {
-        std::ostringstream err;
-        err << "error opening `" << output_file_name << "`: " << ec.message();
-        return dep0::error_t(err.str());
-    }
+    auto temp_file =
+        make_temp_file(
+            output_file_type == llvm::CodeGenFileType::CGFT_AssemblyFile
+            ? temp_file_open_mode_t::text
+            : temp_file_open_mode_t::binary);
+    if (not temp_file)
+        return temp_file.error();
+    llvm::raw_fd_ostream ostream(temp_file->fd(), /*shouldClose*/ false);
     llvm::legacy::PassManager pass_manager;
-    if (machine.addPassesToEmitFile(pass_manager, out.os(), nullptr, output_file_type))
+    if (machine.addPassesToEmitFile(pass_manager, ostream, nullptr, output_file_type))
         return dep0::error_t("cannot emit the desired file type for the target machine");
     pass_manager.run(module);
-    out.keep();
-    return output_file_name;
+    return temp_file;
 }
 
-expected<std::filesystem::path>
-compile_only(llvm::Module& module, llvm::TargetMachine& machine, std::filesystem::path const& output_file_name)
+expected<temp_file_t> compile_only(llvm::Module& module, llvm::TargetMachine& machine)
 {
-    return compile(module, machine, llvm::CGFT_AssemblyFile, output_file_name);
+    return compile(module, machine, llvm::CGFT_AssemblyFile);
 }
 
-expected<std::filesystem::path>
-compile_and_assemble(llvm::Module& module, llvm::TargetMachine& machine, std::filesystem::path const& output_file_name)
+expected<temp_file_t> compile_and_assemble(llvm::Module& module, llvm::TargetMachine& machine)
 {
-    return compile(module, machine, llvm::CGFT_ObjectFile, output_file_name);
+    return compile(module, machine, llvm::CGFT_ObjectFile);
 }
 
 } // namespace dep0::compile

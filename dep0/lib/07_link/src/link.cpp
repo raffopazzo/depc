@@ -1,8 +1,8 @@
-#include "dep0/linker/link.hpp"
+#include "dep0/link/link.hpp"
 
 #include "private/x86_64_linux.hpp"
 
-namespace dep0::linker {
+namespace dep0::link {
 
 expected<temp_file_t> link(
     std::vector<std::filesystem::path> const& object_files,
@@ -20,4 +20,4 @@ expected<temp_file_t> link(
     return error_t("target triple not yet supported");
 }
 
-} // namespace dep0::linker
+} // namespace dep0::link

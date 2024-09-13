@@ -9,7 +9,7 @@
 #include <type_traits>
 #include <vector>
 
-namespace dep0::linker {
+namespace dep0::link {
 
 /**
  * Link all given object files into the final executable file and
@@ -32,4 +32,4 @@ expected<temp_file_t> link(
     llvm::Triple host
 ) noexcept;
 
-} // namespace dep0::linker
+} // namespace dep0::link

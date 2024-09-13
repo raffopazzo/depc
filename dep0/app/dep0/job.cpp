@@ -6,7 +6,7 @@
 #include "dep0/match.hpp"
 #include "dep0/ast/pretty_print.hpp"
 #include "dep0/llvmgen/gen.hpp"
-#include "dep0/linker/link.hpp"
+#include "dep0/link/link.hpp"
 
 #include <llvm/ADT/Triple.h>
 #include <llvm/IR/LLVMContext.h>
@@ -153,7 +153,7 @@ int run(job_t const& job)
                     return failure(f, "compile error", obj.error());
             auto const host_triple = llvm::Triple(llvm::sys::getProcessTriple());
             auto result =
-                dep0::linker::link(
+                dep0::link::link(
                     obj_file_paths,
                     job.machine.get().getTargetTriple(),
                     host_triple);

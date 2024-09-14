@@ -20,7 +20,6 @@ enum class temp_file_open_mode_t
  */
 class temp_file_t
 {
-private:
     bool m_keep;
     std::FILE* m_file;
     std::filesystem::path m_path;

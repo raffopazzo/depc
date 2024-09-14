@@ -17,7 +17,6 @@ enum class temp_file_open_mode_t
 
 /**
  * A temporary file that will be automatically deleted unless `rename_and_keep` is invoked.
- * @remarks The file is opened in binary mode.
  */
 class temp_file_t
 {

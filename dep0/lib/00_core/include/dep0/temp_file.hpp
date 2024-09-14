@@ -28,7 +28,7 @@ class temp_file_t
     void acquire(temp_file_t&&);
     void release();
 
-    explicit temp_file_t(std::FILE*, std::filesystem::path, temp_file_open_mode_t);
+    temp_file_t(std::FILE*, std::filesystem::path, temp_file_open_mode_t);
 
     friend expected<temp_file_t> make_temp_file(temp_file_open_mode_t);
 

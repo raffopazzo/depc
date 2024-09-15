@@ -2,8 +2,6 @@
 #include "job.hpp"
 #include "pipeline.hpp"
 
-#include "dep0/cxx23.hpp"
-
 #include <llvm/CodeGen/CommandFlags.h>
 #include <llvm/Support/CommandLine.h>
 #include <llvm/Support/Host.h>
@@ -15,7 +13,6 @@
 
 #include <filesystem>
 #include <functional>
-#include <ranges>
 #include <string>
 #include <vector>
 
@@ -130,10 +127,10 @@ int main(int argc, char** argv)
     if (input_files.empty())
         return failure("no input files");
 
-    auto const input_file_paths =
-        dep0::cxx23::ranges::to<std::vector>(
-            input_files | std::views::transform([] (auto const& x) -> std::filesystem::path { return x; })
-        );
+    std::vector<std::filesystem::path> input_file_paths;
+    for (auto const& f: input_files)
+        input_file_paths.push_back(f);
+
     if (typecheck_only)
         return print_ast
             ? run(job_t{job_t::print_ast_t{

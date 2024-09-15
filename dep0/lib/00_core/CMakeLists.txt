@@ -1,6 +1,5 @@
 add_subdirectory(test)
 add_library(dep0_core_lib
-    include/dep0/cxx23.hpp
     include/dep0/destructive_self_assign.hpp
     include/dep0/digit_separator.hpp
     include/dep0/error.hpp
@@ -12,7 +11,6 @@ add_library(dep0_core_lib
     include/dep0/temp_file.hpp
     include/dep0/unique_ref.hpp
     include/dep0/vector_splice.hpp
-    src/cxx23.cpp
     src/destructive_self_assign.cpp
     src/digit_separator.cpp
     src/error.cpp

@@ -19,6 +19,11 @@
 
 #include <iostream>
 
+static std::filesystem::path append_extension(std::filesystem::path f, std::string_view const extension)
+{
+    return extension.starts_with('.') ? f.concat(extension) : f.concat(".").concat(extension);
+}
+
 int run(job_t const& job)
 {
     return dep0::match(
@@ -76,7 +81,7 @@ int run(job_t const& job)
                 if (auto result = pipeline.run(f))
                 {
                     std::error_code ec;
-                    std::filesystem::path const output_file(f.native() + ".ll");
+                    auto const output_file = append_extension(f, ".ll");
                     auto out = llvm::ToolOutputFile(output_file.native(), ec, llvm::sys::fs::OF_Text);
                     if (ec)
                         return failure(f, "error opening output file");
@@ -110,11 +115,7 @@ int run(job_t const& job)
             for (auto const& f: job.input_files)
                 if (auto obj = pipeline.run(f))
                 {
-                    auto const dest =
-                        std::filesystem::path(
-                            job.file_type == llvm::CodeGenFileType::CGFT_AssemblyFile
-                            ? f.native() + ".s"
-                            : f.native() + ".o");
+                    auto const dest = append_extension(f, job.file_type == llvm::CGFT_AssemblyFile ? ".s" : ".o");
                     if (auto const rename = obj->rename_and_keep(dest); not rename)
                         return failure(f, "compile error", rename.error());
                 }
@@ -158,9 +159,9 @@ int run(job_t const& job)
                     job.machine.get().getTargetTriple(),
                     host_triple);
             if (not result)
-                return failure(job.out_file_name, "linker error", result.error());
+                return failure(job.out_file_name, "link error", result.error());
             if (auto const rename = result->rename_and_keep(job.out_file_name); not rename)
-                return failure(job.out_file_name, "linker error", rename.error());
+                return failure(job.out_file_name, "link error", rename.error());
             return 0;
         });
 }

@@ -143,7 +143,7 @@ int main(int argc, char** argv)
     if (print_ast)
         llvm::WithColor::warning() << "--print-ast can only be used with -t; will be ignored\n";
 
-    auto const file_type = llvm::codegen::getExplicitFileType().getValueOr(llvm::CodeGenFileType::CGFT_ObjectFile);
+    auto const file_type = llvm::codegen::getExplicitFileType().getValueOr(llvm::CGFT_ObjectFile);
     auto target_triple =
         llvm::Triple(
             mtriple.empty()
@@ -160,21 +160,13 @@ int main(int argc, char** argv)
             .skip_transformations = skip_transformations,
             .unverified = emit_llvm_unverified
         }});
-    if (compile_only or file_type == llvm::CodeGenFileType::CGFT_AssemblyFile)
+    if (compile_and_assemble or compile_only or file_type == llvm::CGFT_AssemblyFile)
         return run(job_t{job_t::compile_only_t{
             .input_files = input_file_paths,
             .no_prelude = no_prelude,
             .skip_transformations = skip_transformations,
             .machine = std::ref(*machine),
-            .file_type = llvm::CodeGenFileType::CGFT_AssemblyFile
-        }});
-    if (compile_and_assemble)
-        return run(job_t{job_t::compile_only_t{
-            .input_files = input_file_paths,
-            .no_prelude = no_prelude,
-            .skip_transformations = skip_transformations,
-            .machine = std::ref(*machine),
-            .file_type = llvm::CodeGenFileType::CGFT_ObjectFile
+            .file_type = compile_and_assemble ? llvm::CGFT_ObjectFile : llvm::CGFT_AssemblyFile
         }});
     return run(job_t{job_t::compile_and_link_t{
         .input_files = input_file_paths,

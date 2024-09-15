@@ -4,21 +4,11 @@
 
 #include "dep0/ast/pretty_print.hpp"
 
+#include "dep0/cxx23.hpp"
+
 #include <algorithm>
 #include <ranges>
 #include <sstream>
-
-namespace cxx23 {
-
-template <typename R, typename T, typename F>
-T fold_left(R&& range, T init, F&& f)
-{
-    for (auto const& x: std::forward<R>(range))
-        init = f(init, x);
-    return init;
-}
-
-} // namespace cxx23
 
 namespace dep0::typecheck {
 
@@ -58,7 +48,7 @@ std::ostream& pretty_print(std::ostream& os, error_t const& err)
         os << std::endl << "In context:" << std::endl;
         os << ctx_str << std::endl;
         auto const num_dashes =
-            cxx23::fold_left(
+            cxx23::ranges::fold_left(
                 std::views::split(std::string_view(ctx_str), '\n'),
                 tgt_str.size(),
                 [] (std::size_t const acc, auto const& line)

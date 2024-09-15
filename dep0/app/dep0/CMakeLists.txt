@@ -1,5 +1,3 @@
-find_package(LLVM REQUIRED)
-
 add_executable(dep0
   main.cpp
   # hdr

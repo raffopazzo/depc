@@ -1,4 +1,5 @@
 find_package(Boost 1.76.0 REQUIRED)
+find_package(LLVM REQUIRED)
 
 add_subdirectory(app/dep0)
 

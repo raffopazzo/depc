@@ -1,6 +1,3 @@
-# add_subdirectory(test)
-
-find_package(LLVM REQUIRED)
 add_library(dep0_link_lib
     # public headers
     include/dep0/link/link.hpp
@@ -17,7 +14,6 @@ target_link_libraries(dep0_link_lib
   PUBLIC
     DepC::Dep0::TypeCheck
     LLVM::LLVMCore
-    LLVM::LLVMTransformUtils
   PRIVATE
     Boost::Boost
   )

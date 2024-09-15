@@ -1,6 +1,5 @@
 add_subdirectory(test)
 
-find_package(LLVM REQUIRED)
 add_library(dep0_llvmgen_lib
     # public headers
     include/dep0/llvmgen/gen.hpp

@@ -1,6 +1,3 @@
-# add_subdirectory(test)
-
-find_package(LLVM REQUIRED)
 add_library(dep0_compile_lib
     # public headers
     include/dep0/compile/compile.hpp
@@ -14,5 +11,4 @@ target_link_libraries(dep0_compile_lib
   PUBLIC
     DepC::Dep0::Core
     LLVM::LLVMCore
-    LLVM::LLVMTransformUtils
   )

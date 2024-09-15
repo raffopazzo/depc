@@ -23,10 +23,10 @@ int failure(std::filesystem::path const& file_name, std::string_view const msg, 
     return 1;
 }
 
-int failure(std::filesystem::path const& file_name, std::string_view const msg, dep0::typecheck::error_t const& error)
+int failure(std::filesystem::path const& file_name, dep0::error_t const& error)
 {
     std::ostringstream str;
-    dep0::typecheck::pretty_print(str, error);
-    llvm::WithColor::error(llvm::errs(), file_name.native()) << msg << ": " << str.str() << '\n';
+    dep0::pretty_print(str, error);
+    llvm::WithColor::error(llvm::errs(), file_name.native()) << str.str() << '\n';
     return 1;
 }

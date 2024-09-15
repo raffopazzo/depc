@@ -39,7 +39,7 @@ int run(job_t const& job)
                 if (auto const result = pipeline.run(f))
                     llvm::WithColor::note(llvm::outs(), f.native()) << "typechecks correctly" << '\n';
                 else
-                    return failure(f, "typecheck error", result.error());
+                    return failure(f, result.error());
             return 0;
         },
         [] (job_t::print_ast_t const& job)
@@ -57,7 +57,7 @@ int run(job_t const& job)
                 if (auto const result = pipeline.run(f))
                     dep0::ast::pretty_print(std::cout, *result) << std::endl;
                 else
-                    return failure(f, "typecheck error", result.error());
+                    return failure(f, result.error());
             return 0;
         },
         [] (job_t::emit_llvm_t const& job)
@@ -90,7 +90,7 @@ int run(job_t const& job)
                     out.keep();
                 }
                 else
-                    return failure(f, "llvmgen error", result.error());
+                    return failure(f, result.error());
             return 0;
         },
         [] (job_t::compile_only_t const& job)
@@ -118,10 +118,10 @@ int run(job_t const& job)
                 {
                     auto const dest = append_extension(f, job.file_type == llvm::CGFT_AssemblyFile ? ".s" : ".o");
                     if (auto const rename = obj->rename_and_keep(dest); not rename)
-                        return failure(f, "compile error", rename.error());
+                        return failure(f, rename.error());
                 }
                 else
-                    return failure(f, "compile error", obj.error());
+                    return failure(f, obj.error());
             return 0;
         },
         [] (job_t::compile_and_link_t const& job)
@@ -152,7 +152,7 @@ int run(job_t const& job)
                     obj_files.push_back(std::move(*obj));
                 }
                 else
-                    return failure(f, "compile error", obj.error());
+                    return failure(f, obj.error());
             auto const host_triple = llvm::Triple(llvm::sys::getProcessTriple());
             auto result =
                 dep0::link::link(

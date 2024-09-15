@@ -2,7 +2,6 @@
 
 #include "dep0/parser/ast.hpp"
 #include "dep0/typecheck/ast.hpp"
-#include "dep0/typecheck/error.hpp"
 
 #include "dep0/error.hpp"
 #include "dep0/temp_file.hpp"
@@ -60,7 +59,7 @@ struct pipeline_t<parser_stage_t, typecheck_stage_t> : parser_pipeline_t
 
     pipeline_t(parser_stage_t, typecheck_stage_t);
 
-    dep0::typecheck::expected<dep0::typecheck::module_t> run(std::filesystem::path const&) const;
+    dep0::expected<dep0::typecheck::module_t> run(std::filesystem::path const&) const;
 };
 
 // transform
@@ -77,7 +76,7 @@ struct pipeline_t<parser_stage_t, typecheck_stage_t, transform_stage_t>
 
     pipeline_t(parser_stage_t, typecheck_stage_t, transform_stage_t);
 
-    dep0::typecheck::expected<dep0::typecheck::module_t> run(std::filesystem::path const&) const;
+    dep0::expected<dep0::typecheck::module_t> run(std::filesystem::path const&) const;
 };
 
 // llvmgen

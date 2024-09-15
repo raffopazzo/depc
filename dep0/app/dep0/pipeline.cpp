@@ -14,7 +14,10 @@ parser_pipeline_t::pipeline_t(parser_stage_t)
 
 dep0::expected<dep0::parser::module_t> parser_pipeline_t::run(std::filesystem::path const& f) const
 {
-    return dep0::parser::parse(f);
+    auto result = dep0::parser::parse(f);
+    if (not result)
+        return dep0::error_t("parsing failed", {std::move(result.error())});
+    return result;
 }
 
 // typecheck stage
@@ -24,15 +27,19 @@ typecheck_pipeline_t::pipeline_t(parser_stage_t a, typecheck_stage_t b) :
 {
 }
 
-dep0::typecheck::expected<dep0::typecheck::module_t> typecheck_pipeline_t::run(std::filesystem::path const& f) const
+dep0::expected<dep0::typecheck::module_t> typecheck_pipeline_t::run(std::filesystem::path const& f) const
 {
     auto module = parser_pipeline_t::run(f);
     if (not module)
-        return dep0::typecheck::error_t::from_error(module.error());
+        return std::move(module.error());
     auto const env = options.no_prelude ? dep0::expected<dep0::typecheck::env_t>{} : dep0::typecheck::make_base_env();
     if (not env)
-        return dep0::typecheck::error_t::from_error(env.error());
-    return dep0::typecheck::check(*env, *module);
+        return std::move(env.error());
+    auto result = dep0::typecheck::check(*env, *module);
+    if (not result)
+        return dep0::error_t("typechecking failed", {std::move(result.error())});
+    else
+        return std::move(*result);
 }
 
 // transform stage
@@ -42,7 +49,7 @@ transform_pipeline_t::pipeline_t(parser_stage_t a, typecheck_stage_t b, transfor
 {
 }
 
-dep0::typecheck::expected<dep0::typecheck::module_t> transform_pipeline_t::run(std::filesystem::path const& f) const
+dep0::expected<dep0::typecheck::module_t> transform_pipeline_t::run(std::filesystem::path const& f) const
 {
     auto module = typecheck_pipeline_t::run(f);
     if (module and not options.skip)
@@ -53,7 +60,7 @@ dep0::typecheck::expected<dep0::typecheck::module_t> transform_pipeline_t::run(s
                 dep0::transform::beta_delta_normalization_t{}
             );
         if (not result)
-            return dep0::typecheck::error_t::from_error(result.error());
+            return dep0::error_t("transform failed", {std::move(result.error())});
     }
     return module;
 };
@@ -70,9 +77,12 @@ dep0::expected<dep0::unique_ref<llvm::Module>> llvmgen_pipeline_t::run(std::file
     auto module = transform_pipeline_t::run(f);
     if (not module)
         return module.error();
-    return options.unverified
+    auto result = options.unverified
         ? dep0::llvmgen::gen_unverified(options.llvm_context.get(), f.filename().native(), *module)
         : dep0::llvmgen::gen(options.llvm_context.get(), f.filename().native(), *module);
+    if (not result)
+        return dep0::error_t("llvmgen failed", {std::move(result.error())});
+    return result;
 }
 
 // compile
@@ -92,8 +102,11 @@ dep0::expected<dep0::temp_file_t> compile_pipeline_t::run(std::filesystem::path 
     auto module = llvmgen_pipeline_t::run(f);
     if (not module)
         return module.error();
-    return
+    auto result =
         options.out_file_type == llvm::CodeGenFileType::CGFT_AssemblyFile
         ? dep0::compile::compile_only(module->get(), options.machine)
         : dep0::compile::compile_and_assemble(module->get(), options.machine);
+    if (not result)
+        return dep0::error_t("compilation failed", {std::move(result.error())});
+    return result;
 }

@@ -14,7 +14,8 @@ expected<temp_file_t>
 compile(
     llvm::Module& module,
     llvm::TargetMachine& machine,
-    llvm::CodeGenFileType const output_file_type)
+    llvm::CodeGenFileType const output_file_type
+) noexcept
 {
     auto temp_file =
         make_temp_file(
@@ -31,12 +32,12 @@ compile(
     return temp_file;
 }
 
-expected<temp_file_t> compile_only(llvm::Module& module, llvm::TargetMachine& machine)
+expected<temp_file_t> compile_only(llvm::Module& module, llvm::TargetMachine& machine) noexcept
 {
     return compile(module, machine, llvm::CGFT_AssemblyFile);
 }
 
-expected<temp_file_t> compile_and_assemble(llvm::Module& module, llvm::TargetMachine& machine)
+expected<temp_file_t> compile_and_assemble(llvm::Module& module, llvm::TargetMachine& machine) noexcept
 {
     return compile(module, machine, llvm::CGFT_ObjectFile);
 }

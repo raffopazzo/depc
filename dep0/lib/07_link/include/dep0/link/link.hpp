@@ -6,7 +6,6 @@
 #include <llvm/ADT/Triple.h>
 
 #include <filesystem>
-#include <type_traits>
 #include <vector>
 
 namespace dep0::link {

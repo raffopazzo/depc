@@ -12,12 +12,9 @@
 
 namespace dep0::llvmgen {
 
-expected<unique_ref<llvm::Module>>
-    gen(llvm::LLVMContext& llvm_ctx, std::string_view const name, typecheck::module_t const& m, verify_t verify)
-    noexcept
+static void gen_impl(llvm::Module& llvm_module, typecheck::module_t const& m) noexcept
 {
-    auto llvm_module = make_ref<llvm::Module>(name, llvm_ctx);
-    global_ctx_t global(llvm_module.get());
+    global_ctx_t global(llvm_module);
     for (auto const& x: m.entries)
         match(
             x,
@@ -49,11 +46,27 @@ expected<unique_ref<llvm::Module>>
                 if (auto proto = llvm_func_proto_t::from_abs(def.value))
                     gen_func(global, typecheck::expr_t::global_t{std::nullopt, def.name}, *proto, def.value);
             });
+}
+
+expected<unique_ref<llvm::Module>>
+gen(llvm::LLVMContext& llvm_ctx, std::string_view const name, typecheck::module_t const& m) noexcept
+{
+    auto result = make_ref<llvm::Module>(name, llvm_ctx);
+    gen_impl(*result, m);
     std::string err;
     llvm::raw_string_ostream ostream(err);
-    return verify == verify_t::yes and llvm::verifyModule(llvm_module.get(), &ostream) // yes true means false...
-        ? expected<unique_ref<llvm::Module>>{error_t{err}}
-        : expected<unique_ref<llvm::Module>>{std::in_place, std::move(llvm_module)};
+    if (llvm::verifyModule(*result, &ostream)) // yes true means false...
+        return error_t{err};
+    else
+        return std::move(result);
+}
+
+expected<unique_ref<llvm::Module>>
+gen_unverified(llvm::LLVMContext& llvm_ctx, std::string_view const name, typecheck::module_t const& m) noexcept
+{
+    auto result = make_ref<llvm::Module>(name, llvm_ctx);
+    gen_impl(*result, m);
+    return std::move(result);
 }
 
 } // namespace dep0::llvmgen

@@ -5,7 +5,6 @@
 
 #include "dep0/match.hpp"
 #include "dep0/ast/pretty_print.hpp"
-#include "dep0/llvmgen/gen.hpp"
 #include "dep0/link/link.hpp"
 
 #include <llvm/ADT/Triple.h>
@@ -75,7 +74,7 @@ int run(job_t const& job)
                     },
                     llvmgen_stage_t{
                         .llvm_context = std::ref(llvm_context),
-                        .verify = job.unverified ? dep0::llvmgen::verify_t::no : dep0::llvmgen::verify_t::yes
+                        .unverified = job.unverified
                     });
             for (auto const& f: job.input_files)
                 if (auto result = pipeline.run(f))
@@ -90,6 +89,8 @@ int run(job_t const& job)
                     pass_manager.run(result->get());
                     out.keep();
                 }
+                else
+                    return failure(f, "llvmgen error", result.error());
             return 0;
         },
         [] (job_t::compile_only_t const& job)
@@ -106,7 +107,7 @@ int run(job_t const& job)
                     },
                     llvmgen_stage_t{
                         .llvm_context = std::ref(llvm_context),
-                        .verify = dep0::llvmgen::verify_t::yes
+                        .unverified = false
                     },
                     compile_stage_t{
                         .machine = job.machine,
@@ -137,7 +138,7 @@ int run(job_t const& job)
                     },
                     llvmgen_stage_t{
                         .llvm_context = std::ref(llvm_context),
-                        .verify = dep0::llvmgen::verify_t::yes
+                        .unverified = false
                     },
                     compile_stage_t{
                         .machine = job.machine

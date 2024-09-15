@@ -70,7 +70,9 @@ dep0::expected<dep0::unique_ref<llvm::Module>> llvmgen_pipeline_t::run(std::file
     auto module = transform_pipeline_t::run(f);
     if (not module)
         return module.error();
-    return dep0::llvmgen::gen(options.llvm_context.get(), f.filename().native(), *module, options.verify);
+    return options.unverified
+        ? dep0::llvmgen::gen_unverified(options.llvm_context.get(), f.filename().native(), *module)
+        : dep0::llvmgen::gen(options.llvm_context.get(), f.filename().native(), *module);
 }
 
 // compile

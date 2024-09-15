@@ -3,7 +3,6 @@
 #include "dep0/parser/ast.hpp"
 #include "dep0/typecheck/ast.hpp"
 #include "dep0/typecheck/error.hpp"
-#include "dep0/llvmgen/gen.hpp"
 
 #include "dep0/error.hpp"
 #include "dep0/temp_file.hpp"
@@ -86,7 +85,7 @@ struct pipeline_t<parser_stage_t, typecheck_stage_t, transform_stage_t>
 struct llvmgen_stage_t
 {
     std::reference_wrapper<llvm::LLVMContext> llvm_context;
-    dep0::llvmgen::verify_t verify = dep0::llvmgen::verify_t::yes;
+    bool unverified = false;
 };
 
 template <>

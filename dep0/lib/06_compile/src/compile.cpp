@@ -5,17 +5,10 @@
 #include <llvm/Support/FileSystem.h>
 #include <llvm/Support/ToolOutputFile.h>
 
-#include <sstream>
-
 namespace dep0::compile {
 
-static
-expected<temp_file_t>
-compile(
-    llvm::Module& module,
-    llvm::TargetMachine& machine,
-    llvm::CodeGenFileType const output_file_type
-) noexcept
+static expected<temp_file_t>
+compile(llvm::Module& module, llvm::TargetMachine& machine, llvm::CodeGenFileType const output_file_type) noexcept
 {
     auto temp_file =
         make_temp_file(

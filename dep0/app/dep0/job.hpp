@@ -5,6 +5,7 @@
 
 #include <filesystem>
 #include <functional>
+#include <optional>
 #include <variant>
 #include <vector>
 
@@ -43,6 +44,7 @@ struct job_t
     /**
      * Runs the parse, typecheck and transform pipeline stages on each input file and
      * writes a new file with the LLVM IR code of the result.
+     * An optional output file name can be specified but only if there is a single input file.
      * If `no_prelude` is set, typechecking will be performed without importing the prelude module.
      * If `skip_transformations` is set, the transform stage will not be run.
      * If `unverified` is set, the LLVM IR code generated will not be verified;
@@ -51,6 +53,7 @@ struct job_t
     struct emit_llvm_t
     {
         std::vector<std::filesystem::path> input_files;
+        std::optional<std::filesystem::path> out_file_name;
         bool no_prelude;
         bool skip_transformations;
         bool unverified;
@@ -60,12 +63,14 @@ struct job_t
      * Runs the parse, typecheck, transform and compile pipeline stages on each input file but
      * does not perform linking into a final executable.
      * It writes either object or assembly files depending on the value of `file_type`.
+     * An optional output file name can be specified but only if there is a single input file.
      * If `no_prelude` is set, typechecking will be performed without importing the prelude module.
      * If `skip_transformations` is set, the transform stage will not be run.
      */
     struct compile_only_t
     {
         std::vector<std::filesystem::path> input_files;
+        std::optional<std::filesystem::path> out_file_name;
         bool no_prelude;
         bool skip_transformations;
         std::reference_wrapper<llvm::TargetMachine> machine;

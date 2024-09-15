@@ -16,6 +16,8 @@
 #include <string>
 #include <vector>
 
+namespace fs = std::filesystem;
+
 static llvm::codegen::RegisterCodeGenFlags WTF;
 
 static dep0::expected<std::reference_wrapper<llvm::TargetMachine>> setup_target_machine(llvm::Triple& target_triple)
@@ -80,6 +82,11 @@ int main(int argc, char** argv)
             cl::desc(
                 "Compile only and emit unverified LLVM IR code; but do not assemble or link.\n"
                 "This is only useful when debugging the llvmgen module"));
+    auto const out_file_name =
+        cl::opt<std::string>(
+            "o",
+            cl::cat(mainCat),
+            cl::desc("Specify an output file name. If missing a default one will be used"));
     auto const typecheck_only =
         cl::opt<bool>(
             "t",
@@ -127,7 +134,7 @@ int main(int argc, char** argv)
     if (input_files.empty())
         return failure("no input files");
 
-    auto const input_file_paths = std::vector<std::filesystem::path>(input_files.begin(), input_files.end());
+    auto const input_file_paths = std::vector<fs::path>(input_files.begin(), input_files.end());
 
     if (typecheck_only)
         return print_ast
@@ -156,6 +163,7 @@ int main(int argc, char** argv)
     if (emit_llvm or emit_llvm_unverified)
         return run(job_t{job_t::emit_llvm_t{
             .input_files = input_file_paths,
+            .out_file_name = out_file_name.empty() ? std::nullopt : std::optional<fs::path>{out_file_name.getValue()},
             .no_prelude =  no_prelude,
             .skip_transformations = skip_transformations,
             .unverified = emit_llvm_unverified
@@ -163,6 +171,7 @@ int main(int argc, char** argv)
     if (compile_and_assemble or compile_only or file_type == llvm::CGFT_AssemblyFile)
         return run(job_t{job_t::compile_only_t{
             .input_files = input_file_paths,
+            .out_file_name = out_file_name.empty() ? std::nullopt : std::optional<fs::path>{out_file_name.getValue()},
             .no_prelude = no_prelude,
             .skip_transformations = skip_transformations,
             .machine = std::ref(*machine),
@@ -170,7 +179,7 @@ int main(int argc, char** argv)
         }});
     return run(job_t{job_t::compile_and_link_t{
         .input_files = input_file_paths,
-        .out_file_name = "a.out",
+        .out_file_name = out_file_name.empty() ? fs::path("a.out") : fs::path(out_file_name.getValue()),
         .no_prelude = no_prelude,
         .skip_transformations = skip_transformations,
         .machine = std::ref(*machine)

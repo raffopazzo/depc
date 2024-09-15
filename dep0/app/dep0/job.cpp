@@ -62,6 +62,8 @@ int run(job_t const& job)
         },
         [] (job_t::emit_llvm_t const& job)
         {
+            if (job.out_file_name and job.input_files.size() > 1)
+                return failure("cannot have multiple input files with a single output file name");
             llvm::LLVMContext llvm_context;
             auto const pipeline =
                 build_pipeline(
@@ -80,7 +82,7 @@ int run(job_t const& job)
                 if (auto result = pipeline.run(f))
                 {
                     std::error_code ec;
-                    auto const output_file = append_extension(f, ".ll");
+                    auto const output_file = job.out_file_name ? *job.out_file_name : append_extension(f, ".ll");
                     auto out = llvm::ToolOutputFile(output_file.native(), ec, llvm::sys::fs::OF_Text);
                     if (ec)
                         return failure(f, "error opening output file");
@@ -95,6 +97,8 @@ int run(job_t const& job)
         },
         [] (job_t::compile_only_t const& job)
         {
+            if (job.out_file_name and job.input_files.size() > 1)
+                return failure("cannot have multiple input files with a single output file name");
             llvm::LLVMContext llvm_context;
             auto const pipeline =
                 build_pipeline(
@@ -116,7 +120,10 @@ int run(job_t const& job)
             for (auto const& f: job.input_files)
                 if (auto obj = pipeline.run(f))
                 {
-                    auto const dest = append_extension(f, job.file_type == llvm::CGFT_AssemblyFile ? ".s" : ".o");
+                    auto const dest =
+                        job.out_file_name
+                        ? *job.out_file_name
+                        : append_extension(f, job.file_type == llvm::CGFT_AssemblyFile ? ".s" : ".o");
                     if (auto const rename = obj->rename_and_keep(dest); not rename)
                         return failure(f, rename.error());
                 }

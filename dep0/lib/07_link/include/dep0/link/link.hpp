@@ -15,7 +15,7 @@ namespace dep0::link {
  * return a temporary file object associated with it.
  *
  * @param object_files
- *      The names of all object files to link together.
+ *      The paths to all object files to link together.
  *
  * @param target
  *      The cpu-vendor-platform triple of the machine on which the executable will be run.

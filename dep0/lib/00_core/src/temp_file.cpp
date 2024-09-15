@@ -3,6 +3,7 @@
 #include <boost/lexical_cast.hpp>
 
 #include <chrono>
+#include <cstring>
 #include <thread>
 
 namespace fs = std::filesystem;
@@ -102,7 +103,7 @@ expected<std::true_type> temp_file_t::rename_and_keep(fs::path new_path)
     {
         remove_file_silent(new_path);
         std::ostringstream err;
-        err << "Error opening output file " << new_path;
+        err << "Error opening output file " << new_path << ": " << std::strerror(errno);
         return dep0::error_t(err.str());
     }
 }
@@ -126,7 +127,7 @@ expected<temp_file_t> make_temp_file(temp_file_open_mode_t const open_mode)
     else
     {
         std::ostringstream err;
-        err << "Error opening temp file " << path;
+        err << "Error opening temp file " << path << ": " << std::strerror(errno);
         return dep0::error_t(err.str());
     }
 }

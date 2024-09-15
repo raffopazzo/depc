@@ -127,9 +127,7 @@ int main(int argc, char** argv)
     if (input_files.empty())
         return failure("no input files");
 
-    std::vector<std::filesystem::path> input_file_paths;
-    for (auto const& f: input_files)
-        input_file_paths.push_back(f);
+    auto const input_file_paths = std::vector<std::filesystem::path>(input_files.begin(), input_files.end());
 
     if (typecheck_only)
         return print_ast

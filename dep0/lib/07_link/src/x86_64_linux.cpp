@@ -36,7 +36,7 @@ expected<temp_file_t> link(std::vector<std::filesystem::path> const& object_file
         err << "linker command failed: ";
         err << '`' << ld;
         for (auto const& x: args)
-            err << ' ' << std::quoted(x, '"', '\\');
+            err << ' ' << std::quoted(x);
         err << '`';
         return error_t(err.str());
     }

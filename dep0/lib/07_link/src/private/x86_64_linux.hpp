@@ -4,7 +4,6 @@
 #include "dep0/temp_file.hpp"
 
 #include <filesystem>
-#include <type_traits>
 #include <vector>
 
 namespace dep0::link::x86_64_linux {

@@ -38,8 +38,7 @@ dep0::expected<dep0::typecheck::module_t> typecheck_pipeline_t::run(std::filesys
     auto result = dep0::typecheck::check(*env, *module);
     if (not result)
         return dep0::error_t("typechecking failed", {std::move(result.error())});
-    else
-        return std::move(*result);
+    return result;
 }
 
 // transform stage

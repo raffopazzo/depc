@@ -8,7 +8,6 @@ add_library(dep0_typecheck_lib
   include/dep0/typecheck/context.hpp
   include/dep0/typecheck/derivation.hpp
   include/dep0/typecheck/environment.hpp
-  include/dep0/typecheck/error.hpp
   include/dep0/typecheck/is_impossible.hpp
   include/dep0/typecheck/is_mutable.hpp
   include/dep0/typecheck/list_initialization.hpp
@@ -47,7 +46,6 @@ add_library(dep0_typecheck_lib
   src/derivation_rules.cpp
   src/drop_unreachable_stmts.cpp
   src/environment.cpp
-  src/error.cpp
   src/is_impossible.cpp
   src/is_mutable.cpp
   src/is_terminator.cpp

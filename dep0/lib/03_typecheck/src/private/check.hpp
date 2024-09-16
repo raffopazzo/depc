@@ -10,9 +10,10 @@
 
 #include "dep0/typecheck/context.hpp"
 #include "dep0/typecheck/environment.hpp"
-#include "dep0/typecheck/error.hpp"
 
 #include "dep0/parser/ast.hpp"
+
+#include "dep0/error.hpp"
 
 #include <optional>
 #include <vector>

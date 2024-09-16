@@ -2,9 +2,10 @@
 
 #include "dep0/typecheck/ast.hpp"
 #include "dep0/typecheck/environment.hpp"
-#include "dep0/typecheck/error.hpp"
 
 #include "dep0/parser/ast.hpp"
+
+#include "dep0/error.hpp"
 
 namespace dep0::typecheck {
 

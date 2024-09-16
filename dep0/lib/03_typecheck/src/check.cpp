@@ -73,7 +73,7 @@ expected<module_t> check(env_t const& base_env, parser::module_t const& x) noexc
             auto const loc = match(*p, [] (auto const& x) { return x.properties.origin; });
             reasons.push_back(dep0::error_t("function has been declared but not defined", loc));
         }
-        return error_t::from_error(dep0::error_t("module is not valid", std::nullopt, std::move(reasons)));
+        return error_t("module is not valid", std::nullopt, std::move(reasons));
     }
     return make_legal_module(std::move(*entries));
 }
@@ -87,16 +87,13 @@ expected<type_def_t> check_type_def(env_t& env, parser::type_def_t const& type_d
         [&] (parser::type_def_t::integer_t const& x) -> expected<type_def_t>
         {
             if (x.max_abs_value and *x.max_abs_value > cpp_int_max(x.sign, x.width))
-                return error_t::from_error(
-                    dep0::error_t(
-                        "upper/lower bounds do not fit inside bit width",
-                        type_def.properties));
+                return error_t("upper/lower bounds do not fit inside bit width", type_def.properties);
             auto const result =
                 make_legal_type_def(
                     type_def.properties,
                     type_def_t::integer_t{x.name, x.sign, x.width, x.max_abs_value});
             if (auto ok = env.try_emplace(expr_t::global_t{std::nullopt, x.name}, result); not ok)
-                return error_t::from_error(std::move(ok.error()));
+                return std::move(ok.error());
             return result;
         });
 }
@@ -115,7 +112,7 @@ expected<axiom_t> check_axiom(env_t& env, parser::axiom_t const& axiom)
         return std::move(pi_type.error());
     auto result = make_legal_axiom(axiom.properties, *pi_type, axiom.name, std::get<expr_t::pi_t>(pi_type->value));
     if (auto ok = env.try_emplace(expr_t::global_t{std::nullopt, axiom.name}, result); not ok)
-        return error_t::from_error(std::move(ok.error()));
+        return std::move(ok.error());
     return result;
 }
 
@@ -123,7 +120,7 @@ expected<extern_decl_t> check_extern_decl(env_t& env, parser::extern_decl_t cons
 {
     ctx_t ctx;
     if (auto ok = is_c_func_type(decl.signature, decl.properties); not ok)
-        return error_t::from_error(std::move(ok.error()));
+        return std::move(ok.error());
     auto pi_type =
         check_pi_type(
             env, ctx, decl.properties,
@@ -134,7 +131,7 @@ expected<extern_decl_t> check_extern_decl(env_t& env, parser::extern_decl_t cons
         return std::move(pi_type.error());
     auto result = make_legal_extern_decl(decl.properties, *pi_type, decl.name, std::get<expr_t::pi_t>(pi_type->value));
     if (auto ok = env.try_emplace(expr_t::global_t{std::nullopt, decl.name}, result); not ok)
-        return error_t::from_error(std::move(ok.error()));
+        return std::move(ok.error());
     return result;
 }
 
@@ -151,7 +148,7 @@ expected<func_decl_t> check_func_decl(env_t& env, parser::func_decl_t const& dec
         return std::move(pi_type.error());
     auto result = make_legal_func_decl(decl.properties, *pi_type, decl.name, std::get<expr_t::pi_t>(pi_type->value));
     if (auto ok = env.try_emplace(expr_t::global_t{std::nullopt, decl.name}, result); not ok)
-        return error_t::from_error(std::move(ok.error()));
+        return std::move(ok.error());
     return result;
 }
 
@@ -169,7 +166,7 @@ expected<func_def_t> check_func_def(env_t& env, parser::func_def_t const& f)
             f.name,
             std::move(std::get<expr_t::abs_t>(abs->value)));
     if (auto ok = env.try_emplace(expr_t::global_t{std::nullopt, f.name}, result); not ok)
-        return error_t::from_error(std::move(ok.error()));
+        return std::move(ok.error());
     return result;
 }
 
@@ -185,13 +182,12 @@ expected<expr_t> check_type(env_t const& env, ctx_t const& ctx, parser::expr_t c
     auto as_kind = check_expr(env, ctx, type, kind_t{}, immutable, usage, ast::qty_t::zero);
     if (as_kind)
         return as_kind;
-    return error_t::from_error(
-        dep0::error_t(
-            "expression is neither a type nor a kind",
-            type.properties,
-            as_type.error() == as_kind.error() // please don't print stupid duplicate error messages...
-                ? std::vector<dep0::error_t>{std::move(as_type.error())}
-                : std::vector<dep0::error_t>{std::move(as_type.error()), std::move(as_kind.error())}));
+    return error_t(
+        "expression is neither a type nor a kind",
+        type.properties,
+        as_type.error() == as_kind.error() // please don't print stupid duplicate error messages...
+            ? std::vector<dep0::error_t>{std::move(as_type.error())}
+            : std::vector<dep0::error_t>{std::move(as_type.error()), std::move(as_kind.error())});
 }
 
 expected<body_t>
@@ -325,7 +321,7 @@ check_stmt(
                 {
                     std::ostringstream err;
                     pretty_print(err << "expecting expression of type `", state.goal) << '`';
-                    return error_t::from_error(dep0::error_t(err.str(), loc), env, state.context, state.goal);
+                    return error_t(err.str(), loc);
                 }
             }
             else if (auto expr = check_expr(env, state.context, *x.expr, state.goal, is_mutable, usage, usage_multiplier))
@@ -341,7 +337,7 @@ check_stmt(
                 for (auto const& v: ctx.vars())
                     if (is_beta_delta_equivalent(env, ctx, ctx[v]->value.type, false_type))
                         return make_legal_stmt(stmt_t::impossible_t{std::move(reason)});
-                return error_t::from_error(dep0::error_t("proof of false not found", loc), env, ctx, state.goal);
+                return error_t("proof of false not found", loc);
             };
             if (x.reason)
             {
@@ -367,10 +363,6 @@ check_numeric_expr(
     source_loc_t const& loc,
     expr_t const& expected_type)
 {
-    auto const error = [&] (std::string msg) -> expected<expr_t>
-    {
-        return error_t::from_error(dep0::error_t(std::move(msg), loc), env, ctx, expected_type);
-    };
     auto const check_int = [&] (
         std::string_view const type_name,
         boost::multiprecision::cpp_int const& min_value,
@@ -381,7 +373,7 @@ check_numeric_expr(
         {
             std::ostringstream err;
             err << "numeric constant does not fit inside `" << type_name << '`';
-            return error(err.str());
+            return error_t(err.str(), loc);
         }
         return make_legal_expr(expected_type, expr_t::numeric_constant_t{x.value});
     };
@@ -399,7 +391,7 @@ check_numeric_expr(
         {
             std::ostringstream err;
             pretty_print<properties_t>(err << "type mismatch between numeric constant and `", var) << '`';
-            return error(err.str());
+            return error_t(err.str(), loc);
         },
         [&] (expr_t::global_t const& global) -> expected<expr_t>
         {
@@ -428,32 +420,32 @@ check_numeric_expr(
                 {
                     std::ostringstream err;
                     err << "type mismatch between numeric constant and `" << axiom.name << '`';
-                    return error(err.str());
+                    return error_t(err.str(), loc);
                 },
                 [&] (extern_decl_t const& extern_decl) -> expected<expr_t>
                 {
                     std::ostringstream err;
                     err << "type mismatch between numeric constant and `" << extern_decl.name << '`';
-                    return error(err.str());
+                    return error_t(err.str(), loc);
                 },
                 [&] (func_decl_t const& func_decl) -> expected<expr_t>
                 {
                     std::ostringstream err;
                     err << "type mismatch between numeric constant and `" << func_decl.name << '`';
-                    return error(err.str());
+                    return error_t(err.str(), loc);
                 },
                 [&] (func_def_t const& func_def) -> expected<expr_t>
                 {
                     std::ostringstream err;
                     err << "type mismatch between numeric constant and `" << func_def.name << '`';
-                    return error(err.str());
+                    return error_t(err.str(), loc);
                 });
         },
-        [&] (auto const& x)
+        [&] (auto const& x) -> expected<expr_t>
         {
             std::ostringstream err;
             pretty_print<properties_t>(err << "type mismatch between numeric constant and `", x) << '`';
-            return error(err.str());
+            return error_t(err.str(), loc);
         });
 }
 
@@ -473,9 +465,7 @@ check_expr(
         std::ostringstream err;
         pretty_print(err << "type mismatch between expression of type `", actual_type) << '`';
         pretty_print(err << " and expected type `", expected_type) << '`';
-        return error_t::from_error(
-            dep0::error_t(err.str(), loc, std::vector{std::move(reason)}),
-            env, ctx, expected_type);
+        return dep0::error_t(err.str(), loc, std::vector{std::move(reason)});
     };
     // some expressions cannot be type-assigned without an expected type, so we have to add a special case;
     // for all other expressions we can type-assign and check that the assigned type is what we expect
@@ -493,14 +483,14 @@ check_expr(
                     {
                         std::ostringstream err;
                         pretty_print(err << "could not find a value of type `", expected_type) << '`';
-                        return error_t::from_error(dep0::error_t(err.str(), loc), env, ctx, expected_type);
+                        return error_t(err.str(), loc);
                     }
                 },
                 [&] (kind_t) -> expected<expr_t>
                 {
                     std::ostringstream err;
                     pretty_print(err << "type mismatch between auto-expression and `", kind_t{}) << '`';
-                    return error_t::from_error(dep0::error_t(err.str(), loc), env, ctx, expected_type);
+                    return error_t(err.str(), loc);
                 });
         },
         [&] (parser::expr_t::numeric_constant_t const& x) -> expected<expr_t>
@@ -516,7 +506,7 @@ check_expr(
                 {
                     std::ostringstream err;
                     pretty_print(err << "type mismatch between numeric constant and `", kind_t{}) << '`';
-                    return error_t::from_error(dep0::error_t(err.str(), loc), env, ctx, expected_type);
+                    return error_t(err.str(), loc);
                 });
         },
         [&] (parser::expr_t::arith_expr_t const& x) -> expected<expr_t>
@@ -550,7 +540,7 @@ check_expr(
                         {
                             std::ostringstream err;
                             pretty_print(err << "type mismatch between initializer list and `", expected_type) << '`';
-                            return error_t::from_error(dep0::error_t(err.str(), loc), env, ctx, expected_type);
+                            return error_t(err.str(), loc);
                         },
                         [&] (is_list_initializable_result::unit_t) -> expected<expr_t>
                         {
@@ -558,7 +548,7 @@ check_expr(
                             {
                                 std::ostringstream err;
                                 pretty_print(err << "initializer list for `", expected_type) << "` must be empty";
-                                return error_t::from_error(dep0::error_t(err.str(), loc), env, ctx, expected_type);
+                                return error_t(err.str(), loc);
                             }
                             return make_legal_expr(expected_type, expr_t::init_list_t{});
                         },
@@ -568,7 +558,7 @@ check_expr(
                             {
                                 std::ostringstream err;
                                 pretty_print(err << "initializer list for `", expected_type) << "` must be empty";
-                                return error_t::from_error(dep0::error_t(err.str(), loc), env, ctx, expected_type);
+                                return error_t(err.str(), loc);
                             }
                             return make_legal_expr(expected_type, expr_t::init_list_t{});
                         },
@@ -581,7 +571,7 @@ check_expr(
                                 pretty_print<properties_t>(
                                     err << " has " << list.values.size() << " elements but was expecting ",
                                     array.size);
-                                return error_t::from_error(dep0::error_t(err.str(), loc), env, ctx, expected_type);
+                                return error_t(err.str(), loc);
                             }
                             auto values =
                                 fmap_or_error(
@@ -600,7 +590,7 @@ check_expr(
                 {
                     std::ostringstream err;
                     pretty_print(err << "type mismatch between initializer list and `", kind_t{}) << '`';
-                    return error_t::from_error(dep0::error_t(err.str(), loc), env, ctx, expected_type);
+                    return error_t(err.str(), loc);
                 });
         },
         [&] (parser::expr_t::because_t const& x) -> expected<expr_t>
@@ -650,18 +640,17 @@ expected<expr_t> check_pi_type(
                     pretty_print<properties_t>(err << "cannot typecheck function argument `", *var) << '`';
                 else
                     err << "cannot typecheck function argument at index " << arg_index;
-                return error_t::from_error(dep0::error_t(err.str(), loc, {std::move(type.error())}));
+                return error_t(err.str(), loc, {std::move(type.error())});
             }
             if (auto ok = ctx.try_emplace(var, arg_loc, ctx_t::var_decl_t{arg.qty, *type}); not ok)
-                return error_t::from_error(std::move(ok.error()));
+                return std::move(ok.error());
             return make_legal_func_arg(arg.qty, std::move(*type), std::move(var));
         });
     if (not args)
         return std::move(args.error());
     auto const ret_type = check_type(env, ctx, parser_ret_type);
     if (not ret_type)
-        return error_t::from_error(
-            dep0::error_t("cannot typecheck function return type", loc, {std::move(ret_type.error())}));
+        return dep0::error_t("cannot typecheck function return type", loc, {std::move(ret_type.error())});
     return make_legal_expr(
         ret_type->properties.sort.get(),
         expr_t::pi_t{is_mutable, std::move(*args), *ret_type});

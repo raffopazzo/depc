@@ -1,0 +1,49 @@
+// Calling extern functions is posssible but potentially leading to undefined behaviour.
+// In this example, any call to `printf` must include exactly one '%s' in the format string.
+// This is only because we declared `printf` with two cstr_t arguments;
+// if we declared `printf(cstr_t)` the format string could not contain any '%s' at all
+// or else the programme would trigger undefined behaviour.
+extern puts(cstr_t) -> i32_t;
+extern printf(cstr_t, cstr_t) -> i32_t;
+
+// This function can only be invoked if `players` contains at least 2 elements.
+// Arguments marked `0` are erased at runtime, so really this is a function of only one argument: `players`.
+// Erased arguments can be used for compile-time reasoning, in this case to prove that there are at least 2 players.
+cstr_t play_game(0 u64_t n, 0 true_t(n >= 2), array_t(cstr_t, n) players)
+{
+    // When accessing array elements, the compiler requires a proof that the index is in bounds.
+    // In this example the compiler needs a proof that `0 < n`.
+    // Currently all we know is that `n >= 2` by the second argument to this function.
+    // But we can prove that `0 < n` by the transitive property of inequalities for u64_t values.
+    // This property is available from the prelude module.
+    // Symbols exported by modules can be accessed via the double-colon qualifier, eg `my_module::my_function`.
+    // The prelude module is automatically imported with an empty module name.
+    // So `::lt_trans_u64` refers to a function from the prelude module.
+    // Its type is `(u64_t a, u64_t b, u64_t c, true_t(a < b), true_t(b < c)) -> true_t(a < c)` meaning that
+    // given three u64_t values `a`, `b` and `c` with `a < b` and `b < c` it follows that `a < c`.
+    // This function takes five arguments but we don't necessarily have to supply them all.
+    // In this case once we pass the first three, the remaining two can be automatically filled in by the compiler.
+    // The keyword `auto` when used as an expression tells the compiler to find a value of the suitable type.
+    return players[0] because ::lt_trans_u64(0, 1, n, auto, auto);
+}
+
+// Even an empty programme uses dependent types, since the length of `argv` depends on the value of `argc`.
+// Also, in this example we are invoking extern functions that might (in this case will) have side-effects and
+// mutate the global state of the programme, so our main function must be marked `mutable`.
+i32_t main(u64_t argc, array_t(cstr_t, argc) argv) mutable
+{
+    if (argc < 2)
+    {
+        puts("you need at least 2 players for this game");
+        return 1;
+    }
+    // If the programme execution reaches this line of code, it means that `argc >= 2`.
+    // This is exactly what we need in order to invoke `play_game`.
+    // Like before, the keyword `auto` is used to tell the compiler to find a value of type `true_t(argc >= 2)`.
+    // This can only be done because at this point of the programme execution we know that `argc >= 2`.
+    // If the same expression appeared above the `if` statement (or inside the true branch),
+    // the compiler would not be able to find any such value, because that fact cannot be proved.
+    printf("the winner is: %s\n", play_game(argc, auto, argv));
+    puts("Bye!");
+    return 0;
+}

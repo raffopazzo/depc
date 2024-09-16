@@ -1,4 +1,5 @@
 find_package(Boost 1.76.0 REQUIRED)
+find_package(LLVM REQUIRED)
 
 add_subdirectory(app/dep0)
 
@@ -9,4 +10,6 @@ add_subdirectory(lib/02_parser)
 add_subdirectory(lib/03_typecheck)
 add_subdirectory(lib/04_transform)
 add_subdirectory(lib/05_llvmgen)
+add_subdirectory(lib/06_compile)
+add_subdirectory(lib/07_link)
 add_subdirectory(lib/99_testing)

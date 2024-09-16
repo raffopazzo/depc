@@ -2,9 +2,10 @@
 
 #include "dep0/typecheck/ast.hpp"
 #include "dep0/typecheck/context.hpp"
-#include "dep0/typecheck/error.hpp"
 
 #include "dep0/scope_map.hpp"
+
+#include "dep0/error.hpp"
 
 #include <functional>
 

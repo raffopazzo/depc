@@ -1,9 +1,9 @@
 #pragma ocne
 
 #include "dep0/typecheck/ast.hpp"
-#include "dep0/typecheck/error.hpp"
-
 #include "dep0/testing/ast_predicates.hpp"
+
+#include "dep0/error.hpp"
 
 #include <boost/test/tools/assertion_result.hpp>
 
@@ -18,7 +18,7 @@ struct TypecheckTestsFixture
     std::filesystem::path testfiles = std::getenv("DEP0_TESTFILES_DIR");
 
     std::optional<dep0::typecheck::module_t> pass_result;
-    std::optional<dep0::typecheck::error_t> fail_result;
+    std::optional<dep0::error_t> fail_result;
 
     boost::test_tools::predicate_result pass(std::filesystem::path);
     boost::test_tools::predicate_result fail(std::filesystem::path);

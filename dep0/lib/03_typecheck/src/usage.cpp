@@ -70,7 +70,7 @@ usage_t::try_add(
             lookup.decl.qty == zero ? "variable cannot be used at run-time"
             : old_qty == zero ? "cannot use linear variable in non-linear context"
             : "variable has already been used once";
-        return error_t::from_error(dep0::error_t(msg, loc));
+        return dep0::error_t(msg, loc);
     }
     else
     {
@@ -154,7 +154,7 @@ expected<std::true_type> usage_t::try_add(ctx_t const& ctx, expr_t const& expr, 
             {
                 std::ostringstream err;
                 pretty_print<properties_t>(err << "unknown variable `", v) << "` when adding usages";
-                return error_t::from_error(dep0::error_t(err.str()));
+                return dep0::error_t(err.str());
             }
         },
         [&] (expr_t::global_t const&) { return ok(); },
@@ -169,7 +169,7 @@ expected<std::true_type> usage_t::try_add(ctx_t const& ctx, expr_t const& expr, 
         [] (expr_t::abs_t const& x) -> expected<std::true_type>
         {
             // TODO look inside the body
-            return error_t::from_error(dep0::error_t("adding usages of abs_t not yet implemented"));
+            return dep0::error_t("adding usages of abs_t not yet implemented");
         },
         [&] (expr_t::pi_t const&) { return ok(); }, // types never really use anything
         [&] (expr_t::array_t const&) { return ok(); },
@@ -210,7 +210,7 @@ expected<std::true_type> usage_t::try_add(ctx_t const& ctx, usage_t const& that)
         {
             std::ostringstream err;
             pretty_print<properties_t>(err << "unknown variable `", var) << "` when adding usages";
-            return error_t::from_error(dep0::error_t(err.str()));
+            return dep0::error_t(err.str());
         }
     rollback.set_active(false);
     return {};

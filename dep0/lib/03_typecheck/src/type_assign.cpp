@@ -75,7 +75,7 @@ type_assign(
     {
         auto const def = env[global];
         if (not def)
-            return error_t::from_error(dep0::error_t("global symbol not found", loc));
+            return dep0::error_t("global symbol not found", loc);
         return match(
             *def,
             [&] (type_def_t const&) -> expected<expr_t>
@@ -85,7 +85,7 @@ type_assign(
             [&] (axiom_t const& x) -> expected<expr_t>
             {
                 if (usage_multiplier > ast::qty_t::zero)
-                    return error_t::from_error(dep0::error_t("axiom cannot be used at run-time", loc));
+                    return dep0::error_t("axiom cannot be used at run-time", loc);
                 return make_legal_expr(x.properties.sort.get(), std::move(global));
             },
             [&] (extern_decl_t const& x) -> expected<expr_t>
@@ -107,7 +107,7 @@ type_assign(
         [] (parser::expr_t::true_t) -> expected<expr_t> { return derivation_rules::make_true_t(); },
         [&] (parser::expr_t::auto_t) -> expected<expr_t>
         {
-            return error_t::from_error(dep0::error_t("auto expressions have no unique type", loc));
+            return dep0::error_t("auto expressions have no unique type", loc);
         },
         [] (parser::expr_t::bool_t) -> expected<expr_t> { return derivation_rules::make_bool(); },
         [] (parser::expr_t::cstr_t) -> expected<expr_t> { return derivation_rules::make_cstr(); },
@@ -126,7 +126,7 @@ type_assign(
         },
         [&] (parser::expr_t::numeric_constant_t const& x) -> expected<expr_t>
         {
-            return error_t::from_error(dep0::error_t("numeric constants have no unique type", loc));
+            return dep0::error_t("numeric constants have no unique type", loc);
         },
         [&] (parser::expr_t::string_literal_t const& x) -> expected<expr_t>
         {
@@ -253,13 +253,13 @@ type_assign(
                                             std::move(*rhs)}};
                                 })(boost::hana::type_c<T>));
                     else if (lhs.has_error() xor rhs.has_error()) // if only 1 error, just forward that one
-                        return error_t::from_error(std::move(lhs.has_error() ? lhs.error() : rhs.error()));
+                        return std::move(lhs.has_error() ? lhs.error() : rhs.error());
                     else if (lhs.error() == rhs.error()) // ...or if the error message is the same
-                        return error_t::from_error(std::move(lhs.error()));
+                        return std::move(lhs.error());
                     else
-                        return error_t::from_error(dep0::error_t(
+                        return dep0::error_t(
                             "relation expression cannot be assigned a type",
-                            loc, {std::move(lhs.error()), std::move(rhs.error())}));
+                            loc, {std::move(lhs.error()), std::move(rhs.error())});
                 });
         },
         [&] (parser::expr_t::arith_expr_t const& x) -> expected<expr_t>
@@ -282,13 +282,13 @@ type_assign(
                                     std::move(*rhs)}});
                     }
                     else if (lhs.has_error() xor rhs.has_error()) // if only 1 error, just forward that one
-                        return error_t::from_error(std::move(lhs.has_error() ? lhs.error() : rhs.error()));
+                        return std::move(lhs.has_error() ? lhs.error() : rhs.error());
                     else if (lhs.error() == rhs.error()) // ...or if the error message is the same
-                        return error_t::from_error(std::move(lhs.error()));
+                        return std::move(lhs.error());
                     else
-                        return error_t::from_error(dep0::error_t(
+                        return dep0::error_t(
                             "arithmetic expression cannot be assigned a type",
-                            loc, {std::move(lhs.error()), std::move(rhs.error())}));
+                            loc, {std::move(lhs.error()), std::move(rhs.error())});
                 });
         },
         [&] (parser::expr_t::var_t const& x) -> expected<expr_t>
@@ -302,7 +302,7 @@ type_assign(
             if (auto const global = expr_t::global_t{std::nullopt, x.name}; env[global])
                 return type_assign_global(global);
             else
-                return error_t::from_error(dep0::error_t("unknown variable", loc));
+                return dep0::error_t("unknown variable", loc);
         },
         [&] (parser::expr_t::global_t const& global) -> expected<expr_t>
         {
@@ -327,7 +327,7 @@ type_assign(
         },
         [&] (parser::expr_t::init_list_t const& init_list) -> expected<expr_t>
         {
-            return error_t::from_error(dep0::error_t("initializer lists have no unique type", loc));
+            return dep0::error_t("initializer lists have no unique type", loc);
         },
         [&] (parser::expr_t::subscript_t const& subscript) -> expected<expr_t>
         {
@@ -355,7 +355,7 @@ type_assign(
                     {
                         std::ostringstream err;
                         pretty_print(err << "cannot index into non-array expression of type `", t) << '`';
-                        return error_t::from_error(dep0::error_t(err.str(), loc));
+                        return dep0::error_t(err.str(), loc);
                     }
                     auto index =
                         check_expr(
@@ -383,14 +383,14 @@ type_assign(
                         std::ostringstream err;
                         pretty_print(err << "cannot verify that array index `", *index) << '`';
                         pretty_print(err << " is within bounds `", app->args.at(1ul)) << '`';
-                        return error_t::from_error(dep0::error_t(err.str(), loc));
+                        return dep0::error_t(err.str(), loc);
                     }
                 },
                 [&] (kind_t) -> expected<expr_t>
                 {
                     std::ostringstream err;
                     pretty_print(err << "cannot index into expression of sort `", kind_t{}) << '`';
-                    return error_t::from_error(dep0::error_t(err.str(), loc));
+                    return dep0::error_t(err.str(), loc);
                 });
         },
         [&] (parser::expr_t::because_t const& x) -> expected<expr_t>
@@ -420,10 +420,6 @@ type_assign_app(
     usage_t& usage,
     ast::qty_t const usage_multiplier)
 {
-    auto const error = [&] (std::string msg)
-    {
-        return error_t::from_error(dep0::error_t(std::move(msg), loc));
-    };
     auto func = type_assign(env, ctx, app.func.get(), is_mutable_allowed, usage, usage_multiplier);
     if (not func)
         return std::move(func.error());
@@ -437,7 +433,7 @@ type_assign_app(
         }
         std::ostringstream err;
         pretty_print(err << "cannot invoke expression of type `", func->properties.sort.get()) << '`';
-        return error(err.str());
+        return dep0::error_t(err.str(), loc);
     }();
     if (not func_type)
         return std::move(func_type.error());
@@ -445,10 +441,10 @@ type_assign_app(
     {
         std::ostringstream err;
         err << "passed " << app.args.size() << " arguments but was expecting " << func_type->args.size();
-        return error(err.str());
+        return dep0::error_t(err.str(), loc);
     }
     if (func_type->is_mutable == ast::is_mutable_t::yes and is_mutable_allowed == ast::is_mutable_t::no)
-        return error("cannot invoke mutable function inside immutable context");
+        return dep0::error_t("cannot invoke mutable function inside immutable context", loc);
     std::vector<expr_t> args;
     for (auto const i: std::views::iota(0ul, func_type->args.size()))
     {
@@ -503,7 +499,7 @@ expected<expr_t> type_assign_abs(
                 expr_t::global_t{std::nullopt, *name},
                 make_legal_func_decl(location, *func_type, *name, std::get<expr_t::pi_t>(func_type->value)));
         if (not ok)
-            return error_t::from_error(std::move(ok.error()));
+            return std::move(ok.error());
     }
     auto [is_mutable, arg_types, ret_type] = std::get<expr_t::pi_t>(func_type->value);
     auto body = check_body(f_env, proof_state_t(f_ctx, ret_type.get()), f.body, is_mutable, usage, usage_multiplier);
@@ -519,7 +515,7 @@ expected<expr_t> type_assign_abs(
             if (name)
                 err << "in function `" << *name << "` ";
             err << "missing return statement";
-            return error_t::from_error(dep0::error_t(err.str(), location));
+            return dep0::error_t(err.str(), location);
         }
     }
     return make_legal_expr(

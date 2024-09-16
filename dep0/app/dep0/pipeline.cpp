@@ -1,11 +1,11 @@
 #include "pipeline.hpp"
 
+#include "dep0/compile/compile.hpp"
 #include "dep0/llvmgen/gen.hpp"
 #include "dep0/parser/parse.hpp"
 #include "dep0/typecheck/check.hpp"
-#include "dep0/transform/run.hpp"
 #include "dep0/transform/beta_delta_normalization.hpp"
-#include "dep0/compile/compile.hpp"
+#include "dep0/transform/run.hpp"
 
 // parser stage
 parser_pipeline_t::pipeline_t(parser_stage_t)

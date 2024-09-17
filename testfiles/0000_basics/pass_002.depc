@@ -1,11 +1,11 @@
-unit_t foo()
+func foo() -> unit_t
 {
 }
-unit_t bar()
+func bar() -> unit_t
 {
     return;
 }
-i32_t main()
+func main() -> i32_t
 {
     return 0;
 }

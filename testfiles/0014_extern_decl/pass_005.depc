@@ -1,8 +1,8 @@
 extern rand() -> i32_t;
 
-i32_t sum(i32_t x, i32_t y) { return x+y; }
+func sum(i32_t x, i32_t y) -> i32_t { return x+y; }
 
-i32_t f() mutable
+func f() mutable -> i32_t
 {
     sum(rand(), rand());
     return 0;

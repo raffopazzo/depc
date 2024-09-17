@@ -1,9 +1,9 @@
-i32_t f(u64_t i, u64_t n, 0 true_t(i < n), array_t(i32_t, n) xs)
+func f(u64_t i, u64_t n, 0 true_t(i < n), array_t(i32_t, n) xs) -> i32_t
 {
     return xs[i];
 }
 
-i32_t g(u64_t n, array_t(i32_t, n) xs)
+func g(u64_t n, array_t(i32_t, n) xs) -> i32_t
 {
     if (0 < n)
         return f(0, n, auto, xs);

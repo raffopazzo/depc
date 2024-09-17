@@ -1,9 +1,9 @@
-i32_t f(bool a, bool b, 0 true_t(a and b))
+func f(bool_t a, bool_t b, 0 true_t(a and b)) -> i32_t
 {
     return 1;
 }
 
-i32_t g(bool a, bool b)
+func g(bool_t a, bool_t b) -> i32_t
 {
     if (a)
         if(b)

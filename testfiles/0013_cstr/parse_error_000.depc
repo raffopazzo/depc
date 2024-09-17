@@ -1,4 +1,4 @@
-cstr_t f()
+func f() -> cstr_t
 {
     return "hello" "world"; // parse error: unescaped quotes are eager
 }

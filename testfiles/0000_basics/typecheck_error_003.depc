@@ -1,1 +1,1 @@
-bool no() { return 0; }
+func no() -> bool_t { return 0; }

@@ -1,1 +1,1 @@
-i16_t f() { return 33767; }
+func f() -> i16_t { return 33767; }

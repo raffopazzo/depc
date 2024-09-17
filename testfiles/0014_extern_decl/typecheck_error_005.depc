@@ -1,6 +1,6 @@
-i32_t rand() mutable;
+func rand() mutable -> i32_t;
 
-i32_t rand() // typecheck error: prevoiusly declared mutable
+func rand() -> i32_t // typecheck error: prevoiusly declared mutable
 {
     return 0;
 }

@@ -1,4 +1,4 @@
-auto values() -> array_t(i32_t, 1+1)
+func values() -> array_t(i32_t, 1+1)
 {
     return {1,2};
 }

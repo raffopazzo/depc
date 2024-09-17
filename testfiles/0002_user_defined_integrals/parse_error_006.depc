@@ -1,3 +1,3 @@
 // parse error: lower and upper bound of signed integer must have the same absolute value
 typedef signal_t = signed 8 bit integer from -0 to 15;
-signal_t f() { return 0; }
+func f() -> signal_t { return 0; }

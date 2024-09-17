@@ -1,13 +1,13 @@
-auto type_id(typename t) -> typename
+func type_id(typename t) -> typename
 {
     return t;
 }
 
-auto f() -> type_id(unit_t)
+func f() -> type_id(unit_t)
 {
 }
 
-auto g() -> type_id(unit_t)
+func g() -> type_id(unit_t)
 {
     return;
 }

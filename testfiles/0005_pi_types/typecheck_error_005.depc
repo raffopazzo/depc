@@ -1,4 +1,4 @@
-auto f(i32_t t, typename t) -> i32_t // typecheck error: cannot redefine t
+func f(i32_t t, typename t) -> i32_t // typecheck error: cannot redefine t
 {
     return t;
 }

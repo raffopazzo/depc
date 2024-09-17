@@ -1,25 +1,25 @@
-i32_t zero() { return 0; }
-i32_t f1()
+func zero() -> i32_t { return 0; }
+func f1() -> i32_t
 {
     if (true) return 0;
     else return zero();
 }
-i32_t f2()
+func f2() -> i32_t
 {
     if (true) { return 0; }
     else { return zero(); }
 }
-i32_t f3()
+func f3() -> i32_t
 {
     if (true) return 0;
     else { return zero(); }
 }
-i32_t f4()
+func f4() -> i32_t
 {
     if (true) { return 0; }
     else return zero();
 }
-i32_t main()
+func main() -> i32_t
 {
     if (true)
         if (false)

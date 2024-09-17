@@ -1,8 +1,8 @@
-i32_t f0(0 i32_t x) { return 0; }
-i32_t f1(1 i32_t x) { return x; }
-i32_t f2(  i32_t x) { return x + x; }
+func f0(0 i32_t x) -> i32_t { return 0; }
+func f1(1 i32_t x) -> i32_t { return x; }
+func f2(  i32_t x) -> i32_t { return x + x; }
 
-i32_t g(0 i32_t x, 1 i32_t y, i32_t z)
+func g(0 i32_t x, 1 i32_t y, i32_t z) -> i32_t
 {
     return
          f0(x) + // cannot call f1(x) nor f2(x)

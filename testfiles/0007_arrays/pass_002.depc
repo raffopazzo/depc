@@ -1,8 +1,8 @@
-unit_t discard(u64_t n, array_t(i32_t, n))
+func discard(u64_t n, array_t(i32_t, n)) -> unit_t
 {
 }
 
-unit_t nothing()
+func nothing() -> unit_t
 {
     return discard(0, {});
 }

@@ -1,2 +1,2 @@
 typedef signed_zero_t = signed 8 bit integer from -0 to +0;
-signed_zero_t zero() { return 0; }
+func zero() -> signed_zero_t { return 0; }

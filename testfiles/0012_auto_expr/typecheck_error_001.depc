@@ -1,6 +1,6 @@
 axiom f1() -> true_t(false);
-i32_t f2(true_t(false)) { return 0; }
-i32_t f3()
+func f2(true_t(false)) -> i32_t { return 0; }
+func f3() -> i32_t
 {
     return f2(auto); // typecheck error: axioms cannot be used at run-time
 }

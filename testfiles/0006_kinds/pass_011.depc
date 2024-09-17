@@ -1,8 +1,8 @@
-auto f(bool which) -> typename
+func f(bool_t which) -> typename
 {
     if (which) return i32_t;
-    else return bool;
+    else return bool_t;
 }
-auto g() -> (bool)->typename { return f; }
-unit_t h((bool) -> typename f, g()(true)) { }
-unit_t z() { return h(f, 0); }
+func g() -> (bool_t)->typename { return f; }
+func h((bool_t) -> typename f, g()(true)) -> unit_t { }
+func z() -> unit_t { return h(f, 0); }

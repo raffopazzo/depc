@@ -1,9 +1,9 @@
-i32_t f(bool a, 0 true_t(a))
+func f(bool_t a, 0 true_t(a)) -> i32_t
 {
     return 1;
 }
 
-i32_t g(bool a)
+func g(bool_t a) -> i32_t
 {
     // this is testing that the compiler does not get stuck trying to apply the same basic axioms recursively
     return f(a, auto);

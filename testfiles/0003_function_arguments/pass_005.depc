@@ -1,1 +1,1 @@
-bool f(bool f) { return f; }
+func f(bool_t f) -> bool_t { return f; }

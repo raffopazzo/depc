@@ -1,7 +1,7 @@
-i32_t one(bool a, 0 true_t(a)) { return 1; }
-i32_t zero(bool a, 0 true_t(not a)) { return 0; }
+func one(bool_t a, 0 true_t(a)) -> i32_t { return 1; }
+func zero(bool_t a, 0 true_t(not a)) -> i32_t { return 0; }
 
-i32_t f1(bool a)
+func f1(bool_t a) -> i32_t
 {
     if (a == true)
         return one(a, auto);
@@ -9,7 +9,7 @@ i32_t f1(bool a)
         return zero(a, auto);
 }
 
-i32_t f2(bool a)
+func f2(bool_t a) -> i32_t
 {
     if (a == false)
         return zero(a, auto);

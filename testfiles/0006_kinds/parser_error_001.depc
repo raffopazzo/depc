@@ -1,11 +1,11 @@
-auto int_or_bool(bool which) -> typename
+func int_or_bool(bool_t which) -> typename
 {
     if (which) return i32_t;
-    else return bool;
+    else return bool_t;
 }
 
 // parse error: cannot use complex return type on the left
-int_or_bool(which) zero_of(bool which)
+int_or_bool(which) zero_of(bool_t which)
 {
     if (which) return 0;
     else return false;

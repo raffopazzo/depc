@@ -1,4 +1,4 @@
-i32_t three()
+func three() -> i32_t
 {
     return 1 + 2;
 }

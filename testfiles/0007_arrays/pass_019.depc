@@ -1,4 +1,4 @@
-i32_t get(u64_t i, array_t(i32_t, 3) xs)
+func get(u64_t i, array_t(i32_t, 3) xs) -> i32_t
 {
     if (i < 3)
         return xs[i];

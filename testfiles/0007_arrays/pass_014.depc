@@ -1,20 +1,20 @@
-auto zeros() -> array_t(i32_t, 3) { return {0, 0, 0}; }
-auto passthrough() -> array_t(i32_t, 3) { return zeros(); }
-auto values(bool which) -> array_t(i32_t, 3)
+func zeros() -> array_t(i32_t, 3) { return {0, 0, 0}; }
+func passthrough() -> array_t(i32_t, 3) { return zeros(); }
+func values(bool_t which) -> array_t(i32_t, 3)
 {
     if (which)
         return zeros();
     else
         return {1,2,3};
 }
-auto select(bool which, array_t(i32_t, 3) xs) -> array_t(i32_t, 3)
+func select(bool_t which, array_t(i32_t, 3) xs) -> array_t(i32_t, 3)
 {
     if (which)
         return zeros();
     else
         return xs;
 }
-auto xs_or_ys(bool which, array_t(i32_t, 3) xs, array_t(i32_t, 3) ys) -> array_t(i32_t, 3)
+func xs_or_ys(bool_t which, array_t(i32_t, 3) xs, array_t(i32_t, 3) ys) -> array_t(i32_t, 3)
 {
     if (which)
         return xs;

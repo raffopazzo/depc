@@ -1,6 +1,6 @@
-axiom nothing_smaller_than_false(bool a, true_t(a < false)) -> true_t(false);
+axiom nothing_smaller_than_false(bool_t a, true_t(a < false)) -> true_t(false);
 
-i32_t a_lt_b_implies_b(bool a, bool b, 0 true_t(a < b))
+func a_lt_b_implies_b(bool_t a, bool_t b, 0 true_t(a < b)) -> i32_t
 {
     if (b)
         return 0;
@@ -10,13 +10,13 @@ i32_t a_lt_b_implies_b(bool a, bool b, 0 true_t(a < b))
         impossible;
 }
 
-i32_t f(bool a, bool b, 0 true_t(a < b))
+func f(bool_t a, bool_t b, 0 true_t(a < b)) -> i32_t
 {
     return a_lt_b_implies_b(a, b, auto);
 }
 
 // same but with implicit else-branches
-i32_t a_lt_b_implies_b2(bool a, bool b, 0 true_t(a < b))
+func a_lt_b_implies_b2(bool_t a, bool_t b, 0 true_t(a < b)) -> i32_t
 {
     if (b)
         return 0;
@@ -25,7 +25,7 @@ i32_t a_lt_b_implies_b2(bool a, bool b, 0 true_t(a < b))
     impossible;
 }
 
-i32_t f2(bool a, bool b, 0 true_t(a < b))
+func f2(bool_t a, bool_t b, 0 true_t(a < b)) -> i32_t
 {
     return a_lt_b_implies_b2(a, b, auto);
 }

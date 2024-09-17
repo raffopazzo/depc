@@ -1,2 +1,2 @@
 typedef hours_t = unsigned 8 bit integer from 0 to -23; // parse error: upper bound cannot be negative
-hours_t h() { return 0; }
+func h() -> hours_t { return 0; }

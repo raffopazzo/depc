@@ -1,4 +1,4 @@
-i32_t fourth(array_t(i32_t, 3) xs)
+func fourth(array_t(i32_t, 3) xs) -> i32_t
 {
     return xs[3]; // typecheck error: `3 < 3` is false
 }

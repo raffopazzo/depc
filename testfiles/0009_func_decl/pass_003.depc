@@ -1,2 +1,2 @@
-i32_t f() { return 0; }
-i32_t f(); // redeclaration is idempotent, so this is fine
+func f() -> i32_t { return 0; }
+func f() -> i32_t; // redeclaration is idempotent, so this is fine

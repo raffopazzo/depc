@@ -1,25 +1,25 @@
-auto make_type(bool a) -> typename;
+func make_type(bool_t a) -> typename;
 
-auto f(1 bool a) -> make_type(a);
+func f(1 bool_t a) -> make_type(a);
 
-i32_t g(1 bool a, make_type(a))
+func g(1 bool_t a, make_type(a)) -> i32_t
 {
    return 0;
 }
 
-i32_t h(1 bool a)
+func h(1 bool_t a) -> i32_t
 {
    // typecheck error: `f(a)` is not viable because `a` cannot be used twice
    return g(a, auto);
 }
 
-auto make_type(bool a) -> typename
+func make_type(bool_t a) -> typename
 {
    if (a) return i32_t;
-   else return bool;
+   else return bool_t;
 }
 
-auto f(1 bool a) -> make_type(a)
+func f(1 bool_t a) -> make_type(a)
 {
    if (a) return 0;
    else return false;

@@ -1,6 +1,6 @@
 axiom f1(u64_t a) -> true_t(a < a + 1);
 
-i32_t f2(u64_t n, array_t(i32_t, n + 1) xs)
+func f2(u64_t n, array_t(i32_t, n + 1) xs) -> i32_t
 {
     return xs[n];
 }

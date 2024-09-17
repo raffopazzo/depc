@@ -1,10 +1,10 @@
-auto int_or_bool(bool which) -> typename
+func int_or_bool(bool_t which) -> typename
 {
     if (which) return i32_t;
-    else return bool;
+    else return bool_t;
 }
 
-auto zero_of(bool which) -> int_or_bool(which)
+func zero_of(bool_t which) -> int_or_bool(which)
 {
     if (which)
         return 0;
@@ -13,15 +13,15 @@ auto zero_of(bool which) -> int_or_bool(which)
 }
 
 // same but with implicit else branch
-auto zero_of_2(bool which) -> int_or_bool(which)
+func zero_of_2(bool_t which) -> int_or_bool(which)
 {
     if (which)
         return 0;
     return false;
 }
 
-i32_t zero_int() { return zero_of(true); }
-i32_t zero_int_2() { return zero_of_2(true); }
+func zero_int() -> i32_t { return zero_of(true); }
+func zero_int_2() -> i32_t { return zero_of_2(true); }
 
-bool zero_bool() { return zero_of(false); }
-bool zero_bool_2() { return zero_of_2(false); }
+func zero_bool() -> bool_t { return zero_of(false); }
+func zero_bool_2() -> bool_t { return zero_of_2(false); }

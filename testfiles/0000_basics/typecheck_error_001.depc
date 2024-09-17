@@ -1,4 +1,4 @@
-unit_t foo()
+func foo() -> unit_t
 {
     return 0; // error: this does not typecheck
 }

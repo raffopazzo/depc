@@ -1,5 +1,5 @@
-i32_t first(i32_t x, i32_t y) { return x; }
-i32_t main()
+func first(i32_t x, i32_t y) -> i32_t { return x; }
+func main() -> i32_t
 {
     return first(0, 1);
 }

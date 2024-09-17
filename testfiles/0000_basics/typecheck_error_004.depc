@@ -1,4 +1,4 @@
-i32_t main()
+func main() -> i32_t
 {
     if (true) return 0;
 }

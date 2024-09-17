@@ -1,9 +1,9 @@
-i32_t f(bool a, bool b, 0 true_t(a or b))
+func f(bool_t a, bool_t b, 0 true_t(a or b)) -> i32_t
 {
     return 1;
 }
 
-i32_t g(bool a, bool b)
+func g(bool_t a, bool_t b) -> i32_t
 {
     if (a)
         return f(a, b, ::disj_intro_a(a, b, auto));

@@ -146,13 +146,13 @@ BOOST_AUTO_TEST_CASE(typecheck_error_001)
 BOOST_AUTO_TEST_CASE(typecheck_error_002)
 {
     BOOST_TEST_REQUIRE(fail("0000_basics/typecheck_error_002.depc"));
-    BOOST_TEST(fail_result->error == "type mismatch between expression of type `bool` and expected type `i32_t`");
+    BOOST_TEST(fail_result->error == "type mismatch between expression of type `bool_t` and expected type `i32_t`");
     BOOST_TEST(fail_result->location.has_value());
 }
 BOOST_AUTO_TEST_CASE(typecheck_error_003)
 {
     BOOST_TEST_REQUIRE(fail("0000_basics/typecheck_error_003.depc"));
-    BOOST_TEST(fail_result->error == "type mismatch between numeric constant and `bool`");
+    BOOST_TEST(fail_result->error == "type mismatch between numeric constant and `bool_t`");
     BOOST_TEST(fail_result->location.has_value());
 }
 BOOST_AUTO_TEST_CASE(typecheck_error_004)
@@ -164,7 +164,7 @@ BOOST_AUTO_TEST_CASE(typecheck_error_004)
 BOOST_AUTO_TEST_CASE(typecheck_error_005)
 {
     BOOST_TEST_REQUIRE(fail("0000_basics/typecheck_error_005.depc"));
-    BOOST_TEST(fail_result->error == "type mismatch between expression of type `bool` and expected type `i32_t`");
+    BOOST_TEST(fail_result->error == "type mismatch between expression of type `bool_t` and expected type `i32_t`");
     BOOST_TEST(fail_result->location.has_value());
 }
 BOOST_AUTO_TEST_CASE(typecheck_error_006)

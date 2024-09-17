@@ -1,12 +1,12 @@
-cstr_t f0() { return ""; }
-cstr_t f1() { return "0"; }
-cstr_t f2() { return "hello world"; }
-cstr_t f3() { return "hello \"world\""; }
-cstr_t f4() { return "hello 'world'"; }
-cstr_t f5() { return "hello\\world"; }
-cstr_t f6() { return "hello\nworld"; }
-cstr_t f7() { return "hello\tworld"; }
-cstr_t f8() { return "hello\vworld"; }
-cstr_t f9() { return "hello\bworld"; }
-cstr_t f10() { return "hello\fworld"; }
-cstr_t f11() { return "hello\rworld"; }
+func f0() -> cstr_t { return ""; }
+func f1() -> cstr_t { return "0"; }
+func f2() -> cstr_t { return "hello world"; }
+func f3() -> cstr_t { return "hello \"world\""; }
+func f4() -> cstr_t { return "hello 'world'"; }
+func f5() -> cstr_t { return "hello\\world"; }
+func f6() -> cstr_t { return "hello\nworld"; }
+func f7() -> cstr_t { return "hello\tworld"; }
+func f8() -> cstr_t { return "hello\vworld"; }
+func f9() -> cstr_t { return "hello\bworld"; }
+func f10() -> cstr_t { return "hello\fworld"; }
+func f11() -> cstr_t { return "hello\rworld"; }

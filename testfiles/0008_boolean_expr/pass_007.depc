@@ -1,16 +1,16 @@
-bool f0() { return true xor false; }
-bool f1() { return true xor true; }
-bool f2() { return true xor not false; }
-bool f3() { return not false xor true; }
-bool f4() { return not (false xor true); }
-bool f5(bool x, bool y) { return x xor y; }
-bool f6(bool x, bool y) { return not (x xor y); }
-bool f7(bool x, bool y) { return not x xor y; }
-bool f8(bool x, bool y) { return x and y or not x xor not y; }
-bool f9(bool x, bool y) { return x and (y or not x) xor not y; }
-bool f10(bool x, bool y) { return x xor y and not x xor not y; }
-bool f11(bool x, bool y) { return x xor (y and not x) xor not y; }
-bool f12(array_t(bool, 2) xs) { return xs[0] xor xs[1]; }
-bool f13(array_t(bool, 2) xs) { return not xs[0] xor xs[1]; }
-bool f14(array_t(bool, 2) xs) { return not (xs[0] xor xs[1]); }
-bool f15(array_t(bool, 2) xs) { return not xs[0] xor not xs[1]; }
+func f0() -> bool_t { return true xor false; }
+func f1() -> bool_t { return true xor true; }
+func f2() -> bool_t { return true xor not false; }
+func f3() -> bool_t { return not false xor true; }
+func f4() -> bool_t { return not (false xor true); }
+func f5(bool_t x, bool_t y) -> bool_t { return x xor y; }
+func f6(bool_t x, bool_t y) -> bool_t { return not (x xor y); }
+func f7(bool_t x, bool_t y) -> bool_t { return not x xor y; }
+func f8(bool_t x, bool_t y) -> bool_t { return x and y or not x xor not y; }
+func f9(bool_t x, bool_t y) -> bool_t { return x and (y or not x) xor not y; }
+func f10(bool_t x, bool_t y) -> bool_t { return x xor y and not x xor not y; }
+func f11(bool_t x, bool_t y) -> bool_t { return x xor (y and not x) xor not y; }
+func f12(array_t(bool_t, 2) xs) -> bool_t { return xs[0] xor xs[1]; }
+func f13(array_t(bool_t, 2) xs) -> bool_t { return not xs[0] xor xs[1]; }
+func f14(array_t(bool_t, 2) xs) -> bool_t { return not (xs[0] xor xs[1]); }
+func f15(array_t(bool_t, 2) xs) -> bool_t { return not xs[0] xor not xs[1]; }

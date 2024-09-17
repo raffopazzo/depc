@@ -1,1 +1,1 @@
-unit_t f(cstr_t) { }
+func f(cstr_t) -> unit_t { }

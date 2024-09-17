@@ -1,6 +1,6 @@
-bool id(bool x) { return x; }
+func id(bool_t x) -> bool_t { return x; }
 
-auto f(bool a, 0 true_t(id(a))) -> i32_t
+func f(bool_t a, 0 true_t(id(a))) -> i32_t
 {
     if (id(a))
         return 0;
@@ -8,7 +8,7 @@ auto f(bool a, 0 true_t(id(a))) -> i32_t
         impossible;
 }
 
-auto g(bool a, 0 true_t(not id(a))) -> i32_t
+func g(bool_t a, 0 true_t(not id(a))) -> i32_t
 {
     if (id(a))
         impossible;

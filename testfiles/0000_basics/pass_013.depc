@@ -1,5 +1,5 @@
-unit_t nop() {}
-i32_t main()
+func nop() -> unit_t {}
+func main() -> i32_t
 {
     nop();
     return 0;

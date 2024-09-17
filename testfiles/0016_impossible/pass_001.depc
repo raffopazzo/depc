@@ -1,6 +1,6 @@
-axiom nothing_smaller_than_false(bool a, true_t(a < false)) -> true_t(false);
+axiom nothing_smaller_than_false(bool_t a, true_t(a < false)) -> true_t(false);
 
-auto a_lt_b_implies_b(bool a, bool b, 0 true_t(a < b)) -> true_t(b)
+func a_lt_b_implies_b(bool_t a, bool_t b, 0 true_t(a < b)) -> true_t(b)
 {
     if (b)
         return {};

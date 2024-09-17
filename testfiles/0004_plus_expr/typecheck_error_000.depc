@@ -1,4 +1,4 @@
-u32_t minus_one()
+func minus_one() -> u32_t
 {
     return 1 + -2; // typecheck error: -2 does not fit u64_t
 }

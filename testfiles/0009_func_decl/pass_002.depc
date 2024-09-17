@@ -1,4 +1,4 @@
-i32_t f();
-i32_t g() { return f(); }
+func f() -> i32_t;
+func g() -> i32_t { return f(); }
 // implementation
-i32_t f() { return 0; }
+func f() -> i32_t { return 0; }

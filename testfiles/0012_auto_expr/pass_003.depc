@@ -1,2 +1,2 @@
-i32_t f(array_t(true_t(false), 0)) { return 0; }
-i32_t g() { return f(auto); }
+func f(array_t(true_t(false), 0)) -> i32_t { return 0; }
+func g() -> i32_t { return f(auto); }

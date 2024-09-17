@@ -1,9 +1,9 @@
-i32_t last(array_t(i32_t, 3) xs)
+func last(array_t(i32_t, 3) xs) -> i32_t
 {
     return xs[2];
 }
 
-auto count_3(bool start_from_zero) -> array_t(i32_t, 3)
+func count_3(bool_t start_from_zero) -> array_t(i32_t, 3)
 {
     if (start_from_zero)
         return {0,1,2};
@@ -11,7 +11,7 @@ auto count_3(bool start_from_zero) -> array_t(i32_t, 3)
         return {1,2,3};
 }
 
-i32_t two_or_three(bool start_from_zero)
+func two_or_three(bool_t start_from_zero) -> i32_t
 {
     return last(count_3(start_from_zero));
 }

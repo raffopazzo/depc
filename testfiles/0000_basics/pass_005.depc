@@ -1,2 +1,2 @@
-bool yes() { return true; }
-bool no() { return false; }
+func yes() -> bool_t { return true; }
+func no() -> bool_t { return false; }

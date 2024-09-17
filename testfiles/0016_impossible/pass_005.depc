@@ -1,6 +1,6 @@
-axiom nothing_bigger_than_true(bool a, true_t(a > true)) -> true_t(false);
+axiom nothing_bigger_than_true(bool_t a, true_t(a > true)) -> true_t(false);
 
-i32_t a_gt_b_implies_a(bool a, bool b, 0 true_t(a > b))
+func a_gt_b_implies_a(bool_t a, bool_t b, 0 true_t(a > b)) -> i32_t
 {
     if (b)
         impossible because nothing_bigger_than_true(a, auto);
@@ -11,7 +11,7 @@ i32_t a_gt_b_implies_a(bool a, bool b, 0 true_t(a > b))
         
 }
 
-i32_t f(bool a, bool b, 0 true_t(a > b))
+func f(bool_t a, bool_t b, 0 true_t(a > b)) -> i32_t
 {
     return a_gt_b_implies_a(a, b, auto);
 }

@@ -1,4 +1,4 @@
-i32_t f(bool which)
+func f(bool_t which) -> i32_t
 {
     if (which)
         return 1;
@@ -6,7 +6,7 @@ i32_t f(bool which)
         return f(not which);
 }
 
-i32_t g()
+func g() -> i32_t
 {
     return f(true);
 }

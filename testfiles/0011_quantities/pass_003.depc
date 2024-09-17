@@ -1,6 +1,6 @@
-auto f(i32_t) -> typename { return i32_t; }
+func f(i32_t) -> typename { return i32_t; }
 
-i32_t g(1 array_t(i32_t, 3) xs, f(xs[0]))
+func g(1 array_t(i32_t, 3) xs, f(xs[0])) -> i32_t
 {
     return 0;
 }

@@ -1,19 +1,19 @@
-i32_t succ(i32_t x)
+func succ(i32_t x) -> i32_t
 {
     return x + 1;
 }
 
-auto type_id(typename t) -> typename
+func type_id(typename t) -> typename
 {
     return t;
 }
 
-i32_t apply_0(type_id((i32_t) -> i32_t) f)
+func apply_0(type_id((i32_t) -> i32_t) f) -> i32_t
 {
     return f(0);
 }
 
-i32_t one()
+func one() -> i32_t
 {
     return apply_0(succ);
 }

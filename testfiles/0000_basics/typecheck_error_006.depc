@@ -1,4 +1,4 @@
-i32_t main()
+func main() -> i32_t
 {
     // typecheck error: missing return statement
 }

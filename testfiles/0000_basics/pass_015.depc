@@ -1,10 +1,10 @@
-i32_t f()
+func f() -> i32_t
 {
     return 1;
     return 2;
 }
 
-i32_t g()
+func g() -> i32_t
 {
     return f();
 }

@@ -1,14 +1,14 @@
-auto type_identity(typename t) -> typename
+func type_identity(typename t) -> typename
 {
     return t;
 }
 
-auto id(typename t, t x) -> t
+func id(typename t, t x) -> t
 {
     return x;
 }
 
-i32_t zero()
+func zero() -> i32_t
 {
     return id(type_identity(i32_t), 0);
 }

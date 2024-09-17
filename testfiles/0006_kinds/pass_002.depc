@@ -1,24 +1,24 @@
-auto type_identity(typename t) -> typename
+func type_identity(typename t) -> typename
 {
     return t;
 }
 
-auto id(typename t, t x) -> t
+func id(typename t, t x) -> t
 {
     return x;
 }
 
-auto apply_i32((typename t) -> typename f) -> typename
+func apply_i32((typename t) -> typename f) -> typename
 {
     return f(i32_t);
 }
 
-auto get_type_identity() -> (typename) -> typename
+func get_type_identity() -> (typename) -> typename
 {
     return type_identity;
 }
 
-i32_t zero()
+func zero() -> i32_t
 {
     return id(apply_i32(get_type_identity()), 0);
 }

@@ -1,9 +1,9 @@
-auto absurd(typename t, 0 true_t(false)) -> t
+func absurd(typename t, 0 true_t(false)) -> t
 {
     impossible;
 }
 
-i32_t f(0 true_t(false) p)
+func f(0 true_t(false) p) -> i32_t
 {
     return absurd(i32_t, p);
 }

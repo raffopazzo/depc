@@ -1,9 +1,9 @@
-auto values() -> array_t(i32_t, 3)
+func values() -> array_t(i32_t, 3)
 {
     return {1,2,3};
 }
 
-i32_t six()
+func six() -> i32_t
 {
     return values()[0] + values()[1] + values()[2];
 }

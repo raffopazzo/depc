@@ -1,3 +1,3 @@
-unit_t invalid_length(array_t(i32_t, -1) xs)
+func invalid_length(array_t(i32_t, -1) xs) -> unit_t
 {
 }

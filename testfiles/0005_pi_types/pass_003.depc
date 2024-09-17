@@ -1,2 +1,2 @@
-i32_t f(typename) { return 0; }
-i32_t main() { return f(u32_t); }
+func f(typename) -> i32_t { return 0; }
+func main() -> i32_t { return f(u32_t); }

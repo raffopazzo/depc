@@ -1,4 +1,4 @@
-unit_t foo()
+func foo() -> unit_t
 {
     if (true)
     {

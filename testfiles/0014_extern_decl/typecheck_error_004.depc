@@ -1,10 +1,10 @@
-i32_t rand() mutable;
+func rand() mutable -> i32_t;
 
-bool f(i32_t) { return true; }
+func f(i32_t) -> bool_t { return true; }
 
-bool g()
+func g() -> bool_t
 {
     return f(auto); // typecheck error: cannot find value of type i32_t (because rand is not viable since mutable)
 }
 
-i32_t rand() mutable { return 0; }
+func rand() mutable -> i32_t { return 0; }

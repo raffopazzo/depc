@@ -17,7 +17,7 @@ BOOST_AUTO_TEST_CASE(pass_000)
 }
 BOOST_AUTO_TEST_CASE(pass_001)
 {
-    std::string const source = "i32_t main()\n{\n    return 0;\n}";
+    std::string const source = "func main() -> i32_t\n{\n    return 0;\n}";
     std::string const file_source = source + '\n';
     BOOST_TEST_REQUIRE(pass("0000_basics/pass_001.depc"));
     BOOST_TEST(pass_result->properties.line == 1);
@@ -32,7 +32,7 @@ BOOST_AUTO_TEST_CASE(pass_001)
     BOOST_TEST(f->properties.txt == source);
     BOOST_TEST(is_i32(f->value.ret_type.get()));
     BOOST_TEST(f->value.ret_type.get().properties.line == 1);
-    BOOST_TEST(f->value.ret_type.get().properties.col == 1);
+    BOOST_TEST(f->value.ret_type.get().properties.col == 16);
     BOOST_TEST(f->value.ret_type.get().properties.txt == "i32_t");
     BOOST_TEST(f->name == "main");
 }

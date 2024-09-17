@@ -1,2 +1,2 @@
 typedef zero_t = 8 bit integer from 0 to 0; // parse error: missing signed/unsigned
-zero_t zero() { return 0; }
+func zero() -> zero_t { return 0; }

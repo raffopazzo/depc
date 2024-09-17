@@ -1,3 +1,3 @@
-i32_t first(array_t(i32_t, 3) xs) { return xs[0]; }
-i32_t second(array_t(i32_t, 3) xs) { return xs[1]; }
-i32_t third(array_t(i32_t, 3) xs) { return xs[2]; }
+func first(array_t(i32_t, 3) xs) -> i32_t { return xs[0]; }
+func second(array_t(i32_t, 3) xs) -> i32_t { return xs[1]; }
+func third(array_t(i32_t, 3) xs) -> i32_t { return xs[2]; }

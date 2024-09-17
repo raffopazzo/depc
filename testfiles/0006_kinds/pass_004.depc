@@ -1,19 +1,19 @@
-bool negate(bool x)
+func negate(bool_t x) -> bool_t
 {
     if (x) return false;
     else return true;
 }
 
-auto int_or_bool(bool which) -> typename
+func int_or_bool(bool_t which) -> typename
 {
     if (which) return i32_t;
-    else return bool;
+    else return bool_t;
 }
 
-bool to_bool(i32_t) { return false; }
-i32_t to_int(bool) { return 0; }
+func to_bool(i32_t) -> bool_t { return false; }
+func to_int(bool_t) -> i32_t { return 0; }
 
-auto select(bool which) -> (int_or_bool(which)) -> int_or_bool(negate(which))
+func select(bool_t which) -> (int_or_bool(which)) -> int_or_bool(negate(which))
 {
     if (which)
         return to_bool;
@@ -21,11 +21,11 @@ auto select(bool which) -> (int_or_bool(which)) -> int_or_bool(negate(which))
         return to_int;
 }
 
-i32_t always_int(
-    bool which,
+func always_int(
+    bool_t which,
     (int_or_bool(which)) -> int_or_bool(negate(which)) f,
     int_or_bool(which) x
-)
+) -> i32_t
 {
     if (which)
         return x;
@@ -33,12 +33,12 @@ i32_t always_int(
         return f(x);
 }
 
-i32_t zero_from_int()
+func zero_from_int() -> i32_t
 {
     return always_int(true, select(true), 0);
 }
 
-i32_t zero_from_bool()
+func zero_from_bool() -> i32_t
 {
     return always_int(false, select(false), false);
 }

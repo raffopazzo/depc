@@ -1,2 +1,2 @@
-u8_t f() { return -1; }
+func f() -> u8_t { return -1; }
 

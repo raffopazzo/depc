@@ -1,14 +1,14 @@
-i32_t sum(array_t(i32_t, 3) xs)
+func sum(array_t(i32_t, 3) xs) -> i32_t
 {
     return xs[0]+xs[1]+xs[2];
 }
 
-i32_t f(array_t(array_t(i32_t, 3), 4) m)
+func f(array_t(array_t(i32_t, 3), 4) m) -> i32_t
 {
     return sum(m[2]);
 }
 
-i32_t g(array_t(array_t(i32_t, 3), 4) m)
+func g(array_t(array_t(i32_t, 3), 4) m) -> i32_t
 {
     return sum(m[0]) + sum(m[1]) + sum(m[2]) + sum(m[3]);
 }

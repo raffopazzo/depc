@@ -1,1 +1,1 @@
-i32_t yes() { return true; }
+func yes() -> i32_t { return true; }

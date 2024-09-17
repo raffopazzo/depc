@@ -1,9 +1,9 @@
-i32_t f(bool a, 0 true_t(a))
+func f(bool_t a, 0 true_t(a)) -> i32_t
 {
     return 1;
 }
 
-i32_t g(bool a, bool b)
+func g(bool_t a, bool_t b) -> i32_t
 {
     if (a and b)
         return f(a, ::conj_elim_a(a, b, auto)) + f(b, ::conj_elim_b(a, b, auto));

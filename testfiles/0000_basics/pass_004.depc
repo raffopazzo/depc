@@ -1,5 +1,5 @@
-i32_t zero() { return zero(); }
-i32_t main()
+func zero() -> i32_t { return zero(); }
+func main() -> i32_t
 {
     return zero();
 }

@@ -1,4 +1,4 @@
-auto f(typename t, typename t, t x) -> t // typecheck error: cannot redefine typename t
+func f(typename t, typename t, t x) -> t // typecheck error: cannot redefine typename t
 {
     return x;
 }

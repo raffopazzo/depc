@@ -1,7 +1,7 @@
-auto f(bool which) -> typename
+func f(bool_t which) -> typename
 {
     if (which) return i32_t;
-    else return bool;
+    else return bool_t;
 }
-auto g(bool x, f(x)) -> typename { return u64_t; }
-unit_t h((bool) -> typename f, g(true, 0)) { }
+func g(bool_t x, f(x)) -> typename { return u64_t; }
+func h((bool_t) -> typename f, g(true, 0)) -> unit_t { }

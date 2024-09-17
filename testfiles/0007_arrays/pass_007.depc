@@ -1,5 +1,5 @@
-unit_t unit() {}
-auto three_units() -> array_t(unit_t, 3)
+func unit() -> unit_t {}
+func three_units() -> array_t(unit_t, 3)
 {
     return {unit(), unit(), unit()};
 }

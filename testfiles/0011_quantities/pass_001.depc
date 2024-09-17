@@ -1,4 +1,4 @@
-i32_t f(1 bool which, 1 i32_t x)
+func f(1 bool_t which, 1 i32_t x) -> i32_t
 {
     if (which)
         return x;

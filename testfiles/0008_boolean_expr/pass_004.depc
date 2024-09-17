@@ -1,13 +1,13 @@
-bool negate(bool x) { return not x; }
-bool f0() { return not false; }
-bool f1() { return not true; }
-bool f2() { return not true < true; }
-bool f3() { return not true < not false; }
-bool f4() { return not (true < false); }
-bool f5(bool x, bool y) { return not x < y; }
-bool f6(bool x, bool y) { return not (x < y); }
-bool f7(bool x, bool y) { return not x < not y; }
-bool f8(array_t(bool, 2) xs) { return not xs[0]; }
-bool f9(array_t(bool, 2) xs) { return not xs[0] < xs[1]; }
-bool f10(array_t(bool, 2) xs) { return not (xs[0] < xs[1]); }
-bool f11(array_t(bool, 2) xs) { return not xs[0] < not xs[1]; }
+func negate(bool_t x) -> bool_t { return not x; }
+func f0() -> bool_t { return not false; }
+func f1() -> bool_t { return not true; }
+func f2() -> bool_t { return not true < true; }
+func f3() -> bool_t { return not true < not false; }
+func f4() -> bool_t { return not (true < false); }
+func f5(bool_t x, bool_t y) -> bool_t { return not x < y; }
+func f6(bool_t x, bool_t y) -> bool_t { return not (x < y); }
+func f7(bool_t x, bool_t y) -> bool_t { return not x < not y; }
+func f8(array_t(bool_t, 2) xs) -> bool_t { return not xs[0]; }
+func f9(array_t(bool_t, 2) xs) -> bool_t { return not xs[0] < xs[1]; }
+func f10(array_t(bool_t, 2) xs) -> bool_t { return not (xs[0] < xs[1]); }
+func f11(array_t(bool_t, 2) xs) -> bool_t { return not xs[0] < not xs[1]; }

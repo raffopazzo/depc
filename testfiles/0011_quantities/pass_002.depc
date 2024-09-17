@@ -1,5 +1,5 @@
-i32_t f(typename) { return 0; }
+func f(typename) -> i32_t { return 0; }
 
-i32_t g1(0 u64_t n) { return f((array_t(i32_t, n)) -> i32_t); }
-i32_t g2(0 u64_t n) { return f(array_t(i32_t, n)); }
-i32_t g3(0 u64_t n) { return f(true_t(n > 0)); }
+func g1(0 u64_t n) -> i32_t { return f((array_t(i32_t, n)) -> i32_t); }
+func g2(0 u64_t n) -> i32_t { return f(array_t(i32_t, n)); }
+func g3(0 u64_t n) -> i32_t { return f(true_t(n > 0)); }

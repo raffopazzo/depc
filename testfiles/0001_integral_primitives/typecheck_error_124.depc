@@ -1,2 +1,2 @@
-u32_t f() { return -1; }
+func f() -> u32_t { return -1; }
 

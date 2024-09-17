@@ -1,14 +1,14 @@
-auto matrix(u64_t cols, u64_t rows) -> typename
+func matrix(u64_t cols, u64_t rows) -> typename
 {
     return array_t(array_t(i32_t, cols), rows);
 }
 
-auto f() -> matrix(3, 2)
+func f() -> matrix(3, 2)
 {
     return {{1,2,3},{4,5,6}};
 }
 
-i32_t g(matrix(3, 2) m)
+func g(matrix(3, 2) m) -> i32_t
 {
     return m[0][1] + m[1][2];
 }

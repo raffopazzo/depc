@@ -1,1 +1,1 @@
-bool f(i32_t x) { return not x; }
+func f(i32_t x) -> bool_t { return not x; }

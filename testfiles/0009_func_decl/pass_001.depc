@@ -1,13 +1,13 @@
-auto f(i32_t) -> bool;
+func f(i32_t) -> bool_t;
 
-auto g(i32_t x) -> typename
+func g(i32_t x) -> typename
 {
     if (f(x)) return i32_t;
-    else return bool;
+    else return bool_t;
 }
 
-auto h(i32_t x) -> g(x);
+func h(i32_t x) -> g(x);
 
 // implementation
-bool f(i32_t) { return false; }
-auto h(i32_t x) -> g(x) { return false; }
+func f(i32_t) -> bool_t { return false; }
+func h(i32_t x) -> g(x) { return false; }

@@ -1,9 +1,9 @@
-i32_t f(0 u64_t n, 0 true_t(n >= 2), array_t(i32_t, n) xs)
+func f(0 u64_t n, 0 true_t(n >= 2), array_t(i32_t, n) xs) -> i32_t
 {
    return xs[0] because ::lt_trans_u64(0, 1, n, auto, auto);
 }
 
-i32_t g(0 u64_t n, 0 true_t(n >= 2), array_t(i32_t, n) xs)
+func g(0 u64_t n, 0 true_t(n >= 2), array_t(i32_t, n) xs) -> i32_t
 {
    return xs[0] because ::gt_trans_u64(n, 1, 0, auto, auto);
 }

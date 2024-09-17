@@ -9,7 +9,7 @@ extern printf(cstr_t, cstr_t) -> i32_t;
 // This function can only be invoked if `players` contains at least 2 elements.
 // Arguments marked `0` are erased at runtime, so really this is a function of only one argument: `players`.
 // Erased arguments can be used for compile-time reasoning, in this case to prove that there are at least 2 players.
-cstr_t play_game(0 u64_t n, 0 true_t(n >= 2), array_t(cstr_t, n) players)
+func play_game(0 u64_t n, 0 true_t(n >= 2), array_t(cstr_t, n) players) -> cstr_t
 {
     // When accessing array elements, the compiler requires a proof that the index is in bounds.
     // In this example the compiler needs a proof that `0 < n`.
@@ -30,7 +30,7 @@ cstr_t play_game(0 u64_t n, 0 true_t(n >= 2), array_t(cstr_t, n) players)
 // Even an empty programme uses dependent types, since the length of `argv` depends on the value of `argc`.
 // Also, in this example we are invoking extern functions that might (in this case will) have side-effects and
 // mutate the global state of the programme, so our main function must be marked `mutable`.
-i32_t main(u64_t argc, array_t(cstr_t, argc) argv) mutable
+func main(u64_t argc, array_t(cstr_t, argc) argv) mutable -> i32_t
 {
     if (argc < 2)
     {

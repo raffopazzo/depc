@@ -1,1 +1,1 @@
-i8_t f() { return 227; }
+func f() -> i8_t { return 227; }

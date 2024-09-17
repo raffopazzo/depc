@@ -1,20 +1,20 @@
 typedef sign_t = signed 8 bit integer from -1 to 1;
 typedef hours_t = unsigned 8 bit integer from 0 to 23;
-bool negate(bool x)
+func negate(bool_t x) -> bool_t
 {
     if (x) return false;
     else return true;
 }
-bool f0() { return false <= true; }
-bool f1() { return true <= true <= true; }
-bool f2() { return true <= (true <= true); }
-bool f3() { return negate(true <= f1()) <= negate(f1() <= true); }
-bool f4(i32_t x) { return 1 <= x; }
-bool f5(u32_t x) { return x <= 2; }
-bool f6(sign_t x, sign_t y) { return x <= y; }
-bool f7(i32_t x, i32_t y) { return x <= x + y; }
-bool f8(u32_t x, u32_t y) { return x + y <= x + y; }
-bool f9(hours_t x, hours_t y) { return x + y <= x; }
-bool f10(array_t(bool, 3) xs) { return xs[0] <= xs[1] <= xs[2]; }
-bool f11(array_t(bool, 3) xs) { return xs[0] <= (xs[1] <= xs[2]); }
-bool f12(array_t(i32_t, 3) xs) { return xs[0] + xs[1] <= xs[1] + xs[2]; }
+func f0() -> bool_t { return false <= true; }
+func f1() -> bool_t { return true <= true <= true; }
+func f2() -> bool_t { return true <= (true <= true); }
+func f3() -> bool_t { return negate(true <= f1()) <= negate(f1() <= true); }
+func f4(i32_t x) -> bool_t { return 1 <= x; }
+func f5(u32_t x) -> bool_t { return x <= 2; }
+func f6(sign_t x, sign_t y) -> bool_t { return x <= y; }
+func f7(i32_t x, i32_t y) -> bool_t { return x <= x + y; }
+func f8(u32_t x, u32_t y) -> bool_t { return x + y <= x + y; }
+func f9(hours_t x, hours_t y) -> bool_t { return x + y <= x; }
+func f10(array_t(bool_t, 3) xs) -> bool_t { return xs[0] <= xs[1] <= xs[2]; }
+func f11(array_t(bool_t, 3) xs) -> bool_t { return xs[0] <= (xs[1] <= xs[2]); }
+func f12(array_t(i32_t, 3) xs) -> bool_t { return xs[0] + xs[1] <= xs[1] + xs[2]; }

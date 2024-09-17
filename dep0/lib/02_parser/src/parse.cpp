@@ -163,26 +163,9 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         assert(ctx);
         assert(ctx->name);
         auto const name = get_text(src, *ctx->name);
-        if (ctx->funcType())
-        {
-            auto func_type = std::any_cast<expr_t>(visitFuncType(ctx->funcType()));
-            auto& pi = std::get<expr_t::pi_t>(func_type.value);
-            return func_sig_t{name, std::move(std::get<expr_t::pi_t>(func_type.value))};
-        }
-        else
-            return func_sig_t{
-                name,
-                expr_t::pi_t{
-                    ctx->KW_MUTABLE() ? ast::is_mutable_t::yes : ast::is_mutable_t::no,
-                    visitFuncArgs(ctx->funcArg()),
-                    [&]
-                    {
-                        return
-                            ctx->primitiveRetType ? std::any_cast<expr_t>(visitPrimitiveType(ctx->primitiveRetType)) :
-                            ctx->simpleRetType ? std::any_cast<expr_t>(visitTypeVar(ctx->simpleRetType)) :
-                            throw error_t("unexpected alternative when parsing FuncDeclContext", get_loc(src, *ctx));
-                    }()
-                }};
+        auto func_type = std::any_cast<expr_t>(visitFuncType(ctx->funcType()));
+        auto& pi = std::get<expr_t::pi_t>(func_type.value);
+        return func_sig_t{name, std::move(std::get<expr_t::pi_t>(func_type.value))};
     }
 
     virtual std::any visitFuncDecl(DepCParser::FuncDeclContext* ctx) override
@@ -227,7 +210,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
     {
         assert(ctx);
         auto const loc = get_loc(src, *ctx);
-        if (ctx->KW_BOOL()) return expr_t{loc, expr_t::bool_t{}};
+        if (ctx->KW_BOOL_T()) return expr_t{loc, expr_t::bool_t{}};
         if (ctx->KW_CSTR_T()) return expr_t{loc, expr_t::cstr_t{}};
         if (ctx->KW_UNIT_T()) return expr_t{loc, expr_t::unit_t{}};
         if (ctx->KW_I8_T()) return expr_t{loc, expr_t::i8_t{}};

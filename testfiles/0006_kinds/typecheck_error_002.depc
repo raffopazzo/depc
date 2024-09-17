@@ -1,1 +1,1 @@
-auto f() -> 1 { return 0; }
+func f() -> 1 { return 0; }

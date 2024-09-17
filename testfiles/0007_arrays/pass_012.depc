@@ -1,8 +1,8 @@
-i32_t f() { return 0; }
-i32_t g() { return 1; }
-bool negate(bool x) { if (x) return false; else return true; }
+func f() -> i32_t { return 0; }
+func g() -> i32_t { return 1; }
+func negate(bool_t x) -> bool_t { if (x) return false; else return true; }
 
-auto select(bool which) -> ()->i32_t
+func select(bool_t which) -> ()->i32_t
 {
     if (which)
         return f;
@@ -10,7 +10,7 @@ auto select(bool which) -> ()->i32_t
         return g;
 }
 
-auto choose(bool which) -> array_t(()->i32_t, 2)
+func choose(bool_t which) -> array_t(()->i32_t, 2)
 {
     return {select(which), select(negate(which))};
 }

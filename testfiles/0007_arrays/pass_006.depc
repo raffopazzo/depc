@@ -1,9 +1,9 @@
-i32_t sum(array_t(i32_t, 3) xs)
+func sum(array_t(i32_t, 3) xs) -> i32_t
 {
     return xs[0] + xs[1] + xs[2];
 }
 
-i32_t fifteen()
+func fifteen() -> i32_t
 {
     return sum({3,5,7});
 }

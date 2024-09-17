@@ -1,5 +1,5 @@
-bool false_() { return false; }
-i32_t main()
+func false_() -> bool_t { return false; }
+func main() -> i32_t
 {
     if (false_())
     {

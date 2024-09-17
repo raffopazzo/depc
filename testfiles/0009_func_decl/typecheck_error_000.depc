@@ -1,1 +1,1 @@
-bool f(); // error: function declared but not defined
+func f() -> bool_t; // error: function declared but not defined

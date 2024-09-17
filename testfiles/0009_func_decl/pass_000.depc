@@ -1,20 +1,20 @@
-bool f1();
-bool f2(i32_t);
-bool f3(i32_t, u32_t);
-auto g1() -> typename;
-auto g2(i32_t) -> typename;
-auto g3(i32_t, u32_t) -> typename;
-auto h1() -> g1();
-auto h2(i32_t x) -> g2(x);
-auto h3(i32_t x, u32_t y) -> g3(x, y);
+func f1() -> bool_t;
+func f2(i32_t) -> bool_t;
+func f3(i32_t, u32_t) -> bool_t;
+func g1() -> typename;
+func g2(i32_t) -> typename;
+func g3(i32_t, u32_t) -> typename;
+func h1() -> g1();
+func h2(i32_t x) -> g2(x);
+func h3(i32_t x, u32_t y) -> g3(x, y);
 
 // implementation
-bool f1() { return false; }
-bool f2(i32_t) { return false; }
-bool f3(i32_t, u32_t) { return false; }
-auto g1() -> typename { return bool; }
-auto g2(i32_t) -> typename { return bool; }
-auto g3(i32_t, u32_t) -> typename { return bool; }
-auto h1() -> g1() { return true; }
-auto h2(i32_t x) -> g2(x) { return true; }
-auto h3(i32_t x, u32_t y) -> g3(x, y) { return true; }
+func f1() -> bool_t { return false; }
+func f2(i32_t) -> bool_t { return false; }
+func f3(i32_t, u32_t) -> bool_t { return false; }
+func g1() -> typename { return bool_t; }
+func g2(i32_t) -> typename { return bool_t; }
+func g3(i32_t, u32_t) -> typename { return bool_t; }
+func h1() -> g1() { return true; }
+func h2(i32_t x) -> g2(x) { return true; }
+func h3(i32_t x, u32_t y) -> g3(x, y) { return true; }

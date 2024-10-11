@@ -431,8 +431,12 @@ std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::arith_expr_t co
         [&] (typename expr_t<P>::arith_expr_t::plus_t const& x)
         {
             pretty_print(os, x.lhs.get(), indent);
-            os << " + ";
-            pretty_print(os, x.rhs.get(), indent);
+            pretty_print(os << " + ", x.rhs.get(), indent);
+        },
+        [&] (typename expr_t<P>::arith_expr_t::minus_t const& x)
+        {
+            pretty_print(os, x.lhs.get(), indent);
+            pretty_print(os << " - ", x.rhs.get(), indent);
         });
     return os;
 }
@@ -625,7 +629,7 @@ bool needs_new_line(typename expr_t<P>::arith_expr_t const& x)
 {
     return match(
         x.value,
-        [] (typename expr_t<P>::arith_expr_t::plus_t const& x)
+        [] (auto const& x)
         {
             return needs_new_line(x.lhs.get()) or needs_new_line(x.rhs.get());
         });

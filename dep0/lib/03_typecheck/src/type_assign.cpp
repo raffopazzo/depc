@@ -266,7 +266,7 @@ type_assign(
         {
             return match(
                 x.value,
-                [&] (parser::expr_t::arith_expr_t::plus_t const& x) -> expected<expr_t>
+                [&] <typename T> (T const& x) -> expected<expr_t>
                 {
                     auto [lhs, rhs] =
                         type_assign_pair(
@@ -276,10 +276,15 @@ type_assign(
                         auto type = lhs->properties.sort.get(); // about to move from lhs, take a copy
                         return make_legal_expr(
                             std::move(type),
-                            expr_t::arith_expr_t{
-                                expr_t::arith_expr_t::plus_t{
-                                    std::move(*lhs),
-                                    std::move(*rhs)}});
+                            boost::hana::overload(
+                                [&] (boost::hana::type<parser::expr_t::arith_expr_t::plus_t>) -> expr_t::arith_expr_t
+                                {
+                                    return {expr_t::arith_expr_t::plus_t{std::move(*lhs), std::move(*rhs)}};
+                                },
+                                [&] (boost::hana::type<parser::expr_t::arith_expr_t::minus_t>) -> expr_t::arith_expr_t
+                                {
+                                    return {expr_t::arith_expr_t::minus_t{std::move(*lhs), std::move(*rhs)}};
+                                })(boost::hana::type_c<T>));
                     }
                     else if (lhs.has_error() xor rhs.has_error()) // if only 1 error, just forward that one
                         return std::move(lhs.has_error() ? lhs.error() : rhs.error());

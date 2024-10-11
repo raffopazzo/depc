@@ -104,7 +104,7 @@ std::size_t max_index(expr_t<P> const& x)
         {
             return match(
                 x.value,
-                [] (expr_t<P>::arith_expr_t::plus_t const& x)
+                [] (auto const& x)
                 {
                     return std::max(max_index(x.lhs.get()), max_index(x.rhs.get()));
                 });

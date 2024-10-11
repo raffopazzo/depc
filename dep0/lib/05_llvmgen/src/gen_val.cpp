@@ -291,12 +291,24 @@ llvm::Value* gen_val(
         {
             return storeOrReturn(match(
                 x.value,
-                [&] (typecheck::expr_t::arith_expr_t::plus_t const& x) -> llvm::Value*
+                [&] <typename T> (T const& x) -> llvm::Value*
                 {
                     auto const lhs = gen_val(global, local, builder, x.lhs.get(), nullptr);
                     auto const rhs = gen_val(global, local, builder, x.rhs.get(), nullptr);
-                    auto result = builder.CreateAdd(lhs, rhs);
+                    auto result =
+                        boost::hana::overload(
+                            [&] (boost::hana::type<typecheck::expr_t::arith_expr_t::plus_t>)
+                            {
+                                return builder.CreateAdd(lhs, rhs);
+                            },
+                            [&] (boost::hana::type<typecheck::expr_t::arith_expr_t::minus_t>)
+                            {
+                                return builder.CreateSub(lhs, rhs);
+                            })(boost::hana::type_c<T>);
                     // for user-defined integrals we might have to manually wrap around
+                    // TODO this is broken because:
+                    //   1. it's only wraps around correctly for `x+1`
+                    //   2. it's not consistent with delta-unfolding, which caps instead of wrapping
                     match(
                         std::get<typecheck::expr_t>(x.lhs.get().properties.sort.get()).value,
                         [&] (typecheck::expr_t::global_t const& g)

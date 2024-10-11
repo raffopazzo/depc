@@ -18,6 +18,8 @@
 #include "dep0/match.hpp"
 #include "dep0/scope_map.hpp"
 
+#include <boost/hana.hpp>
+
 #include <algorithm>
 #include <cassert>
 #include <iterator>
@@ -513,7 +515,7 @@ check_expr(
         {
             return match(
                 x.value,
-                [&] (parser::expr_t::arith_expr_t::plus_t const& x) -> expected<expr_t>
+                [&] <typename T> (T const& x) -> expected<expr_t>
                 {
                     auto lhs = check_expr(env, ctx, x.lhs.get(), expected_type, is_mutable, usage, usage_multiplier);
                     if (not lhs) return std::move(lhs.error());
@@ -521,10 +523,15 @@ check_expr(
                     if (not rhs) return std::move(rhs.error());
                     return make_legal_expr(
                         expected_type,
-                        expr_t::arith_expr_t{
-                            expr_t::arith_expr_t::plus_t{
-                                std::move(*lhs),
-                                std::move(*rhs)}});
+                        boost::hana::overload(
+                            [&] (boost::hana::type<parser::expr_t::arith_expr_t::plus_t>) -> expr_t::arith_expr_t
+                            {
+                                return {expr_t::arith_expr_t::plus_t{std::move(*lhs), std::move(*rhs)}};
+                            },
+                            [&] (boost::hana::type<parser::expr_t::arith_expr_t::minus_t>) -> expr_t::arith_expr_t
+                            {
+                                return {expr_t::arith_expr_t::minus_t{std::move(*lhs), std::move(*rhs)}};
+                            })(boost::hana::type_c<T>));
                 });
         },
         [&] (parser::expr_t::init_list_t const& list) -> expected<expr_t>

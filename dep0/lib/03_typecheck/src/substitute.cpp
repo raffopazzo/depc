@@ -94,7 +94,7 @@ void substitute(expr_t::var_t const& var, expr_t const& expr, expr_t& x)
         {
             match(
                 x.value,
-                [&] (expr_t::arith_expr_t::plus_t& x)
+                [&] (auto& x)
                 {
                     substitute(var, expr, x.lhs.get());
                     substitute(var, expr, x.rhs.get());

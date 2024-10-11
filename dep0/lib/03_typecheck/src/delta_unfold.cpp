@@ -1,6 +1,7 @@
 #include "private/delta_unfold.hpp"
 
 #include "private/cpp_int_add.hpp"
+#include "private/cpp_int_sub.hpp"
 #include "private/derivation_rules.hpp"
 
 #include "dep0/typecheck/is_mutable.hpp"
@@ -336,7 +337,56 @@ bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t& expr)
                                                 auto const& [name, sign, width, max_abs_value] = integer;
                                                 boost::ignore_unused(name);
                                                 result = cpp_int_add(sign, width, n->value, m->value);
+                                                // TODO should we use wrapping instead of capping? also add some tests
                                                 if (max_abs_value and *result > *max_abs_value)
+                                                {
+                                                    if (sign == ast::sign_t::signed_v)
+                                                        result.emplace(-*max_abs_value);
+                                                    else
+                                                        result.emplace(0);
+                                                }
+                                            });
+                                },
+                                [&] (auto const&)
+                                {
+                                    assert(false and "type of numeric constant was not normalized");
+                                });
+                            if (result)
+                            {
+                                expr.value = expr_t::numeric_constant_t{std::move(*result)};
+                                return true;
+                            }
+                        }
+                    return false;
+                },
+                [&] (expr_t::arith_expr_t::minus_t& x)
+                {
+                    if (auto const n = std::get_if<expr_t::numeric_constant_t>(&x.lhs.get().value))
+                        if (auto const m = std::get_if<expr_t::numeric_constant_t>(&x.rhs.get().value))
+                        {
+                            std::optional<boost::multiprecision::cpp_int> result;
+                            match(
+                                std::get<expr_t>(x.lhs.get().properties.sort.get()).value,
+                                [&] (expr_t::i8_t) { result = cpp_int_sub_signed<8>(n->value, m->value); },
+                                [&] (expr_t::i16_t) { result = cpp_int_sub_signed<16>(n->value, m->value); },
+                                [&] (expr_t::i32_t) { result = cpp_int_sub_signed<32>(n->value, m->value); },
+                                [&] (expr_t::i64_t) { result = cpp_int_sub_signed<64>(n->value, m->value); },
+                                [&] (expr_t::u8_t) { result = cpp_int_sub_unsigned<8>(n->value, m->value); },
+                                [&] (expr_t::u16_t) { result = cpp_int_sub_unsigned<16>(n->value, m->value); },
+                                [&] (expr_t::u32_t) { result = cpp_int_sub_unsigned<32>(n->value, m->value); },
+                                [&] (expr_t::u64_t) { result = cpp_int_sub_unsigned<64>(n->value, m->value); },
+                                [&] (expr_t::global_t const& g)
+                                {
+                                    if (auto const type_def = std::get_if<type_def_t>(env[g]))
+                                        match(
+                                            type_def->value,
+                                            [&] (type_def_t::integer_t const& integer)
+                                            {
+                                                auto const& [name, sign, width, max_abs_value] = integer;
+                                                boost::ignore_unused(name);
+                                                result = cpp_int_sub(sign, width, n->value, m->value);
+                                                // TODO should we use wrapping instead of capping? also add some tests
+                                                if (max_abs_value and *result < *max_abs_value)
                                                 {
                                                     if (sign == ast::sign_t::signed_v)
                                                         result.emplace(-*max_abs_value);

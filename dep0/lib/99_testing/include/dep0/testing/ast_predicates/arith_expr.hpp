@@ -11,22 +11,6 @@
 namespace dep0::testing {
 
 template <ast::Properties P, Predicate<ast::expr_t<P>> F1, Predicate<ast::expr_t<P>> F2>
-boost::test_tools::predicate_result is_plus(ast::expr_t<P> const& expr, F1&& f1, F2&& f2)
-{
-    auto const* x = std::get_if<typename ast::expr_t<P>::arith_expr_t>(&expr.value);
-    if (not x)
-        return failure("expression is not arith_expr_t but ", pretty_name(expr.value));
-    auto const* plus = std::get_if<typename ast::expr_t<P>::arith_expr_t::plus_t>(&x->value);
-    if (not plus)
-        return failure("arithmetic expression is not plus_t but ", pretty_name(x->value));
-    if (auto const result = std::forward<F1>(f1)(plus->lhs.get()); not result)
-        return failure("on the left-hand side: ", result.message());
-    if (auto const result = std::forward<F2>(f2)(plus->rhs.get()); not result)
-        return failure("on the right-hand side: ", result.message());
-    return true;
-}
-
-template <ast::Properties P, Predicate<ast::expr_t<P>> F1, Predicate<ast::expr_t<P>> F2>
 boost::test_tools::predicate_result is_minus(ast::expr_t<P> const& expr, F1&& f1, F2&& f2)
 {
     auto const* x = std::get_if<typename ast::expr_t<P>::arith_expr_t>(&expr.value);
@@ -43,20 +27,36 @@ boost::test_tools::predicate_result is_minus(ast::expr_t<P> const& expr, F1&& f1
 }
 
 template <ast::Properties P, Predicate<ast::expr_t<P>> F1, Predicate<ast::expr_t<P>> F2>
-constexpr auto plus(F1&& f1, F2&& f2)
-{
-    return [f1=std::forward<F1>(f1), f2=std::forward<F2>(f2)] (ast::expr_t<P> const& x)
-    {
-        return is_plus(x, f1, f2);
-    };
-}
-
-template <ast::Properties P, Predicate<ast::expr_t<P>> F1, Predicate<ast::expr_t<P>> F2>
 constexpr auto minus(F1&& f1, F2&& f2)
 {
     return [f1=std::forward<F1>(f1), f2=std::forward<F2>(f2)] (ast::expr_t<P> const& x)
     {
         return is_minus(x, f1, f2);
+    };
+}
+
+template <ast::Properties P, Predicate<ast::expr_t<P>> F1, Predicate<ast::expr_t<P>> F2>
+boost::test_tools::predicate_result is_plus(ast::expr_t<P> const& expr, F1&& f1, F2&& f2)
+{
+    auto const* x = std::get_if<typename ast::expr_t<P>::arith_expr_t>(&expr.value);
+    if (not x)
+        return failure("expression is not arith_expr_t but ", pretty_name(expr.value));
+    auto const* plus = std::get_if<typename ast::expr_t<P>::arith_expr_t::plus_t>(&x->value);
+    if (not plus)
+        return failure("arithmetic expression is not plus_t but ", pretty_name(x->value));
+    if (auto const result = std::forward<F1>(f1)(plus->lhs.get()); not result)
+        return failure("on the left-hand side: ", result.message());
+    if (auto const result = std::forward<F2>(f2)(plus->rhs.get()); not result)
+        return failure("on the right-hand side: ", result.message());
+    return true;
+}
+
+template <ast::Properties P, Predicate<ast::expr_t<P>> F1, Predicate<ast::expr_t<P>> F2>
+constexpr auto plus(F1&& f1, F2&& f2)
+{
+    return [f1=std::forward<F1>(f1), f2=std::forward<F2>(f2)] (ast::expr_t<P> const& x)
+    {
+        return is_plus(x, f1, f2);
     };
 }
 

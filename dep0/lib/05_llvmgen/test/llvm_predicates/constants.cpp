@@ -43,7 +43,7 @@ boost::test_tools::predicate_result is_constant(llvm::Value const* const p, int 
     return is_constant(*p, v);
 }
 
-boost::test_tools::predicate_result is_constant(llvm::Value const& x, long long const v)
+boost::test_tools::predicate_result is_constant(llvm::Value const& x, std::int64_t const v)
 {
     auto const c = dyn_cast<llvm::ConstantInt>(&x);
     if (not c)
@@ -53,14 +53,14 @@ boost::test_tools::predicate_result is_constant(llvm::Value const& x, long long 
     return true;
 }
 
-boost::test_tools::predicate_result is_constant(llvm::Value const* const p, long long const v)
+boost::test_tools::predicate_result is_constant(llvm::Value const* const p, std::int64_t const v)
 {
     if (not p)
         return failure("value is null");
     return is_constant(*p, v);
 }
 
-boost::test_tools::predicate_result is_constant(llvm::Value const& x, std::size_t const v)
+boost::test_tools::predicate_result is_constant(llvm::Value const& x, std::uint64_t const v)
 {
     auto const c = dyn_cast<llvm::ConstantInt>(&x);
     if (not c)
@@ -70,7 +70,7 @@ boost::test_tools::predicate_result is_constant(llvm::Value const& x, std::size_
     return true;
 }
 
-boost::test_tools::predicate_result is_constant(llvm::Value const* const p, std::size_t const v)
+boost::test_tools::predicate_result is_constant(llvm::Value const* const p, std::uint64_t const v)
 {
     if (not p)
         return failure("value is null");

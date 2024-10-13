@@ -36,7 +36,7 @@ BOOST_AUTO_TEST_CASE(pass_000)
         auto const f = pass_result.value()->getFunction("f81");
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i64, sext));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(9223372036854775807ll)));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(std::numeric_limits<std::int64_t>::max())));
     }
     {
         auto const f = pass_result.value()->getFunction("f141");
@@ -198,7 +198,7 @@ BOOST_AUTO_TEST_CASE(pass_001)
         auto const f = pass_result.value()->getFunction("min_i32");
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, sext));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(-2147483648ll)));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(std::numeric_limits<std::int32_t>::min())));
     }
     {
         auto const f = pass_result.value()->getFunction("min_i64");

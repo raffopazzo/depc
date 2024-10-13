@@ -37,15 +37,13 @@ BOOST_AUTO_TEST_CASE(pass_005)
         auto const f = pass_result.value()->getFunction("min_signed_32");
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, sext));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(
-            static_cast<long long int>(std::numeric_limits<std::int32_t>::lowest()))));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(std::numeric_limits<std::int32_t>::min())));
     }
     {
         auto const f = pass_result.value()->getFunction("min_signed_64");
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i64, sext));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(
-            static_cast<long long int>(std::numeric_limits<std::int64_t>::lowest()))));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(std::numeric_limits<std::int64_t>::min())));
     }
     {
         auto const f = pass_result.value()->getFunction("max_signed_8");

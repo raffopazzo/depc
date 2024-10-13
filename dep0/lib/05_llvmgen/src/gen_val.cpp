@@ -295,7 +295,7 @@ llvm::Value* gen_val(
                 {
                     auto const lhs = gen_val(global, local, builder, x.lhs.get(), nullptr);
                     auto const rhs = gen_val(global, local, builder, x.rhs.get(), nullptr);
-                    auto result =
+                    auto const result =
                         boost::hana::overload(
                             [&] (boost::hana::type<typecheck::expr_t::arith_expr_t::plus_t>)
                             {
@@ -309,13 +309,13 @@ llvm::Value* gen_val(
                     // TODO this is broken because:
                     //   1. it only wraps around correctly for `x+1`
                     //   2. it's not consistent with delta-unfolding, which caps instead of wrapping
-                    match(
+                    return match(
                         std::get<typecheck::expr_t>(x.lhs.get().properties.sort.get()).value,
                         [&] (typecheck::expr_t::global_t const& g)
                         {
                             auto const type_def = std::get_if<typecheck::type_def_t>(global[g]);
                             assert(type_def and "unknown global or not a typedef");
-                            match(
+                            return match(
                                 type_def->value,
                                 [&] (typecheck::type_def_t::integer_t const& integer)
                                 {
@@ -331,12 +331,13 @@ llvm::Value* gen_val(
                                         auto const max_val = gen_val(type, *integer.max_abs_value);
                                         auto const op = integer.sign == signed_v ? ICMP_SGT : ICMP_UGT;
                                         auto const cond = builder.CreateCmp(op, result, max_val);
-                                        result = builder.CreateSelect(cond, min_val, result);
+                                        return builder.CreateSelect(cond, min_val, result);
                                     }
+                                    else
+                                        return result;
                                 });
                         },
-                        [] (auto const&) {});
-                    return result;
+                        [&] (auto const&) { return result; });
                 }));
         },
         [&] (typecheck::expr_t::var_t const& var) -> llvm::Value*

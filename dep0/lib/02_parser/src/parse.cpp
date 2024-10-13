@@ -94,39 +94,13 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         auto const name = get_text(src, *ctx->name);
         auto const sign = get_text(src, *ctx->sign);
         auto const width = get_text(src, *ctx->width);
-        std::optional<boost::multiprecision::cpp_int> min, max;
-        // if we don't have 2 ellipsis, there's at least one of min (which could be 0) and max
-        if (ctx->ELLIPSIS().size() < 2ul)
-        {
-            if (ctx->min)
-                min = parse_cpp_int(get_text(src, *ctx->min).view());
-            else if (ctx->zero)
-                min = parse_cpp_int(get_text(src, *ctx->zero).view());
-            if (ctx->max)
-                max = parse_cpp_int(get_text(src, *ctx->max).view());
-        }
+        auto const s = sign == "unsigned" ? ast::sign_t::unsigned_v : ast::sign_t::signed_v;
         auto const w =
             width == "8" ? ast::width_t::_8 :
             width == "16" ? ast::width_t::_16 :
             width == "32" ? ast::width_t::_32 :
             ast::width_t::_64;
-        if (sign == "unsigned")
-        {
-            if (min and min->is_zero())
-                return type_def_t{loc, type_def_t::integer_t{name, ast::sign_t::unsigned_v, w, max}};
-            else
-                throw error_t("lower bound of unsigned integer must be 0", loc);
-        }
-        else if (min.has_value() xor max.has_value())
-            throw error_t("lower and upper bound of signed integer must be either both present or both missing", loc);
-        else if (min)
-        {
-            if (min != max)
-                throw error_t("lower and upper bound of signed integer must have same absolute value", loc);
-            return type_def_t{loc, type_def_t::integer_t{name, ast::sign_t::signed_v, w, max}};
-        }
-        else
-            return type_def_t{loc, type_def_t::integer_t{name, ast::sign_t::signed_v, w, std::nullopt}};
+        return type_def_t{loc, type_def_t::integer_t{name, s, w}};
     }
 
     struct func_sig_t

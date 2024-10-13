@@ -12,120 +12,88 @@ static auto const zext = std::vector{llvm::Attribute::ZExt};
 
 BOOST_FIXTURE_TEST_SUITE(dep0_llvmgen_tests_0002_user_defined_integrals, LLVMGenTestsFixture)
 
-BOOST_AUTO_TEST_CASE(pass_000)
+// BOOST_AUTO_TEST_CASE(pass_000) -- this test was removed
+// BOOST_AUTO_TEST_CASE(pass_001) -- this test was removed
+// BOOST_AUTO_TEST_CASE(pass_002) -- this test was removed
+// BOOST_AUTO_TEST_CASE(pass_003) -- this test was removed
+// BOOST_AUTO_TEST_CASE(pass_004) -- this test was removed
+
+BOOST_AUTO_TEST_CASE(pass_005)
 {
-    BOOST_TEST_REQUIRE(pass("0002_user_defined_integrals/pass_000.depc"));
+    BOOST_TEST_REQUIRE(pass("0002_user_defined_integrals/pass_005.depc"));
     {
-        auto const f = pass_result.value()->getFunction("h");
-        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i8, zext));
+        auto const f = pass_result.value()->getFunction("min_signed_8");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i8, sext));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(23)));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(-128)));
     }
     {
-        auto const f = pass_result.value()->getFunction("n");
-        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, zext));
+        auto const f = pass_result.value()->getFunction("min_signed_16");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i16, sext));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
-        BOOST_TEST(f->hasAttribute(llvm::AttributeList::ReturnIndex, llvm::Attribute::ZExt));
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(123456789ul)));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(-32768)));
     }
     {
-        auto const f = pass_result.value()->getFunction("d");
+        auto const f = pass_result.value()->getFunction("min_signed_32");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, sext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(
+            static_cast<long long int>(std::numeric_limits<std::int32_t>::lowest()))));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("min_signed_64");
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i64, sext));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(-1234567890123456789ll)));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(
+            static_cast<long long int>(std::numeric_limits<std::int64_t>::lowest()))));
     }
-}
-
-BOOST_AUTO_TEST_CASE(pass_001)
-{
-    BOOST_TEST_REQUIRE(pass("0002_user_defined_integrals/pass_001.depc"));
     {
-        auto const f = pass_result.value()->getFunction("zero");
+        auto const f = pass_result.value()->getFunction("max_signed_8");
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i8, sext));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(0)));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(127)));
     }
-}
-
-BOOST_AUTO_TEST_CASE(pass_002)
-{
-    BOOST_TEST_REQUIRE(pass("0002_user_defined_integrals/pass_002.depc"));
     {
-        auto const f = pass_result.value()->getFunction("zero");
+        auto const f = pass_result.value()->getFunction("max_signed_16");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i16, sext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(32767)));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("max_signed_32");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, sext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(2147483647)));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("max_signed_64");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i64, sext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(9223372036854775807ul)));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("max_unsigned_8");
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i8, zext));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(0)));
-    }
-}
-
-BOOST_AUTO_TEST_CASE(pass_003)
-{
-    BOOST_TEST_REQUIRE(pass("0002_user_defined_integrals/pass_003.depc"));
-    {
-        auto const f = pass_result.value()->getFunction("negative");
-        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i8, sext));
-        BOOST_TEST_REQUIRE(f->size() == 1ul);
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(-1)));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(255ul)));
     }
     {
-        auto const f = pass_result.value()->getFunction("zero");
-        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i8, sext));
+        auto const f = pass_result.value()->getFunction("max_unsigned_16");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i16, zext));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(0)));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(65535ul)));
     }
     {
-        auto const f = pass_result.value()->getFunction("max_sign");
-        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i8, sext));
+        auto const f = pass_result.value()->getFunction("max_unsigned_32");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, zext));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(1)));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(4294967295ul)));
     }
     {
-        auto const f = pass_result.value()->getFunction("min_sign");
-        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i8, sext));
+        auto const f = pass_result.value()->getFunction("max_unsigned_64");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i64, zext));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
-        auto const inst = get_instructions(f->getEntryBlock());
-        BOOST_TEST_REQUIRE(inst.size() == 5ul);
-        BOOST_TEST(is_direct_call(inst[0], exactly(pass_result.value()->getFunction("max_sign"))));
-        BOOST_TEST(is_add_of(inst[1], exactly(inst[0]), constant(1)));
-        BOOST_TEST(is_cmp(inst[2], llvm::CmpInst::ICMP_SGT, exactly(inst[1]), constant(1)));
-        BOOST_TEST(is_select_of(inst[3], exactly(inst[2]), constant(-1), exactly(inst[1])));
-        BOOST_TEST(is_return_of(inst[4], exactly(inst[3])));
-    }
-    {
-        auto const f = pass_result.value()->getFunction("max_hour");
-        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i8, zext));
-        BOOST_TEST_REQUIRE(f->size() == 1ul);
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(23)));
-    }
-    {
-        auto const f = pass_result.value()->getFunction("min_hour");
-        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i8, zext));
-        BOOST_TEST_REQUIRE(f->size() == 1ul);
-        auto const inst = get_instructions(f->getEntryBlock());
-        BOOST_TEST_REQUIRE(inst.size() == 5ul);
-        BOOST_TEST(is_direct_call(inst[0], exactly(pass_result.value()->getFunction("max_hour"))));
-        BOOST_TEST(is_add_of(inst[1], exactly(inst[0]), constant(1)));
-        BOOST_TEST(is_cmp(inst[2], llvm::CmpInst::ICMP_UGT, exactly(inst[1]), constant(23)));
-        BOOST_TEST(is_select_of(inst[3], exactly(inst[2]), constant(0), exactly(inst[1])));
-        BOOST_TEST(is_return_of(inst[4], exactly(inst[3])));
-    }
-}
-
-BOOST_AUTO_TEST_CASE(pass_004)
-{
-    apply_beta_delta_normalization = true;
-    BOOST_TEST_REQUIRE(pass("0002_user_defined_integrals/pass_004.depc"));
-    {
-        auto const f = pass_result.value()->getFunction("min_hour");
-        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i8, zext));
-        BOOST_TEST_REQUIRE(f->size() == 1ul);
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(0)));
-    }
-    {
-        auto const f = pass_result.value()->getFunction("min_sign");
-        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i8, sext));
-        BOOST_TEST_REQUIRE(f->size() == 1ul);
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(-1)));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(18446744073709551615ul)));
     }
 }
 

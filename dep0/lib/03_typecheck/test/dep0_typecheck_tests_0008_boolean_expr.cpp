@@ -14,12 +14,12 @@ BOOST_AUTO_TEST_CASE(pass_000)
     {
         auto const t = std::get_if<dep0::typecheck::type_def_t>(&pass_result->entries[0]);
         BOOST_TEST_REQUIRE(t);
-        BOOST_TEST(is_integer_def(*t, "sign_t", dep0::ast::sign_t::signed_v, dep0::ast::width_t::_8, 1));
+        BOOST_TEST(is_integer_def(*t, "sign_t", dep0::ast::sign_t::signed_v, dep0::ast::width_t::_8));
     }
     {
         auto const t = std::get_if<dep0::typecheck::type_def_t>(&pass_result->entries[1]);
         BOOST_TEST_REQUIRE(t);
-        BOOST_TEST(is_integer_def(*t, "hours_t", dep0::ast::sign_t::unsigned_v, dep0::ast::width_t::_8, 23));
+        BOOST_TEST(is_integer_def(*t, "hours_t", dep0::ast::sign_t::unsigned_v, dep0::ast::width_t::_8));
     }
     {
         auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[2]);
@@ -240,12 +240,12 @@ BOOST_AUTO_TEST_CASE(pass_001)
     {
         auto const t = std::get_if<dep0::typecheck::type_def_t>(&pass_result->entries[0]);
         BOOST_TEST_REQUIRE(t);
-        BOOST_TEST(is_integer_def(*t, "sign_t", dep0::ast::sign_t::signed_v, dep0::ast::width_t::_8, 1));
+        BOOST_TEST(is_integer_def(*t, "sign_t", dep0::ast::sign_t::signed_v, dep0::ast::width_t::_8));
     }
     {
         auto const t = std::get_if<dep0::typecheck::type_def_t>(&pass_result->entries[1]);
         BOOST_TEST_REQUIRE(t);
-        BOOST_TEST(is_integer_def(*t, "hours_t", dep0::ast::sign_t::unsigned_v, dep0::ast::width_t::_8, 23));
+        BOOST_TEST(is_integer_def(*t, "hours_t", dep0::ast::sign_t::unsigned_v, dep0::ast::width_t::_8));
     }
     {
         auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[2]);
@@ -462,12 +462,12 @@ BOOST_AUTO_TEST_CASE(pass_002)
     {
         auto const t = std::get_if<dep0::typecheck::type_def_t>(&pass_result->entries[0]);
         BOOST_TEST_REQUIRE(t);
-        BOOST_TEST(is_integer_def(*t, "sign_t", dep0::ast::sign_t::signed_v, dep0::ast::width_t::_8, 1));
+        BOOST_TEST(is_integer_def(*t, "sign_t", dep0::ast::sign_t::signed_v, dep0::ast::width_t::_8));
     }
     {
         auto const t = std::get_if<dep0::typecheck::type_def_t>(&pass_result->entries[1]);
         BOOST_TEST_REQUIRE(t);
-        BOOST_TEST(is_integer_def(*t, "hours_t", dep0::ast::sign_t::unsigned_v, dep0::ast::width_t::_8, 23));
+        BOOST_TEST(is_integer_def(*t, "hours_t", dep0::ast::sign_t::unsigned_v, dep0::ast::width_t::_8));
     }
     {
         auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[2]);
@@ -684,12 +684,12 @@ BOOST_AUTO_TEST_CASE(pass_003)
     {
         auto const t = std::get_if<dep0::typecheck::type_def_t>(&pass_result->entries[0]);
         BOOST_TEST_REQUIRE(t);
-        BOOST_TEST(is_integer_def(*t, "sign_t", dep0::ast::sign_t::signed_v, dep0::ast::width_t::_8, 1));
+        BOOST_TEST(is_integer_def(*t, "sign_t", dep0::ast::sign_t::signed_v, dep0::ast::width_t::_8));
     }
     {
         auto const t = std::get_if<dep0::typecheck::type_def_t>(&pass_result->entries[1]);
         BOOST_TEST_REQUIRE(t);
-        BOOST_TEST(is_integer_def(*t, "hours_t", dep0::ast::sign_t::unsigned_v, dep0::ast::width_t::_8, 23));
+        BOOST_TEST(is_integer_def(*t, "hours_t", dep0::ast::sign_t::unsigned_v, dep0::ast::width_t::_8));
     }
     {
         auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[2]);
@@ -1786,12 +1786,12 @@ BOOST_AUTO_TEST_CASE(pass_008)
     {
         auto const t = std::get_if<dep0::typecheck::type_def_t>(&pass_result->entries[0]);
         BOOST_TEST_REQUIRE(t);
-        BOOST_TEST(is_integer_def(*t, "sign_t", dep0::ast::sign_t::signed_v, dep0::ast::width_t::_8, 1));
+        BOOST_TEST(is_integer_def(*t, "sign_t", dep0::ast::sign_t::signed_v, dep0::ast::width_t::_8));
     }
     {
         auto const t = std::get_if<dep0::typecheck::type_def_t>(&pass_result->entries[1]);
         BOOST_TEST_REQUIRE(t);
-        BOOST_TEST(is_integer_def(*t, "hours_t", dep0::ast::sign_t::unsigned_v, dep0::ast::width_t::_8, 23));
+        BOOST_TEST(is_integer_def(*t, "hours_t", dep0::ast::sign_t::unsigned_v, dep0::ast::width_t::_8));
     }
     {
         auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[2]);
@@ -1996,12 +1996,12 @@ BOOST_AUTO_TEST_CASE(pass_009)
     {
         auto const t = std::get_if<dep0::typecheck::type_def_t>(&pass_result->entries[0]);
         BOOST_TEST_REQUIRE(t);
-        BOOST_TEST(is_integer_def(*t, "sign_t", dep0::ast::sign_t::signed_v, dep0::ast::width_t::_8, 1));
+        BOOST_TEST(is_integer_def(*t, "sign_t", dep0::ast::sign_t::signed_v, dep0::ast::width_t::_8));
     }
     {
         auto const t = std::get_if<dep0::typecheck::type_def_t>(&pass_result->entries[1]);
         BOOST_TEST_REQUIRE(t);
-        BOOST_TEST(is_integer_def(*t, "hours_t", dep0::ast::sign_t::unsigned_v, dep0::ast::width_t::_8, 23));
+        BOOST_TEST(is_integer_def(*t, "hours_t", dep0::ast::sign_t::unsigned_v, dep0::ast::width_t::_8));
     }
     {
         auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[2]);

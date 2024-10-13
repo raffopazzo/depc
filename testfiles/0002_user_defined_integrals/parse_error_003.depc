@@ -1,3 +1,1 @@
-// parse error: lower and upper bound must be either both present or both missing
-typedef signal_t = signed 8 bit integer from ... to 15;
-func f() -> signal_t { return 0; }
+// This test was removed

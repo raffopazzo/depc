@@ -5,211 +5,142 @@
 
 #include "dep0/typecheck/beta_delta_reduction.hpp"
 
+using enum dep0::ast::sign_t;
+using enum dep0::ast::width_t;
+
 BOOST_FIXTURE_TEST_SUITE(dep0_typecheck_tests_0002_user_defined_integrals, TypecheckTestsFixture)
 
-BOOST_AUTO_TEST_CASE(pass_000)
-{
-    BOOST_TEST_REQUIRE(pass("0002_user_defined_integrals/pass_000.depc"));
-    BOOST_TEST(pass_result->entries.size() == 26ul);
-}
-BOOST_AUTO_TEST_CASE(pass_001) { BOOST_TEST(pass("0002_user_defined_integrals/pass_001.depc")); }
-BOOST_AUTO_TEST_CASE(pass_002) { BOOST_TEST(pass("0002_user_defined_integrals/pass_002.depc")); }
+// BOOST_AUTO_TEST_CASE(pass_000) -- this test was removed
+// BOOST_AUTO_TEST_CASE(pass_001) -- this test was removed
+// BOOST_AUTO_TEST_CASE(pass_002) -- this test was removed
+// BOOST_AUTO_TEST_CASE(pass_003) -- this test was removed
+// BOOST_AUTO_TEST_CASE(pass_004) -- this test was removed
 
-BOOST_AUTO_TEST_CASE(pass_003)
+BOOST_AUTO_TEST_CASE(pass_005)
 {
-    BOOST_TEST_REQUIRE(pass("0002_user_defined_integrals/pass_003.depc"));
-    BOOST_TEST_REQUIRE(pass_result->entries.size() == 8ul);
-    {
-        auto const t = std::get_if<dep0::typecheck::type_def_t>(&pass_result->entries[0]);
-        BOOST_TEST_REQUIRE(t);
-        BOOST_TEST(is_integer_def(*t, "sign_t", dep0::ast::sign_t::signed_v, dep0::ast::width_t::_8, 1));
-    }
-    {
-        auto const t = std::get_if<dep0::typecheck::type_def_t>(&pass_result->entries[1]);
-        BOOST_TEST_REQUIRE(t);
-        BOOST_TEST(is_integer_def(*t, "hour_t", dep0::ast::sign_t::unsigned_v, dep0::ast::width_t::_8, 23));
-    }
-    {
-        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[2]);
-        BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(f->name == "negative");
-        BOOST_TEST(f->value.args.size() == 0ul);
-        BOOST_TEST(is_global(f->value.ret_type.get(), "sign_t"));
-        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant(-1)));
-    }
-    {
-        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[3]);
-        BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(f->name == "zero");
-        BOOST_TEST(f->value.args.size() == 0ul);
-        BOOST_TEST(is_global(f->value.ret_type.get(), "sign_t"));
-        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant(0)));
-    }
-    {
-        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[4]);
-        BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(f->name == "max_sign");
-        BOOST_TEST(f->value.args.size() == 0ul);
-        BOOST_TEST(is_global(f->value.ret_type.get(), "sign_t"));
-        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant(1)));
-    }
-    {
-        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[5]);
-        BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(f->name == "min_sign");
-        BOOST_TEST(f->value.args.size() == 0ul);
-        BOOST_TEST(is_global(f->value.ret_type.get(), "sign_t"));
-        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], plus(app_of(global("max_sign")), constant(1))));
-    }
-    {
-        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[6]);
-        BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(f->name == "max_hour");
-        BOOST_TEST(f->value.args.size() == 0ul);
-        BOOST_TEST(is_global(f->value.ret_type.get(), "hour_t"));
-        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant(23)));
-    }
-    {
-        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[7]);
-        BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(f->name == "min_hour");
-        BOOST_TEST(f->value.args.size() == 0ul);
-        BOOST_TEST(is_global(f->value.ret_type.get(), "hour_t"));
-        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], plus(app_of(global("max_hour")), constant(1))));
-    }
-    // normalization should handle integer signed/unsigned wrapping
-    BOOST_TEST(dep0::typecheck::beta_delta_normalize(*pass_result));
-    {
-        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[5]);
-        BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant(-1)));
-    }
-    {
-        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[7]);
-        BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant(0)));
-    }
-}
+    BOOST_TEST_REQUIRE(pass("0002_user_defined_integrals/pass_005.depc"));
+    // 8 type defs + 12 func defs
+    BOOST_TEST_REQUIRE(pass_result->entries.size() == 20ul);
+    auto const signed_8 = std::get_if<dep0::typecheck::type_def_t>(&pass_result->entries[0]);
+    auto const signed_16 = std::get_if<dep0::typecheck::type_def_t>(&pass_result->entries[1]);
+    auto const signed_32 = std::get_if<dep0::typecheck::type_def_t>(&pass_result->entries[2]);
+    auto const signed_64 = std::get_if<dep0::typecheck::type_def_t>(&pass_result->entries[3]);
+    auto const unsigned_8 = std::get_if<dep0::typecheck::type_def_t>(&pass_result->entries[4]);
+    auto const unsigned_16 = std::get_if<dep0::typecheck::type_def_t>(&pass_result->entries[5]);
+    auto const unsigned_32 = std::get_if<dep0::typecheck::type_def_t>(&pass_result->entries[6]);
+    auto const unsigned_64 = std::get_if<dep0::typecheck::type_def_t>(&pass_result->entries[7]);
 
-BOOST_AUTO_TEST_CASE(pass_004)
-{
-    BOOST_TEST_REQUIRE(pass("0002_user_defined_integrals/pass_004.depc"));
-    BOOST_TEST_REQUIRE(pass_result->entries.size() == 8ul);
+    BOOST_TEST_REQUIRE(signed_8);
+    BOOST_TEST_REQUIRE(signed_16);
+    BOOST_TEST_REQUIRE(signed_32);
+    BOOST_TEST_REQUIRE(signed_64);
+    BOOST_TEST_REQUIRE(unsigned_8);
+    BOOST_TEST_REQUIRE(unsigned_16);
+    BOOST_TEST_REQUIRE(unsigned_32);
+    BOOST_TEST_REQUIRE(unsigned_64);
+    BOOST_TEST(is_integer_def(*signed_8, "signed_8_t", signed_v, _8));
+    BOOST_TEST(is_integer_def(*signed_16, "signed_16_t", signed_v, _16));
+    BOOST_TEST(is_integer_def(*signed_32, "signed_32_t", signed_v, _32));
+    BOOST_TEST(is_integer_def(*signed_64, "signed_64_t", signed_v, _64));
+    BOOST_TEST(is_integer_def(*unsigned_8, "unsigned_8_t", unsigned_v, _8));
+    BOOST_TEST(is_integer_def(*unsigned_16, "unsigned_16_t", unsigned_v, _16));
+    BOOST_TEST(is_integer_def(*unsigned_32, "unsigned_32_t", unsigned_v, _32));
+    BOOST_TEST(is_integer_def(*unsigned_64, "unsigned_64_t", unsigned_v, _64));
     {
-        auto const t = std::get_if<dep0::typecheck::type_def_t>(&pass_result->entries[0]);
-        BOOST_TEST_REQUIRE(t);
-        BOOST_TEST(is_integer_def(*t, "sign_t", dep0::ast::sign_t::signed_v, dep0::ast::width_t::_8, 1));
-    }
-    {
-        auto const t = std::get_if<dep0::typecheck::type_def_t>(&pass_result->entries[1]);
-        BOOST_TEST_REQUIRE(t);
-        BOOST_TEST(is_integer_def(*t, "hour_t", dep0::ast::sign_t::unsigned_v, dep0::ast::width_t::_8, 23));
-    }
-    {
-        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[2]);
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[8]);
         BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(f->name == "which");
-        BOOST_TEST_REQUIRE(f->value.args.size() == 1ul);
-        BOOST_TEST(is_arg(f->value.args[0ul], is_bool, "x"));
-        BOOST_TEST(is_typename(f->value.ret_type.get()));
+        BOOST_TEST(f->name == "min_signed_8");
+        BOOST_TEST(is_global(f->value.ret_type.get(), "signed_8_t"));
         BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
-        BOOST_TEST(
-            is_if_else(
-                f->value.body.stmts[0ul],
-                var("x"),
-                std::tuple{return_of(global("hour_t"))},
-                std::tuple{return_of(global("sign_t"))}));
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant(-128)));
     }
     {
-        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[3]);
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[9]);
         BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(f->name == "one_of");
-        BOOST_TEST_REQUIRE(f->value.args.size() == 1ul);
-        BOOST_TEST(is_arg(f->value.args[0ul], is_bool, "x"));
-        BOOST_TEST(is_app_of(f->value.ret_type.get(), global("which"), var("x")));
+        BOOST_TEST(f->name == "min_signed_16");
+        BOOST_TEST(is_global(f->value.ret_type.get(), "signed_16_t"));
         BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
-        BOOST_TEST(
-            is_if_else(
-                f->value.body.stmts[0ul],
-                var("x"),
-                std::tuple{return_of(constant(1))},
-                std::tuple{return_of(constant(1))}));
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant(-32768)));
     }
     {
-        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[4]);
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[10]);
         BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(f->name == "max_of");
-        BOOST_TEST_REQUIRE(f->value.args.size() == 1ul);
-        BOOST_TEST(is_arg(f->value.args[0ul], is_bool, "x"));
-        BOOST_TEST(is_app_of(f->value.ret_type.get(), global("which"), var("x")));
+        BOOST_TEST(f->name == "min_signed_32");
+        BOOST_TEST(is_global(f->value.ret_type.get(), "signed_32_t"));
         BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
-        BOOST_TEST(
-            is_if_else(
-                f->value.body.stmts[0ul],
-                var("x"),
-                std::tuple{return_of(constant(23))},
-                std::tuple{return_of(constant(1))}));
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant("-2147483648")));
     }
     {
-        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[5]);
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[11]);
         BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(f->name == "min_of");
-        BOOST_TEST_REQUIRE(f->value.args.size() == 1ul);
-        BOOST_TEST(is_arg(f->value.args[0ul], is_bool, "x"));
-        BOOST_TEST(is_app_of(f->value.ret_type.get(), global("which"), var("x")));
+        BOOST_TEST(f->name == "min_signed_64");
+        BOOST_TEST(is_global(f->value.ret_type.get(), "signed_64_t"));
         BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
-        BOOST_TEST(
-            is_return_of(
-                f->value.body.stmts[0ul],
-                plus(
-                    app_of(global("max_of"), var("x")),
-                    app_of(global("one_of"), var("x")))));
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant("-9223372036854775808")));
     }
     {
-        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[6]);
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[12]);
         BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(f->name == "min_hour");
-        BOOST_TEST(f->value.args.size() == 0ul);
-        BOOST_TEST(is_global(f->value.ret_type.get(), "hour_t"));
+        BOOST_TEST(f->name == "max_signed_8");
+        BOOST_TEST(is_global(f->value.ret_type.get(), "signed_8_t"));
         BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], app_of(global("min_of"), constant(true))));
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant(127)));
     }
     {
-        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[7]);
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[13]);
         BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(f->name == "min_sign");
-        BOOST_TEST(f->value.args.size() == 0ul);
-        BOOST_TEST(is_global(f->value.ret_type.get(), "sign_t"));
+        BOOST_TEST(f->name == "max_signed_16");
+        BOOST_TEST(is_global(f->value.ret_type.get(), "signed_16_t"));
         BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], app_of(global("min_of"), constant(false))));
-    }
-    // normalization should handle integer signed/unsigned wrapping
-    // and compute the correct type for the numeric constant
-    BOOST_TEST(dep0::typecheck::beta_delta_normalize(*pass_result));
-    BOOST_TEST_REQUIRE(pass_result->entries.size() == 8ul);
-    {
-        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[6]);
-        BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(f->name == "min_hour");
-        auto const& stmt = f->value.body.stmts[0ul];
-        BOOST_TEST_REQUIRE(is_return_of(stmt, constant(0)));
-        auto const ret = std::get<dep0::typecheck::stmt_t::return_t>(stmt.value);
-        BOOST_TEST(is_global(std::get<dep0::typecheck::expr_t>(ret.expr->properties.sort.get()), "hour_t"));
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant(32767)));
     }
     {
-        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[7]);
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[14]);
         BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(f->name == "min_sign");
-        auto const& stmt = f->value.body.stmts[0ul];
-        BOOST_TEST_REQUIRE(is_return_of(stmt, constant(-1)));
-        auto const ret = std::get<dep0::typecheck::stmt_t::return_t>(stmt.value);
-        BOOST_TEST(is_global(std::get<dep0::typecheck::expr_t>(ret.expr->properties.sort.get()), "sign_t"));
+        BOOST_TEST(f->name == "max_signed_32");
+        BOOST_TEST(is_global(f->value.ret_type.get(), "signed_32_t"));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant(2147483647)));
+    }
+    {
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[15]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "max_signed_64");
+        BOOST_TEST(is_global(f->value.ret_type.get(), "signed_64_t"));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant("9223372036854775807")));
+    }
+    {
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[16]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "max_unsigned_8");
+        BOOST_TEST(is_global(f->value.ret_type.get(), "unsigned_8_t"));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant(255)));
+    }
+    {
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[17]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "max_unsigned_16");
+        BOOST_TEST(is_global(f->value.ret_type.get(), "unsigned_16_t"));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant(65535)));
+    }
+    {
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[18]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "max_unsigned_32");
+        BOOST_TEST(is_global(f->value.ret_type.get(), "unsigned_32_t"));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant("4294967295")));
+    }
+    {
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[19]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "max_unsigned_64");
+        BOOST_TEST(is_global(f->value.ret_type.get(), "unsigned_64_t"));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant("18446744073709551615")));
     }
 }
 
@@ -226,13 +157,13 @@ BOOST_AUTO_TEST_CASE(pass_004)
 // BOOST_AUTO_TEST_CASE(parse_error_010)
 
 BOOST_AUTO_TEST_CASE(typecheck_error_000) { BOOST_TEST(fail("0002_user_defined_integrals/typecheck_error_000.depc")); }
-BOOST_AUTO_TEST_CASE(typecheck_error_001) { BOOST_TEST(fail("0002_user_defined_integrals/typecheck_error_001.depc")); }
-BOOST_AUTO_TEST_CASE(typecheck_error_002) { BOOST_TEST(fail("0002_user_defined_integrals/typecheck_error_002.depc")); }
-BOOST_AUTO_TEST_CASE(typecheck_error_003) { BOOST_TEST(fail("0002_user_defined_integrals/typecheck_error_003.depc")); }
-BOOST_AUTO_TEST_CASE(typecheck_error_004) { BOOST_TEST(fail("0002_user_defined_integrals/typecheck_error_004.depc")); }
-BOOST_AUTO_TEST_CASE(typecheck_error_005) { BOOST_TEST(fail("0002_user_defined_integrals/typecheck_error_005.depc")); }
-BOOST_AUTO_TEST_CASE(typecheck_error_006) { BOOST_TEST(fail("0002_user_defined_integrals/typecheck_error_006.depc")); }
-BOOST_AUTO_TEST_CASE(typecheck_error_007) { BOOST_TEST(fail("0002_user_defined_integrals/typecheck_error_007.depc")); }
-BOOST_AUTO_TEST_CASE(typecheck_error_008) { BOOST_TEST(fail("0002_user_defined_integrals/typecheck_error_008.depc")); }
+// BOOST_AUTO_TEST_CASE(typecheck_error_001) -- this test was removed
+// BOOST_AUTO_TEST_CASE(typecheck_error_002) -- this test was removed
+// BOOST_AUTO_TEST_CASE(typecheck_error_003) -- this test was removed
+// BOOST_AUTO_TEST_CASE(typecheck_error_004) -- this test was removed
+// BOOST_AUTO_TEST_CASE(typecheck_error_005) -- this test was removed
+// BOOST_AUTO_TEST_CASE(typecheck_error_006) -- this test was removed
+// BOOST_AUTO_TEST_CASE(typecheck_error_007) -- this test was removed
+// BOOST_AUTO_TEST_CASE(typecheck_error_008) -- this test was removed
 
 BOOST_AUTO_TEST_SUITE_END()

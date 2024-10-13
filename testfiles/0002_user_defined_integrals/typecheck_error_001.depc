@@ -1,2 +1,1 @@
-// typcheck error: max value does not fit inside signed 8 bit integer
-typedef sign_t = signed 8 bit integer from -128 to 128;
+// This test was removed

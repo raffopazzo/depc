@@ -1,2 +1,2 @@
-typedef hours_t = unsigned 8 bit integer from 0 to 23;
-func h() -> hours_t { return 25; } // typcheck error: 25 outside of 0..23
+typedef unsigned_8_t = unsigned 8 bit integer;
+func h() -> unsigned_8_t { return 256; } // typcheck error: 256 outside of 0..255

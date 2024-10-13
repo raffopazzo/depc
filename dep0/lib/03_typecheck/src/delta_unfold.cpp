@@ -243,18 +243,7 @@ reduce(
                 type_def->value,
                 [&] (type_def_t::integer_t const& integer)
                 {
-                    auto const& [name, sign, width, max_abs_value] = integer;
-                    boost::ignore_unused(name);
-                    auto result = cpp_int_add(sign, width, a, b);
-                    // TODO should we use wrapping instead of capping? also add some tests
-                    if (max_abs_value and result > *max_abs_value)
-                    {
-                        if (sign == ast::sign_t::signed_v)
-                            result = -*max_abs_value;
-                        else
-                            result = 0;
-                    }
-                    return result;
+                    return cpp_int_add(integer.sign, integer.width, a, b);
                 });
         },
         [&] (auto const&)
@@ -290,18 +279,7 @@ reduce(
                 type_def->value,
                 [&] (type_def_t::integer_t const& integer)
                 {
-                    auto const& [name, sign, width, max_abs_value] = integer;
-                    boost::ignore_unused(name);
-                    auto result = cpp_int_sub(sign, width, a, b);
-                    // TODO should we use wrapping instead of capping? also add some tests
-                    if (max_abs_value and result < *max_abs_value)
-                    {
-                        if (sign == ast::sign_t::signed_v)
-                            result = -*max_abs_value;
-                        else
-                            result = 0;
-                    }
-                    return result;
+                    return cpp_int_sub(integer.sign, integer.width, a, b);
                 });
         },
         [&] (auto const&)
@@ -337,18 +315,7 @@ reduce(
                 type_def->value,
                 [&] (type_def_t::integer_t const& integer)
                 {
-                    auto const& [name, sign, width, max_abs_value] = integer;
-                    boost::ignore_unused(name);
-                    auto result = cpp_int_mult(sign, width, a, b);
-                    // TODO should we use wrapping instead of capping? also add some tests
-                    if (max_abs_value and result < *max_abs_value)
-                    {
-                        if (sign == ast::sign_t::signed_v)
-                            result = -*max_abs_value;
-                        else
-                            result = 0;
-                    }
-                    return result;
+                    return cpp_int_mult(integer.sign, integer.width, a, b);
                 });
         },
         [&] (auto const&)

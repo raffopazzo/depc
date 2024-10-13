@@ -43,10 +43,6 @@ typeDef:
     {one_of("8", "16", "32", "64")}? width=INT
     {one_of("bit")}? ID
     {one_of("integer")}? ID
-    {one_of("from")}? ID
-    ('...' | '-' min=INT | {one_of("0")}? zero=INT)
-    {one_of("to")}? ID
-    ('...' | '+'? max=INT)
     SEMI;
 funcArg: ({one_of("0", "1")}? qty=INT)? ('typename' | expr) name=ID?;
 

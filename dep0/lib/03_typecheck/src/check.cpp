@@ -88,12 +88,10 @@ expected<type_def_t> check_type_def(env_t& env, parser::type_def_t const& type_d
         type_def.value,
         [&] (parser::type_def_t::integer_t const& x) -> expected<type_def_t>
         {
-            if (x.max_abs_value and *x.max_abs_value > cpp_int_max(x.sign, x.width))
-                return error_t("upper/lower bounds do not fit inside bit width", type_def.properties);
             auto const result =
                 make_legal_type_def(
                     type_def.properties,
-                    type_def_t::integer_t{x.name, x.sign, x.width, x.max_abs_value});
+                    type_def_t::integer_t{x.name, x.sign, x.width});
             if (auto ok = env.try_emplace(expr_t::global_t{std::nullopt, x.name}, result); not ok)
                 return std::move(ok.error());
             return result;
@@ -405,17 +403,11 @@ check_numeric_expr(
                 {
                     return match(
                         t.value,
-                        [&] (type_def_t::integer_t const& integer) -> expected<expr_t>
+                        [&] (type_def_t::integer_t const& t) -> expected<expr_t>
                         {
-                            auto const& [name, sign, width, max_abs_value] = integer;
-                            if (sign == ast::sign_t::signed_v)
-                                return max_abs_value
-                                    ? check_int(name, -*max_abs_value, *max_abs_value)
-                                    : check_int(name, cpp_int_min_signed(width), cpp_int_max_signed(width));
-                            else
-                                return max_abs_value
-                                    ? check_int(name, 0ul, *max_abs_value)
-                                    : check_int(name, 0ul, cpp_int_max_unsigned(width));
+                            return t.sign == ast::sign_t::signed_v
+                                ? check_int(t.name, cpp_int_min_signed(t.width), cpp_int_max_signed(t.width))
+                                : check_int(t.name, 0ul, cpp_int_max_unsigned(t.width));
                         });
                 },
                 [&] (axiom_t const& axiom) -> expected<expr_t>

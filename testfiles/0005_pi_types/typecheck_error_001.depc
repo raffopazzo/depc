@@ -1,4 +1,4 @@
-typedef t = signed 32 bit integer from ... to ...;
+typedef t = signed 32 bit integer;
 func succ(typename t, t x) -> t
 {
     return x + 1; // typecheck error: type mismatch between numeric constant and `t`

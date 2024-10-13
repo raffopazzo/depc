@@ -1,0 +1,4 @@
+func two() -> i32_t
+{
+    return 1 * 2;
+}

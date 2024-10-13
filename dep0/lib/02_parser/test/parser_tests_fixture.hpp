@@ -141,6 +141,12 @@ struct ParserTestsFixture
     }
 
     template <typename... Args>
+    static constexpr auto mult(Args&&... args)
+    {
+        return dep0::testing::mult<dep0::parser::properties_t>(std::forward<Args>(args)...);
+    }
+
+    template <typename... Args>
     static constexpr auto plus(Args&&... args)
     {
         return dep0::testing::plus<dep0::parser::properties_t>(std::forward<Args>(args)...);

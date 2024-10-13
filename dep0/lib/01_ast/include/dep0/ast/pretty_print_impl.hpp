@@ -437,6 +437,11 @@ std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::arith_expr_t co
         {
             pretty_print(os, x.lhs.get(), indent);
             pretty_print(os << " - ", x.rhs.get(), indent);
+        },
+        [&] (typename expr_t<P>::arith_expr_t::mult_t const& x)
+        {
+            pretty_print(os, x.lhs.get(), indent);
+            pretty_print(os << " * ", x.rhs.get(), indent);
         });
     return os;
 }

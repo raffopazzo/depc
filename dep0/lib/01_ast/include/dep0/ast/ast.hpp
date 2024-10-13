@@ -202,7 +202,8 @@ struct expr_t
     {
         struct plus_t { rec_t lhs, rhs; };
         struct minus_t { rec_t lhs, rhs; };
-        using value_t = std::variant<plus_t, minus_t>;
+        struct mult_t { rec_t lhs, rhs; };
+        using value_t = std::variant<plus_t, minus_t, mult_t>;
         value_t value;
     };
 

@@ -58,6 +58,7 @@ RBRACK: ']';
 RCURLY: '}';
 RPAREN: ')';
 SEMI: ';';
+STAR: '*';
 
 // Tokens
 ID: ALPHA ALPHANUM*;

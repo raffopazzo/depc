@@ -73,7 +73,7 @@ expr:
     | expr '[' expr ']' # subscriptExpr
     | value=expr 'because' reason=expr # becauseExpr
     | 'not' expr # notExpr
-    | lhs=expr op=('+'|'-') rhs=expr # plusOrMinusExpr
+    | lhs=expr op=('+' | '-') rhs=expr # plusOrMinusExpr
     | lhs=expr op=('<' | '<=' | '>' | '>=') rhs=expr # relationExpr
     | lhs=expr op=('==' | '!=') rhs=expr # equalityExpr
     | lhs=expr 'xor' rhs=expr # xorExpr

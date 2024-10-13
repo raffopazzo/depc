@@ -196,7 +196,7 @@ BOOST_AUTO_TEST_CASE(pass_004)
 BOOST_AUTO_TEST_CASE(pass_005)
 {
     BOOST_TEST_REQUIRE(pass("0017_minus_expr/pass_005.depc"));
-    BOOST_TEST_REQUIRE(pass_result->entries.size() == 2ul);
+    BOOST_TEST_REQUIRE(pass_result->entries.size() == 3ul);
     {
         auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[0]);
         BOOST_TEST_REQUIRE(f);
@@ -213,6 +213,18 @@ BOOST_AUTO_TEST_CASE(pass_005)
         auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[1]);
         BOOST_TEST_REQUIRE(f);
         BOOST_TEST(f->name == "g");
+        BOOST_TEST_REQUIRE(f->value.args.size() == 3ul);
+        BOOST_TEST(is_arg(f->value.args[0], is_i32, "a"));
+        BOOST_TEST(is_arg(f->value.args[1], is_i32, "b"));
+        BOOST_TEST(is_arg(f->value.args[2], is_i32, "c"));
+        BOOST_TEST(is_i32(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], minus(plus(var("a"), var("b")), var("c"))));
+    }
+    {
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[2]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "h");
         BOOST_TEST_REQUIRE(f->value.args.size() == 3ul);
         BOOST_TEST(is_arg(f->value.args[0], is_i32, "a"));
         BOOST_TEST(is_arg(f->value.args[1], is_i32, "b"));

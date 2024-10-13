@@ -147,7 +147,20 @@ BOOST_AUTO_TEST_CASE(pass_005)
         auto const a = exactly(f->getArg(0ul));
         auto const b = exactly(f->getArg(1ul));
         auto const c = exactly(f->getArg(2ul));
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), sub_of(a, add_of(a, b))));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), sub_of(add_of(a, b), c)));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("h");
+        BOOST_TEST_REQUIRE(
+            is_function_of(
+                f,
+                std::tuple{arg_of(is_i32, "a", sext), arg_of(is_i32, "b", sext), arg_of(is_i32, "c", sext)},
+                is_i32, sext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        auto const a = exactly(f->getArg(0ul));
+        auto const b = exactly(f->getArg(1ul));
+        auto const c = exactly(f->getArg(2ul));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), sub_of(a, add_of(b, c))));
     }
 }
 

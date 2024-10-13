@@ -1,0 +1,9 @@
+func f(i32_t a, i32_t b, i32_t c) -> i32_t
+{
+    return a - b + c; // +/- have same precendence, so should parse as (a-b)+c
+}
+
+func g(i32_t a, i32_t b, i32_t c) -> i32_t
+{
+    return a - (b + c);
+}

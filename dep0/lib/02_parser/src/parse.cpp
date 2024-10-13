@@ -390,30 +390,22 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         throw error_t("unexpected alternative when parsing RelationExprContext", loc);
     }
 
-    virtual std::any visitPlusExpr(DepCParser::PlusExprContext* ctx) override
+    virtual std::any visitPlusOrMinusExpr(DepCParser::PlusOrMinusExprContext* ctx) override
     {
         assert(ctx);
         assert(ctx->lhs);
         assert(ctx->rhs);
         return expr_t{
             get_loc(src, *ctx),
-            expr_t::arith_expr_t{
-                expr_t::arith_expr_t::plus_t{
-                    visitExpr(ctx->lhs),
-                    visitExpr(ctx->rhs)}}};
-    }
-
-    virtual std::any visitMinusExpr(DepCParser::MinusExprContext* ctx) override
-    {
-        assert(ctx);
-        assert(ctx->lhs);
-        assert(ctx->rhs);
-        return expr_t{
-            get_loc(src, *ctx),
-            expr_t::arith_expr_t{
-                expr_t::arith_expr_t::minus_t{
-                    visitExpr(ctx->lhs),
-                    visitExpr(ctx->rhs)}}};
+            ctx->PLUS()
+                ? expr_t::arith_expr_t{
+                    expr_t::arith_expr_t::plus_t{
+                        visitExpr(ctx->lhs),
+                        visitExpr(ctx->rhs)}}
+                : expr_t::arith_expr_t{
+                    expr_t::arith_expr_t::minus_t{
+                        visitExpr(ctx->lhs),
+                        visitExpr(ctx->rhs)}}};
     }
 
     virtual std::any visitNotExpr(DepCParser::NotExprContext* ctx) override
@@ -604,10 +596,8 @@ struct parse_visitor_t : dep0::DepCParserVisitor
             return std::any_cast<expr_t>(visitBecauseExpr(p));
         if (auto const p = dynamic_cast<DepCParser::NotExprContext*>(ctx))
             return std::any_cast<expr_t>(visitNotExpr(p));
-        if (auto const p = dynamic_cast<DepCParser::PlusExprContext*>(ctx))
-            return std::any_cast<expr_t>(visitPlusExpr(p));
-        if (auto const p = dynamic_cast<DepCParser::MinusExprContext*>(ctx))
-            return std::any_cast<expr_t>(visitMinusExpr(p));
+        if (auto const p = dynamic_cast<DepCParser::PlusOrMinusExprContext*>(ctx))
+            return std::any_cast<expr_t>(visitPlusOrMinusExpr(p));
         if (auto const p = dynamic_cast<DepCParser::RelationExprContext*>(ctx))
             return std::any_cast<expr_t>(visitRelationExpr(p));
         if (auto const p = dynamic_cast<DepCParser::EqualityExprContext*>(ctx))

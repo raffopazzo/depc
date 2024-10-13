@@ -1,0 +1,10 @@
+func one() -> i32_t { return 1; }
+func two() -> i32_t { return 2; }
+func minus_one() -> i32_t { return one() - two(); }
+func minus_two() -> i32_t { return minus_one() - 1; }
+func three() -> i32_t { return 2 - minus_one(); }
+func four() -> i32_t { return +3 - minus_one(); }
+func minus_five() -> i32_t { return 1 - four() - 2; }
+func minus_six() -> i32_t { return -11 - minus_five(); }
+func minus_seven() -> i32_t { return minus_five() - +2; }
+func minus_four() -> i32_t { return minus_seven() - -3; }

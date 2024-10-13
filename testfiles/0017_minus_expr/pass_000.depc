@@ -1,0 +1,4 @@
+func minus_one() -> i32_t
+{
+    return 1 - 2;
+}

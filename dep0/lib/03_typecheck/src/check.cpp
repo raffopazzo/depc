@@ -513,6 +513,20 @@ check_expr(
                     if (not lhs) return std::move(lhs.error());
                     auto rhs = check_expr(env, ctx, x.rhs.get(), expected_type, is_mutable, usage, usage_multiplier);
                     if (not rhs) return std::move(rhs.error());
+                    if constexpr (std::is_same_v<T, parser::expr_t::arith_expr_t::div_t>)
+                    {
+                        auto const zero = make_legal_expr(expected_type, expr_t::numeric_constant_t{0});
+                        auto const proof_type =
+                            derivation_rules::make_true_t(
+                                derivation_rules::make_relation_expr(
+                                    expr_t::relation_expr_t::neq_t{*rhs, zero}));
+                        if (not search_proof(env, ctx, proof_type, is_mutable, usage, ast::qty_t::zero))
+                        {
+                            std::ostringstream err;
+                            pretty_print(err << "cannot verify that divisor `", *rhs) << "` is non-zero";
+                            return dep0::error_t(err.str(), loc);
+                        }
+                    }
                     return make_legal_expr(
                         expected_type,
                         boost::hana::overload(
@@ -527,6 +541,10 @@ check_expr(
                             [&] (boost::hana::type<parser::expr_t::arith_expr_t::mult_t>) -> expr_t::arith_expr_t
                             {
                                 return {expr_t::arith_expr_t::mult_t{std::move(*lhs), std::move(*rhs)}};
+                            },
+                            [&] (boost::hana::type<parser::expr_t::arith_expr_t::div_t>) -> expr_t::arith_expr_t
+                            {
+                                return {expr_t::arith_expr_t::div_t{std::move(*lhs), std::move(*rhs)}};
                             })(boost::hana::type_c<T>));
                 });
         },

@@ -58,6 +58,7 @@ RBRACK: ']';
 RCURLY: '}';
 RPAREN: ')';
 SEMI: ';';
+SLASH: '/';
 STAR: '*';
 
 // Tokens

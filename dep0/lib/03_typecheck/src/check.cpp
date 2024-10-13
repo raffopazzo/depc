@@ -531,6 +531,10 @@ check_expr(
                             [&] (boost::hana::type<parser::expr_t::arith_expr_t::minus_t>) -> expr_t::arith_expr_t
                             {
                                 return {expr_t::arith_expr_t::minus_t{std::move(*lhs), std::move(*rhs)}};
+                            },
+                            [&] (boost::hana::type<parser::expr_t::arith_expr_t::mult_t>) -> expr_t::arith_expr_t
+                            {
+                                return {expr_t::arith_expr_t::mult_t{std::move(*lhs), std::move(*rhs)}};
                             })(boost::hana::type_c<T>));
                 });
         },

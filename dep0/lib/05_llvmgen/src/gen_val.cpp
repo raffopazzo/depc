@@ -304,6 +304,10 @@ llvm::Value* gen_val(
                             [&] (boost::hana::type<typecheck::expr_t::arith_expr_t::minus_t>)
                             {
                                 return builder.CreateSub(lhs, rhs);
+                            },
+                            [&] (boost::hana::type<typecheck::expr_t::arith_expr_t::mult_t>)
+                            {
+                                return builder.CreateMul(lhs, rhs);
                             })(boost::hana::type_c<T>);
                     // for user-defined integrals we might have to manually wrap around
                     // TODO this is broken because:

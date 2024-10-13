@@ -1,6 +1,7 @@
 #include "private/delta_unfold.hpp"
 
 #include "private/cpp_int_add.hpp"
+#include "private/cpp_int_mult.hpp"
 #include "private/cpp_int_sub.hpp"
 #include "private/derivation_rules.hpp"
 
@@ -91,6 +92,9 @@ reduce(env_t const&, hana::type<expr_t::arith_expr_t::plus_t>, cpp_int const& a,
 
 static cpp_int
 reduce(env_t const&, hana::type<expr_t::arith_expr_t::minus_t>, cpp_int const& a, cpp_int const& b, expr_t const& ty);
+
+static cpp_int
+reduce(env_t const&, hana::type<expr_t::arith_expr_t::mult_t>, cpp_int const& a, cpp_int const& b, expr_t const& ty);
 /** @} */
 
 bool delta_unfold(env_t const& env, ctx_t const& ctx, stmt_t& stmt)
@@ -289,6 +293,53 @@ reduce(
                     auto const& [name, sign, width, max_abs_value] = integer;
                     boost::ignore_unused(name);
                     auto result = cpp_int_sub(sign, width, a, b);
+                    // TODO should we use wrapping instead of capping? also add some tests
+                    if (max_abs_value and result < *max_abs_value)
+                    {
+                        if (sign == ast::sign_t::signed_v)
+                            result = -*max_abs_value;
+                        else
+                            result = 0;
+                    }
+                    return result;
+                });
+        },
+        [&] (auto const&)
+        {
+            assert(false and "unknown type for primitive delta-reduction of `a - b`");
+            return cpp_int{};
+        });
+}
+
+cpp_int
+reduce(
+    env_t const& env,
+    hana::type<expr_t::arith_expr_t::mult_t>,
+    cpp_int const& a,
+    cpp_int const& b,
+    expr_t const& type)
+{
+    return match(
+        type.value,
+        [&] (expr_t::i8_t) { return cpp_int_mult_signed<8>(a, b); },
+        [&] (expr_t::i16_t) { return cpp_int_mult_signed<16>(a, b); },
+        [&] (expr_t::i32_t) { return cpp_int_mult_signed<32>(a, b); },
+        [&] (expr_t::i64_t) { return cpp_int_mult_signed<64>(a, b); },
+        [&] (expr_t::u8_t) { return cpp_int_mult_unsigned<8>(a, b); },
+        [&] (expr_t::u16_t) { return cpp_int_mult_unsigned<16>(a, b); },
+        [&] (expr_t::u32_t) { return cpp_int_mult_unsigned<32>(a, b); },
+        [&] (expr_t::u64_t) { return cpp_int_mult_unsigned<64>(a, b); },
+        [&] (expr_t::global_t const& g)
+        {
+            auto const type_def = std::get_if<type_def_t>(env[g]);
+            assert(type_def and "global must refer to a typedef");
+            return match(
+                type_def->value,
+                [&] (type_def_t::integer_t const& integer)
+                {
+                    auto const& [name, sign, width, max_abs_value] = integer;
+                    boost::ignore_unused(name);
+                    auto result = cpp_int_mult(sign, width, a, b);
                     // TODO should we use wrapping instead of capping? also add some tests
                     if (max_abs_value and result < *max_abs_value)
                     {

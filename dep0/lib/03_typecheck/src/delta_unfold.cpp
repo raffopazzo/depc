@@ -16,6 +16,10 @@
 #include <limits>
 #include <optional>
 
+namespace hana = boost::hana;
+
+using cpp_int = boost::multiprecision::cpp_int;
+
 namespace dep0::typecheck {
 
 namespace impl {
@@ -54,6 +58,40 @@ static bool delta_unfold(env_t const&, ctx_t const&, expr_t::array_t&) { return 
 static bool delta_unfold(env_t const&, ctx_t const&, expr_t::init_list_t&);
 static bool delta_unfold(env_t const&, ctx_t const&, expr_t::subscript_t&);
 static bool delta_unfold(env_t const&, ctx_t const&, expr_t::because_t&);
+
+/**
+ * Return the primitive delta-reduction of boolean expressions, boolean relations and numeric relations.
+ * @{
+ */
+static bool reduce(hana::type<expr_t::boolean_expr_t::and_t>, bool const a, bool const b) { return a and b; }
+static bool reduce(hana::type<expr_t::boolean_expr_t::or_t>, bool const a, bool const b) { return a or b; }
+static bool reduce(hana::type<expr_t::boolean_expr_t::xor_t>, bool const a, bool const b) { return a xor b; }
+
+static bool reduce(hana::type<expr_t::relation_expr_t::eq_t>, bool const a, bool const b) { return a == b; }
+static bool reduce(hana::type<expr_t::relation_expr_t::neq_t>, bool const a, bool const b) { return a != b; }
+static bool reduce(hana::type<expr_t::relation_expr_t::gt_t>, bool const a, bool const b) { return a > b; }
+static bool reduce(hana::type<expr_t::relation_expr_t::gte_t>, bool const a, bool const b) { return a >= b; }
+static bool reduce(hana::type<expr_t::relation_expr_t::lt_t>, bool const a, bool const b) { return a < b; }
+static bool reduce(hana::type<expr_t::relation_expr_t::lte_t>, bool const a, bool const b) { return a <= b; }
+
+static bool reduce(hana::type<expr_t::relation_expr_t::eq_t>, cpp_int const& a, cpp_int const& b) { return a == b; }
+static bool reduce(hana::type<expr_t::relation_expr_t::neq_t>, cpp_int const& a, cpp_int const& b) { return a != b; }
+static bool reduce(hana::type<expr_t::relation_expr_t::gt_t>, cpp_int const& a, cpp_int const& b) { return a > b; }
+static bool reduce(hana::type<expr_t::relation_expr_t::gte_t>, cpp_int const& a, cpp_int const& b) { return a >= b; }
+static bool reduce(hana::type<expr_t::relation_expr_t::lt_t>, cpp_int const& a, cpp_int const& b) { return a < b; }
+static bool reduce(hana::type<expr_t::relation_expr_t::lte_t>, cpp_int const& a, cpp_int const& b) { return a <= b; }
+/** @} */
+
+/**
+ * Return the primitive delta-reduction of arithmetic expressions, like `a + b`, in the domain of the given type.
+ * @{
+ */
+static cpp_int
+reduce(env_t const&, hana::type<expr_t::arith_expr_t::plus_t>, cpp_int const& a, cpp_int const& b, expr_t const& ty);
+
+static cpp_int
+reduce(env_t const&, hana::type<expr_t::arith_expr_t::minus_t>, cpp_int const& a, cpp_int const& b, expr_t const& ty);
+/** @} */
 
 bool delta_unfold(env_t const& env, ctx_t const& ctx, stmt_t& stmt)
 {
@@ -175,6 +213,100 @@ bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t::because_t& x)
     return delta_unfold(env, ctx, x.value.get()) or delta_unfold(env, ctx, x.reason.get());
 }
 
+cpp_int
+reduce(
+    env_t const& env,
+    hana::type<expr_t::arith_expr_t::plus_t>,
+    cpp_int const& a,
+    cpp_int const& b,
+    expr_t const& type)
+{
+    return match(
+        type.value,
+        [&] (expr_t::i8_t) { return cpp_int_add_signed<8>(a, b); },
+        [&] (expr_t::i16_t) { return cpp_int_add_signed<16>(a, b); },
+        [&] (expr_t::i32_t) { return cpp_int_add_signed<32>(a, b); },
+        [&] (expr_t::i64_t) { return cpp_int_add_signed<64>(a, b); },
+        [&] (expr_t::u8_t) { return cpp_int_add_unsigned<8>(a, b); },
+        [&] (expr_t::u16_t) { return cpp_int_add_unsigned<16>(a, b); },
+        [&] (expr_t::u32_t) { return cpp_int_add_unsigned<32>(a, b); },
+        [&] (expr_t::u64_t) { return cpp_int_add_unsigned<64>(a, b); },
+        [&] (expr_t::global_t const& g)
+        {
+            auto const type_def = std::get_if<type_def_t>(env[g]);
+            assert(type_def and "global must refer to a typedef");
+            return match(
+                type_def->value,
+                [&] (type_def_t::integer_t const& integer)
+                {
+                    auto const& [name, sign, width, max_abs_value] = integer;
+                    boost::ignore_unused(name);
+                    auto result = cpp_int_add(sign, width, a, b);
+                    // TODO should we use wrapping instead of capping? also add some tests
+                    if (max_abs_value and result > *max_abs_value)
+                    {
+                        if (sign == ast::sign_t::signed_v)
+                            result = -*max_abs_value;
+                        else
+                            result = 0;
+                    }
+                    return result;
+                });
+        },
+        [&] (auto const&)
+        {
+            assert(false and "unknown type for primitive delta-reduction of `a + b`");
+            return cpp_int{};
+        });
+}
+
+cpp_int
+reduce(
+    env_t const& env,
+    hana::type<expr_t::arith_expr_t::minus_t>,
+    cpp_int const& a,
+    cpp_int const& b,
+    expr_t const& type)
+{
+    return match(
+        type.value,
+        [&] (expr_t::i8_t) { return cpp_int_sub_signed<8>(a, b); },
+        [&] (expr_t::i16_t) { return cpp_int_sub_signed<16>(a, b); },
+        [&] (expr_t::i32_t) { return cpp_int_sub_signed<32>(a, b); },
+        [&] (expr_t::i64_t) { return cpp_int_sub_signed<64>(a, b); },
+        [&] (expr_t::u8_t) { return cpp_int_sub_unsigned<8>(a, b); },
+        [&] (expr_t::u16_t) { return cpp_int_sub_unsigned<16>(a, b); },
+        [&] (expr_t::u32_t) { return cpp_int_sub_unsigned<32>(a, b); },
+        [&] (expr_t::u64_t) { return cpp_int_sub_unsigned<64>(a, b); },
+        [&] (expr_t::global_t const& g)
+        {
+            auto const type_def = std::get_if<type_def_t>(env[g]);
+            assert(type_def and "global must refer to a typedef");
+            return match(
+                type_def->value,
+                [&] (type_def_t::integer_t const& integer)
+                {
+                    auto const& [name, sign, width, max_abs_value] = integer;
+                    boost::ignore_unused(name);
+                    auto result = cpp_int_sub(sign, width, a, b);
+                    // TODO should we use wrapping instead of capping? also add some tests
+                    if (max_abs_value and result < *max_abs_value)
+                    {
+                        if (sign == ast::sign_t::signed_v)
+                            result = -*max_abs_value;
+                        else
+                            result = 0;
+                    }
+                    return result;
+                });
+        },
+        [&] (auto const&)
+        {
+            assert(false and "unknown type for primitive delta-reduction of `a - b`");
+            return cpp_int{};
+        });
+}
+
 } // namespace impl
 
 bool delta_unfold(env_t const& env, ctx_t const& ctx, body_t& body)
@@ -195,9 +327,9 @@ bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t& expr)
         expr.value,
         [&] (expr_t::boolean_expr_t& x)
         {
-            bool changed = match(
+            bool const changed = match(
                 x.value,
-                [&] (expr_t::boolean_expr_t::not_t& x)
+                [&] (expr_t::boolean_expr_t::not_t const& x)
                 {
                     if (auto const c = std::get_if<expr_t::boolean_constant_t>(&x.expr.get().value))
                     {
@@ -207,25 +339,12 @@ bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t& expr)
                     }
                     return false;
                 },
-                [&] <typename T> (T& x)
+                [&] <typename T> (T const& x)
                 {
                     if (auto const a = std::get_if<expr_t::boolean_constant_t>(&x.lhs.get().value))
                         if (auto const b = std::get_if<expr_t::boolean_constant_t>(&x.rhs.get().value))
                         {
-                            bool const c =
-                                boost::hana::overload(
-                                    [&] (boost::hana::type<expr_t::boolean_expr_t::and_t>)
-                                    {
-                                        return a->value and b->value;
-                                    },
-                                    [&] (boost::hana::type<expr_t::boolean_expr_t::or_t>)
-                                    {
-                                        return a->value or b->value;
-                                    },
-                                    [&] (boost::hana::type<expr_t::boolean_expr_t::xor_t>)
-                                    {
-                                        return a->value xor b->value;
-                                    })(boost::hana::type_c<T>);
+                            bool const c = impl::reduce(hana::type_c<T>, a->value, b->value);
                             expr.value.template emplace<expr_t::boolean_constant_t>(c);
                             return true;
                         }
@@ -235,71 +354,21 @@ bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t& expr)
         },
         [&] (expr_t::relation_expr_t& x)
         {
-            bool changed = match(
+            bool const changed = match(
                 x.value,
-                [&] <typename T> (T& x)
+                [&] <typename T> (T const& x)
                 {
                     if (auto const a = std::get_if<expr_t::boolean_constant_t>(&x.lhs.get().value))
                         if (auto const b = std::get_if<expr_t::boolean_constant_t>(&x.rhs.get().value))
                         {
-                            bool const c =
-                                boost::hana::overload(
-                                    [&] (boost::hana::type<expr_t::relation_expr_t::eq_t>)
-                                    {
-                                        return a->value == b->value;
-                                    },
-                                    [&] (boost::hana::type<expr_t::relation_expr_t::neq_t>)
-                                    {
-                                        return a->value != b->value;
-                                    },
-                                    [&] (boost::hana::type<expr_t::relation_expr_t::gt_t>)
-                                    {
-                                        return a->value > b->value;
-                                    },
-                                    [&] (boost::hana::type<expr_t::relation_expr_t::gte_t>)
-                                    {
-                                        return a->value >= b->value;
-                                    },
-                                    [&] (boost::hana::type<expr_t::relation_expr_t::lt_t>)
-                                    {
-                                        return a->value < b->value;
-                                    },
-                                    [&] (boost::hana::type<expr_t::relation_expr_t::lte_t>)
-                                    {
-                                        return a->value <= b->value;
-                                    })(boost::hana::type_c<T>);
+                            bool const c = impl::reduce(hana::type_c<T>, a->value, b->value);
                             expr.value.template emplace<expr_t::boolean_constant_t>(c);
                             return true;
                         }
                     if (auto const a = std::get_if<expr_t::numeric_constant_t>(&x.lhs.get().value))
                         if (auto const b = std::get_if<expr_t::numeric_constant_t>(&x.rhs.get().value))
                         {
-                            bool const c =
-                                boost::hana::overload(
-                                    [&] (boost::hana::type<expr_t::relation_expr_t::eq_t>)
-                                    {
-                                        return a->value == b->value;
-                                    },
-                                    [&] (boost::hana::type<expr_t::relation_expr_t::neq_t>)
-                                    {
-                                        return a->value != b->value;
-                                    },
-                                    [&] (boost::hana::type<expr_t::relation_expr_t::gt_t>)
-                                    {
-                                        return a->value > b->value;
-                                    },
-                                    [&] (boost::hana::type<expr_t::relation_expr_t::gte_t>)
-                                    {
-                                        return a->value >= b->value;
-                                    },
-                                    [&] (boost::hana::type<expr_t::relation_expr_t::lt_t>)
-                                    {
-                                        return a->value < b->value;
-                                    },
-                                    [&] (boost::hana::type<expr_t::relation_expr_t::lte_t>)
-                                    {
-                                        return a->value <= b->value;
-                                    })(boost::hana::type_c<T>);
+                            bool const c = impl::reduce(hana::type_c<T>, a->value, b->value);
                             expr.value.template emplace<expr_t::boolean_constant_t>(c);
                             return true;
                         }
@@ -309,101 +378,18 @@ bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t& expr)
         },
         [&] (expr_t::arith_expr_t& x)
         {
-            bool changed = match(
+            bool const changed = match(
                 x.value,
-                [&] (expr_t::arith_expr_t::plus_t& x)
+                [&] <typename T> (T const& x)
                 {
                     if (auto const n = std::get_if<expr_t::numeric_constant_t>(&x.lhs.get().value))
                         if (auto const m = std::get_if<expr_t::numeric_constant_t>(&x.rhs.get().value))
                         {
-                            std::optional<boost::multiprecision::cpp_int> result;
-                            match(
-                                std::get<expr_t>(x.lhs.get().properties.sort.get()).value,
-                                [&] (expr_t::i8_t) { result = cpp_int_add_signed<8>(n->value, m->value); },
-                                [&] (expr_t::i16_t) { result = cpp_int_add_signed<16>(n->value, m->value); },
-                                [&] (expr_t::i32_t) { result = cpp_int_add_signed<32>(n->value, m->value); },
-                                [&] (expr_t::i64_t) { result = cpp_int_add_signed<64>(n->value, m->value); },
-                                [&] (expr_t::u8_t) { result = cpp_int_add_unsigned<8>(n->value, m->value); },
-                                [&] (expr_t::u16_t) { result = cpp_int_add_unsigned<16>(n->value, m->value); },
-                                [&] (expr_t::u32_t) { result = cpp_int_add_unsigned<32>(n->value, m->value); },
-                                [&] (expr_t::u64_t) { result = cpp_int_add_unsigned<64>(n->value, m->value); },
-                                [&] (expr_t::global_t const& g)
-                                {
-                                    if (auto const type_def = std::get_if<type_def_t>(env[g]))
-                                        match(
-                                            type_def->value,
-                                            [&] (type_def_t::integer_t const& integer)
-                                            {
-                                                auto const& [name, sign, width, max_abs_value] = integer;
-                                                boost::ignore_unused(name);
-                                                result = cpp_int_add(sign, width, n->value, m->value);
-                                                // TODO should we use wrapping instead of capping? also add some tests
-                                                if (max_abs_value and *result > *max_abs_value)
-                                                {
-                                                    if (sign == ast::sign_t::signed_v)
-                                                        result.emplace(-*max_abs_value);
-                                                    else
-                                                        result.emplace(0);
-                                                }
-                                            });
-                                },
-                                [&] (auto const&)
-                                {
-                                    assert(false and "type of numeric constant was not normalized");
-                                });
-                            if (result)
-                            {
-                                expr.value = expr_t::numeric_constant_t{std::move(*result)};
-                                return true;
-                            }
-                        }
-                    return false;
-                },
-                [&] (expr_t::arith_expr_t::minus_t& x)
-                {
-                    if (auto const n = std::get_if<expr_t::numeric_constant_t>(&x.lhs.get().value))
-                        if (auto const m = std::get_if<expr_t::numeric_constant_t>(&x.rhs.get().value))
-                        {
-                            std::optional<boost::multiprecision::cpp_int> result;
-                            match(
-                                std::get<expr_t>(x.lhs.get().properties.sort.get()).value,
-                                [&] (expr_t::i8_t) { result = cpp_int_sub_signed<8>(n->value, m->value); },
-                                [&] (expr_t::i16_t) { result = cpp_int_sub_signed<16>(n->value, m->value); },
-                                [&] (expr_t::i32_t) { result = cpp_int_sub_signed<32>(n->value, m->value); },
-                                [&] (expr_t::i64_t) { result = cpp_int_sub_signed<64>(n->value, m->value); },
-                                [&] (expr_t::u8_t) { result = cpp_int_sub_unsigned<8>(n->value, m->value); },
-                                [&] (expr_t::u16_t) { result = cpp_int_sub_unsigned<16>(n->value, m->value); },
-                                [&] (expr_t::u32_t) { result = cpp_int_sub_unsigned<32>(n->value, m->value); },
-                                [&] (expr_t::u64_t) { result = cpp_int_sub_unsigned<64>(n->value, m->value); },
-                                [&] (expr_t::global_t const& g)
-                                {
-                                    if (auto const type_def = std::get_if<type_def_t>(env[g]))
-                                        match(
-                                            type_def->value,
-                                            [&] (type_def_t::integer_t const& integer)
-                                            {
-                                                auto const& [name, sign, width, max_abs_value] = integer;
-                                                boost::ignore_unused(name);
-                                                result = cpp_int_sub(sign, width, n->value, m->value);
-                                                // TODO should we use wrapping instead of capping? also add some tests
-                                                if (max_abs_value and *result < *max_abs_value)
-                                                {
-                                                    if (sign == ast::sign_t::signed_v)
-                                                        result.emplace(-*max_abs_value);
-                                                    else
-                                                        result.emplace(0);
-                                                }
-                                            });
-                                },
-                                [&] (auto const&)
-                                {
-                                    assert(false and "type of numeric constant was not normalized");
-                                });
-                            if (result)
-                            {
-                                expr.value = expr_t::numeric_constant_t{std::move(*result)};
-                                return true;
-                            }
+                            auto const& ty = std::get<expr_t>(x.lhs.get().properties.sort.get());
+                            expr.value = expr_t::numeric_constant_t{
+                                impl::reduce(env, hana::type_c<T>, n->value, m->value, ty)
+                            };
+                            return true;
                         }
                     return false;
                 });

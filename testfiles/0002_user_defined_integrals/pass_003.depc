@@ -1,10 +1,1 @@
-typedef sign_t = signed 8 bit integer from -1 to 1;
-typedef hour_t = unsigned 8 bit integer from 0 to 23;
-
-func negative() -> sign_t { return -1; }
-func zero() -> sign_t { return 0; }
-func max_sign() -> sign_t { return 1; }
-func min_sign() -> sign_t { return max_sign() + 1; }
-
-func max_hour() -> hour_t { return 23; }
-func min_hour() -> hour_t { return max_hour() + 1; }
+// This test was removed

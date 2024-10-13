@@ -132,17 +132,7 @@ std::ostream& pretty_print(std::ostream& os, type_def_t<P> const& type_def, std:
                 x.width == width_t::_8 ? "8" :
                 x.width == width_t::_16 ? "16" :
                 x.width == width_t::_32 ? "32" :
-                "64") << " bit integer from ";
-            if (x.sign == sign_t::unsigned_v)
-            {
-                os << "0 to ";
-                x.max_abs_value ? os << *x.max_abs_value : os << "...";
-            }
-            else if (x.max_abs_value)
-                os << '-' << *x.max_abs_value << " to " << *x.max_abs_value;
-            else
-                os << "... to ...";
-            os << ';';
+                "64") << " bit integer;";
         });
     return os;
 }

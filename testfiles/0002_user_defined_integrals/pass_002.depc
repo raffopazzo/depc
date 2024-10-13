@@ -1,3 +1,1 @@
-// can return user defined types on the left
-typedef zero_t = unsigned 8 bit integer from 0 to 0;
-func zero() -> zero_t { return 0; }
+// This test was removed

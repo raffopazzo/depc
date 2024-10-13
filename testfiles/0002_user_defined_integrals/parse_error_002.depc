@@ -1,2 +1,1 @@
-typedef hours_t = unsigned 8 bit integer from ... to 23; // parse error: unsigned lower bound must be 0
-func h() -> hours_t { return 1; }
+// This test was removed

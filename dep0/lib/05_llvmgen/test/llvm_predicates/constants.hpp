@@ -21,11 +21,11 @@ boost::test_tools::predicate_result is_constant(llvm::Value const*, bool);
 boost::test_tools::predicate_result is_constant(llvm::Value const&, int);
 boost::test_tools::predicate_result is_constant(llvm::Value const*, int);
 
-boost::test_tools::predicate_result is_constant(llvm::Value const&, long long);
-boost::test_tools::predicate_result is_constant(llvm::Value const*, long long);
+boost::test_tools::predicate_result is_constant(llvm::Value const&, std::int64_t);
+boost::test_tools::predicate_result is_constant(llvm::Value const*, std::int64_t);
 
-boost::test_tools::predicate_result is_constant(llvm::Value const&, std::size_t);
-boost::test_tools::predicate_result is_constant(llvm::Value const*, std::size_t);
+boost::test_tools::predicate_result is_constant(llvm::Value const&, std::uint64_t);
+boost::test_tools::predicate_result is_constant(llvm::Value const*, std::uint64_t);
 
 } // namespace impl
 
@@ -34,10 +34,10 @@ inline constexpr auto is_constant = boost::hana::overload(
     [] (llvm::Value const* const p, bool const v) { return impl::is_constant(p, v); },
     [] (llvm::Value const& x, int const v) { return impl::is_constant(x, v); },
     [] (llvm::Value const* const p, int const v) { return impl::is_constant(p, v); },
-    [] (llvm::Value const& x, long long const v) { return impl::is_constant(x, v); },
-    [] (llvm::Value const* const p, long long const v) { return impl::is_constant(p, v); },
-    [] (llvm::Value const& x, std::size_t const v) { return impl::is_constant(x, v); },
-    [] (llvm::Value const* const p, std::size_t const v) { return impl::is_constant(p, v); }
+    [] (llvm::Value const& x, std::int64_t const v) { return impl::is_constant(x, v); },
+    [] (llvm::Value const* const p, std::int64_t const v) { return impl::is_constant(p, v); },
+    [] (llvm::Value const& x, std::uint64_t const v) { return impl::is_constant(x, v); },
+    [] (llvm::Value const* const p, std::uint64_t const v) { return impl::is_constant(p, v); }
 );
 
 inline auto constant(bool const v)
@@ -56,7 +56,7 @@ inline auto constant(int const v)
     };
 }
 
-inline auto constant(long long const v)
+inline auto constant(std::int64_t const v)
 {
     return [v] (llvm::Value const& x)
     {
@@ -64,7 +64,7 @@ inline auto constant(long long const v)
     };
 }
 
-inline auto constant(std::size_t const v)
+inline auto constant(std::uint64_t const v)
 {
     return [v] (llvm::Value const& x)
     {

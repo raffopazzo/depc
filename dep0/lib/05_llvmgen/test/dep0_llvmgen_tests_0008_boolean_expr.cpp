@@ -119,13 +119,7 @@ BOOST_AUTO_TEST_CASE(pass_000)
                 f->getEntryBlock().getTerminator(),
                 cmp_of(
                     ICMP_ULT,
-                    select_of(
-                        cmp_of(
-                            ICMP_UGT,
-                            add_of(exactly(f->getArg(0ul)), exactly(f->getArg(1ul))),
-                            constant(23)),
-                        constant(0),
-                        add_of(exactly(f->getArg(0ul)), exactly(f->getArg(1ul)))),
+                    add_of(exactly(f->getArg(0ul)), exactly(f->getArg(1ul))),
                     exactly(f->getArg(0ul)))));
     }
     {
@@ -278,13 +272,7 @@ BOOST_AUTO_TEST_CASE(pass_001)
                 f->getEntryBlock().getTerminator(),
                 cmp_of(
                     ICMP_UGT,
-                    select_of(
-                        cmp_of(
-                            ICMP_UGT,
-                            add_of(exactly(f->getArg(0ul)), exactly(f->getArg(1ul))),
-                            constant(23)),
-                        constant(0),
-                        add_of(exactly(f->getArg(0ul)), exactly(f->getArg(1ul)))),
+                    add_of(exactly(f->getArg(0ul)), exactly(f->getArg(1ul))),
                     exactly(f->getArg(0ul)))));
     }
     {
@@ -437,13 +425,7 @@ BOOST_AUTO_TEST_CASE(pass_002)
                 f->getEntryBlock().getTerminator(),
                 cmp_of(
                     ICMP_ULE,
-                    select_of(
-                        cmp_of(
-                            ICMP_UGT,
-                            add_of(exactly(f->getArg(0ul)), exactly(f->getArg(1ul))),
-                            constant(23)),
-                        constant(0),
-                        add_of(exactly(f->getArg(0ul)), exactly(f->getArg(1ul)))),
+                    add_of(exactly(f->getArg(0ul)), exactly(f->getArg(1ul))),
                     exactly(f->getArg(0ul)))));
     }
     {
@@ -596,13 +578,7 @@ BOOST_AUTO_TEST_CASE(pass_003)
                 f->getEntryBlock().getTerminator(),
                 cmp_of(
                     ICMP_UGE,
-                    select_of(
-                        cmp_of(
-                            ICMP_UGT,
-                            add_of(exactly(f->getArg(0ul)), exactly(f->getArg(1ul))),
-                            constant(23)),
-                        constant(0),
-                        add_of(exactly(f->getArg(0ul)), exactly(f->getArg(1ul)))),
+                    add_of(exactly(f->getArg(0ul)), exactly(f->getArg(1ul))),
                     exactly(f->getArg(0ul)))));
     }
     {
@@ -1309,13 +1285,7 @@ BOOST_AUTO_TEST_CASE(pass_008)
                 f->getEntryBlock().getTerminator(),
                 cmp_of(
                     ICMP_EQ,
-                    select_of(
-                        cmp_of(
-                            ICMP_UGT,
-                            add_of(exactly(x), exactly(y)),
-                            constant(23)),
-                        constant(0),
-                        add_of(exactly(x), exactly(y))),
+                    add_of(exactly(x), exactly(y)),
                     exactly(x))));
     }
     {
@@ -1470,13 +1440,7 @@ BOOST_AUTO_TEST_CASE(pass_009)
                 f->getEntryBlock().getTerminator(),
                 cmp_of(
                     ICMP_NE,
-                    select_of(
-                        cmp_of(
-                            ICMP_UGT,
-                            add_of(exactly(x), exactly(y)),
-                            constant(23)),
-                        constant(0),
-                        add_of(exactly(x), exactly(y))),
+                    add_of(exactly(x), exactly(y)),
                     exactly(x))));
     }
     {

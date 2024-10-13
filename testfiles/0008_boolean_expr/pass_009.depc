@@ -1,5 +1,5 @@
-typedef sign_t = signed 8 bit integer from -1 to 1;
-typedef hours_t = unsigned 8 bit integer from 0 to 23;
+typedef sign_t = signed 8 bit integer;
+typedef hours_t = unsigned 8 bit integer;
 func f0() -> bool_t { return false != true; }
 func f1() -> bool_t { return true == false != true; }
 func f2() -> bool_t { return true == (false != true); }

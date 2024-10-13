@@ -457,7 +457,6 @@ struct type_def_t
         source_text name;
         sign_t sign;
         width_t width;
-        std::optional<boost::multiprecision::cpp_int> max_abs_value;
     };
 
     using properties_t = typename P::type_def_properties_type;

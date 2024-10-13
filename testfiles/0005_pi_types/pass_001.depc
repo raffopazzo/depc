@@ -1,3 +1,3 @@
-typedef int = signed 32 bit integer from ... to ...;
+typedef int = signed 32 bit integer;
 func f(typename t, typename int, t x) -> t { return x; }
 func g() -> int { return f(int, i32_t, 0); }

@@ -1,2 +1,2 @@
-typedef key_t = unsigned 64 bit integer from 0 to ...;
-typedef key_t = unsigned 64 bit integer from 0 to ...; // typecheck error: already defined
+typedef key_t = unsigned 64 bit integer;
+typedef key_t = unsigned 64 bit integer; // typecheck error: already defined

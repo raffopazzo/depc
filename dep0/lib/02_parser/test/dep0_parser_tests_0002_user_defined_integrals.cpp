@@ -9,291 +9,161 @@ using enum dep0::ast::width_t;
 
 BOOST_FIXTURE_TEST_SUITE(dep0_parser_tests_0002_user_defined_integrals, ParserTestsFixture)
 
-BOOST_AUTO_TEST_CASE(pass_000)
+// BOOST_AUTO_TEST_CASE(pass_000) -- this test was removed
+// BOOST_AUTO_TEST_CASE(pass_001) -- this test was removed
+// BOOST_AUTO_TEST_CASE(pass_002) -- this test was removed
+// BOOST_AUTO_TEST_CASE(pass_003) -- this test was removed
+// BOOST_AUTO_TEST_CASE(pass_004) -- this test was removed
+
+BOOST_AUTO_TEST_CASE(pass_005)
 {
-    BOOST_TEST_REQUIRE(pass("0002_user_defined_integrals/pass_000.depc"));
-    // 10 type defs + 16 func defs
-    BOOST_TEST_REQUIRE(pass_result->entries.size() == 26ul);
+    BOOST_TEST_REQUIRE(pass("0002_user_defined_integrals/pass_005.depc"));
+    // 8 type defs + 12 func defs
+    BOOST_TEST_REQUIRE(pass_result->entries.size() == 20ul);
+    auto const signed_8 = std::get_if<dep0::parser::type_def_t>(&pass_result->entries[0]);
+    auto const signed_16 = std::get_if<dep0::parser::type_def_t>(&pass_result->entries[1]);
+    auto const signed_32 = std::get_if<dep0::parser::type_def_t>(&pass_result->entries[2]);
+    auto const signed_64 = std::get_if<dep0::parser::type_def_t>(&pass_result->entries[3]);
+    auto const unsigned_8 = std::get_if<dep0::parser::type_def_t>(&pass_result->entries[4]);
+    auto const unsigned_16 = std::get_if<dep0::parser::type_def_t>(&pass_result->entries[5]);
+    auto const unsigned_32 = std::get_if<dep0::parser::type_def_t>(&pass_result->entries[6]);
+    auto const unsigned_64 = std::get_if<dep0::parser::type_def_t>(&pass_result->entries[7]);
 
-    auto const hours    = std::get_if<dep0::parser::type_def_t>(&pass_result->entries[0]);
-    auto const minutes  = std::get_if<dep0::parser::type_def_t>(&pass_result->entries[1]);
-    auto const seconds  = std::get_if<dep0::parser::type_def_t>(&pass_result->entries[2]);
-    auto const millis   = std::get_if<dep0::parser::type_def_t>(&pass_result->entries[3]);
-    auto const nanos    = std::get_if<dep0::parser::type_def_t>(&pass_result->entries[4]);
-    auto const duration = std::get_if<dep0::parser::type_def_t>(&pass_result->entries[5]);
-    auto const ascii    = std::get_if<dep0::parser::type_def_t>(&pass_result->entries[13]);
-    auto const sign     = std::get_if<dep0::parser::type_def_t>(&pass_result->entries[15]);
-    auto const signal   = std::get_if<dep0::parser::type_def_t>(&pass_result->entries[19]);
-    auto const key      = std::get_if<dep0::parser::type_def_t>(&pass_result->entries[23]);
-
-    BOOST_TEST_REQUIRE(hours);
-    BOOST_TEST_REQUIRE(minutes);
-    BOOST_TEST_REQUIRE(seconds);
-    BOOST_TEST_REQUIRE(millis);
-    BOOST_TEST_REQUIRE(nanos);
-    BOOST_TEST_REQUIRE(duration);
-    BOOST_TEST_REQUIRE(ascii);
-    BOOST_TEST_REQUIRE(sign);
-    BOOST_TEST_REQUIRE(signal);
-    BOOST_TEST_REQUIRE(key);
-
-
-    BOOST_TEST(is_integer_def(*hours,    "hours_t",    unsigned_v, _8,  23));
-    BOOST_TEST(is_integer_def(*minutes,  "minutes_t",  unsigned_v, _8,  59));
-    BOOST_TEST(is_integer_def(*seconds,  "seconds_t",  unsigned_v, _8,  59));
-    BOOST_TEST(is_integer_def(*millis,   "millis_t",   unsigned_v, _16, 999));
-    BOOST_TEST(is_integer_def(*nanos,    "nanos_t",    unsigned_v, _32, 999999999));
-    BOOST_TEST(is_integer_def(*duration, "duration_t", signed_v,   _64, std::nullopt));
-    BOOST_TEST(is_integer_def(*ascii,    "ascii_t",    unsigned_v, _8,  127));
-    BOOST_TEST(is_integer_def(*sign,     "sign_t",     signed_v,   _8,  1));
-    BOOST_TEST(is_integer_def(*signal,   "signal_t",   signed_v,   _8,  15));
-    BOOST_TEST(is_integer_def(*key,      "key_t",      unsigned_v, _64, std::nullopt));
-}
-BOOST_AUTO_TEST_CASE(pass_001) { BOOST_TEST(pass("0002_user_defined_integrals/pass_001.depc")); }
-BOOST_AUTO_TEST_CASE(pass_002) { BOOST_TEST(pass("0002_user_defined_integrals/pass_002.depc")); }
-
-BOOST_AUTO_TEST_CASE(pass_003)
-{
-    BOOST_TEST_REQUIRE(pass("0002_user_defined_integrals/pass_003.depc"));
-    // 2 type defs + 6 func defs
-    BOOST_TEST_REQUIRE(pass_result->entries.size() == 8ul);
-    auto const sign = std::get_if<dep0::parser::type_def_t>(&pass_result->entries[0]);
-    auto const hour = std::get_if<dep0::parser::type_def_t>(&pass_result->entries[1]);
-    BOOST_TEST_REQUIRE(sign);
-    BOOST_TEST_REQUIRE(hour);
-    BOOST_TEST(is_integer_def(*sign, "sign_t", signed_v,   _8,  1));
-    BOOST_TEST(is_integer_def(*hour, "hour_t", unsigned_v, _8, 23));
+    BOOST_TEST_REQUIRE(signed_8);
+    BOOST_TEST_REQUIRE(signed_16);
+    BOOST_TEST_REQUIRE(signed_32);
+    BOOST_TEST_REQUIRE(signed_64);
+    BOOST_TEST_REQUIRE(unsigned_8);
+    BOOST_TEST_REQUIRE(unsigned_16);
+    BOOST_TEST_REQUIRE(unsigned_32);
+    BOOST_TEST_REQUIRE(unsigned_64);
+    BOOST_TEST(is_integer_def(*signed_8, "signed_8_t", signed_v, _8));
+    BOOST_TEST(is_integer_def(*signed_16, "signed_16_t", signed_v, _16));
+    BOOST_TEST(is_integer_def(*signed_32, "signed_32_t", signed_v, _32));
+    BOOST_TEST(is_integer_def(*signed_64, "signed_64_t", signed_v, _64));
+    BOOST_TEST(is_integer_def(*unsigned_8, "unsigned_8_t", unsigned_v, _8));
+    BOOST_TEST(is_integer_def(*unsigned_16, "unsigned_16_t", unsigned_v, _16));
+    BOOST_TEST(is_integer_def(*unsigned_32, "unsigned_32_t", unsigned_v, _32));
+    BOOST_TEST(is_integer_def(*unsigned_64, "unsigned_64_t", unsigned_v, _64));
     {
-        auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[2]);
+        auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[8]);
         BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(f->name == "negative");
-        BOOST_TEST(f->value.args.size() == 0ul);
-        BOOST_TEST(is_var(f->value.ret_type.get(), "sign_t"));
+        BOOST_TEST(f->name == "min_signed_8");
+        BOOST_TEST(is_var(f->value.ret_type.get(), "signed_8_t"));
         BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant(-1)));
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant(-128)));
     }
     {
-        auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[3]);
+        auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[9]);
         BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(f->name == "zero");
-        BOOST_TEST(f->value.args.size() == 0ul);
-        BOOST_TEST(is_var(f->value.ret_type.get(), "sign_t"));
+        BOOST_TEST(f->name == "min_signed_16");
+        BOOST_TEST(is_var(f->value.ret_type.get(), "signed_16_t"));
         BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant(0)));
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant(-32768)));
     }
     {
-        auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[4]);
+        auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[10]);
         BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(f->name == "max_sign");
-        BOOST_TEST(f->value.args.size() == 0ul);
-        BOOST_TEST(is_var(f->value.ret_type.get(), "sign_t"));
+        BOOST_TEST(f->name == "min_signed_32");
+        BOOST_TEST(is_var(f->value.ret_type.get(), "signed_32_t"));
         BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant(1)));
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant("-2147483648")));
     }
     {
-        auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[5]);
+        auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[11]);
         BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(f->name == "min_sign");
-        BOOST_TEST(f->value.args.size() == 0ul);
-        BOOST_TEST(is_var(f->value.ret_type.get(), "sign_t"));
+        BOOST_TEST(f->name == "min_signed_64");
+        BOOST_TEST(is_var(f->value.ret_type.get(), "signed_64_t"));
         BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], plus(app_of(var("max_sign")), constant(1))));
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant("-9223372036854775808")));
     }
     {
-        auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[6]);
+        auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[12]);
         BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(f->name == "max_hour");
-        BOOST_TEST(f->value.args.size() == 0ul);
-        BOOST_TEST(is_var(f->value.ret_type.get(), "hour_t"));
+        BOOST_TEST(f->name == "max_signed_8");
+        BOOST_TEST(is_var(f->value.ret_type.get(), "signed_8_t"));
         BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant(23)));
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant(127)));
     }
     {
-        auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[7]);
+        auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[13]);
         BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(f->name == "min_hour");
-        BOOST_TEST(f->value.args.size() == 0ul);
-        BOOST_TEST(is_var(f->value.ret_type.get(), "hour_t"));
+        BOOST_TEST(f->name == "max_signed_16");
+        BOOST_TEST(is_var(f->value.ret_type.get(), "signed_16_t"));
         BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], plus(app_of(var("max_hour")), constant(1))));
-    }
-}
-
-BOOST_AUTO_TEST_CASE(pass_004)
-{
-    BOOST_TEST_REQUIRE(pass("0002_user_defined_integrals/pass_004.depc"));
-    // 2 type defs + 6 func defs
-    BOOST_TEST_REQUIRE(pass_result->entries.size() == 8ul);
-    auto const sign = std::get_if<dep0::parser::type_def_t>(&pass_result->entries[0]);
-    auto const hour = std::get_if<dep0::parser::type_def_t>(&pass_result->entries[1]);
-    BOOST_TEST_REQUIRE(sign);
-    BOOST_TEST_REQUIRE(hour);
-    BOOST_TEST(is_integer_def(*sign, "sign_t", signed_v,   _8,  1));
-    BOOST_TEST(is_integer_def(*hour, "hour_t", unsigned_v, _8, 23));
-    {
-        auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[2]);
-        BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(f->name == "which");
-        BOOST_TEST_REQUIRE(f->value.args.size() == 1ul);
-        BOOST_TEST(is_arg(f->value.args[0ul], is_bool, "x"));
-        BOOST_TEST(is_typename(f->value.ret_type.get()));
-        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
-        BOOST_TEST(
-            is_if_else(
-                f->value.body.stmts[0ul],
-                var("x"),
-                std::tuple{return_of(var("hour_t"))},
-                std::tuple{return_of(var("sign_t"))}));
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant(32767)));
     }
     {
-        auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[3]);
+        auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[14]);
         BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(f->name == "one_of");
-        BOOST_TEST_REQUIRE(f->value.args.size() == 1ul);
-        BOOST_TEST(is_arg(f->value.args[0ul], is_bool, "x"));
-        BOOST_TEST(is_app_of(f->value.ret_type.get(), var("which"), var("x")));
+        BOOST_TEST(f->name == "max_signed_32");
+        BOOST_TEST(is_var(f->value.ret_type.get(), "signed_32_t"));
         BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
-        BOOST_TEST(
-            is_if_else(
-                f->value.body.stmts[0ul],
-                var("x"),
-                std::tuple{return_of(constant(1))},
-                std::tuple{return_of(constant(1))}));
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant(2147483647)));
     }
     {
-        auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[4]);
+        auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[15]);
         BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(f->name == "max_of");
-        BOOST_TEST_REQUIRE(f->value.args.size() == 1ul);
-        BOOST_TEST(is_arg(f->value.args[0ul], is_bool, "x"));
-        BOOST_TEST(is_app_of(f->value.ret_type.get(), var("which"), var("x")));
+        BOOST_TEST(f->name == "max_signed_64");
+        BOOST_TEST(is_var(f->value.ret_type.get(), "signed_64_t"));
         BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
-        BOOST_TEST(
-            is_if_else(
-                f->value.body.stmts[0ul],
-                var("x"),
-                std::tuple{return_of(constant(23))},
-                std::tuple{return_of(constant(1))}));
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant("9223372036854775807")));
     }
     {
-        auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[5]);
+        auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[16]);
         BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(f->name == "min_of");
-        BOOST_TEST_REQUIRE(f->value.args.size() == 1ul);
-        BOOST_TEST(is_arg(f->value.args[0ul], is_bool, "x"));
-        BOOST_TEST(is_app_of(f->value.ret_type.get(), var("which"), var("x")));
+        BOOST_TEST(f->name == "max_unsigned_8");
+        BOOST_TEST(is_var(f->value.ret_type.get(), "unsigned_8_t"));
         BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
-        BOOST_TEST(
-            is_return_of(
-                f->value.body.stmts[0ul],
-                plus(
-                    app_of(var("max_of"), var("x")),
-                    app_of(var("one_of"), var("x")))));
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant(255)));
     }
     {
-        auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[6]);
+        auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[17]);
         BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(f->name == "min_hour");
-        BOOST_TEST(f->value.args.size() == 0ul);
-        BOOST_TEST(is_var(f->value.ret_type.get(), "hour_t"));
+        BOOST_TEST(f->name == "max_unsigned_16");
+        BOOST_TEST(is_var(f->value.ret_type.get(), "unsigned_16_t"));
         BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], app_of(var("min_of"), constant(true))));
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant(65535)));
     }
     {
-        auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[7]);
+        auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[18]);
         BOOST_TEST_REQUIRE(f);
-        BOOST_TEST(f->name == "min_sign");
-        BOOST_TEST(f->value.args.size() == 0ul);
-        BOOST_TEST(is_var(f->value.ret_type.get(), "sign_t"));
+        BOOST_TEST(f->name == "max_unsigned_32");
+        BOOST_TEST(is_var(f->value.ret_type.get(), "unsigned_32_t"));
         BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], app_of(var("min_of"), constant(false))));
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant("4294967295")));
+    }
+    {
+        auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[19]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "max_unsigned_64");
+        BOOST_TEST(is_var(f->value.ret_type.get(), "unsigned_64_t"));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant("18446744073709551615")));
     }
 }
 
-BOOST_AUTO_TEST_CASE(parse_error_000) { BOOST_TEST(fail("0002_user_defined_integrals/parse_error_000.depc")); }
-BOOST_AUTO_TEST_CASE(parse_error_001) { BOOST_TEST(fail("0002_user_defined_integrals/parse_error_001.depc")); }
-BOOST_AUTO_TEST_CASE(parse_error_002) { BOOST_TEST(fail("0002_user_defined_integrals/parse_error_002.depc")); }
-BOOST_AUTO_TEST_CASE(parse_error_003) { BOOST_TEST(fail("0002_user_defined_integrals/parse_error_003.depc")); }
-BOOST_AUTO_TEST_CASE(parse_error_004) { BOOST_TEST(fail("0002_user_defined_integrals/parse_error_004.depc")); }
-BOOST_AUTO_TEST_CASE(parse_error_005) { BOOST_TEST(fail("0002_user_defined_integrals/parse_error_005.depc")); }
-BOOST_AUTO_TEST_CASE(parse_error_006) { BOOST_TEST(fail("0002_user_defined_integrals/parse_error_006.depc")); }
-BOOST_AUTO_TEST_CASE(parse_error_007) { BOOST_TEST(fail("0002_user_defined_integrals/parse_error_007.depc")); }
+// BOOST_AUTO_TEST_CASE(parse_error_000) -- this test was removed
+// BOOST_AUTO_TEST_CASE(parse_error_001) -- this test was removed
+// BOOST_AUTO_TEST_CASE(parse_error_002) -- this test was removed
+// BOOST_AUTO_TEST_CASE(parse_error_003) -- this test was removed
+// BOOST_AUTO_TEST_CASE(parse_error_004) -- this test was removed
+// BOOST_AUTO_TEST_CASE(parse_error_005) -- this test was removed
+// BOOST_AUTO_TEST_CASE(parse_error_006) -- this test was removed
+// BOOST_AUTO_TEST_CASE(parse_error_007) -- this test was removed
 BOOST_AUTO_TEST_CASE(parse_error_008) { BOOST_TEST(fail("0002_user_defined_integrals/parse_error_008.depc")); }
 BOOST_AUTO_TEST_CASE(parse_error_009) { BOOST_TEST(fail("0002_user_defined_integrals/parse_error_009.depc")); }
 BOOST_AUTO_TEST_CASE(parse_error_010) { BOOST_TEST(fail("0002_user_defined_integrals/parse_error_010.depc")); }
 
 BOOST_AUTO_TEST_CASE(typecheck_error_000) { BOOST_TEST(pass("0002_user_defined_integrals/typecheck_error_000.depc")); }
 
-BOOST_AUTO_TEST_CASE(typecheck_error_001)
-{
-    BOOST_TEST_REQUIRE(pass("0002_user_defined_integrals/typecheck_error_001.depc"));
-    BOOST_TEST_REQUIRE(pass_result->entries.size() == 1ul);
-    auto const t = std::get_if<dep0::parser::type_def_t>(&pass_result->entries[0]);
-    BOOST_TEST_REQUIRE(t);
-    BOOST_TEST(is_integer_def(*t, "sign_t", signed_v, _8, 128));
-}
-
-BOOST_AUTO_TEST_CASE(typecheck_error_002)
-{
-    BOOST_TEST_REQUIRE(pass("0002_user_defined_integrals/typecheck_error_002.depc"));
-    BOOST_TEST_REQUIRE(pass_result->entries.size() == 1ul);
-    auto const t = std::get_if<dep0::parser::type_def_t>(&pass_result->entries[0]);
-    BOOST_TEST_REQUIRE(t);
-    BOOST_TEST(is_integer_def(*t, "unsign_t", unsigned_v, _8, 256));
-}
-
-BOOST_AUTO_TEST_CASE(typecheck_error_003)
-{
-    BOOST_TEST_REQUIRE(pass("0002_user_defined_integrals/typecheck_error_003.depc"));
-    BOOST_TEST_REQUIRE(pass_result->entries.size() == 1ul);
-    auto const t = std::get_if<dep0::parser::type_def_t>(&pass_result->entries[0]);
-    BOOST_TEST_REQUIRE(t);
-    BOOST_TEST(is_integer_def(*t, "sign_t", signed_v, _16, 32768));
-}
-
-BOOST_AUTO_TEST_CASE(typecheck_error_004)
-{
-    BOOST_TEST_REQUIRE(pass("0002_user_defined_integrals/typecheck_error_004.depc"));
-    BOOST_TEST_REQUIRE(pass_result->entries.size() == 1ul);
-    auto const t = std::get_if<dep0::parser::type_def_t>(&pass_result->entries[0]);
-    BOOST_TEST_REQUIRE(t);
-    BOOST_TEST(is_integer_def(*t, "unsign_t", unsigned_v, _16, 65536));
-}
-
-BOOST_AUTO_TEST_CASE(typecheck_error_005)
-{
-    BOOST_TEST_REQUIRE(pass("0002_user_defined_integrals/typecheck_error_005.depc"));
-    BOOST_TEST_REQUIRE(pass_result->entries.size() == 1ul);
-    auto const t = std::get_if<dep0::parser::type_def_t>(&pass_result->entries[0]);
-    BOOST_TEST_REQUIRE(t);
-    BOOST_TEST(is_integer_def(*t, "sign_t", signed_v, _32, 2147483648ul));
-}
-
-BOOST_AUTO_TEST_CASE(typecheck_error_006)
-{
-    BOOST_TEST_REQUIRE(pass("0002_user_defined_integrals/typecheck_error_006.depc"));
-    BOOST_TEST_REQUIRE(pass_result->entries.size() == 1ul);
-    auto const t = std::get_if<dep0::parser::type_def_t>(&pass_result->entries[0]);
-    BOOST_TEST_REQUIRE(t);
-    BOOST_TEST(is_integer_def(*t, "unsign_t", unsigned_v, _32, 4294967296ul));
-}
-
-BOOST_AUTO_TEST_CASE(typecheck_error_007)
-{
-    BOOST_TEST_REQUIRE(pass("0002_user_defined_integrals/typecheck_error_007.depc"));
-    BOOST_TEST_REQUIRE(pass_result->entries.size() == 1ul);
-    auto const t = std::get_if<dep0::parser::type_def_t>(&pass_result->entries[0]);
-    BOOST_TEST_REQUIRE(t);
-    BOOST_TEST(is_integer_def(*t, "sign_t", signed_v, _64, 9223372036854775808ul));
-}
-
-BOOST_AUTO_TEST_CASE(typecheck_error_008)
-{
-    BOOST_TEST_REQUIRE(pass("0002_user_defined_integrals/typecheck_error_008.depc"));
-    BOOST_TEST_REQUIRE(pass_result->entries.size() == 1ul);
-    auto const t = std::get_if<dep0::parser::type_def_t>(&pass_result->entries[0]);
-    BOOST_TEST_REQUIRE(t);
-    BOOST_TEST(is_integer_def(*t, "unsign_t", unsigned_v, _64, boost::multiprecision::cpp_int("18446744073709551616")));
-}
+// BOOST_AUTO_TEST_CASE(typecheck_error_001) -- this test was removed
+// BOOST_AUTO_TEST_CASE(typecheck_error_002) -- this test was removed
+// BOOST_AUTO_TEST_CASE(typecheck_error_003) -- this test was removed
+// BOOST_AUTO_TEST_CASE(typecheck_error_004) -- this test was removed
+// BOOST_AUTO_TEST_CASE(typecheck_error_005) -- this test was removed
+// BOOST_AUTO_TEST_CASE(typecheck_error_006) -- this test was removed
+// BOOST_AUTO_TEST_CASE(typecheck_error_007) -- this test was removed
+// BOOST_AUTO_TEST_CASE(typecheck_error_008) -- this test was removed
 
 BOOST_AUTO_TEST_SUITE_END()

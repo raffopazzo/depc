@@ -17,7 +17,7 @@ BOOST_AUTO_TEST_CASE(pass_000)
     {
         auto const t = std::get_if<dep0::parser::type_def_t>(&pass_result->entries[0ul]);
         BOOST_TEST_REQUIRE(t);
-        BOOST_TEST(is_integer_def(*t, "int", signed_v, _32, std::nullopt));
+        BOOST_TEST(is_integer_def(*t, "int", signed_v, _32));
     }
     {
         auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[1ul]);
@@ -183,7 +183,7 @@ BOOST_AUTO_TEST_CASE(pass_001)
     {
         auto const t = std::get_if<dep0::parser::type_def_t>(&pass_result->entries[0]);
         BOOST_TEST_REQUIRE(t);
-        BOOST_TEST(is_integer_def(*t, "int", signed_v, _32, std::nullopt));
+        BOOST_TEST(is_integer_def(*t, "int", signed_v, _32));
     }
     {
         auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[1]);
@@ -395,7 +395,7 @@ BOOST_AUTO_TEST_CASE(typecheck_error_001)
     {
         auto const t = std::get_if<dep0::parser::type_def_t>(&pass_result->entries[0]);
         BOOST_TEST_REQUIRE(t);
-        BOOST_TEST(is_integer_def(*t, "t", signed_v, _32, std::nullopt));
+        BOOST_TEST(is_integer_def(*t, "t", signed_v, _32));
     }
     {
         auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[1]);
@@ -415,7 +415,7 @@ BOOST_AUTO_TEST_CASE(typecheck_error_002)
     {
         auto const t = std::get_if<dep0::parser::type_def_t>(&pass_result->entries[0]);
         BOOST_TEST_REQUIRE(t);
-        BOOST_TEST(is_integer_def(*t, "int", signed_v, _32, std::nullopt));
+        BOOST_TEST(is_integer_def(*t, "int", signed_v, _32));
     }
     {
         auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[1]);

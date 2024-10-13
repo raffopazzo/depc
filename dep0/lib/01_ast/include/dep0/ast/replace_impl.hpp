@@ -98,7 +98,7 @@ void replace(typename expr_t<P>::var_t const& from, typename expr_t<P>::var_t co
         {
             return match(
                 x.value,
-                [&] (typename expr_t<P>::arith_expr_t::plus_t& x)
+                [&] (auto& x)
                 {
                     replace(from, to, x.lhs.get());
                     replace(from, to, x.rhs.get());

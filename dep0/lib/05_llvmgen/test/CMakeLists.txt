@@ -49,6 +49,8 @@ add_library(dep0_llvmgen_tests_fixture
     llvm_predicates/select.cpp
     llvm_predicates/store.hpp
     llvm_predicates/store.cpp
+    llvm_predicates/sub.hpp
+    llvm_predicates/sub.cpp
     llvm_predicates/to_string.hpp
     llvm_predicates/to_string.cpp
     llvm_predicates/types.hpp
@@ -98,3 +100,4 @@ add_dep0_llvmgen_test(0014_extern_decl)
 add_dep0_llvmgen_test(0015_because)
 add_dep0_llvmgen_test(0016_impossible)
 add_dep0_llvmgen_test(0016_prelude)
+add_dep0_llvmgen_test(0017_minus_expr)

@@ -7,97 +7,97 @@
 namespace dep0::typecheck {
 
 /**
- * Family of functions that compute the signed/unsigned wrap-around addition of two integer values.
+ * Family of functions that compute the signed/unsigned wrap-around subtraction of two integer values.
  * All functions assume that the two integer values fit inside `NumBits`.
  * @{
  */
 template <std::size_t NumBits>
 boost::multiprecision::cpp_int
-cpp_int_add_signed(
+cpp_int_sub_signed(
     boost::multiprecision::cpp_int const&,
     boost::multiprecision::cpp_int const&);
 
 template <std::size_t NumBits>
 boost::multiprecision::cpp_int
-cpp_int_add_unsigned(
+cpp_int_sub_unsigned(
     boost::multiprecision::cpp_int const&,
     boost::multiprecision::cpp_int const&);
 
 template <>
 boost::multiprecision::cpp_int
-cpp_int_add_signed<8>(
+cpp_int_sub_signed<8>(
     boost::multiprecision::cpp_int const&,
     boost::multiprecision::cpp_int const&);
 
 template <>
 boost::multiprecision::cpp_int
-cpp_int_add_signed<16>(
+cpp_int_sub_signed<16>(
     boost::multiprecision::cpp_int const&,
     boost::multiprecision::cpp_int const&);
 
 template <>
 boost::multiprecision::cpp_int
-cpp_int_add_signed<32>(
+cpp_int_sub_signed<32>(
     boost::multiprecision::cpp_int const&,
     boost::multiprecision::cpp_int const&);
 
 template <>
 boost::multiprecision::cpp_int
-cpp_int_add_signed<64>(
+cpp_int_sub_signed<64>(
     boost::multiprecision::cpp_int const&,
     boost::multiprecision::cpp_int const&);
 
 template <>
 boost::multiprecision::cpp_int
-cpp_int_add_unsigned<8>(
+cpp_int_sub_unsigned<8>(
     boost::multiprecision::cpp_int const&,
     boost::multiprecision::cpp_int const&);
 
 template <>
 boost::multiprecision::cpp_int
-cpp_int_add_unsigned<16>(
+cpp_int_sub_unsigned<16>(
     boost::multiprecision::cpp_int const&,
     boost::multiprecision::cpp_int const&);
 
 template <>
 boost::multiprecision::cpp_int
-cpp_int_add_unsigned<32>(
+cpp_int_sub_unsigned<32>(
     boost::multiprecision::cpp_int const&,
     boost::multiprecision::cpp_int const&);
 
 template <>
 boost::multiprecision::cpp_int
-cpp_int_add_unsigned<64>(
+cpp_int_sub_unsigned<64>(
     boost::multiprecision::cpp_int const&,
     boost::multiprecision::cpp_int const&);
 /** @} */
 
 /**
- * Compute the signed wrap-around addition of two integer values.
+ * Compute the signed wrap-around subtraction of two integer values.
  * This function assumes that the two integer values fit inside the given bit width.
  */
 boost::multiprecision::cpp_int
-cpp_int_add_signed(
+cpp_int_sub_signed(
     ast::width_t,
     boost::multiprecision::cpp_int const&,
     boost::multiprecision::cpp_int const&);
 
 /**
- * Compute the unsigned wrap-around addition of two integer values.
+ * Compute the unsigned wrap-around subtraction of two integer values.
  * This function assumes that the two integer values fit inside the given bit width.
  */
 boost::multiprecision::cpp_int
-cpp_int_add_unsigned(
+cpp_int_sub_unsigned(
     ast::width_t,
     boost::multiprecision::cpp_int const&,
     boost::multiprecision::cpp_int const&);
 
 /**
- * Compute the signed/unsigned wrap-around addition of two integer values.
+ * Compute the signed/unsigned wrap-around subtraction of two integer values.
  * This function assumes that the two integer values fit inside the given bit width.
  */
 boost::multiprecision::cpp_int
-cpp_int_add(
+cpp_int_sub(
     ast::sign_t,
     ast::width_t,
     boost::multiprecision::cpp_int const&,

@@ -307,7 +307,7 @@ llvm::Value* gen_val(
                             })(boost::hana::type_c<T>);
                     // for user-defined integrals we might have to manually wrap around
                     // TODO this is broken because:
-                    //   1. it's only wraps around correctly for `x+1`
+                    //   1. it only wraps around correctly for `x+1`
                     //   2. it's not consistent with delta-unfolding, which caps instead of wrapping
                     match(
                         std::get<typecheck::expr_t>(x.lhs.get().properties.sort.get()).value,

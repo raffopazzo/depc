@@ -324,7 +324,7 @@ reduce(
         },
         [&] (auto const&)
         {
-            assert(false and "unknown type for primitive delta-reduction of `a - b`");
+            assert(false and "unknown type for primitive delta-reduction of `a * b`");
             return cpp_int{};
         });
 }
@@ -360,7 +360,7 @@ reduce(
         },
         [&] (auto const&)
         {
-            assert(false and "unknown type for primitive delta-reduction of `a - b`");
+            assert(false and "unknown type for primitive delta-reduction of `a / b`");
             return cpp_int{};
         });
 }

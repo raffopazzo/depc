@@ -8,7 +8,10 @@ namespace dep0::typecheck {
 
 /**
  * Family of functions that compute the signed/unsigned wrap-around division of two integer values.
- * All functions assume that the two integer values fit inside `NumBits`.
+ * All functions assume:
+ *   1. that the two integer values fit inside `NumBits`
+ *   2. that the divisor is non-zero
+ *   3. that the result of the division also fits inside `NumBits` (only applicable to signed division).
  * @{
  */
 template <std::size_t NumBits>
@@ -74,7 +77,10 @@ cpp_int_div_unsigned<64>(
 
 /**
  * Compute the signed wrap-around division of two integer values.
- * This function assumes that the two integer values fit inside the given bit width.
+ * This function assumes:
+ *   1. that the two integer values fit inside `NumBits`
+ *   2. that the divisor is non-zero
+ *   3. that the result of the division also fits inside `NumBits`.
  */
 boost::multiprecision::cpp_int
 cpp_int_div_signed(
@@ -84,7 +90,9 @@ cpp_int_div_signed(
 
 /**
  * Compute the unsigned wrap-around division of two integer values.
- * This function assumes that the two integer values fit inside the given bit width.
+ * This function assumes:
+ *   1. that the two integer values fit inside `NumBits`
+ *   2. that the divisor is non-zero.
  */
 boost::multiprecision::cpp_int
 cpp_int_div_unsigned(
@@ -94,7 +102,10 @@ cpp_int_div_unsigned(
 
 /**
  * Compute the signed/unsigned wrap-around division of two integer values.
- * This function assumes that the two integer values fit inside the given bit width.
+ * This function assumes:
+ *   1. that the two integer values fit inside the given bit width
+ *   2. that the divisor is non-zero
+ *   3. that the result of the division also fits inside the given bit width only applicable to signed division).
  */
 boost::multiprecision::cpp_int
 cpp_int_div(

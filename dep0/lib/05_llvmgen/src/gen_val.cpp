@@ -23,6 +23,30 @@
 
 namespace dep0::llvmgen {
 
+/** Return true if the given type is a signed integral; false otherwise. */
+static bool is_signed_integral(global_ctx_t const& ctx, typecheck::expr_t const& type)
+{
+    return match(
+        type.value,
+        [] (typecheck::expr_t::i8_t const&) { return true; },
+        [] (typecheck::expr_t::i16_t const&) { return true; },
+        [] (typecheck::expr_t::i32_t const&) { return true; },
+        [] (typecheck::expr_t::i64_t const&) { return true; },
+        [&] (typecheck::expr_t::global_t const& g)
+        {
+            if (auto const type_def = std::get_if<typecheck::type_def_t>(ctx[g]))
+                return match(
+                    type_def->value,
+                    [] (typecheck::type_def_t::integer_t const& integer)
+                    {
+                        return integer.sign == ast::sign_t::signed_v;
+                    });
+            else
+                return false;
+        },
+        [] (auto const&) { return false; });
+}
+
 /**
  * Move the given instruction to the entry block of the given function.
  * If the instruction is already in its entry block, this function does nothing.
@@ -87,11 +111,12 @@ llvm::Value* gen_val(
     typecheck::expr_t const& expr,
     llvm::Value* const dest)
 {
+    auto const& expr_type = std::get<typecheck::expr_t>(expr.properties.sort.get());
     auto const storeOrReturn = [&] (llvm::Value* const value)
     {
         if (not dest)
             return value;
-        if (auto const pty = get_properties_if_array(std::get<typecheck::expr_t>(expr.properties.sort.get())))
+        if (auto const pty = get_properties_if_array(expr_type))
         {
             assert(dest->getType()->isPointerTy() and "memcpy destination must be a pointer");
             auto const& data_layout = global.llvm_module.getDataLayout();
@@ -184,8 +209,7 @@ llvm::Value* gen_val(
         },
         [&] (typecheck::expr_t::numeric_constant_t const& x) -> llvm::Value*
         {
-            auto const& type = std::get<typecheck::expr_t>(expr.properties.sort.get());
-            auto const llvm_type = cast<llvm::IntegerType>(gen_type(global, type));
+            auto const llvm_type = cast<llvm::IntegerType>(gen_type(global, expr_type));
             assert(llvm_type);
             return storeOrReturn(gen_val(llvm_type, x.value));
         },
@@ -307,6 +331,12 @@ llvm::Value* gen_val(
                         [&] (boost::hana::type<typecheck::expr_t::arith_expr_t::mult_t>)
                         {
                             return builder.CreateMul(lhs, rhs);
+                        },
+                        [&] (boost::hana::type<typecheck::expr_t::arith_expr_t::div_t>)
+                        {
+                            return is_signed_integral(global, expr_type)
+                                ? builder.CreateSDiv(lhs, rhs)
+                                : builder.CreateUDiv(lhs, rhs);
                         })(boost::hana::type_c<T>);
                 }));
         },
@@ -397,9 +427,8 @@ llvm::Value* gen_val(
         },
         [&] (typecheck::expr_t::init_list_t const& x) -> llvm::Value*
         {
-            auto const& type = std::get<typecheck::expr_t>(expr.properties.sort.get());
             return match(
-                typecheck::is_list_initializable(type),
+                typecheck::is_list_initializable(expr_type),
                 [&] (typecheck::is_list_initializable_result::no_t) -> llvm::Value*
                 {
                     // We found an initializer list whose type is not trivially initializiable from a list.
@@ -409,7 +438,7 @@ llvm::Value* gen_val(
                     // We are not going to prove again that the condition was actually true,
                     // so for now just construct a value of the empty struct.
                     // If later on we add more cases like this, we might have to inspect the type.
-                    return llvm::ConstantAggregateZero::get(gen_type(global, type));
+                    return llvm::ConstantAggregateZero::get(gen_type(global, expr_type));
                 },
                 [&] (typecheck::is_list_initializable_result::unit_t) -> llvm::Value*
                 {
@@ -417,11 +446,11 @@ llvm::Value* gen_val(
                 },
                 [&] (typecheck::is_list_initializable_result::true_t) -> llvm::Value*
                 {
-                    return llvm::ConstantAggregateZero::get(gen_type(global, type));
+                    return llvm::ConstantAggregateZero::get(gen_type(global, expr_type));
                 },
                 [&] (typecheck::is_list_initializable_result::array_t const&) -> llvm::Value*
                 {
-                    auto const properties = get_array_properties(type);
+                    auto const properties = get_array_properties(expr_type);
                     auto const dest2 = dest ? dest : [&]
                     {
                         auto const total_size = gen_array_total_size(global, local, builder, properties);

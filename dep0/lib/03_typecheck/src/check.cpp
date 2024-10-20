@@ -520,7 +520,7 @@ check_expr(
                             derivation_rules::make_true_t(
                                 derivation_rules::make_relation_expr(
                                     expr_t::relation_expr_t::neq_t{*rhs, zero}));
-                        if (not search_proof(env, ctx, proof_type, is_mutable, usage, ast::qty_t::zero))
+                        if (not search_proof(env, ctx, proof_type, ast::is_mutable_t::no, usage, ast::qty_t::zero))
                         {
                             std::ostringstream err;
                             pretty_print(err << "cannot verify that divisor `", *rhs) << "` is non-zero";

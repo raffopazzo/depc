@@ -67,6 +67,7 @@ add_library(dep0_llvmgen_tests_fixture
 target_include_directories(dep0_llvmgen_tests_fixture PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(dep0_llvmgen_tests_fixture
   PUBLIC
+    DepC::Dep0::Ast
     DepC::Dep0::Parser
     DepC::Dep0::TypeCheck
     DepC::Dep0::LLVMGen
@@ -102,3 +103,4 @@ add_dep0_llvmgen_test(0016_impossible)
 add_dep0_llvmgen_test(0016_prelude)
 add_dep0_llvmgen_test(0017_minus_expr)
 add_dep0_llvmgen_test(0018_mult_expr)
+add_dep0_llvmgen_test(0019_div_expr)

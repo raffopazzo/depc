@@ -1,0 +1,4 @@
+func minus_two() -> i32_t
+{
+    return 2 / -1;
+}

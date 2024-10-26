@@ -1,0 +1,8 @@
+axiom always_non_zero(u32_t x) -> true_t(x != 0);
+
+func f1(u32_t a, u32_t b, u32_t c) -> u32_t { return a / b + c; }
+func f2(u32_t a, u32_t b, u32_t c) -> u32_t { return a + b / c; }
+func f3(u32_t a, u32_t b, u32_t c) -> u32_t { return a - b / c; }
+func f4(u32_t a, u32_t b, u32_t c) -> u32_t { return a / b - c; }
+func f5(u32_t a, u32_t b, u32_t c) -> u32_t { return a / b * c; }
+func f6(u32_t a, u32_t b, u32_t c) -> u32_t { return a * b / c; }

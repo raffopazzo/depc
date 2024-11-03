@@ -34,7 +34,7 @@ struct search_state_t
     env_t const& env;
     ctx_t const& ctx;
 
-    search_task_t main_task;
+    std::shared_ptr<search_task_t> main_task;
 
     search_state_t(
         env_t const& env,
@@ -45,14 +45,15 @@ struct search_state_t
         ast::qty_t const usage_multiplier)
     :   env(env),
         ctx(ctx),
-        main_task(
+        main_task(search_task_t::create(
+            std::weak_ptr<search_task_t>(),
             *this,
             0ul,
             std::make_shared<expr_t>(target),
             is_mutable_allowed,
             std::move(usage),
             usage_multiplier,
-            proof_search)
+            proof_search))
     { }
 
     bool expired() const { return std::chrono::steady_clock::now() > deadline; }
@@ -86,6 +87,8 @@ std::size_t search_state_t::hash_t::operator()(expr_t const& x) const
 }
 
 search_task_t::search_task_t(
+    private_t,
+    std::weak_ptr<search_task_t> parent,
     search_state_t& st,
     std::size_t const depth,
     std::shared_ptr<expr_t const> target,
@@ -94,6 +97,7 @@ search_task_t::search_task_t(
     ast::qty_t const usage_multiplier,
     std::function<void(search_task_t&)> task)
 :   m_kind(one_t{std::move(task)}),
+    parent(std::move(parent)),
     state(st),
     depth(depth),
     env(st.env),
@@ -103,6 +107,29 @@ search_task_t::search_task_t(
     usage(std::move(usage)),
     usage_multiplier(usage_multiplier)
 { }
+
+std::shared_ptr<search_task_t> search_task_t::create(
+    std::weak_ptr<search_task_t> parent,
+    search_state_t& st,
+    std::size_t const depth,
+    std::shared_ptr<expr_t const> target,
+    ast::is_mutable_t const is_mutable_allowed,
+    std::shared_ptr<usage_t> usage,
+    ast::qty_t const usage_multiplier,
+    std::function<void(search_task_t&)> task)
+{
+    return std::make_shared<search_task_t>(
+        private_t{},
+        std::move(parent),
+        st,
+        depth,
+        std::move(target),
+        is_mutable_allowed,
+        std::move(usage),
+        usage_multiplier,
+        std::move(task)
+    );
+}
 
 bool search_task_t::done() const { return not std::holds_alternative<in_progress_t>(m_status); }
 bool search_task_t::failed() const { return std::holds_alternative<failed_t>(m_status); }
@@ -155,29 +182,29 @@ void search_task_t::run()
         {
             for (auto& t: any.sub_tasks)
             {
-                if (not t.done())
-                    t.run();
-                if (t.succeeded())
-                    return set_result(std::move(t.result()));
+                if (not t->done())
+                    t->run();
+                if (t->succeeded())
+                    return set_result(std::move(t->result()));
             }
-            if (std::ranges::all_of(any.sub_tasks, [] (search_task_t const& t) { return t.failed(); }))
+            if (std::ranges::all_of(any.sub_tasks, [] (auto const& t) { return t->failed(); }))
                 set_failed();
         },
         [this] (all_t& all)
         {
             for (auto& t: all.sub_tasks)
-                if (not t.done())
+                if (not t->done())
                 {
-                    t.run();
-                    if (t.failed())
+                    t->run();
+                    if (t->failed())
                         return set_failed(); // if any sub-tasks fails, the parent task automatically fails
                 }
-            if (std::ranges::all_of(all.sub_tasks, [] (search_task_t const& t) { return t.succeeded(); }))
+            if (std::ranges::all_of(all.sub_tasks, [] (auto const& t) { return t->succeeded(); }))
             {
                 std::vector<expr_t> results;
                 results.reserve(all.sub_tasks.size());
                 for (auto& t: all.sub_tasks)
-                    results.push_back(std::move(t.result()));
+                    results.push_back(std::move(t->result()));
                 if (not usage->try_add(ctx, *all.temp_usage))
                     return set_failed();
                 set_result(all.build_result(std::move(results)));
@@ -186,16 +213,16 @@ void search_task_t::run()
 }
 
 void search_task_t::when_all(
-    std::vector<search_task_t> tasks,
+    std::vector<std::shared_ptr<search_task_t>> tasks,
     std::shared_ptr<usage_t> temp_usage,
     std::function<expr_t(std::vector<expr_t>)> f)
 {
     assert(not done());
-    assert(std::ranges::all_of(tasks, [&] (auto const& t) { return t.usage == temp_usage; }));
+    assert(std::ranges::all_of(tasks, [&] (auto const& t) { return t->usage == temp_usage; }));
     m_kind = all_t{std::move(tasks), std::move(temp_usage), std::move(f)};
 }
 
-void search_task_t::when_any(std::vector<search_task_t> tasks)
+void search_task_t::when_any(std::vector<std::shared_ptr<search_task_t>> tasks)
 {
     assert(not done());
     m_kind = any_t{std::move(tasks)};
@@ -219,36 +246,62 @@ search_proof(
             std::make_shared<usage_t>(usage.extend()),
             usage_multiplier);
     do
-        st.main_task.run();
-    while (not st.main_task.done());
+        st.main_task->run();
+    while (not st.main_task->done());
     std::optional<expr_t> result;
-    if (st.main_task.succeeded())
-        if (usage.try_add(ctx, *st.main_task.usage))
-            result.emplace(std::move(st.main_task.result()));
+    if (st.main_task->succeeded())
+        if (usage.try_add(ctx, *st.main_task->usage))
+            result.emplace(std::move(st.main_task->result()));
     return result;
 }
 
 template <typename... T>
-std::vector<search_task_t> make_sub_tasks(search_task_t& task, T&&... tactics)
+std::vector<std::shared_ptr<search_task_t>> make_sub_tasks(search_task_t& parent, T&&... tactics)
 {
     return {
-        search_task_t(
-            task.state,
-            task.depth + 1,
-            task.target,
-            task.is_mutable_allowed,
-            task.usage,
-            task.usage_multiplier,
-            tactics)...
+        search_task_t::create(
+            parent.weak_from_this(),
+            parent.state,
+            parent.depth + 1,
+            parent.target,
+            parent.is_mutable_allowed,
+            parent.usage,
+            parent.usage_multiplier,
+            std::forward<T>(tactics))...
     };
+}
+
+/** Returns true if this task has the same target of any ancestor tasks. */
+static bool detect_loop(search_task_t& task)
+{
+    auto p = task.parent;
+    while (auto q = p.lock())
+    {
+        if (search_state_t::eq_t{}(*q->target, *task.target))
+            return true;
+        p = q->parent;
+    }
+    return false;
 }
 
 void proof_search(search_task_t& task)
 {
     if (auto const it = task.state.cache.find(*task.target); it != task.state.cache.end())
         task.set_result(it->second);
+    else if (detect_loop(task))
+        task.set_failed();
     else
         task.when_any(make_sub_tasks(task, search_var, search_true_t, search_trivial_value, search_app));
+}
+
+void quick_search(search_task_t& task)
+{
+    if (auto const it = task.state.cache.find(*task.target); it != task.state.cache.end())
+        task.set_result(it->second);
+    else if (detect_loop(task))
+        task.set_failed();
+    else
+        task.when_any(make_sub_tasks(task, search_var, search_true_t, search_trivial_value));
 }
 
 } // namespace dep0::typecheck

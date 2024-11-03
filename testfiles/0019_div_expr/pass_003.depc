@@ -1,8 +1,16 @@
-axiom always_non_zero(i32_t x) -> true_t(x != 0);
-
-func f1(i32_t a, i32_t b, i32_t c) -> i32_t { return a / b + c; }
-func f2(i32_t a, i32_t b, i32_t c) -> i32_t { return a + b / c; }
-func f3(i32_t a, i32_t b, i32_t c) -> i32_t { return a - b / c; }
-func f4(i32_t a, i32_t b, i32_t c) -> i32_t { return a / b - c; }
-func f5(i32_t a, i32_t b, i32_t c) -> i32_t { return a / b * c; }
-func f6(i32_t a, i32_t b, i32_t c) -> i32_t { return a * b / c; }
+func f1(i32_t a, i32_t b) -> i32_t
+{
+    if (b == 0)
+        return 0;
+    if (b == -1)
+        return -1;
+    return a / b;
+}
+func f2(i32_t a, i32_t b) -> i32_t
+{
+    if (b == 0)
+        return 0;
+    if (a == -2147483648)
+        return -1;
+    return a / b;
+}

@@ -7,6 +7,7 @@
 #include "private/usage.hpp"
 
 #include <functional>
+#include <memory>
 #include <optional>
 
 namespace dep0::typecheck {
@@ -31,7 +32,7 @@ struct search_state_t;
  *   1. if any sub-task succeeds, the overall task succeeds, typically because any alternative is equally valid;
  *   2. all sub-tasks must succeed for the overall task to succeed and their results must be combined in some way.
  */
-class search_task_t
+class search_task_t : public std::enable_shared_from_this<search_task_t>
 {
     /**
      * A task of this kind will apply one individual tactic.
@@ -54,7 +55,7 @@ class search_task_t
      */
     struct any_t
     {
-        std::vector<search_task_t> sub_tasks;
+        std::vector<std::shared_ptr<search_task_t>> sub_tasks;
     };
 
     /**
@@ -67,7 +68,7 @@ class search_task_t
      */
     struct all_t
     {
-        std::vector<search_task_t> sub_tasks;
+        std::vector<std::shared_ptr<search_task_t>> sub_tasks;
         std::shared_ptr<usage_t> temp_usage;
         std::function<expr_t(std::vector<expr_t>)> build_result;
     };
@@ -87,7 +88,10 @@ class search_task_t
     std::variant<one_t, any_t, all_t> m_kind;
     std::variant<in_progress_t, failed_t, succeeded_t> m_status;
 
+    struct private_t{};
+
 public:
+    std::weak_ptr<search_task_t> const parent;
     search_state_t& state;
     std::size_t const depth; /**< Level of depth in the search path; if too deep this task will fail. */
     env_t const& env;
@@ -98,6 +102,18 @@ public:
     std::shared_ptr<usage_t> usage;
 
     search_task_t(
+        private_t,
+        std::weak_ptr<search_task_t> parent,
+        search_state_t&,
+        std::size_t depth,
+        std::shared_ptr<expr_t const> target,
+        ast::is_mutable_t is_mutable_allowed,
+        std::shared_ptr<usage_t>,
+        ast::qty_t usage_multiplier,
+        std::function<void(search_task_t&)>);
+
+    static std::shared_ptr<search_task_t> create(
+        std::weak_ptr<search_task_t> parent,
         search_state_t&,
         std::size_t depth,
         std::shared_ptr<expr_t const> target,
@@ -140,7 +156,7 @@ public:
      *      If all sub-tasks succeed, their result is passed to this function to produce the final result of the task.
      */
     void when_all(
-        std::vector<search_task_t>,
+        std::vector<std::shared_ptr<search_task_t>>,
         std::shared_ptr<usage_t> temp_usage,
         std::function<expr_t(std::vector<expr_t>)> build_result);
 
@@ -148,7 +164,7 @@ public:
      * Transform the current task into one that awaits any of the given sub-tasks.
      * The result of this task is the result of the first task that succeeds.
      */
-    void when_any(std::vector<search_task_t>);
+    void when_any(std::vector<std::shared_ptr<search_task_t>>);
 };
 
 /**
@@ -181,5 +197,11 @@ search_proof(
  * Use it if you need to spawn a sub-task to search for some intermdiate proof.
  */
 void proof_search(search_task_t&);
+
+/**
+ * A meta-tactic that applies only the proof-search tactics known to either succeed or fail immediately.
+ * As such it will itself either succeed or fail immediately thereby preventing the explosion of the search space.
+ */
+void quick_search(search_task_t&);
 
 } // namespace dep0::typecheck

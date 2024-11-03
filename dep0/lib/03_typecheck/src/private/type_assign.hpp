@@ -84,4 +84,28 @@ type_assign_abs(
     usage_t& usage,
     ast::qty_t usage_multiplier);
 
+/**
+ * Try to assign the same type to two expressions,
+ * for example if they appear in a binary expression, like `x + 1` or `1 < x`.
+ *
+ * @param is_mutable_allowed
+ *      Specifies whether it is allowed to invoke mutable functions from the current context.
+ *
+ * @param usage,usage_multiplier
+ *      @see usage_t
+ *
+ * @return
+ *      The result of each individual type-assignment; either one or both might have either failed or succeded.
+ *      If both succeded the returned expressions will have the same type.
+ */
+std::pair<expected<expr_t>, expected<expr_t>>
+type_assign_pair(
+    env_t const&,
+    ctx_t const&,
+    parser::expr_t const&,
+    parser::expr_t const&,
+    ast::is_mutable_t const is_mutable_allowed,
+    usage_t& usage,
+    ast::qty_t const usage_multiplier);
+
 } // namespace dep0::typecheck

@@ -1,0 +1,6 @@
+axiom always_non_zero(i32_t x) -> true_t(x != 0);
+
+func f(i32_t a, i32_t b) -> i32_t
+{
+    return a / b; // typecheck error: signed integer division needs proofs that `not(a == -max and b == -1)`
+}

@@ -8,6 +8,9 @@ namespace dep0::typecheck {
  * Perform capture-avoiding substitution inside all arguments,
  * return type and (for lambda abstractions) the body of
  * either pi-types or lambda abstractions.
+ *
+ * @remarks In order to avoid accidental capture,
+ * the function arguments inside the range [begin, end) may be modified.
  */
 void substitute(
     expr_t::var_t const&,

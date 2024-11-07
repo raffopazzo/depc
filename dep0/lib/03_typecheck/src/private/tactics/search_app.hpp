@@ -13,6 +13,8 @@ namespace dep0::typecheck {
 
 /**
  * Search for a value of the given type by applying axioms and theorems (aka functions) from the given environment.
+ *
+ * @remarks This tactic may not complete immediately and is therefore **not** used by `quick_search`.
  */
 void search_app(search_task_t&);
 

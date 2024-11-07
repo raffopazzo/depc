@@ -193,4 +193,29 @@ expected<expr_t> check_pi_type(
     std::vector<parser::func_arg_t> const& args,
     parser::expr_t const& ret_ty);
 
+/**
+ * If `expected_type` is nullptr, tries to type-assign the given arithmetic expression;
+ * otherwise checks that it has the given expected type.
+ *
+ * @param loc
+ *      The location in the source file where the expression was found.
+ *      If this function fails, it will be copied in the error message.
+ *
+ * @param is_mutable_allowed
+ *      Specifies whether it is allowed to invoke mutable functions from the current context.
+ *
+ * @param usage,usage_multiplier
+ *      @see usage_t
+ */
+expected<expr_t> check_or_assign(
+    env_t const&,
+    ctx_t const&,
+    parser::expr_t::arith_expr_t const&,
+    source_loc_t const& loc,
+    sort_t const* expected_type,
+    ast::is_mutable_t const is_mutable_allowed,
+    usage_t& usage,
+    ast::qty_t const usage_multiplier);
+
+
 } // namespace dep0::typecheck

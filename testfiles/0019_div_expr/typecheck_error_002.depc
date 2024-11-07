@@ -1,0 +1,2 @@
+// typecheck error: cannot verify that divisior is non-zero
+func f(u32_t a, u32_t b) -> u32_t { return a / b; }

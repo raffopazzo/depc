@@ -29,6 +29,34 @@
 
 namespace dep0::typecheck {
 
+/** If the given type is integral return both its sign and width. */
+static std::optional<std::pair<ast::sign_t, ast::width_t>> get_sign_and_width(env_t const& env, sort_t const& sort)
+{
+    using enum ast::sign_t;
+    using enum ast::width_t;
+    std::optional<std::pair<ast::sign_t, ast::width_t>> result;
+    if (auto const type = std::get_if<expr_t>(&sort))
+        match(
+            type->value,
+            [&] (typecheck::expr_t::i8_t const&) { result = std::pair{signed_v, _8}; },
+            [&] (typecheck::expr_t::i16_t const&) { result = std::pair{signed_v, _16}; },
+            [&] (typecheck::expr_t::i32_t const&) { result = std::pair{signed_v, _32}; },
+            [&] (typecheck::expr_t::i64_t const&) { result = std::pair{signed_v, _64}; },
+            [&] (typecheck::expr_t::u8_t const&) { result = std::pair{unsigned_v, _8}; },
+            [&] (typecheck::expr_t::u16_t const&) { result = std::pair{unsigned_v, _16}; },
+            [&] (typecheck::expr_t::u32_t const&) { result = std::pair{unsigned_v, _32}; },
+            [&] (typecheck::expr_t::u64_t const&) { result = std::pair{unsigned_v, _64}; },
+            [&] (typecheck::expr_t::global_t const& g)
+            {
+                if (auto const type_def = std::get_if<typecheck::type_def_t>(env[g]))
+                    result = match(
+                        type_def->value,
+                        [] (typecheck::type_def_t::integer_t const& x) { return std::pair{x.sign, x.width}; });
+            },
+            [] (auto const&) { });
+    return result;
+}
+
 expected<module_t> check(env_t const& base_env, parser::module_t const& x) noexcept
 {
     auto env = base_env.extend();
@@ -505,30 +533,7 @@ check_expr(
         },
         [&] (parser::expr_t::arith_expr_t const& x) -> expected<expr_t>
         {
-            return match(
-                x.value,
-                [&] <typename T> (T const& x) -> expected<expr_t>
-                {
-                    auto lhs = check_expr(env, ctx, x.lhs.get(), expected_type, is_mutable, usage, usage_multiplier);
-                    if (not lhs) return std::move(lhs.error());
-                    auto rhs = check_expr(env, ctx, x.rhs.get(), expected_type, is_mutable, usage, usage_multiplier);
-                    if (not rhs) return std::move(rhs.error());
-                    return make_legal_expr(
-                        expected_type,
-                        boost::hana::overload(
-                            [&] (boost::hana::type<parser::expr_t::arith_expr_t::plus_t>) -> expr_t::arith_expr_t
-                            {
-                                return {expr_t::arith_expr_t::plus_t{std::move(*lhs), std::move(*rhs)}};
-                            },
-                            [&] (boost::hana::type<parser::expr_t::arith_expr_t::minus_t>) -> expr_t::arith_expr_t
-                            {
-                                return {expr_t::arith_expr_t::minus_t{std::move(*lhs), std::move(*rhs)}};
-                            },
-                            [&] (boost::hana::type<parser::expr_t::arith_expr_t::mult_t>) -> expr_t::arith_expr_t
-                            {
-                                return {expr_t::arith_expr_t::mult_t{std::move(*lhs), std::move(*rhs)}};
-                            })(boost::hana::type_c<T>));
-                });
+            return check_or_assign(env, ctx, x, loc, &expected_type, is_mutable, usage, usage_multiplier);
         },
         [&] (parser::expr_t::init_list_t const& list) -> expected<expr_t>
         {
@@ -657,6 +662,104 @@ expected<expr_t> check_pi_type(
     return make_legal_expr(
         ret_type->properties.sort.get(),
         expr_t::pi_t{is_mutable, std::move(*args), *ret_type});
+}
+
+expected<expr_t> check_or_assign(
+    env_t const& env,
+    ctx_t const& ctx,
+    parser::expr_t::arith_expr_t const& expr,
+    source_loc_t const& loc,
+    sort_t const* expected_type,
+    ast::is_mutable_t const is_mutable_allowed,
+    usage_t& usage,
+    ast::qty_t const usage_multiplier)
+{
+    return std::visit(
+        [&] <typename T> (T const& x) -> expected<expr_t>
+        {
+            auto [lhs, rhs] =
+                expected_type
+                ? std::pair{
+                    check_expr(env, ctx, x.lhs.get(), *expected_type, is_mutable_allowed, usage, usage_multiplier),
+                    check_expr(env, ctx, x.rhs.get(), *expected_type, is_mutable_allowed, usage, usage_multiplier)}
+                : type_assign_pair(env, ctx, x.lhs.get(), x.rhs.get(), is_mutable_allowed, usage, usage_multiplier);
+            if (lhs and rhs)
+            {
+                auto type = lhs->properties.sort.get(); // we will move from lhs, take a copy now
+                if constexpr (std::is_same_v<T, parser::expr_t::arith_expr_t::div_t>)
+                {
+                    auto const sign_width = get_sign_and_width(env, type);
+                    if (not sign_width)
+                    {
+                        std::ostringstream err;
+                        pretty_print(err << "division cannot be performed on non-integral type `", type) << '`';
+                        return dep0::error_t(err.str(), loc);
+                    }
+                    auto const zero = make_legal_expr(type, expr_t::numeric_constant_t{0});
+                    auto const proof_type =
+                        derivation_rules::make_true_t(
+                            derivation_rules::make_relation_expr(
+                                expr_t::relation_expr_t::neq_t{*rhs, zero}));
+                    if (not search_proof(env, ctx, proof_type, ast::is_mutable_t::no, usage, ast::qty_t::zero))
+                    {
+                        std::ostringstream err;
+                        pretty_print(err << "cannot verify that divisor `", *rhs) << "` is non-zero";
+                        return dep0::error_t(err.str(), loc);
+                    }
+                    // for signed integer division we must also require that result will not overflow
+                    auto const [sign, width] = *sign_width;
+                    if (sign == ast::sign_t::signed_v)
+                    {
+                        auto const min_val = make_legal_expr(type, expr_t::numeric_constant_t{cpp_int_min_signed(width)});
+                        auto const neg_one = make_legal_expr(type, expr_t::numeric_constant_t{-1});
+                        auto const proof_type = // true_t(not (a == min_val and b == -1))
+                            derivation_rules::make_true_t(
+                                derivation_rules::make_boolean_expr(
+                                    expr_t::boolean_expr_t::not_t{
+                                        derivation_rules::make_boolean_expr(
+                                            expr_t::boolean_expr_t::and_t{
+                                                derivation_rules::make_relation_expr(
+                                                    expr_t::relation_expr_t::eq_t{*lhs, min_val}),
+                                                derivation_rules::make_relation_expr(
+                                                    expr_t::relation_expr_t::eq_t{*rhs, neg_one})})}));
+                        if (not search_proof(env, ctx, proof_type, ast::is_mutable_t::no, usage, ast::qty_t::zero))
+                        {
+                            std::ostringstream err;
+                            pretty_print(err << "signed integer divison requires proof of `", proof_type) << '`';
+                            return dep0::error_t(err.str(), loc);
+                        }
+                    }
+                }
+                return make_legal_expr(
+                    std::move(type),
+                    boost::hana::overload(
+                        [&] (boost::hana::type<parser::expr_t::arith_expr_t::plus_t>) -> expr_t::arith_expr_t
+                        {
+                            return {expr_t::arith_expr_t::plus_t{std::move(*lhs), std::move(*rhs)}};
+                        },
+                        [&] (boost::hana::type<parser::expr_t::arith_expr_t::minus_t>) -> expr_t::arith_expr_t
+                        {
+                            return {expr_t::arith_expr_t::minus_t{std::move(*lhs), std::move(*rhs)}};
+                        },
+                        [&] (boost::hana::type<parser::expr_t::arith_expr_t::mult_t>) -> expr_t::arith_expr_t
+                        {
+                            return {expr_t::arith_expr_t::mult_t{std::move(*lhs), std::move(*rhs)}};
+                        },
+                        [&] (boost::hana::type<parser::expr_t::arith_expr_t::div_t>) -> expr_t::arith_expr_t
+                        {
+                            return {expr_t::arith_expr_t::div_t{std::move(*lhs), std::move(*rhs)}};
+                        })(boost::hana::type_c<T>));
+            }
+            else if (lhs.has_error() xor rhs.has_error()) // if only 1 error, just forward that one
+                return std::move(lhs.has_error() ? lhs.error() : rhs.error());
+            else if (lhs.error() == rhs.error()) // ...or if the error message is the same
+                return std::move(lhs.error());
+            else
+                return dep0::error_t(
+                    "arithmetic expression cannot be assigned a type",
+                    loc, {std::move(lhs.error()), std::move(rhs.error())});
+        },
+        expr.value);
 }
 
 } // namespace dep0::typecheck

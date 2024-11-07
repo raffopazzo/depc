@@ -20,14 +20,6 @@
 
 namespace dep0::typecheck {
 
-/**
- * Assign a type to a pair of expressions that are connected by a binary relation or operator, eg `x+1` or `1 < x`.
- *
- * In this example `1` on its own cannot be assigned a unique type, but if `x` can, then `1` must have the same type.
- *
- * @return The result of each individual type-assignment; either one or both might have either failed or succeded.
- */
-static
 std::pair<expected<expr_t>, expected<expr_t>>
 type_assign_pair(
     env_t const& env,
@@ -264,41 +256,7 @@ type_assign(
         },
         [&] (parser::expr_t::arith_expr_t const& x) -> expected<expr_t>
         {
-            return match(
-                x.value,
-                [&] <typename T> (T const& x) -> expected<expr_t>
-                {
-                    auto [lhs, rhs] =
-                        type_assign_pair(
-                            env, ctx, x.lhs.get(), x.rhs.get(), is_mutable_allowed, usage, usage_multiplier);
-                    if (lhs and rhs)
-                    {
-                        auto type = lhs->properties.sort.get(); // about to move from lhs, take a copy
-                        return make_legal_expr(
-                            std::move(type),
-                            boost::hana::overload(
-                                [&] (boost::hana::type<parser::expr_t::arith_expr_t::plus_t>) -> expr_t::arith_expr_t
-                                {
-                                    return {expr_t::arith_expr_t::plus_t{std::move(*lhs), std::move(*rhs)}};
-                                },
-                                [&] (boost::hana::type<parser::expr_t::arith_expr_t::minus_t>) -> expr_t::arith_expr_t
-                                {
-                                    return {expr_t::arith_expr_t::minus_t{std::move(*lhs), std::move(*rhs)}};
-                                },
-                                [&] (boost::hana::type<parser::expr_t::arith_expr_t::mult_t>) -> expr_t::arith_expr_t
-                                {
-                                    return {expr_t::arith_expr_t::mult_t{std::move(*lhs), std::move(*rhs)}};
-                                })(boost::hana::type_c<T>));
-                    }
-                    else if (lhs.has_error() xor rhs.has_error()) // if only 1 error, just forward that one
-                        return std::move(lhs.has_error() ? lhs.error() : rhs.error());
-                    else if (lhs.error() == rhs.error()) // ...or if the error message is the same
-                        return std::move(lhs.error());
-                    else
-                        return dep0::error_t(
-                            "arithmetic expression cannot be assigned a type",
-                            loc, {std::move(lhs.error()), std::move(rhs.error())});
-                });
+            return check_or_assign(env, ctx, x, loc, nullptr, is_mutable_allowed, usage, usage_multiplier);
         },
         [&] (parser::expr_t::var_t const& x) -> expected<expr_t>
         {
@@ -379,7 +337,7 @@ type_assign(
                         derivation_rules::make_true_t(
                             derivation_rules::make_relation_expr(
                                 expr_t::relation_expr_t::lt_t{*index, app->args[1]}));
-                    if (search_proof(env, ctx, proof_type, is_mutable_allowed, usage, ast::qty_t::zero))
+                    if (search_proof(env, ctx, proof_type, ast::is_mutable_t::no, usage, ast::qty_t::zero))
                     {
                         // we're about to move from `array`, which holds the element type; so must take a copy
                         auto element_type = app->args.at(0ul);

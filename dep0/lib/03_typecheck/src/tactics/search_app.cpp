@@ -7,6 +7,7 @@
 
 #include "dep0/ast/occurs_in.hpp"
 
+#include "dep0/fmap.hpp"
 #include "dep0/match.hpp"
 
 #include <algorithm>
@@ -42,18 +43,25 @@ static void try_apply(search_task_t& task, expr_t::global_t const& name, sort_t 
     auto app_type = pi;
     std::vector<std::optional<expr_t>> args;
     args.reserve(app_type.args.size());
+    // unification returns a map from an argument's name to the value that we must substitute,
+    // but substitution might rename later arguments, so we have to remember the old names
+    auto const old_names = fmap(app_type.args, [] (func_arg_t const& arg) { return arg.var; });
     auto const [args_begin, args_end] = std::pair{app_type.args.begin(), app_type.args.end()};
-    for (auto arg_it = args_begin; arg_it != args_end; ++arg_it)
+    for (
+        auto [arg_it, old_name_it] = std::pair{args_begin, old_names.begin()};
+        std::pair{arg_it, old_name_it} != std::pair{args_end, old_names.end()};
+        ++arg_it, ++old_name_it
+    )
     {
-        func_arg_t const& func_arg = *arg_it;
-        using node_type = decltype(substitutions->extract(*func_arg.var));
+        using node_type = decltype(substitutions->extract(*arg_it->var));
         auto const next_arg = std::next(arg_it);
-        if (auto const node = func_arg.var ? substitutions->extract(*func_arg.var) : node_type{})
+        auto const& old_name = *old_name_it;
+        if (auto const node = old_name ? substitutions->extract(*old_name) : node_type{})
         {
             if (not task.usage->try_add(task.ctx, node.mapped(), task.usage_multiplier))
                 return task.set_failed();
             substitute(
-                *func_arg.var,
+                *arg_it->var, // if `old_name` is set, `arg_it->var` is also set (might be renamed but not removed)
                 node.mapped(),
                 next_arg,
                 args_end,
@@ -71,8 +79,8 @@ static void try_apply(search_task_t& task, expr_t::global_t const& name, sort_t 
             // for example, in `f(bool a, true_t(a))` you cannot just use any boolean value for `a` because,
             // if you choose the wrong one, you may not find a value for `true_t(a)`.
             bool const irrelevant =
-                not func_arg.var or
-                not ast::occurs_in<properties_t>(*func_arg.var, next_arg, args_end, ast::occurrence_style::free);
+                not arg_it->var or
+                not ast::occurs_in<properties_t>(*arg_it->var, next_arg, args_end, ast::occurrence_style::free);
             if (irrelevant)
                 // TODO for irrelevant arguments of primitive types, we could use any random value, eg 0 for i32_t
                 args.push_back(std::nullopt);
@@ -91,22 +99,28 @@ static void try_apply(search_task_t& task, expr_t::global_t const& name, sort_t 
         // Some arguments are still unresolved.
         // They must be proof-irrelevant, otherwise we would have failed earlier.
         // So schedule some sub-tasks to find some suitable value.
-        std::vector<search_task_t> sub_tasks;
+        std::vector<std::shared_ptr<search_task_t>> sub_tasks;
         std::vector<std::size_t> indices; // tracks where exactly the results go in `args`
         auto temp_usage = std::make_shared<usage_t>(task.usage->extend());
         for (auto const idx: std::views::iota(0ul, args.size()))
             if (not args[idx])
             {
+                // some search paths might be infinite, for example you can keep applying double-negation-elimination
+                // to obtain the chain `true_t(x) => true_t(not not x) => true_t(not not not not x) => ...`;
+                // we want to avoid this, so if a path is possibly infinite we only run a quick search
+                // just in case there was already a value for, say `true_t(not not x)`, in the context
+                bool const possibly_infinite_path = unify(pi.ret_type.get(), app_type.args[idx].type).has_value();
                 indices.push_back(idx);
-                sub_tasks.push_back(search_task_t{
+                sub_tasks.push_back(search_task_t::create(
+                    task.weak_from_this(),
                     task.state,
                     task.depth + 1,
                     std::make_shared<expr_t>(app_type.args[idx].type),
                     task.is_mutable_allowed,
                     temp_usage,
                     task.usage_multiplier,
-                    proof_search
-                });
+                    possibly_infinite_path ? quick_search : proof_search
+                ));
             }
         task.when_all(
             std::move(sub_tasks),
@@ -117,7 +131,7 @@ static void try_apply(search_task_t& task, expr_t::global_t const& name, sort_t 
             {
                 for (
                     auto [it_task, it_idx] = std::pair{sub_task_results.begin(), indices.begin()};
-                    it_task != sub_task_results.end() and it_idx != indices.end();
+                    std::pair{it_task, it_idx} != std::pair{sub_task_results.end(), indices.end()};
                     ++it_task, ++it_idx
                 )
                 {
@@ -134,44 +148,58 @@ static void try_apply(search_task_t& task, expr_t::global_t const& name, sort_t 
 
 void search_app(search_task_t& task)
 {
-    std::vector<search_task_t> sub_tasks;
+    std::vector<std::shared_ptr<search_task_t>> sub_tasks;
+    auto const unifies_with = [&] (auto const& f)
+    {
+        auto const& pi = std::get<expr_t::pi_t>(std::get<expr_t>(f.properties.sort.get()).value);
+        return unify(pi.ret_type.get(), *task.target).has_value();
+    };
     for (auto const& name: task.env.globals())
-        sub_tasks.push_back(search_task_t(
-            task.state,
-            task.depth + 1,
-            task.target,
-            task.is_mutable_allowed,
-            task.usage,
-            task.usage_multiplier,
-            [name, p=task.env[name]] (search_task_t& t)
+    {
+        bool const viable = match(
+            *task.env[name],
+            [] (type_def_t const&) { return false; },
+            [&] (axiom_t const& axiom)
+            {
+                // axioms are only viable in an erased context
+                return task.usage_multiplier == ast::qty_t::zero and unifies_with(axiom);
+            },
+            [&] (extern_decl_t const& decl)
             {
                 using enum ast::is_mutable_t;
-                match(
-                    *p,
-                    [] (type_def_t const&) { },
-                    [&] (axiom_t const& axiom)
-                    {
-                        // axioms are only viable in an erased context
-                        if (t.usage_multiplier == ast::qty_t::zero)
-                            try_apply(t, name, axiom.properties.sort.get());
-                    },
-                    [&] (extern_decl_t const& decl)
-                    {
-                        if (t.is_mutable_allowed == yes)
-                            try_apply(t, name, decl.properties.sort.get());
-                    },
-                    [&] (func_decl_t const& decl)
-                    {
-                        if (decl.signature.is_mutable == no or t.is_mutable_allowed == yes)
-                            try_apply(t, name, decl.properties.sort.get());
-                    },
-                    [&] (func_def_t const& def)
-                    {
-                        if (def.value.is_mutable == no or t.is_mutable_allowed == yes)
-                            try_apply(t, name, def.properties.sort.get());
-                    });
-            }
-        ));
+                return task.is_mutable_allowed == yes and unifies_with(decl);
+            },
+            [&] (func_decl_t const& decl)
+            {
+                using enum ast::is_mutable_t;
+                return (decl.signature.is_mutable == no or task.is_mutable_allowed == yes) and unifies_with(decl);
+            },
+            [&] (func_def_t const& def)
+            {
+                using enum ast::is_mutable_t;
+                return (def.value.is_mutable == no or task.is_mutable_allowed == yes) and unifies_with(def);
+            });
+        if (viable)
+            sub_tasks.push_back(search_task_t::create(
+                task.weak_from_this(),
+                task.state,
+                task.depth + 1,
+                task.target,
+                task.is_mutable_allowed,
+                task.usage,
+                task.usage_multiplier,
+                [name] (search_task_t& t)
+                {
+                    match(
+                        *t.env[name],
+                        [] (type_def_t const&) { },
+                        [&] (auto const& f)
+                        {
+                            // TODO pass result of unification to avoid duplicating work
+                            try_apply(t, name, f.properties.sort.get());
+                        });
+                }));
+    }
     task.when_any(std::move(sub_tasks));
 }
 

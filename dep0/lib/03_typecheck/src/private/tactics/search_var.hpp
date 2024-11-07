@@ -18,6 +18,8 @@ namespace dep0::typecheck {
  * If the context contains a declaration of the desired type,
  * the returned value will be a `var_t` referring to it.
  * Otherwise search fails and `std::nullopt` is returned.
+ *
+ * @remarks This tactic will either succeed or fail immediately and is therefore used by `quick_search`.
  */
 void search_var(search_task_t&);
 

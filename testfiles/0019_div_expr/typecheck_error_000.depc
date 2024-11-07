@@ -1,0 +1,4 @@
+func minus_two() -> u32_t
+{
+    return 2 / -1; // typecheck error: -1 does not fit u32_t
+}

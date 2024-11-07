@@ -1,0 +1,2 @@
+func f1(i32_t a) -> i32_t { return a / 2; }
+func f2(i32_t a, 0 true_t(a != 0)) -> i32_t { return 2 / a; }

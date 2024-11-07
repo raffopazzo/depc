@@ -38,12 +38,22 @@ func disj_intro_b(bool_t a, bool_t b, 0 true_t(b)) -> true_t(a or b)
     if (b)  if (a) return {};   else return {};
     else    impossible;
 }
-func de_morgan_a(bool_t a, bool_t b, 0 true_t(not (a and b))) -> true_t(not a or not b)
+func de_morgan_intro_and(bool_t a, bool_t b, 0 true_t(not a or not b)) -> true_t(not (a and b))
 {
     if (a)  if (b) impossible;  else return {};
     else    if (b) return {};   else return {};
 }
-func de_morgan_b(bool_t a, bool_t b, 0 true_t(not (a or b))) -> true_t(not a and not b)
+func de_morgan_intro_or(bool_t a, bool_t b, 0 true_t(not a and not b)) -> true_t(not (a or b))
+{
+    if (a)  if (b) impossible;  else impossible;
+    else    if (b) impossible;   else return {};
+}
+func de_morgan_elim_and(bool_t a, bool_t b, 0 true_t(not (a and b))) -> true_t(not a or not b)
+{
+    if (a)  if (b) impossible;  else return {};
+    else    if (b) return {};   else return {};
+}
+func de_morgan_elim_or(bool_t a, bool_t b, 0 true_t(not (a or b))) -> true_t(not a and not b)
 {
     if (a)  if (b) impossible;  else impossible;
     else    if (b) impossible;   else return {};

@@ -11,6 +11,7 @@
 #include "llvm_predicates/cmp.hpp"
 #include "llvm_predicates/constants.hpp"
 #include "llvm_predicates/cstrings.hpp"
+#include "llvm_predicates/div.hpp"
 #include "llvm_predicates/function.hpp"
 #include "llvm_predicates/function_type.hpp"
 #include "llvm_predicates/gep.hpp"

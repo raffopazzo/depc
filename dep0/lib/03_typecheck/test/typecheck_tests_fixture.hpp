@@ -138,6 +138,12 @@ struct TypecheckTestsFixture
     }
 
     template <typename... Args>
+    static constexpr auto div(Args&&... args)
+    {
+        return dep0::testing::div<dep0::typecheck::properties_t>(std::forward<Args>(args)...);
+    }
+
+    template <typename... Args>
     static constexpr auto minus(Args&&... args)
     {
         return dep0::testing::minus<dep0::typecheck::properties_t>(std::forward<Args>(args)...);

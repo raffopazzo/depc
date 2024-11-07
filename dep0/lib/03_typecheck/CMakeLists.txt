@@ -16,6 +16,7 @@ add_library(dep0_typecheck_lib
   src/private/beta_reduction.hpp
   src/private/check.hpp
   src/private/cpp_int_add.hpp
+  src/private/cpp_int_div.hpp
   src/private/cpp_int_limits.hpp
   src/private/cpp_int_mult.hpp
   src/private/cpp_int_sub.hpp
@@ -41,6 +42,7 @@ add_library(dep0_typecheck_lib
   src/check.cpp
   src/context.cpp
   src/cpp_int_add.cpp
+  src/cpp_int_div.cpp
   src/cpp_int_limits.cpp
   src/cpp_int_mult.cpp
   src/cpp_int_sub.cpp

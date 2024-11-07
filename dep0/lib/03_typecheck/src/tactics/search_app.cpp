@@ -43,7 +43,7 @@ static void try_apply(search_task_t& task, expr_t::global_t const& name, sort_t 
     auto app_type = pi;
     std::vector<std::optional<expr_t>> args;
     args.reserve(app_type.args.size());
-    // unfication returns a map from an argument's name to the value that we must substitute,
+    // unification returns a map from an argument's name to the value that we must substitute,
     // but substitution might rename later arguments, so we have to remember the old names
     auto const old_names = fmap(app_type.args, [] (func_arg_t const& arg) { return arg.var; });
     auto const [args_begin, args_end] = std::pair{app_type.args.begin(), app_type.args.end()};
@@ -61,7 +61,7 @@ static void try_apply(search_task_t& task, expr_t::global_t const& name, sort_t 
             if (not task.usage->try_add(task.ctx, node.mapped(), task.usage_multiplier))
                 return task.set_failed();
             substitute(
-                *arg_it->var, // if `old_name` is set, arg_it->var is also set (might be renamed but not removed)
+                *arg_it->var, // if `old_name` is set, `arg_it->var` is also set (might be renamed but not removed)
                 node.mapped(),
                 next_arg,
                 args_end,

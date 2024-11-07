@@ -674,8 +674,7 @@ expected<expr_t> check_or_assign(
     usage_t& usage,
     ast::qty_t const usage_multiplier)
 {
-    return match(
-        expr.value,
+    return std::visit(
         [&] <typename T> (T const& x) -> expected<expr_t>
         {
             auto [lhs, rhs] =
@@ -721,9 +720,8 @@ expected<expr_t> check_or_assign(
                                             expr_t::boolean_expr_t::and_t{
                                                 derivation_rules::make_relation_expr(
                                                     expr_t::relation_expr_t::eq_t{*lhs, min_val}),
-                                                    derivation_rules::make_relation_expr(
-                                                        expr_t::relation_expr_t::eq_t{*rhs, neg_one})
-                                            })}));
+                                                derivation_rules::make_relation_expr(
+                                                    expr_t::relation_expr_t::eq_t{*rhs, neg_one})})}));
                         if (not search_proof(env, ctx, proof_type, ast::is_mutable_t::no, usage, ast::qty_t::zero))
                         {
                             std::ostringstream err;
@@ -760,7 +758,8 @@ expected<expr_t> check_or_assign(
                 return dep0::error_t(
                     "arithmetic expression cannot be assigned a type",
                     loc, {std::move(lhs.error()), std::move(rhs.error())});
-        });
+        },
+        expr.value);
 }
 
 } // namespace dep0::typecheck

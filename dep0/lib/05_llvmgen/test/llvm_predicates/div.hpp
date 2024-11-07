@@ -19,27 +19,15 @@ namespace impl {
 template <Predicate<llvm::Value> F1, Predicate<llvm::Value> F2>
 boost::test_tools::predicate_result is_div_of(llvm::Instruction const& x, ast::sign_t const sign, F1&& f1, F2&& f2)
 {
+    using enum llvm::Instruction::BinaryOps;
     auto const op = llvm::dyn_cast<llvm::BinaryOperator>(&x);
     if (not op)
         return dep0::testing::failure("instruction is not a binary operator but: ", x.getOpcodeName());
-    if (sign == ast::sign_t::signed_v)
-    {
-        if (op->getOpcode() != llvm::Instruction::BinaryOps::SDiv)
-            return dep0::testing::failure(
-                "binary operator is not SDiv: ",
-                static_cast<int>(llvm::Instruction::BinaryOps::SDiv),
-                " != ",
-                static_cast<int>(op->getOpcode()));
-    }
-    else
-    {
-        if (op->getOpcode() != llvm::Instruction::BinaryOps::UDiv)
-            return dep0::testing::failure(
-                "binary operator is not UDiv: ",
-                static_cast<int>(llvm::Instruction::BinaryOps::UDiv),
-                " != ",
-                static_cast<int>(op->getOpcode()));
-    }
+    auto const [opcode, opname] = sign == ast::sign_t::signed_v ? std::pair{SDiv, "SDiv"} : std::pair{UDiv, "UDiv"};
+    if (op->getOpcode() != opcode)
+        return dep0::testing::failure(
+            "binary operator is not ", opname, ": ",
+            static_cast<int>(opcode), " != ", static_cast<int>(op->getOpcode()));
     if (op->getNumOperands() != 2)
         return dep0::testing::failure("div does not have 2 operands but ", op->getNumOperands());
     if (auto const result = std::forward<F1>(f1)(*op->getOperand(0)); not result)

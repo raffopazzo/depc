@@ -248,10 +248,6 @@ llvm::Value* gen_val(
                         [&] (boost::hana::type<typecheck::expr_t::boolean_expr_t::or_t>)
                         {
                             return builder.CreateOr(lhs_val, rhs_val);
-                        },
-                        [&] (boost::hana::type<typecheck::expr_t::boolean_expr_t::xor_t>)
-                        {
-                            return builder.CreateXor(lhs_val, rhs_val);
                         })(boost::hana::type_c<T>);
                 }));
         },

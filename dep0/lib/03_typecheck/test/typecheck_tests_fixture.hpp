@@ -96,12 +96,6 @@ struct TypecheckTestsFixture
     }
 
     template <typename... Args>
-    static constexpr auto xor_of(Args&&... args)
-    {
-        return dep0::testing::xor_of<dep0::typecheck::properties_t>(std::forward<Args>(args)...);
-    }
-
-    template <typename... Args>
     static constexpr auto eq(Args&&... args)
     {
         return dep0::testing::eq<dep0::typecheck::properties_t>(std::forward<Args>(args)...);

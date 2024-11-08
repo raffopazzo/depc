@@ -1,16 +1,16 @@
-func f0() -> bool_t { return true xor false; }
-func f1() -> bool_t { return true xor true; }
-func f2() -> bool_t { return true xor not false; }
-func f3() -> bool_t { return not false xor true; }
-func f4() -> bool_t { return not (false xor true); }
-func f5(bool_t x, bool_t y) -> bool_t { return x xor y; }
-func f6(bool_t x, bool_t y) -> bool_t { return not (x xor y); }
-func f7(bool_t x, bool_t y) -> bool_t { return not x xor y; }
-func f8(bool_t x, bool_t y) -> bool_t { return x and y or not x xor not y; }
-func f9(bool_t x, bool_t y) -> bool_t { return x and (y or not x) xor not y; }
-func f10(bool_t x, bool_t y) -> bool_t { return x xor y and not x xor not y; }
-func f11(bool_t x, bool_t y) -> bool_t { return x xor (y and not x) xor not y; }
-func f12(array_t(bool_t, 2) xs) -> bool_t { return xs[0] xor xs[1]; }
-func f13(array_t(bool_t, 2) xs) -> bool_t { return not xs[0] xor xs[1]; }
-func f14(array_t(bool_t, 2) xs) -> bool_t { return not (xs[0] xor xs[1]); }
-func f15(array_t(bool_t, 2) xs) -> bool_t { return not xs[0] xor not xs[1]; }
+func f0() -> bool_t { return true != false; }
+func f1() -> bool_t { return true != true; }
+func f2() -> bool_t { return true != not false; }
+func f3() -> bool_t { return not false != true; }
+func f4() -> bool_t { return not (false != true); }
+func f5(bool_t x, bool_t y) -> bool_t { return x != y; }
+func f6(bool_t x, bool_t y) -> bool_t { return not (x != y); }
+func f7(bool_t x, bool_t y) -> bool_t { return not x != y; }
+func f8(bool_t x, bool_t y) -> bool_t { return x and y or not x != not y; }
+func f9(bool_t x, bool_t y) -> bool_t { return x and (y or not x) != not y; }
+func f10(bool_t x, bool_t y) -> bool_t { return x != y and not x != not y; }
+func f11(bool_t x, bool_t y) -> bool_t { return x != (y and not x) != not y; }
+func f12(array_t(bool_t, 2) xs) -> bool_t { return xs[0] != xs[1]; }
+func f13(array_t(bool_t, 2) xs) -> bool_t { return not xs[0] != xs[1]; }
+func f14(array_t(bool_t, 2) xs) -> bool_t { return not (xs[0] != xs[1]); }
+func f15(array_t(bool_t, 2) xs) -> bool_t { return not xs[0] != not xs[1]; }

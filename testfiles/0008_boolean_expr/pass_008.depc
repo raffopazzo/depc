@@ -3,7 +3,7 @@ typedef hours_t = unsigned 8 bit integer;
 func f0() -> bool_t { return false == true; }
 func f1() -> bool_t { return false == false == true; }
 func f2() -> bool_t { return false == (false == true); }
-func f3() -> bool_t { return true xor false == false < true; }
+func f3() -> bool_t { return true and false == false < true; }
 func f4() -> bool_t { return false < true == true; }
 func f5(i32_t x) -> bool_t { return 1 == x; }
 func f6(u32_t x) -> bool_t { return x == 2; }

@@ -152,13 +152,18 @@ std::ostream& pretty_print(std::ostream& os, extern_decl_t<P> const& extern_decl
 template <Properties P>
 std::ostream& pretty_print(std::ostream& os, func_decl_t<P> const& func_decl, std::size_t const indent)
 {
-    return pretty_print<P>(os << "func " << func_decl.name, func_decl.signature) << ';';
+    os << "func " << func_decl.name;
+    if (func_decl.attribute)
+        os << "[[" << func_decl.attribute->value << "]] ";
+    return pretty_print<P>(os, func_decl.signature) << ';';
 }
 
 template <Properties P>
 std::ostream& pretty_print(std::ostream& os, func_def_t<P> const& func_def, std::size_t const indent)
 {
     os << "func " << func_def.name;
+    if (func_def.attribute)
+        os << "[[" << func_def.attribute->value << "]] ";
     auto const& abs = func_def.value;
     pretty_print(os, abs.is_mutable, abs.args.begin(), abs.args.end(), abs.ret_type.get(), indent);
     detail::new_line(os, indent);

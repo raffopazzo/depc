@@ -57,6 +57,11 @@ static std::optional<std::pair<ast::sign_t, ast::width_t>> get_sign_and_width(en
     return result;
 }
 
+static bool has_attribute(func_decl_t const& x, std::string_view const attribute)
+{
+    return x.attribute and x.attribute->value == attribute;
+}
+
 expected<module_t> check(env_t const& base_env, parser::module_t const& x) noexcept
 {
     auto env = base_env.extend();
@@ -75,7 +80,7 @@ expected<module_t> check(env_t const& base_env, parser::module_t const& x) noexc
                     [&] (parser::func_decl_t const& x) -> expected<entry_t>
                     {
                         auto const& result = check_func_decl(env, x);
-                        if (result)
+                        if (result and not has_attribute(*result, "builtin"))
                             decls.push_back(expr_t::global_t{std::nullopt, x.name});
                         return result;
                     },
@@ -174,7 +179,13 @@ expected<func_decl_t> check_func_decl(env_t& env, parser::func_decl_t const& dec
             decl.signature.ret_type.get());
     if (not pi_type)
         return std::move(pi_type.error());
-    auto result = make_legal_func_decl(decl.properties, *pi_type, decl.name, std::get<expr_t::pi_t>(pi_type->value));
+    auto result =
+        make_legal_func_decl(
+            decl.properties,
+            *pi_type,
+            decl.name,
+            decl.attribute,
+            std::get<expr_t::pi_t>(pi_type->value));
     if (auto ok = env.try_emplace(expr_t::global_t{std::nullopt, decl.name}, result); not ok)
         return std::move(ok.error());
     return result;
@@ -192,6 +203,7 @@ expected<func_def_t> check_func_def(env_t& env, parser::func_def_t const& f)
             f.properties,
             abs->properties.sort.get(),
             f.name,
+            f.attribute,
             std::move(std::get<expr_t::abs_t>(abs->value)));
     if (auto ok = env.try_emplace(expr_t::global_t{std::nullopt, f.name}, result); not ok)
         return std::move(ok.error());

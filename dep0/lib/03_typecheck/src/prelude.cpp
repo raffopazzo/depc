@@ -512,6 +512,10 @@ axiom gte_lte_commute_u8 ( u8_t a,  u8_t b, true_t(a >= b)) -> true_t(b <= a);
 axiom gte_lte_commute_u16(u16_t a, u16_t b, true_t(a >= b)) -> true_t(b <= a);
 axiom gte_lte_commute_u32(u32_t a, u32_t b, true_t(a >= b)) -> true_t(b <= a);
 axiom gte_lte_commute_u64(u64_t a, u64_t b, true_t(a >= b)) -> true_t(b <= a);
+
+// array_t
+func [[builtin]] slice(0 typename t, 0 u64_t n, array_t(t, n), u64_t k, 0 true_t(n > k)) -> array_t(t, n - k);
+
 )";
 } // namespace
 

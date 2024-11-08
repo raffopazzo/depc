@@ -106,6 +106,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
     struct func_sig_t
     {
         source_text name;
+        std::optional<ast::attribute_t> attribute;
         expr_t::pi_t func_type;
     };
 
@@ -136,10 +137,13 @@ struct parse_visitor_t : dep0::DepCParserVisitor
     {
         assert(ctx);
         assert(ctx->name);
-        auto const name = get_text(src, *ctx->name);
         auto func_type = std::any_cast<expr_t>(visitFuncType(ctx->funcType()));
         auto& pi = std::get<expr_t::pi_t>(func_type.value);
-        return func_sig_t{name, std::move(std::get<expr_t::pi_t>(func_type.value))};
+        return func_sig_t{
+            get_text(src, *ctx->name),
+            ctx->attribute ? std::optional{ast::attribute_t{get_text(src, *ctx->attribute)}} : std::nullopt,
+            std::move(std::get<expr_t::pi_t>(func_type.value))
+        };
     }
 
     virtual std::any visitFuncDecl(DepCParser::FuncDeclContext* ctx) override
@@ -150,6 +154,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         return func_decl_t{
             get_loc(src, *ctx),
             std::move(sig.name),
+            std::move(sig.attribute),
             std::move(sig.func_type)
             };
     }
@@ -163,6 +168,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         return func_def_t{
             get_loc(src, *ctx),
             std::move(sig.name),
+            std::move(sig.attribute),
             expr_t::abs_t{
                 sig.func_type.is_mutable,
                 std::move(sig.func_type.args),

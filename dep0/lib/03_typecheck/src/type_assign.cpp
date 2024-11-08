@@ -456,7 +456,7 @@ expected<expr_t> type_assign_abs(
         auto ok =
             f_env.try_emplace(
                 expr_t::global_t{std::nullopt, *name},
-                make_legal_func_decl(location, *func_type, *name, std::get<expr_t::pi_t>(func_type->value)));
+                make_legal_func_decl(location, *func_type, *name, std::nullopt, std::get<expr_t::pi_t>(func_type->value)));
         if (not ok)
             return std::move(ok.error());
     }

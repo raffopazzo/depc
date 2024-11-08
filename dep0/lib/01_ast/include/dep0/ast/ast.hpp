@@ -1,6 +1,11 @@
 #pragma once
 
+#include "dep0/ast/attribute.hpp"
 #include "dep0/ast/concepts.hpp"
+#include "dep0/ast/qty.hpp"
+#include "dep0/ast/sign.hpp"
+#include "dep0/ast/mutable.hpp"
+#include "dep0/ast/width.hpp"
 
 #include "dep0/source.hpp"
 
@@ -26,46 +31,6 @@ template <Properties P> struct func_arg_t;
 template <Properties P> struct body_t;
 template <Properties P> struct stmt_t;
 template <Properties P> struct expr_t;
-
-// enums
-
-/** Represents the keywords `signed` or `unsigned` used inside a user-defined integral type definition. */
-enum class sign_t { signed_v, unsigned_v };
-bool operator<(sign_t, sign_t) = delete;
-bool operator<=(sign_t, sign_t) = delete;
-bool operator>=(sign_t, sign_t) = delete;
-bool operator>(sign_t, sign_t) = delete;
-
-/** Represents the bit width used inside a user-defined integral type definition. */
-enum class width_t { _8, _16, _32, _64 };
-bool operator<(sign_t, width_t) = delete;
-bool operator<=(width_t, width_t) = delete;
-bool operator>=(width_t, width_t) = delete;
-bool operator>(width_t, width_t) = delete;
-
-/** Strongly typed boolean to track whether functions, variables and references are mutable or not. */
-enum class is_mutable_t { no, yes };
-bool operator<(is_mutable_t, is_mutable_t) = delete;
-bool operator<=(is_mutable_t, is_mutable_t) = delete;
-bool operator>=(is_mutable_t, is_mutable_t) = delete;
-bool operator>(is_mutable_t, is_mutable_t) = delete;
-
-/** Represents the quantity associated to a function argument; default is `many`, unless specified otherwise. */
-enum class qty_t { zero = 0, one = 1, many = 2 }; // do not change ordering
-
-inline qty_t operator+(qty_t const a, qty_t const b)
-{
-    auto const x = static_cast<int>(a);
-    auto const y = static_cast<int>(b);
-    return static_cast<qty_t>(std::min(2, x + y));
-}
-
-inline qty_t operator*(qty_t const a, qty_t const b)
-{
-    auto const x = static_cast<int>(a);
-    auto const y = static_cast<int>(b);
-    return static_cast<qty_t>(std::min(2, x * y));
-}
 
 // definitions
 
@@ -507,6 +472,7 @@ struct func_decl_t
 
     properties_t properties;
     source_text name;
+    std::optional<attribute_t> attribute;
     expr_t<P>::pi_t signature;
 };
 
@@ -521,6 +487,7 @@ struct func_def_t
 
     properties_t properties;
     source_text name;
+    std::optional<attribute_t> attribute;
     expr_t<P>::abs_t value;
 };
 

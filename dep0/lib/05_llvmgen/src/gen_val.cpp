@@ -5,6 +5,7 @@
 #include "private/gen_array.hpp"
 #include "private/gen_attrs.hpp"
 #include "private/gen_body.hpp"
+#include "private/gen_builtin.hpp"
 #include "private/gen_func.hpp"
 #include "private/gen_type.hpp"
 #include "private/proto.hpp"
@@ -494,6 +495,8 @@ llvm::Value* gen_func_call(
     typecheck::expr_t::app_t const& app,
     llvm::Value* const dest)
 {
+    if (auto const result = try_gen_builtin(global, local, builder, app, dest))
+        return result;
     assert(
         std::ranges::all_of(
             app.args,

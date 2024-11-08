@@ -173,14 +173,13 @@ struct expr_t
         source_text value;
     };
 
-    /** Represents a boolean expression, for example `x and not y xor is_even(k)`. */
+    /** Represents a boolean expression, for example `x and not y or is_even(k)`. */
     struct boolean_expr_t
     {
         struct not_t { rec_t expr; };
         struct and_t { rec_t lhs, rhs; };
         struct or_t  { rec_t lhs, rhs; };
-        struct xor_t { rec_t lhs, rhs; };
-        using value_t = std::variant<not_t, and_t, or_t, xor_t>;
+        using value_t = std::variant<not_t, and_t, or_t>;
         value_t value;
     };
 

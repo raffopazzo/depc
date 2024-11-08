@@ -1272,7 +1272,7 @@ BOOST_AUTO_TEST_CASE(pass_007)
         BOOST_TEST(f->value.args.size() == 0ul);
         BOOST_TEST(is_bool(f->value.ret_type.get()));
         BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], xor_of(constant(true), constant(false))));
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], neq(constant(true), constant(false))));
     }
     {
         auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[1]);
@@ -1281,7 +1281,7 @@ BOOST_AUTO_TEST_CASE(pass_007)
         BOOST_TEST(f->value.args.size() == 0ul);
         BOOST_TEST(is_bool(f->value.ret_type.get()));
         BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], xor_of(constant(true), constant(true))));
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], neq(constant(true), constant(true))));
     }
     {
         auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[2]);
@@ -1290,7 +1290,7 @@ BOOST_AUTO_TEST_CASE(pass_007)
         BOOST_TEST(f->value.args.size() == 0ul);
         BOOST_TEST(is_bool(f->value.ret_type.get()));
         BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], xor_of(constant(true), not_of(constant(false)))));
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], neq(constant(true), not_of(constant(false)))));
     }
     {
         auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[3]);
@@ -1299,7 +1299,7 @@ BOOST_AUTO_TEST_CASE(pass_007)
         BOOST_TEST(f->value.args.size() == 0ul);
         BOOST_TEST(is_bool(f->value.ret_type.get()));
         BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], xor_of(not_of(constant(false)), constant(true))));
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], neq(not_of(constant(false)), constant(true))));
     }
     {
         auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[4]);
@@ -1308,7 +1308,7 @@ BOOST_AUTO_TEST_CASE(pass_007)
         BOOST_TEST(f->value.args.size() == 0ul);
         BOOST_TEST(is_bool(f->value.ret_type.get()));
         BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], not_of(xor_of(constant(false), constant(true)))));
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], not_of(neq(constant(false), constant(true)))));
     }
     {
         auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[5]);
@@ -1319,7 +1319,7 @@ BOOST_AUTO_TEST_CASE(pass_007)
         BOOST_TEST(is_arg(f->value.args[1], is_bool, "y"));
         BOOST_TEST(is_bool(f->value.ret_type.get()));
         BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], xor_of(var("x"), var("y"))));
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], neq(var("x"), var("y"))));
     }
     {
         auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[6]);
@@ -1330,7 +1330,7 @@ BOOST_AUTO_TEST_CASE(pass_007)
         BOOST_TEST(is_arg(f->value.args[1], is_bool, "y"));
         BOOST_TEST(is_bool(f->value.ret_type.get()));
         BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], not_of(xor_of(var("x"), var("y")))));
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], not_of(neq(var("x"), var("y")))));
     }
     {
         auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[7]);
@@ -1341,7 +1341,7 @@ BOOST_AUTO_TEST_CASE(pass_007)
         BOOST_TEST(is_arg(f->value.args[1], is_bool, "y"));
         BOOST_TEST(is_bool(f->value.ret_type.get()));
         BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], xor_of(not_of(var("x")), var("y"))));
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], neq(not_of(var("x")), var("y"))));
     }
     {
         auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[8]);
@@ -1357,7 +1357,7 @@ BOOST_AUTO_TEST_CASE(pass_007)
                 f->value.body.stmts[0ul],
                 or_of(
                     and_of(var("x"), var("y")),
-                    xor_of(not_of(var("x")), not_of(var("y"))))));
+                    neq(not_of(var("x")), not_of(var("y"))))));
     }
     {
         auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[9]);
@@ -1373,7 +1373,7 @@ BOOST_AUTO_TEST_CASE(pass_007)
                 f->value.body.stmts[0ul],
                 and_of(
                     var("x"),
-                    xor_of(
+                    neq(
                         or_of(var("y"), not_of(var("x"))),
                         not_of(var("y"))))));
     }
@@ -1390,8 +1390,8 @@ BOOST_AUTO_TEST_CASE(pass_007)
             is_return_of(
                 f->value.body.stmts[0ul],
                 and_of(
-                    xor_of(var("x"), var("y")),
-                    xor_of(not_of(var("x")), not_of(var("y"))))));
+                    neq(var("x"), var("y")),
+                    neq(not_of(var("x")), not_of(var("y"))))));
     }
     {
         auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[11]);
@@ -1405,8 +1405,8 @@ BOOST_AUTO_TEST_CASE(pass_007)
         BOOST_TEST(
             is_return_of(
                 f->value.body.stmts[0ul],
-                xor_of(
-                    xor_of(
+                neq(
+                    neq(
                         var("x"),
                         and_of(var("y"), not_of(var("x")))),
                     not_of(var("y")))));
@@ -1422,7 +1422,7 @@ BOOST_AUTO_TEST_CASE(pass_007)
         BOOST_TEST(
             is_return_of(
                 f->value.body.stmts[0ul],
-                xor_of(
+                neq(
                     subscript_of(var("xs"), constant(0)),
                     subscript_of(var("xs"), constant(1)))));
     }
@@ -1437,7 +1437,7 @@ BOOST_AUTO_TEST_CASE(pass_007)
         BOOST_TEST(
             is_return_of(
                 f->value.body.stmts[0ul],
-                xor_of(
+                neq(
                     not_of(subscript_of(var("xs"), constant(0))),
                     subscript_of(var("xs"), constant(1)))));
     }
@@ -1453,7 +1453,7 @@ BOOST_AUTO_TEST_CASE(pass_007)
             is_return_of(
                 f->value.body.stmts[0ul],
                 not_of(
-                    xor_of(
+                    neq(
                         subscript_of(var("xs"), constant(0)),
                         subscript_of(var("xs"), constant(1))))));
     }
@@ -1468,7 +1468,7 @@ BOOST_AUTO_TEST_CASE(pass_007)
         BOOST_TEST(
             is_return_of(
                 f->value.body.stmts[0ul],
-                xor_of(
+                neq(
                     not_of(subscript_of(var("xs"), constant(0))),
                     not_of(subscript_of(var("xs"), constant(1))))));
     }
@@ -1525,7 +1525,7 @@ BOOST_AUTO_TEST_CASE(pass_008)
         BOOST_TEST(
             is_return_of(
                 f->value.body.stmts[0ul],
-                xor_of(
+                and_of(
                     constant(true),
                     eq(constant(false), lt(constant(false), constant(true))))));
     }
@@ -1700,7 +1700,7 @@ BOOST_AUTO_TEST_CASE(pass_009)
         BOOST_TEST(
             is_return_of(
                 f->value.body.stmts[0ul],
-                xor_of(
+                and_of(
                     constant(true),
                     neq(constant(false), lt(constant(false), constant(true))))));
     }

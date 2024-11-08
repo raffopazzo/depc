@@ -142,15 +142,6 @@ func or_symm_bool(bool_t a, bool_t b, 0 true_t(a or b)) -> true_t(b or a)
 func or_false_intro(bool_t a, 0 true_t(a)) -> true_t(a or false) { if (a) return {}; else impossible; }
 func or_false_elim(bool_t a, 0 true_t(a or false)) -> true_t(a) { if (a) return {}; else impossible; }
 
-// bool_t (xor)
-func xor_symm_bool(bool_t a, bool_t b, 0 true_t(a xor b)) -> true_t(b xor a)
-{
-    if (a)  if (b) impossible;  else return {};
-    else    if (b) return {};   else impossible;
-}
-func xor_false_intro(bool_t a, 0 true_t(a)) -> true_t(a xor false) { if (a) return {}; else impossible; }
-func xor_false_elim(bool_t a, 0 true_t(a xor false)) -> true_t(a) { if (a) return {}; else impossible; }
-
 // bool_t (==)
 func eq_refl_bool(bool_t a) -> true_t(a == a) { if (a) return {}; else return {}; }
 func eq_symm_bool(bool_t a, bool_t b, 0 true_t(a == b)) -> true_t(b == a)

@@ -1061,7 +1061,7 @@ BOOST_AUTO_TEST_CASE(pass_007)
         BOOST_TEST_REQUIRE(f->size() == 1ul);
         auto const x = f->getArg(0ul);
         auto const y = f->getArg(1ul);
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), xor_of(exactly(x), exactly(y))));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), cmp_ne(exactly(x), exactly(y))));
     }
     {
         auto const f = pass_result.value()->getFunction("f6");
@@ -1069,7 +1069,7 @@ BOOST_AUTO_TEST_CASE(pass_007)
         BOOST_TEST_REQUIRE(f->size() == 1ul);
         auto const x = f->getArg(0ul);
         auto const y = f->getArg(1ul);
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), not_of(xor_of(exactly(x), exactly(y)))));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), not_of(cmp_ne(exactly(x), exactly(y)))));
     }
     {
         auto const f = pass_result.value()->getFunction("f7");
@@ -1077,7 +1077,7 @@ BOOST_AUTO_TEST_CASE(pass_007)
         BOOST_TEST_REQUIRE(f->size() == 1ul);
         auto const x = f->getArg(0ul);
         auto const y = f->getArg(1ul);
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), xor_of(not_of(exactly(x)), exactly(y))));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), cmp_ne(not_of(exactly(x)), exactly(y))));
     }
     {
         auto const f = pass_result.value()->getFunction("f8");
@@ -1090,7 +1090,7 @@ BOOST_AUTO_TEST_CASE(pass_007)
                 f->getEntryBlock().getTerminator(),
                 or_of(
                     and_of(exactly(x), exactly(y)),
-                    xor_of(not_of(exactly(x)), not_of(exactly(y))))));
+                    cmp_ne(not_of(exactly(x)), not_of(exactly(y))))));
     }
     {
         auto const f = pass_result.value()->getFunction("f9");
@@ -1103,7 +1103,7 @@ BOOST_AUTO_TEST_CASE(pass_007)
                 f->getEntryBlock().getTerminator(),
                 and_of(
                     exactly(x),
-                    xor_of(
+                    cmp_ne(
                         or_of(exactly(y), not_of(exactly(x))),
                         not_of(exactly(y))))));
     }
@@ -1117,8 +1117,8 @@ BOOST_AUTO_TEST_CASE(pass_007)
             is_return_of(
                 f->getEntryBlock().getTerminator(),
                 and_of(
-                    xor_of(exactly(x), exactly(y)),
-                    xor_of(not_of(exactly(x)), not_of(exactly(y))))));
+                    cmp_ne(exactly(x), exactly(y)),
+                    cmp_ne(not_of(exactly(x)), not_of(exactly(y))))));
     }
     {
         auto const f = pass_result.value()->getFunction("f11");
@@ -1129,8 +1129,8 @@ BOOST_AUTO_TEST_CASE(pass_007)
         BOOST_TEST(
             is_return_of(
                 f->getEntryBlock().getTerminator(),
-                xor_of(
-                    xor_of(exactly(x), and_of(exactly(y), not_of(exactly(x)))),
+                cmp_ne(
+                    cmp_ne(exactly(x), and_of(exactly(y), not_of(exactly(x)))),
                     not_of(exactly(y)))));
     }
     {
@@ -1141,7 +1141,7 @@ BOOST_AUTO_TEST_CASE(pass_007)
         BOOST_TEST(
             is_return_of(
                 f->getEntryBlock().getTerminator(),
-                xor_of(
+                cmp_ne(
                     load_of(is_i1, gep_of(is_i1, exactly(xs), constant(0)), align_of(1)),
                     load_of(is_i1, gep_of(is_i1, exactly(xs), constant(1)), align_of(1)))));
     }
@@ -1153,7 +1153,7 @@ BOOST_AUTO_TEST_CASE(pass_007)
         BOOST_TEST(
             is_return_of(
                 f->getEntryBlock().getTerminator(),
-                xor_of(
+                cmp_ne(
                     not_of(load_of(is_i1, gep_of(is_i1, exactly(xs), constant(0)), align_of(1))),
                     load_of(is_i1, gep_of(is_i1, exactly(xs), constant(1)), align_of(1)))));
     }
@@ -1166,7 +1166,7 @@ BOOST_AUTO_TEST_CASE(pass_007)
             is_return_of(
                 f->getEntryBlock().getTerminator(),
                 not_of(
-                    xor_of(
+                    cmp_ne(
                         load_of(is_i1, gep_of(is_i1, exactly(xs), constant(0)), align_of(1)),
                         load_of(is_i1, gep_of(is_i1, exactly(xs), constant(1)), align_of(1))))));
     }
@@ -1178,7 +1178,7 @@ BOOST_AUTO_TEST_CASE(pass_007)
         BOOST_TEST(
             is_return_of(
                 f->getEntryBlock().getTerminator(),
-                xor_of(
+                cmp_ne(
                     not_of(load_of(is_i1, gep_of(is_i1, exactly(xs), constant(0)), align_of(1))),
                     not_of(load_of(is_i1, gep_of(is_i1, exactly(xs), constant(1)), align_of(1))))));
     }
@@ -1210,7 +1210,7 @@ BOOST_AUTO_TEST_CASE(pass_008)
         auto const f = pass_result.value()->getFunction("f3");
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i1, zext));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(true)));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(false)));
     }
     {
         auto const f = pass_result.value()->getFunction("f4");
@@ -1225,7 +1225,7 @@ BOOST_AUTO_TEST_CASE(pass_008)
         BOOST_TEST(
             is_return_of(
                 f->getEntryBlock().getTerminator(),
-                cmp_of(ICMP_EQ, constant(1), exactly(f->getArg(0ul)))));
+                cmp_eq(constant(1), exactly(f->getArg(0ul)))));
     }
     {
         auto const f = pass_result.value()->getFunction("f6");
@@ -1234,7 +1234,7 @@ BOOST_AUTO_TEST_CASE(pass_008)
         BOOST_TEST(
             is_return_of(
                 f->getEntryBlock().getTerminator(),
-                cmp_of(ICMP_EQ, exactly(f->getArg(0ul)), constant(2))));
+                cmp_eq(exactly(f->getArg(0ul)), constant(2))));
     }
     {
         auto const f = pass_result.value()->getFunction("f7");
@@ -1244,7 +1244,7 @@ BOOST_AUTO_TEST_CASE(pass_008)
         BOOST_TEST(
             is_return_of(
                 f->getEntryBlock().getTerminator(),
-                cmp_of(ICMP_EQ, exactly(f->getArg(0ul)), exactly(f->getArg(1ul)))));
+                cmp_eq(exactly(f->getArg(0ul)), exactly(f->getArg(1ul)))));
     }
     {
         auto const f = pass_result.value()->getFunction("f8");
@@ -1256,7 +1256,7 @@ BOOST_AUTO_TEST_CASE(pass_008)
         BOOST_TEST(
             is_return_of(
                 f->getEntryBlock().getTerminator(),
-                cmp_of(ICMP_EQ, exactly(x), add_of(exactly(x), exactly(y)))));
+                cmp_eq(exactly(x), add_of(exactly(x), exactly(y)))));
     }
     {
         auto const f = pass_result.value()->getFunction("f9");
@@ -1268,8 +1268,7 @@ BOOST_AUTO_TEST_CASE(pass_008)
         BOOST_TEST(
             is_return_of(
                 f->getEntryBlock().getTerminator(),
-                cmp_of(
-                    ICMP_EQ,
+                cmp_eq(
                     add_of(exactly(x), exactly(y)),
                     add_of(exactly(x), exactly(y)))));
     }
@@ -1283,8 +1282,7 @@ BOOST_AUTO_TEST_CASE(pass_008)
         BOOST_TEST(
             is_return_of(
                 f->getEntryBlock().getTerminator(),
-                cmp_of(
-                    ICMP_EQ,
+                cmp_eq(
                     add_of(exactly(x), exactly(y)),
                     exactly(x))));
     }
@@ -1296,10 +1294,8 @@ BOOST_AUTO_TEST_CASE(pass_008)
         BOOST_TEST(
             is_return_of(
                 f->getEntryBlock().getTerminator(),
-                cmp_of(
-                    ICMP_EQ,
-                    cmp_of(
-                        ICMP_EQ,
+                cmp_eq(
+                    cmp_eq(
                         load_of(is_i1, gep_of(is_i1, exactly(xs), constant(0)), align_of(1)),
                         load_of(is_i1, gep_of(is_i1, exactly(xs), constant(1)), align_of(1))),
                     load_of(is_i1, gep_of(is_i1, exactly(xs), constant(2)), align_of(1)))));
@@ -1312,11 +1308,9 @@ BOOST_AUTO_TEST_CASE(pass_008)
         BOOST_TEST(
             is_return_of(
                 f->getEntryBlock().getTerminator(),
-                cmp_of(
-                    ICMP_EQ,
+                cmp_eq(
                     load_of(is_i1, gep_of(is_i1, exactly(xs), constant(0)), align_of(1)),
-                    cmp_of(
-                        ICMP_EQ,
+                    cmp_eq(
                         load_of(is_i1, gep_of(is_i1, exactly(xs), constant(1)), align_of(1)),
                         load_of(is_i1, gep_of(is_i1, exactly(xs), constant(2)), align_of(1))))));
     }
@@ -1328,8 +1322,7 @@ BOOST_AUTO_TEST_CASE(pass_008)
         BOOST_TEST(
             is_return_of(
                 f->getEntryBlock().getTerminator(),
-                cmp_of(
-                    ICMP_EQ,
+                cmp_eq(
                     add_of(
                         load_of(is_i32, gep_of(is_i32, exactly(xs), constant(0)), align_of(4)),
                         load_of(is_i32, gep_of(is_i32, exactly(xs), constant(1)), align_of(4))),
@@ -1365,7 +1358,7 @@ BOOST_AUTO_TEST_CASE(pass_009)
         auto const f = pass_result.value()->getFunction("f3");
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i1, zext));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
-        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(false)));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(true)));
     }
     {
         auto const f = pass_result.value()->getFunction("f4");
@@ -1380,7 +1373,7 @@ BOOST_AUTO_TEST_CASE(pass_009)
         BOOST_TEST(
             is_return_of(
                 f->getEntryBlock().getTerminator(),
-                cmp_of(ICMP_NE, constant(1), exactly(f->getArg(0ul)))));
+                cmp_ne(constant(1), exactly(f->getArg(0ul)))));
     }
     {
         auto const f = pass_result.value()->getFunction("f6");
@@ -1389,7 +1382,7 @@ BOOST_AUTO_TEST_CASE(pass_009)
         BOOST_TEST(
             is_return_of(
                 f->getEntryBlock().getTerminator(),
-                cmp_of(ICMP_NE, exactly(f->getArg(0ul)), constant(2))));
+                cmp_ne(exactly(f->getArg(0ul)), constant(2))));
     }
     {
         auto const f = pass_result.value()->getFunction("f7");
@@ -1399,7 +1392,7 @@ BOOST_AUTO_TEST_CASE(pass_009)
         BOOST_TEST(
             is_return_of(
                 f->getEntryBlock().getTerminator(),
-                cmp_of(ICMP_NE, exactly(f->getArg(0ul)), exactly(f->getArg(1ul)))));
+                cmp_ne(exactly(f->getArg(0ul)), exactly(f->getArg(1ul)))));
     }
     {
         auto const f = pass_result.value()->getFunction("f8");
@@ -1411,7 +1404,7 @@ BOOST_AUTO_TEST_CASE(pass_009)
         BOOST_TEST(
             is_return_of(
                 f->getEntryBlock().getTerminator(),
-                cmp_of(ICMP_NE, exactly(x), add_of(exactly(x), exactly(y)))));
+                cmp_ne(exactly(x), add_of(exactly(x), exactly(y)))));
     }
     {
         auto const f = pass_result.value()->getFunction("f9");
@@ -1423,8 +1416,7 @@ BOOST_AUTO_TEST_CASE(pass_009)
         BOOST_TEST(
             is_return_of(
                 f->getEntryBlock().getTerminator(),
-                cmp_of(
-                    ICMP_NE,
+                cmp_ne(
                     add_of(exactly(x), exactly(y)),
                     add_of(exactly(x), exactly(y)))));
     }
@@ -1438,8 +1430,7 @@ BOOST_AUTO_TEST_CASE(pass_009)
         BOOST_TEST(
             is_return_of(
                 f->getEntryBlock().getTerminator(),
-                cmp_of(
-                    ICMP_NE,
+                cmp_ne(
                     add_of(exactly(x), exactly(y)),
                     exactly(x))));
     }
@@ -1451,10 +1442,8 @@ BOOST_AUTO_TEST_CASE(pass_009)
         BOOST_TEST(
             is_return_of(
                 f->getEntryBlock().getTerminator(),
-                cmp_of(
-                    ICMP_EQ,
-                    cmp_of(
-                        ICMP_NE,
+                cmp_eq(
+                    cmp_ne(
                         load_of(is_i1, gep_of(is_i1, exactly(xs), constant(0)), align_of(1)),
                         load_of(is_i1, gep_of(is_i1, exactly(xs), constant(1)), align_of(1))),
                     load_of(is_i1, gep_of(is_i1, exactly(xs), constant(2)), align_of(1)))));
@@ -1467,11 +1456,9 @@ BOOST_AUTO_TEST_CASE(pass_009)
         BOOST_TEST(
             is_return_of(
                 f->getEntryBlock().getTerminator(),
-                cmp_of(
-                    ICMP_NE,
+                cmp_ne(
                     load_of(is_i1, gep_of(is_i1, exactly(xs), constant(0)), align_of(1)),
-                    cmp_of(
-                        ICMP_EQ,
+                    cmp_eq(
                         load_of(is_i1, gep_of(is_i1, exactly(xs), constant(1)), align_of(1)),
                         load_of(is_i1, gep_of(is_i1, exactly(xs), constant(2)), align_of(1))))));
     }
@@ -1483,8 +1470,7 @@ BOOST_AUTO_TEST_CASE(pass_009)
         BOOST_TEST(
             is_return_of(
                 f->getEntryBlock().getTerminator(),
-                cmp_of(
-                    ICMP_NE,
+                cmp_ne(
                     add_of(
                         load_of(is_i32, gep_of(is_i32, exactly(xs), constant(0)), align_of(4)),
                         load_of(is_i32, gep_of(is_i32, exactly(xs), constant(1)), align_of(4))),

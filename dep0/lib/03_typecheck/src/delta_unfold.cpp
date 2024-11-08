@@ -67,7 +67,6 @@ static bool delta_unfold(env_t const&, ctx_t const&, expr_t::because_t&);
  */
 static bool reduce(hana::type<expr_t::boolean_expr_t::and_t>, bool const a, bool const b) { return a and b; }
 static bool reduce(hana::type<expr_t::boolean_expr_t::or_t>, bool const a, bool const b) { return a or b; }
-static bool reduce(hana::type<expr_t::boolean_expr_t::xor_t>, bool const a, bool const b) { return a xor b; }
 
 static bool reduce(hana::type<expr_t::relation_expr_t::eq_t>, bool const a, bool const b) { return a == b; }
 static bool reduce(hana::type<expr_t::relation_expr_t::neq_t>, bool const a, bool const b) { return a != b; }

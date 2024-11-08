@@ -110,4 +110,16 @@ auto cmp_of(llvm::CmpInst::Predicate const op, F1&& f1, F2&& f2)
     return predicate_t{op, std::forward<F1>(f1), std::forward<F2>(f2)};
 }
 
+template <Predicate<llvm::Value> F1, Predicate<llvm::Value> F2>
+auto cmp_eq(F1&& f1, F2&& f2)
+{
+    return cmp_of(llvm::CmpInst::Predicate::ICMP_EQ, std::forward<F1>(f1), std::forward<F2>(f2));
+}
+
+template <Predicate<llvm::Value> F1, Predicate<llvm::Value> F2>
+auto cmp_ne(F1&& f1, F2&& f2)
+{
+    return cmp_of(llvm::CmpInst::Predicate::ICMP_NE, std::forward<F1>(f1), std::forward<F2>(f2));
+}
+
 } // namespace dep0::llvmgen::testing

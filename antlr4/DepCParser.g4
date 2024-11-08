@@ -73,7 +73,6 @@ expr:
     | lhs=expr op=('+' | '-') rhs=expr # plusOrMinusExpr
     | lhs=expr op=('<' | '<=' | '>' | '>=') rhs=expr # relationExpr
     | lhs=expr op=('==' | '!=') rhs=expr # equalityExpr
-    | lhs=expr 'xor' rhs=expr # xorExpr
     | lhs=expr 'and' rhs=expr # andExpr
     | lhs=expr 'or' rhs=expr # orExpr
     | value=STR # stringLiteral

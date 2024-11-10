@@ -9,11 +9,15 @@
 #include "dep0/ast/hash_code.hpp"
 
 #include "dep0/match.hpp"
+#include "dep0/tracing.hpp"
 
 #include <algorithm>
+#include <atomic>
 #include <cassert>
 #include <chrono>
 #include <unordered_map>
+
+std::atomic<std::uint64_t> next_task_id = 8ul;
 
 namespace dep0::typecheck {
 
@@ -46,6 +50,7 @@ struct search_state_t
     :   env(env),
         ctx(ctx),
         main_task(search_task_t::create(
+            "main_task",
             std::weak_ptr<search_task_t>(),
             *this,
             0ul,
@@ -88,6 +93,7 @@ std::size_t search_state_t::hash_t::operator()(expr_t const& x) const
 
 search_task_t::search_task_t(
     private_t,
+    std::string name,
     std::weak_ptr<search_task_t> parent,
     search_state_t& st,
     std::size_t const depth,
@@ -97,6 +103,15 @@ search_task_t::search_task_t(
     ast::qty_t const usage_multiplier,
     std::function<void(search_task_t&)> task)
 :   m_kind(one_t{std::move(task)}),
+    m_target_str([&]
+    {
+        std::ostringstream os;
+        if (TRACE_EVENT_CATEGORY_ENABLED("proof_search"))
+            ast::pretty_print(os, *target);
+        return os.str();
+    }()),
+    task_id(next_task_id.fetch_add(1ul, std::memory_order_relaxed)),
+    name(std::move(name)),
     parent(std::move(parent)),
     state(st),
     depth(depth),
@@ -109,6 +124,7 @@ search_task_t::search_task_t(
 { }
 
 std::shared_ptr<search_task_t> search_task_t::create(
+    std::string name,
     std::weak_ptr<search_task_t> parent,
     search_state_t& st,
     std::size_t const depth,
@@ -120,6 +136,7 @@ std::shared_ptr<search_task_t> search_task_t::create(
 {
     return std::make_shared<search_task_t>(
         private_t{},
+        std::move(name),
         std::move(parent),
         st,
         depth,
@@ -169,6 +186,7 @@ void search_task_t::run()
         return;
     if (depth > 10 or state.expired())
         return set_failed();
+    TRACE_EVENT("proof_search", perfetto::DynamicString(name), perfetto::Flow(task_id), "target", m_target_str);
     match(
         m_kind,
         [this] (one_t& one)
@@ -245,6 +263,7 @@ search_proof(
             is_mutable_allowed,
             std::make_shared<usage_t>(usage.extend()),
             usage_multiplier);
+    TRACE_EVENT("proof_search", "search_proof()");
     do
         st.main_task->run();
     while (not st.main_task->done());
@@ -256,10 +275,12 @@ search_proof(
 }
 
 template <typename... T>
-std::vector<std::shared_ptr<search_task_t>> make_sub_tasks(search_task_t& parent, T&&... tactics)
+std::vector<std::shared_ptr<search_task_t>>
+make_sub_tasks(search_task_t& parent, std::pair<char const*, T>... tactics)
 {
     return {
         search_task_t::create(
+            tactics.first,
             parent.weak_from_this(),
             parent.state,
             parent.depth + 1,
@@ -267,7 +288,7 @@ std::vector<std::shared_ptr<search_task_t>> make_sub_tasks(search_task_t& parent
             parent.is_mutable_allowed,
             parent.usage,
             parent.usage_multiplier,
-            std::forward<T>(tactics))...
+            std::move(tactics.second))...
     };
 }
 
@@ -291,7 +312,11 @@ void proof_search(search_task_t& task)
     else if (detect_loop(task))
         task.set_failed();
     else
-        task.when_any(make_sub_tasks(task, search_var, search_true_t, search_trivial_value, search_app));
+        task.when_any(make_sub_tasks(task,
+            std::pair{"search_var", search_var},
+            std::pair{"search_true_t", search_true_t},
+            std::pair{"search_trivial_value", search_trivial_value},
+            std::pair{"search_app", search_app}));
 }
 
 void quick_search(search_task_t& task)
@@ -301,7 +326,10 @@ void quick_search(search_task_t& task)
     else if (detect_loop(task))
         task.set_failed();
     else
-        task.when_any(make_sub_tasks(task, search_var, search_true_t, search_trivial_value));
+        task.when_any(make_sub_tasks(task,
+            std::pair{"search_var", search_var},
+            std::pair{"search_true_t", search_true_t},
+            std::pair{"search_trivial_value", search_trivial_value}));
 }
 
 } // namespace dep0::typecheck

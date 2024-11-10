@@ -6,6 +6,7 @@
 #include "private/unification.hpp"
 
 #include "dep0/ast/occurs_in.hpp"
+#include "dep0/ast/pretty_print.hpp"
 
 #include "dep0/fmap.hpp"
 #include "dep0/match.hpp"
@@ -112,6 +113,7 @@ static void try_apply(search_task_t& task, expr_t::global_t const& name, sort_t 
                 bool const possibly_infinite_path = unify(pi.ret_type.get(), app_type.args[idx].type).has_value();
                 indices.push_back(idx);
                 sub_tasks.push_back(search_task_t::create(
+                    possibly_infinite_path ? "quick_search" : "proof_search",
                     task.weak_from_this(),
                     task.state,
                     task.depth + 1,
@@ -181,6 +183,7 @@ void search_app(search_task_t& task)
             });
         if (viable)
             sub_tasks.push_back(search_task_t::create(
+                [&] { std::ostringstream os; ast::pretty_print<properties_t>(os, name); return os.str(); }(),
                 task.weak_from_this(),
                 task.state,
                 task.depth + 1,

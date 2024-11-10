@@ -2,6 +2,7 @@
 antlr4-cppruntime/4.13.0
 boost/1.85.0
 llvm-core/13.0.0
+perfetto/48.1
 
 # conflicts
 zlib/1.2.13 # boost vs llvm-core

@@ -35,9 +35,9 @@ dep0::expected<dep0::typecheck::module_t> typecheck_pipeline_t::run(std::filesys
     auto module = parser_pipeline_t::run(f);
     if (not module)
         return std::move(module.error());
-    TRACE_EVENT_BEGIN("typechecking", "prelude");
+    TRACE_EVENT_BEGIN(TRACE_TYPECHECKING, "prelude");
     auto const env = options.no_prelude ? dep0::expected<dep0::typecheck::env_t>{} : dep0::typecheck::make_base_env();
-    TRACE_EVENT_END("typechecking");
+    TRACE_EVENT_END(TRACE_TYPECHECKING);
     if (not env)
         return std::move(env.error());
     TRACE_EVENT(TRACE_TYPECHECKING, "typecheck_pipeline_t::run()", "file", f.native());

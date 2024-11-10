@@ -17,7 +17,7 @@
 #include <chrono>
 #include <unordered_map>
 
-std::atomic<std::uint64_t> next_task_id = 8ul;
+static std::atomic<std::uint64_t> next_task_id = 0ul;
 
 namespace dep0::typecheck {
 

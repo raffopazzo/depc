@@ -20,9 +20,9 @@ namespace dep0 {
 struct tracing_session_t;
 
 /**
- * Starts a new tracing session that will automatically stopped when all references are destroyed.
+ * Starts a new tracing session that will be automatically stopped when all references are destroyed.
  *
- * @param trace_file_name The path to the file where the trace will be stored.
+ * @param trace_file_name The file name where the trace will be stored.
  */
 std::shared_ptr<tracing_session_t> start_tracing_session(std::filesystem::path trace_file_name);
 

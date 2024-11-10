@@ -19,6 +19,20 @@ namespace dep0::typecheck {
 struct search_state_t;
 
 /**
+ * Helper type to terminate a proof search if it gets too deep.
+ * Only its friends can construct a new value, everyone else must copy a value from somewhere else.
+ */
+class search_depth_t
+{
+    std::size_t m_value;
+
+public:
+    search_depth_t(search_depth_t const&) = default;
+    search_depth_t(struct search_depth_friend_t const&, std::size_t);
+    std::size_t value() const { return m_value; }
+};
+
+/**
  * In complex type theories, like one with dependent types, proof-search is undecidable.
  * Because of this, a naive depth-first search may easily get stuck.
  * Even if it succeeds, it may follow a very long path and generate an unnecessary complex result.
@@ -96,7 +110,7 @@ public:
     std::string const name;
     std::weak_ptr<search_task_t> const parent;
     search_state_t& state;
-    std::size_t const depth; /**< Level of depth in the search path; if too deep this task will fail. */
+    search_depth_t const depth;
     env_t const& env;
     ctx_t const& ctx;
     std::shared_ptr<expr_t const> const target; // TODO use some `shared_ref` since can never be nullptr or `type_t`
@@ -109,7 +123,7 @@ public:
         std::string name,
         std::weak_ptr<search_task_t> parent,
         search_state_t&,
-        std::size_t depth,
+        search_depth_t,
         std::shared_ptr<expr_t const> target,
         ast::is_mutable_t is_mutable_allowed,
         std::shared_ptr<usage_t>,
@@ -120,7 +134,7 @@ public:
         std::string name,
         std::weak_ptr<search_task_t> parent,
         search_state_t&,
-        std::size_t depth,
+        search_depth_t,
         std::shared_ptr<expr_t const> target,
         ast::is_mutable_t is_mutable_allowed,
         std::shared_ptr<usage_t>,

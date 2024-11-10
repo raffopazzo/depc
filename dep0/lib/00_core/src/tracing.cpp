@@ -10,9 +10,6 @@ namespace dep0 {
 
 struct tracing_session_t
 {
-    perfetto::TracingInitArgs args;
-    perfetto::protos::gen::TrackEventConfig track_event_cfg;
-    perfetto::TraceConfig cfg;
     std::unique_ptr<perfetto::TracingSession> tracing_session;
     std::filesystem::path trace_file_name;
     temp_file_t trace_file;
@@ -21,10 +18,13 @@ struct tracing_session_t
         trace_file_name(std::move(trace_file_name)),
         trace_file(std::move(make_temp_file().value()))
     {
+        perfetto::TracingInitArgs args;
         args.backends |= perfetto::kInProcessBackend;
         perfetto::Tracing::Initialize(args);
         perfetto::TrackEvent::Register();
+        perfetto::protos::gen::TrackEventConfig track_event_cfg;
         track_event_cfg.add_enabled_categories("*");
+        perfetto::TraceConfig cfg;
         cfg.add_buffers()->set_size_kb(1024);
         auto ds_cfg = cfg.add_data_sources()->mutable_config();
         ds_cfg->set_name("track_event");

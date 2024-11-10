@@ -2,6 +2,8 @@
 #include "job.hpp"
 #include "pipeline.hpp"
 
+#include "dep0/tracing.hpp"
+
 #include <llvm/CodeGen/CommandFlags.h>
 #include <llvm/Support/CommandLine.h>
 #include <llvm/Support/Host.h>
@@ -122,6 +124,20 @@ int main(int argc, char** argv)
             cl::cat(extraCat),
             cl::desc("Skip the transformations pipeline stage, for example beta-delta normalization"));
 
+    // tracing options
+    cl::OptionCategory tracingCat("Tracing Options", "Use these options to obtain a trace of the programme execution");
+    auto const enable_tracing =
+        cl::opt<bool>(
+            "trace",
+            cl::init(false),
+            cl::cat(tracingCat),
+            cl::desc("Write a trace file, by default named 'dep0.trace' unless --trace-file is specified"));
+    auto const trace_file_name =
+        cl::opt<std::string>(
+            "trace-file",
+            cl::cat(tracingCat),
+            cl::desc("Override the default trace file name and implicitly enables tracing"));
+
     auto const input_files = cl::list<std::string>(cl::Positional, cl::desc("<input-files>"));
 
     cl::ParseCommandLineOptions(
@@ -135,6 +151,13 @@ int main(int argc, char** argv)
         return failure("no input files");
 
     auto const input_file_paths = std::vector<fs::path>(input_files.begin(), input_files.end());
+
+    auto const tracing = [&]
+    {
+        return enable_tracing or not trace_file_name.empty()
+            ? dep0::start_tracing_session(trace_file_name.empty() ? "dep0.trace" : trace_file_name.getValue())
+            : nullptr;
+    }();
 
     if (typecheck_only)
         return print_ast

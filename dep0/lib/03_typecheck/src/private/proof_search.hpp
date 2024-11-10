@@ -87,10 +87,13 @@ class search_task_t : public std::enable_shared_from_this<search_task_t>
 
     std::variant<one_t, any_t, all_t> m_kind;
     std::variant<in_progress_t, failed_t, succeeded_t> m_status;
+    std::string m_target_str;
 
     struct private_t{};
 
 public:
+    std::uint64_t const task_id;
+    std::string const name;
     std::weak_ptr<search_task_t> const parent;
     search_state_t& state;
     std::size_t const depth; /**< Level of depth in the search path; if too deep this task will fail. */
@@ -103,6 +106,7 @@ public:
 
     search_task_t(
         private_t,
+        std::string name,
         std::weak_ptr<search_task_t> parent,
         search_state_t&,
         std::size_t depth,
@@ -113,6 +117,7 @@ public:
         std::function<void(search_task_t&)>);
 
     static std::shared_ptr<search_task_t> create(
+        std::string name,
         std::weak_ptr<search_task_t> parent,
         search_state_t&,
         std::size_t depth,

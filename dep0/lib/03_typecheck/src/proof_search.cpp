@@ -186,7 +186,7 @@ void search_task_t::run()
         return;
     if (depth > 10 or state.expired())
         return set_failed();
-    TRACE_EVENT("proof_search", perfetto::DynamicString(name), perfetto::Flow(task_id), "target", m_target_str);
+    TRACE_EVENT(TRACE_PROOF_SEARCH, perfetto::DynamicString(name), perfetto::Flow(task_id), "target", m_target_str);
     match(
         m_kind,
         [this] (one_t& one)
@@ -263,7 +263,7 @@ search_proof(
             is_mutable_allowed,
             std::make_shared<usage_t>(usage.extend()),
             usage_multiplier);
-    TRACE_EVENT("proof_search", "search_proof()");
+    TRACE_EVENT(TRACE_PROOF_SEARCH, "search_proof()");
     do
         st.main_task->run();
     while (not st.main_task->done());

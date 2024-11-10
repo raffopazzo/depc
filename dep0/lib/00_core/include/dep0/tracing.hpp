@@ -5,13 +5,20 @@
 #include <memory>
 #include <filesystem>
 
+#define TRACE_PARSING "parsing"
+#define TRACE_PROOF_SEARCH "proof_search"
+#define TRACE_TYPECHECKING "typechecking"
+#define TRACE_TRANSFORM "transform"
+#define TRACE_LLVMGEN "llvmgen"
+#define TRACE_COMPILE "compile"
+
 PERFETTO_DEFINE_CATEGORIES(
-    perfetto::Category("parsing"),
-    perfetto::Category("typechecking"),
-    perfetto::Category("proof_search"),
-    perfetto::Category("transform"),
-    perfetto::Category("llvmgen"),
-    perfetto::Category("compile")
+    perfetto::Category(TRACE_PARSING),
+    perfetto::Category(TRACE_TYPECHECKING),
+    perfetto::Category(TRACE_PROOF_SEARCH),
+    perfetto::Category(TRACE_TRANSFORM),
+    perfetto::Category(TRACE_LLVMGEN),
+    perfetto::Category(TRACE_COMPILE)
     );
 
 namespace dep0 {

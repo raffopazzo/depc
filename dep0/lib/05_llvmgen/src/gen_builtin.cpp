@@ -22,13 +22,10 @@ static llvm::Value* gen_builtin_slice(
     auto const index = gen_val(global, local, builder, app.args[3], nullptr);
     auto const offset = stride_size ? builder.CreateMul(stride_size, index) : index;
     auto const ptr = builder.CreateGEP(type, base, offset);
-    if (dest)
-    {
-        builder.CreateStore(ptr, dest);
-        return dest;
-    }
-    else
-        return ptr;
+    auto const& func_type = std::get<typecheck::expr_t>(app.func.get().properties.sort.get());
+    auto const& pi_type = std::get<typecheck::expr_t::pi_t>(func_type.value);
+    auto const& ret_type = pi_type.ret_type.get();
+    return maybe_gen_store(global, local, builder, ptr, dest, ret_type);
 }
 
 llvm::Value* try_gen_builtin(

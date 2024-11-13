@@ -382,20 +382,24 @@ type_assign_app(
     auto func = type_assign(env, ctx, app.func.get(), is_mutable_allowed, usage, usage_multiplier);
     if (not func)
         return std::move(func.error());
-    auto func_type = [&] () -> expected<expr_t::pi_t>
+    // We need to ensure that the result type and the type of `func` are both consistent with argument substitutions.
+    // We also want to avoid making unnecessary copies so we grab a pointer.
+    expr_t::pi_t* const func_type = [&] () -> expr_t::pi_t*
     {
         if (auto* const type = std::get_if<expr_t>(&func->properties.sort.get()))
         {
             beta_delta_normalize(env, ctx, *type);
-            if (auto const pi = std::get_if<expr_t::pi_t>(&type->value))
-                return *pi;
+            return std::get_if<expr_t::pi_t>(&type->value);
         }
+        else
+            return nullptr;
+    }();
+    if (not func_type)
+    {
         std::ostringstream err;
         pretty_print(err << "cannot invoke expression of type `", func->properties.sort.get()) << '`';
         return dep0::error_t(err.str(), loc);
-    }();
-    if (not func_type)
-        return std::move(func_type.error());
+    }
     if (func_type->args.size() != app.args.size())
     {
         std::ostringstream err;
@@ -427,9 +431,8 @@ type_assign_app(
                 nullptr);
         args.push_back(std::move(*arg));
     }
-    return make_legal_expr(
-        std::move(func_type->ret_type.get()),
-        expr_t::app_t{std::move(*func), std::move(args)});
+    auto result_type = func_type->ret_type.get(); // we're about to move from `func`, so take a copy
+    return make_legal_expr(std::move(result_type), expr_t::app_t{std::move(*func), std::move(args)});
 }
 
 expected<expr_t> type_assign_abs(

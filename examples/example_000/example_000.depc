@@ -43,6 +43,8 @@ func main(u64_t argc, array_t(cstr_t, argc) argv) mutable -> i32_t
     // This can only be done because at this point of the programme execution we know that `argc >= 2`.
     // If the same expression appeared above the `if` statement (or inside the true branch),
     // the compiler would not be able to find any such value, because that fact cannot be proved.
+    // With the current implementation of `play_game` we always print out the programme name, stored in `argv[0]`.
+    // We fix this in `example_001.depc`.
     printf("the winner is: %s\n", play_game(argc, auto, argv));
     puts("Bye!");
     return 0;

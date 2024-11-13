@@ -115,22 +115,7 @@ llvm::Value* gen_val(
     auto const& expr_type = std::get<typecheck::expr_t>(expr.properties.sort.get());
     auto const storeOrReturn = [&] (llvm::Value* const value)
     {
-        if (not dest)
-            return value;
-        if (auto const pty = get_properties_if_array(expr_type))
-        {
-            assert(dest->getType()->isPointerTy() and "memcpy destination must be a pointer");
-            auto const& data_layout = global.llvm_module.getDataLayout();
-            auto const pointed_type = dest->getType()->getPointerElementType();
-            auto const align = data_layout.getPrefTypeAlign(pointed_type);
-            auto const bytes = data_layout.getTypeAllocSize(pointed_type);
-            auto const size = gen_array_total_size(global, local, builder, *pty);
-            auto const total_bytes = builder.CreateMul(size, builder.getInt64(bytes.getFixedSize()));
-            builder.CreateMemCpy(dest, align, value, align, total_bytes);
-        }
-        else
-            builder.CreateStore(value, dest);
-        return dest;
+        return maybe_gen_store(global, local, builder, value, dest, expr_type);
     };
     return match(
         expr.value,
@@ -487,6 +472,32 @@ llvm::Value* gen_val(
             return gen_val(global, local, builder, x.value.get(), dest);
         });
 }
+
+llvm::Value* maybe_gen_store(
+    global_ctx_t& global,
+    local_ctx_t const& local,
+    llvm::IRBuilder<>& builder,
+    llvm::Value* const value,
+    llvm::Value* const dest,
+    typecheck::expr_t const& type)
+{
+    if (not dest)
+        return value;
+    if (auto const pty = get_properties_if_array(type))
+    {
+        assert(dest->getType()->isPointerTy() and "memcpy destination must be a pointer");
+        auto const& data_layout = global.llvm_module.getDataLayout();
+        auto const pointed_type = dest->getType()->getPointerElementType();
+        auto const align = data_layout.getPrefTypeAlign(pointed_type);
+        auto const bytes = data_layout.getTypeAllocSize(pointed_type);
+        auto const size = gen_array_total_size(global, local, builder, *pty);
+        auto const total_bytes = builder.CreateMul(size, builder.getInt64(bytes.getFixedSize()));
+        builder.CreateMemCpy(dest, align, value, align, total_bytes);
+    }
+    else
+        builder.CreateStore(value, dest);
+    return dest;
+};
 
 llvm::Value* gen_func_call(
     global_ctx_t& global,

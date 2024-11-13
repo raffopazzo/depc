@@ -7,12 +7,6 @@
 
 using namespace dep0::llvmgen::testing;
 
-template <Predicate<llvm::Type> F>
-auto ret_arg_of(F&& f)
-{
-    return arg_of(pointer_to(std::forward<F>(f)), std::nullopt, {llvm::Attribute::NonNull, llvm::Attribute::StructRet});
-}
-
 static auto const nonnull = std::vector{llvm::Attribute::NonNull};
 static auto const sext = std::vector{llvm::Attribute::SExt};
 static auto const zext = std::vector{llvm::Attribute::ZExt};

@@ -7,12 +7,6 @@
 
 using namespace dep0::llvmgen::testing;
 
-template <Predicate<llvm::Type> F>
-auto ret_arg_of(F&& f)
-{
-    return arg_of(pointer_to(std::forward<F>(f)), std::nullopt, {llvm::Attribute::NonNull, llvm::Attribute::StructRet});
-}
-
 static auto const nonnull = std::vector{llvm::Attribute::NonNull};
 static auto const sext = std::vector{llvm::Attribute::SExt};
 static auto const zext = std::vector{llvm::Attribute::ZExt};
@@ -25,7 +19,7 @@ BOOST_AUTO_TEST_CASE(pass_000)
     BOOST_TEST_REQUIRE(pass("0007_arrays/pass_000.depc"));
     {
         auto const f = pass_result.value()->getFunction("values");
-        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{ret_arg_of(is_i32)}, is_void));
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{ret_ptr_to(is_i32)}, is_void));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
         auto const inst = get_instructions(f->getEntryBlock());
         BOOST_TEST_REQUIRE(inst.size() == 7ul);
@@ -53,7 +47,7 @@ BOOST_AUTO_TEST_CASE(pass_001)
     BOOST_TEST_REQUIRE(pass("0007_arrays/pass_001.depc"));
     {
         auto const f = pass_result.value()->getFunction("empty_of_int");
-        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{ret_arg_of(is_i32)}, is_void));
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{ret_ptr_to(is_i32)}, is_void));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
         auto const& bb = f->getEntryBlock();
         BOOST_TEST(bb.size() == 1ul);
@@ -61,7 +55,7 @@ BOOST_AUTO_TEST_CASE(pass_001)
     }
     {
         auto const f = pass_result.value()->getFunction("empty_of_bool");
-        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{ret_arg_of(is_i1)}, is_void));
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{ret_ptr_to(is_i1)}, is_void));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
         auto const& bb = f->getEntryBlock();
         BOOST_TEST(bb.size() == 1ul);
@@ -113,7 +107,7 @@ BOOST_AUTO_TEST_CASE(pass_003)
     BOOST_TEST_REQUIRE(pass("0007_arrays/pass_003.depc"));
     {
         auto const f = pass_result.value()->getFunction("values");
-        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{ret_arg_of(is_i32)}, is_void));
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{ret_ptr_to(is_i32)}, is_void));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
         auto const inst = get_instructions(f->getEntryBlock());
         BOOST_TEST_REQUIRE(inst.size() == 5ul);
@@ -227,7 +221,7 @@ BOOST_AUTO_TEST_CASE(pass_007)
     }
     {
         auto const f = pass_result.value()->getFunction("three_units");
-        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{ret_arg_of(struct_of())}, is_void));
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{ret_ptr_to(struct_of())}, is_void));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
         auto const inst = get_instructions(f->getEntryBlock());
         BOOST_TEST_REQUIRE(inst.size() == 10ul);
@@ -262,7 +256,7 @@ BOOST_AUTO_TEST_CASE(pass_008)
     BOOST_TEST_REQUIRE(pass("0007_arrays/pass_008.depc"));
     {
         auto const f = pass_result.value()->getFunction("f");
-        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{ret_arg_of(is_i32)}, is_void));
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{ret_ptr_to(is_i32)}, is_void));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
         auto const inst = get_instructions(f->getEntryBlock());
         BOOST_TEST_REQUIRE(inst.size() == 15ul);
@@ -378,7 +372,7 @@ BOOST_AUTO_TEST_CASE(pass_010)
     BOOST_TEST_REQUIRE(pass("0007_arrays/pass_010.depc"));
     {
         auto const f = pass_result.value()->getFunction("values");
-        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{ret_arg_of(is_i32)}, is_void));
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{ret_ptr_to(is_i32)}, is_void));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
         auto const inst = get_instructions(f->getEntryBlock());
         BOOST_TEST_REQUIRE(inst.size() == 7ul);
@@ -592,7 +586,7 @@ BOOST_AUTO_TEST_CASE(pass_012)
     {
         auto const f = pass_result.value()->getFunction("choose");
         auto const fn_ptr = fnptr_type(std::tuple{}, is_i32);
-        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{ret_arg_of(fn_ptr), arg_of(is_i1, "which", zext)}, is_void));
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{ret_ptr_to(fn_ptr), arg_of(is_i1, "which", zext)}, is_void));
         auto const blks = get_blocks(*f);
         BOOST_TEST_REQUIRE(blks.size() == 10ul);
         auto const entry = blks[0];
@@ -694,7 +688,7 @@ BOOST_AUTO_TEST_CASE(pass_014)
     BOOST_TEST_REQUIRE(pass("0007_arrays/pass_014.depc"));
     {
         auto const f = pass_result.value()->getFunction("zeros");
-        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{ret_arg_of(is_i32)}, is_void));
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{ret_ptr_to(is_i32)}, is_void));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
         auto const inst = get_instructions(f->getEntryBlock());
         BOOST_TEST_REQUIRE(inst.size() == 7ul);
@@ -717,7 +711,7 @@ BOOST_AUTO_TEST_CASE(pass_014)
     auto const zeros = exactly(pass_result.value()->getFunction("zeros"));
     {
         auto const f = pass_result.value()->getFunction("passthrough");
-        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{ret_arg_of(is_i32)}, is_void));
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{ret_ptr_to(is_i32)}, is_void));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
         auto const inst = get_instructions(f->getEntryBlock());
         BOOST_TEST_REQUIRE(inst.size() == 2ul);
@@ -730,7 +724,7 @@ BOOST_AUTO_TEST_CASE(pass_014)
             is_function_of(
                 f,
                 std::tuple{
-                    ret_arg_of(is_i32),
+                    ret_ptr_to(is_i32),
                     arg_of(is_i1, "which", zext)},
                 is_void));
         auto blks = get_blocks(*f);
@@ -774,7 +768,7 @@ BOOST_AUTO_TEST_CASE(pass_014)
             is_function_of(
                 f,
                 std::tuple{
-                    ret_arg_of(is_i32),
+                    ret_ptr_to(is_i32),
                     arg_of(is_i1, "which", zext),
                     arg_of(pointer_to(is_i32), "xs", nonnull)},
                 is_void));
@@ -822,7 +816,7 @@ BOOST_AUTO_TEST_CASE(pass_014)
             is_function_of(
                 f,
                 std::tuple{
-                    ret_arg_of(is_i32),
+                    ret_ptr_to(is_i32),
                     arg_of(is_i1, "which", zext),
                     arg_of(pointer_to(is_i32), "xs", nonnull),
                     arg_of(pointer_to(is_i32), "ys", nonnull)},
@@ -891,7 +885,7 @@ BOOST_AUTO_TEST_CASE(pass_015)
             is_function_of(
                 f,
                 std::tuple{
-                    ret_arg_of(is_i32),
+                    ret_ptr_to(is_i32),
                     arg_of(is_i1, "which", zext),
                     arg_of(is_i64, "n", zext),
                     arg_of(pointer_to(is_i32), "xs", nonnull),
@@ -960,7 +954,7 @@ BOOST_AUTO_TEST_CASE(pass_015)
             is_function_of(
                 f,
                 std::tuple{
-                    ret_arg_of(is_i32),
+                    ret_ptr_to(is_i32),
                     arg_of(is_i1, "which", zext),
                     arg_of(pointer_to(is_i32), "xs", nonnull),
                     arg_of(pointer_to(is_i32), "ys", nonnull)},
@@ -1000,7 +994,7 @@ BOOST_AUTO_TEST_CASE(pass_016_without_normalization)
             is_function_of(
                 f,
                 std::tuple{
-                    ret_arg_of(is_i32),
+                    ret_ptr_to(is_i32),
                     arg_of(is_i1, "start_from_zero", zext)},
                 is_void));
         auto const blks = get_blocks(*f);
@@ -1093,7 +1087,7 @@ BOOST_AUTO_TEST_CASE(pass_016_with_normalization)
             is_function_of(
                 f,
                 std::tuple{
-                    ret_arg_of(is_i32),
+                    ret_ptr_to(is_i32),
                     arg_of(is_i1, "start_from_zero", zext)},
                 is_void));
         auto const blks = get_blocks(*f);

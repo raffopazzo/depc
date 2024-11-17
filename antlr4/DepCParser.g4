@@ -34,7 +34,7 @@ module: moduleEntry* EOF;
 moduleEntry: typeDef | axiom | externDecl | funcDecl | funcDef;
 axiom: 'axiom' name=ID funcType ';';
 externDecl: 'extern' name=ID funcType ';';
-funcSig: 'func' name=ID funcType;
+funcSig: 'func' ('[[' attribute=ID ']]')? name=ID funcType;
 funcDecl: funcSig ';';
 funcDef: funcSig body;
 typeDef:

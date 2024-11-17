@@ -21,6 +21,9 @@ static std::atomic<std::uint64_t> next_task_id = 0ul;
 
 namespace dep0::typecheck {
 
+struct search_depth_friend_t { };
+search_depth_t::search_depth_t(search_depth_friend_t const&, std::size_t const value) : m_value(value) { }
+
 struct search_state_t
 {
     struct eq_t { bool operator()(expr_t const&, expr_t const&) const; };
@@ -53,7 +56,7 @@ struct search_state_t
             "main_task",
             std::weak_ptr<search_task_t>(),
             *this,
-            0ul,
+            search_depth_t(search_depth_friend_t{}, 0ul),
             std::make_shared<expr_t>(target),
             is_mutable_allowed,
             std::move(usage),
@@ -96,7 +99,7 @@ search_task_t::search_task_t(
     std::string name,
     std::weak_ptr<search_task_t> parent,
     search_state_t& st,
-    std::size_t const depth,
+    search_depth_t depth,
     std::shared_ptr<expr_t const> target,
     ast::is_mutable_t const is_mutable_allowed,
     std::shared_ptr<usage_t> usage,
@@ -127,7 +130,7 @@ std::shared_ptr<search_task_t> search_task_t::create(
     std::string name,
     std::weak_ptr<search_task_t> parent,
     search_state_t& st,
-    std::size_t const depth,
+    search_depth_t const depth,
     std::shared_ptr<expr_t const> target,
     ast::is_mutable_t const is_mutable_allowed,
     std::shared_ptr<usage_t> usage,
@@ -184,9 +187,10 @@ void search_task_t::run()
     assert(not done());
     if (done())
         return;
-    if (depth > 10 or state.expired())
+    if (depth.value() > 10ul or state.expired())
         return set_failed();
-    TRACE_EVENT(TRACE_PROOF_SEARCH, perfetto::DynamicString(name), perfetto::Flow(task_id), "target", m_target_str);
+    TRACE_EVENT(TRACE_PROOF_SEARCH, perfetto::DynamicString(name), perfetto::Flow(task_id),
+        "target", m_target_str, "depth", depth.value());
     match(
         m_kind,
         [this] (one_t& one)
@@ -276,14 +280,14 @@ search_proof(
 
 template <typename... T>
 std::vector<std::shared_ptr<search_task_t>>
-make_sub_tasks(search_task_t& parent, std::pair<char const*, T>... tactics)
+make_sub_tasks(search_task_t& parent, search_depth_t const new_depth, std::pair<char const*, T>... tactics)
 {
     return {
         search_task_t::create(
             tactics.first,
             parent.weak_from_this(),
             parent.state,
-            parent.depth + 1,
+            new_depth,
             parent.target,
             parent.is_mutable_allowed,
             parent.usage,
@@ -312,7 +316,9 @@ void proof_search(search_task_t& task)
     else if (detect_loop(task))
         task.set_failed();
     else
-        task.when_any(make_sub_tasks(task,
+        task.when_any(make_sub_tasks(
+            task,
+            search_depth_t(search_depth_friend_t{}, task.depth.value() + 1ul),
             std::pair{"search_var", search_var},
             std::pair{"search_true_t", search_true_t},
             std::pair{"search_trivial_value", search_trivial_value},
@@ -326,7 +332,9 @@ void quick_search(search_task_t& task)
     else if (detect_loop(task))
         task.set_failed();
     else
-        task.when_any(make_sub_tasks(task,
+        task.when_any(make_sub_tasks(
+            task,
+            search_depth_t(search_depth_friend_t{}, task.depth.value() + 1ul),
             std::pair{"search_var", search_var},
             std::pair{"search_true_t", search_true_t},
             std::pair{"search_trivial_value", search_trivial_value}));

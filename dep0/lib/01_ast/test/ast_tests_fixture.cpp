@@ -19,6 +19,7 @@ AstTestsFixture::func_def(
     return func_def_t{
         dummy_properties_t{},
         source_text::from_literal(name),
+        std::nullopt,
         expr_t::abs_t{m, std::move(args), std::move(ret_type), std::move(body)}
     };
 }

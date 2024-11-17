@@ -1,0 +1,30 @@
+extern puts(cstr_t) -> i32_t;
+extern printf(cstr_t, cstr_t) -> i32_t;
+
+func play_game(0 u64_t n, 0 true_t(n >= 2), array_t(cstr_t, n) players) -> cstr_t
+{
+   return players[0] because ::lt_trans_u64(0, 1, n, auto, auto);
+}
+
+func main(u64_t argc, array_t(cstr_t, argc) argv) mutable -> i32_t
+{
+    // This is exactly like `example_000.depc` but we now skip `argv[0]` because it contains the programme name.
+    // For this we use the function `::slice()` from the prelude module.
+    // This function discards the first `k` elements from an array of size `n` but it requires a proof that `n > k`.
+    // We first check that `argv` has at least 3 elements (the programme name plus at least 2 player names).
+    // By transitivity this means that `argc > 1` so we can safely drop the programme name from `argv`.
+    if (argc > 2)
+    {
+        printf(
+            "the winner is: %s\n",
+            play_game(argc - 1, auto, ::slice(cstr_t, argc, argv, 1, ::gt_trans_u64(argc, 2, 1, auto, auto)))
+        );
+        puts("Bye!");
+        return 0;
+    }
+    else
+    {
+        puts("you need at least 2 players for this game");
+        return 1;
+    }
+}

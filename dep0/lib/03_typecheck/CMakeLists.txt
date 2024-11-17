@@ -4,6 +4,7 @@ add_library(dep0_typecheck_lib
   # public headers
   include/dep0/typecheck/ast.hpp
   include/dep0/typecheck/beta_delta_reduction.hpp
+  include/dep0/typecheck/builtin_call.hpp
   include/dep0/typecheck/check.hpp
   include/dep0/typecheck/context.hpp
   include/dep0/typecheck/derivation.hpp
@@ -38,6 +39,7 @@ add_library(dep0_typecheck_lib
   src/ast.cpp
   src/beta_delta_equivalence.cpp
   src/beta_delta_reduction.cpp
+  src/builtin_call.cpp
   src/beta_reduction.cpp
   src/check.cpp
   src/context.cpp

@@ -6,6 +6,7 @@
 #include "private/cpp_int_sub.hpp"
 #include "private/derivation_rules.hpp"
 
+#include "dep0/typecheck/builtin_call.hpp"
 #include "dep0/typecheck/is_mutable.hpp"
 
 #include "dep0/destructive_self_assign.hpp"
@@ -464,6 +465,26 @@ bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t& expr)
                         destructive_self_assign(expr.value, std::move(init_list->values[i_].value));
                     }
             return changed or impl::delta_unfold(env, ctx, subscript);
+        },
+        [&] (expr_t::app_t& app)
+        {
+            bool const changed = match(
+                is_builtin_call(app),
+                [] (is_builtin_call_result::no_t) { return false; },
+                [&] (is_builtin_call_result::slice_t const& slice)
+                {
+                    // `slice` is a view into `app`, which is non-const, so it's ok to const_cast away
+                    auto const l = const_cast<expr_t::init_list_t*>(std::get_if<expr_t::init_list_t>(&slice.xs.value));
+                    auto const k = std::get_if<expr_t::numeric_constant_t>(&slice.k.value);
+                    if (l and k)
+                    {
+                        l->values.erase(l->values.begin(), l->values.begin() + k->value.template convert_to<std::size_t>());
+                        // note this is not destructive self-assignment because we first construct a new value_t
+                        expr.value = expr_t::value_t{std::move(*l)};
+                    }
+                    return l and k;
+                });
+            return changed or impl::delta_unfold(env, ctx, app);
         },
         [&] (auto& x) { return impl::delta_unfold(env, ctx, x); });
 }

@@ -10,6 +10,7 @@ add_library(dep0_llvmgen_lib
     src/private/gen_array.hpp
     src/private/gen_attrs.hpp
     src/private/gen_body.hpp
+    src/private/gen_builtin.hpp
     src/private/gen_func.hpp
     src/private/gen_type.hpp
     src/private/gen_val.hpp
@@ -23,6 +24,7 @@ add_library(dep0_llvmgen_lib
     src/gen_array.cpp
     src/gen_attrs.cpp
     src/gen_body.cpp
+    src/gen_builtin.cpp
     src/gen_func.cpp
     src/gen_type.cpp
     src/gen_val.cpp

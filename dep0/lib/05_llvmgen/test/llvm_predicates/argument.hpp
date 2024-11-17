@@ -1,6 +1,7 @@
 #pragma once
 
 #include "llvm_predicates/predicate.hpp"
+#include "llvm_predicates/types.hpp"
 
 #include "dep0/testing/failure.hpp"
 
@@ -100,6 +101,12 @@ auto arg_of(
     {
         return impl::is_arg(x, f_type, name, attributes);
     };
+}
+
+template <Predicate<llvm::Type> F>
+auto ret_ptr_to(F&& f)
+{
+    return arg_of(pointer_to(std::forward<F>(f)), std::nullopt, {llvm::Attribute::NonNull, llvm::Attribute::StructRet});
 }
 
 } // namespace dep0::llvmgen::testing

@@ -7,7 +7,7 @@ namespace dep0::ast {
 /**
  * Represents a single attribute, eg `[[builtin]]`.
  * Currently an attribute can only be a single string but
- * in future could be extended to expressions eg `[[assume(x > 0)]]`
+ * in future could be extended to expressions eg `[[assume(x > 0)]]`.
  */
 struct attribute_t
 {

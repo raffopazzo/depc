@@ -6,7 +6,7 @@
 
 namespace dep0::llvmgen {
 
-/** Generate the LLVM value result of a call to `::slice()`. */
+/** Generate the LLVM value that results from a call to `::slice()`. */
 static llvm::Value* gen_builtin_slice(
     global_ctx_t& global,
     local_ctx_t const& local,

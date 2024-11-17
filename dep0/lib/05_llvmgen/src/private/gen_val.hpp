@@ -42,7 +42,7 @@ llvm::Value* gen_val(
  * For example, for an `i32_t` a simple `store` is enough but for an `array_t(i32_t, n)` a `memcpy` might be necessary.
  *
  * @param value The input LLVM value to store or copy.
- * @param dest  An LLVM value that represent the runtime location where the value must be stored or copied.
+ * @param dest  An LLVM value that represents the runtime location where the value must be stored or copied.
  *
  * @return If `dest` is nullptr returns `value`, otherwise returns `dest`.
  */

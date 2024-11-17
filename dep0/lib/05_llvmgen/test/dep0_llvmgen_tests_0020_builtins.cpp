@@ -45,7 +45,7 @@ BOOST_AUTO_TEST_CASE(pass_000)
             is_function_of(
                 f,
                 std::tuple{
-                    ret_arg_of(is_i32),
+                    ret_ptr_to(is_i32),
                     arg_of(pointer_to(is_i32), "xs", nonnull),
                     arg_of(pointer_to(is_i32), "ys", nonnull),
                     arg_of(is_i1, "which", zext),

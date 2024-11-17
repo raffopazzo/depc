@@ -104,7 +104,7 @@ auto arg_of(
 }
 
 template <Predicate<llvm::Type> F>
-auto ret_arg_of(F&& f)
+auto ret_ptr_to(F&& f)
 {
     return arg_of(pointer_to(std::forward<F>(f)), std::nullopt, {llvm::Attribute::NonNull, llvm::Attribute::StructRet});
 }

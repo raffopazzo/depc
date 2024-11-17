@@ -28,16 +28,16 @@ BOOST_AUTO_TEST_CASE(pass_000)
                     load_of(is_i32, gep_of(is_i32, xs, constant(0)), align_of(4)),
                     load_of(is_i32, gep_of(is_i32, xs, constant(1)), align_of(4)))));
     }
+    auto const sum = exactly(pass_result.value()->getFunction("sum"));
     {
         auto const f = pass_result.value()->getFunction("f1");
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(pointer_to(is_i32), "xs", nonnull)}, is_i32, sext));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
+        auto const xs = exactly(f->getArg(0ul));
         BOOST_TEST(
             is_return_of(
                 f->getEntryBlock().getTerminator(),
-                direct_call_of(
-                    exactly(pass_result.value()->getFunction("sum")),
-                    call_arg(gep_of(is_i32, exactly(f->getArg(0ul)), constant(1))))));
+                direct_call_of(sum, call_arg(gep_of(is_i32, xs, constant(1))))));
     }
     {
         auto const f = pass_result.value()->getFunction("f2");
@@ -106,6 +106,16 @@ BOOST_AUTO_TEST_CASE(pass_000)
                     call_arg(constant(false))));
             BOOST_TEST(is_return_of_void(ret));
         }
+    }
+    {
+        auto const f = pass_result.value()->getFunction("f3");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(pointer_to(is_i32), "xs", nonnull)}, is_i32, sext));
+        auto const xs = exactly(f->getArg(0ul));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(
+            is_return_of(
+                f->getEntryBlock().getTerminator(),
+                direct_call_of(sum, call_arg(gep_of(is_i32, gep_of(is_i32, xs, constant(4)), constant(2))))));
     }
 }
 

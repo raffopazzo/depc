@@ -1,0 +1,4 @@
+func seven() -> i32_t
+{
+    return ::slice(i32_t, 3, {3, 5, 7}, 2, auto)[0];
+}

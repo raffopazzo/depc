@@ -8,5 +8,6 @@ using namespace dep0::testing;
 BOOST_FIXTURE_TEST_SUITE(dep0_parser_tests_0020_builtins, ParserTestsFixture)
 
 BOOST_AUTO_TEST_CASE(pass_000) { BOOST_TEST_REQUIRE(pass("0020_builtins/pass_000.depc")); }
+BOOST_AUTO_TEST_CASE(pass_001) { BOOST_TEST_REQUIRE(pass("0020_builtins/pass_001.depc")); }
 
 BOOST_AUTO_TEST_SUITE_END()

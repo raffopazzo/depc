@@ -119,4 +119,16 @@ BOOST_AUTO_TEST_CASE(pass_000)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_001)
+{
+    apply_beta_delta_normalization = true;
+    BOOST_TEST_REQUIRE(pass("0020_builtins/pass_001.depc"));
+    {
+        auto const f = pass_result.value()->getFunction("seven");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, sext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(7)));
+    }
+}
+
 BOOST_AUTO_TEST_SUITE_END()

@@ -15,8 +15,10 @@ func main(u64_t argc, array_t(cstr_t, argc) argv) mutable -> i32_t
     // Then, by transitivity, we know that `3 > 1` and we can safely drop the programme name from `argv`.
     if (argc > 2)
     {
-        puts("the winner is: ");
-        puts(play_game(argc - 1, auto, ::slice(cstr_t, argc, argv, 1, ::gt_trans_u64(argc, 2, 1, auto, auto))));
+        printf(
+            "the winner is: %s\n",
+            play_game(argc - 1, auto, ::slice(cstr_t, argc, argv, 1, ::gt_trans_u64(argc, 2, 1, auto, auto)))
+        );
         puts("Bye!");
         return 0;
     }

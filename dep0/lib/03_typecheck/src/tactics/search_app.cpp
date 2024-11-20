@@ -148,6 +148,31 @@ static void try_apply(search_task_t& task, expr_t::global_t const& name, sort_t 
     }
 }
 
+/**
+ * Return true if the given axiom states an absurdity.
+ *
+ * @remarks
+ *      The canonical absurd type is `(typename t) -> t` but this can be generalised.
+ *      For example `(typename t, i32_t) -> t` is equally absurd.
+ *      However `(typename t, is_integer(t)) -> t` is not absurd because
+ *      the second argument introduces a constraint on `t` that can be satisfied.
+ *      So, more generally, a pi-type is not absurd if the return type is bound to
+ *      a typename argument that appears free in some later argument, i.e. a contraint.
+ *      But this only works on terms in normal form, for example `(typename t, f(t)) -> t`
+ *      is absurd if you define `func f(typename) -> typename { return i32_t; }`.
+ *      Finally, this function only needs to test axioms because absurdity is unprovable.
+ */
+static bool is_absurd(axiom_t const& axiom)
+{
+    // TODO normalize the pi-type
+    auto const& pi = std::get<expr_t::pi_t>(std::get<expr_t>(axiom.properties.sort.get()).value);
+    if (auto const var = std::get_if<expr_t::var_t>(&pi.ret_type.get().value))
+        for (auto it = pi.args.begin(); it != pi.args.end(); ++it)
+            if (it->var == *var)
+                return not ast::occurs_in<properties_t>(*var, std::next(it), pi.args.end(), ast::occurrence_style::free);
+    return false;
+}
+
 void search_app(search_task_t& task)
 {
     std::vector<std::shared_ptr<search_task_t>> sub_tasks;
@@ -164,7 +189,7 @@ void search_app(search_task_t& task)
             [&] (axiom_t const& axiom)
             {
                 // axioms are only viable in an erased context
-                return task.usage_multiplier == ast::qty_t::zero and unifies_with(axiom);
+                return task.usage_multiplier == ast::qty_t::zero and unifies_with(axiom) and not is_absurd(axiom);
             },
             [&] (extern_decl_t const& decl)
             {

@@ -148,6 +148,16 @@ static void try_apply(search_task_t& task, expr_t::global_t const& name, sort_t 
     }
 }
 
+static bool is_absurd(axiom_t const& axiom)
+{
+    auto const& pi = std::get<expr_t::pi_t>(std::get<expr_t>(axiom.properties.sort.get()).value);
+    if (auto const var = std::get_if<expr_t::var_t>(&pi.ret_type.get().value))
+        for (auto it = pi.args.begin(); it != pi.args.end(); ++it)
+            if (it->var == *var)
+                return not ast::occurs_in<properties_t>(*var, std::next(it), pi.args.end(), ast::occurrence_style::free);
+    return false;
+}
+
 void search_app(search_task_t& task)
 {
     std::vector<std::shared_ptr<search_task_t>> sub_tasks;
@@ -164,7 +174,7 @@ void search_app(search_task_t& task)
             [&] (axiom_t const& axiom)
             {
                 // axioms are only viable in an erased context
-                return task.usage_multiplier == ast::qty_t::zero and unifies_with(axiom);
+                return task.usage_multiplier == ast::qty_t::zero and unifies_with(axiom) and not is_absurd(axiom);
             },
             [&] (extern_decl_t const& decl)
             {

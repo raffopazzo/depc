@@ -9,6 +9,10 @@ namespace dep0::typecheck {
 
 namespace {
 auto constexpr prelude_text = R"(
+// general helpers
+axiom believe_me(typename t) -> t;
+func the(0 typename t, t x) -> t { return x; }
+
 // bool_t (first order logic)
 func contradiction(bool_t a, 0 true_t(a), 0 true_t(not a)) -> true_t(false) { if (a) impossible; else impossible; }
 func double_neg_intro(bool_t a, 0 true_t(a)) -> true_t(not not a) { if (a) return {}; else impossible; }

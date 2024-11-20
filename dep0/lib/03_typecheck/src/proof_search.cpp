@@ -309,36 +309,40 @@ static bool detect_loop(search_task_t& task)
     return false;
 }
 
-void proof_search(search_task_t& task)
+static void proof_search_impl(search_task_t& task, bool const run_search_app)
 {
     if (auto const it = task.state.cache.find(*task.target); it != task.state.cache.end())
-        task.set_result(it->second);
-    else if (detect_loop(task))
+    {
+        if (task.usage->try_add(task.ctx, it->second, task.usage_multiplier))
+        {
+            task.set_result(it->second);
+            return;
+        }
+        // If we get here we found a cached value that cannot be used because it would use too many resources.
+        // But we can still try to find another value which uses different resources, so we carry on.
+    }
+    if (detect_loop(task))
         task.set_failed();
     else
-        task.when_any(make_sub_tasks(
-            task,
-            search_depth_t(search_depth_friend_t{}, task.depth.value() + 1ul),
-            std::pair{"search_var", search_var},
-            std::pair{"search_true_t", search_true_t},
-            std::pair{"search_trivial_value", search_trivial_value},
-            std::pair{"search_app", search_app}));
+    {
+        auto const new_depth = search_depth_t(search_depth_friend_t{}, task.depth.value() + 1ul);
+        task.when_any(
+            run_search_app
+            ? make_sub_tasks(task, new_depth,
+                std::pair{"search_var", search_var},
+                std::pair{"search_true_t", search_true_t},
+                std::pair{"search_trivial_value", search_trivial_value},
+                std::pair{"search_app", search_app})
+            : make_sub_tasks(task, new_depth,
+                std::pair{"search_var", search_var},
+                std::pair{"search_true_t", search_true_t},
+                std::pair{"search_trivial_value", search_trivial_value})
+        );
+    }
 }
 
-void quick_search(search_task_t& task)
-{
-    if (auto const it = task.state.cache.find(*task.target); it != task.state.cache.end())
-        task.set_result(it->second);
-    else if (detect_loop(task))
-        task.set_failed();
-    else
-        task.when_any(make_sub_tasks(
-            task,
-            search_depth_t(search_depth_friend_t{}, task.depth.value() + 1ul),
-            std::pair{"search_var", search_var},
-            std::pair{"search_true_t", search_true_t},
-            std::pair{"search_trivial_value", search_trivial_value}));
-}
+void proof_search(search_task_t& task) { proof_search_impl(task, true); }
+void quick_search(search_task_t& task) { proof_search_impl(task, false); }
 
 } // namespace dep0::typecheck
 

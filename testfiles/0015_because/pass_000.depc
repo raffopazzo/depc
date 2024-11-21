@@ -1,3 +1,9 @@
+/*
+ * Copyright Raffaele Rossi 2023 - 2024.
+ *
+ * Distributed under the Boost Software License, Version 1.0.
+ * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
+ */
 axiom trans(u64_t a, u64_t b, u64_t c, true_t(a < b), true_t(b < c)) -> true_t(a < c);
 
 extern rand() -> i32_t;

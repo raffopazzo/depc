@@ -1,3 +1,9 @@
+/*
+ * Copyright Raffaele Rossi 2023 - 2024.
+ *
+ * Distributed under the Boost Software License, Version 1.0.
+ * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
+ */
 axiom f1() -> true_t(false);
 func f2(true_t(false)) -> i32_t { return 0; }
 func f3() -> i32_t

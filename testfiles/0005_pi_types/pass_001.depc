@@ -1,3 +1,9 @@
+/*
+ * Copyright Raffaele Rossi 2023 - 2024.
+ *
+ * Distributed under the Boost Software License, Version 1.0.
+ * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
+ */
 typedef int = signed 32 bit integer;
 func f(typename t, typename int, t x) -> t { return x; }
 func g() -> int { return f(int, i32_t, 0); }

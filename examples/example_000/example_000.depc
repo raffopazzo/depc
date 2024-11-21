@@ -1,3 +1,10 @@
+/*
+ * Copyright Raffaele Rossi 2023 - 2024.
+ *
+ * Distributed under the Boost Software License, Version 1.0.
+ * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
+ */
+
 // Calling extern functions is posssible but potentially leading to undefined behaviour.
 // In this example, any call to `printf` must include exactly one '%s' in the format string.
 // This is only because we declared `printf` with two cstr_t arguments;

@@ -1,3 +1,9 @@
+/*
+ * Copyright Raffaele Rossi 2023 - 2024.
+ *
+ * Distributed under the Boost Software License, Version 1.0.
+ * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
+ */
 func f(array_t(i32_t, 2) xs) -> i32_t { return f({xs[1], xs[0]}); }
 func g(array_t(array_t(i32_t, 2), 2) xs) -> i32_t { return g({xs[1], xs[0]}); }
 func h(array_t(array_t(array_t(i32_t, 2), 2), 2) xs) -> i32_t { return h({xs[1], xs[0]}); }

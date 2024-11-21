@@ -1,3 +1,9 @@
+/*
+ * Copyright Raffaele Rossi 2023 - 2024.
+ *
+ * Distributed under the Boost Software License, Version 1.0.
+ * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
+ */
 #define BOOST_TEST_MODULE dep0_parser_tests_0000_basics
 #include <boost/test/unit_test.hpp>
 
@@ -10,7 +16,7 @@ BOOST_FIXTURE_TEST_SUITE(dep0_parser_tests_0000_basics, ParserTestsFixture)
 BOOST_AUTO_TEST_CASE(pass_000)
 {
     BOOST_TEST_REQUIRE(pass("0000_basics/pass_000.depc"));
-    BOOST_TEST(pass_result->properties.line == 9);
+    BOOST_TEST(pass_result->properties.line == 15);
     BOOST_TEST(pass_result->properties.col == 1);
     BOOST_TEST(pass_result->properties.txt == "");
     BOOST_TEST(pass_result->entries.size() == 0ul);
@@ -20,18 +26,18 @@ BOOST_AUTO_TEST_CASE(pass_001)
     std::string const source = "func main() -> i32_t\n{\n    return 0;\n}";
     std::string const file_source = source + '\n';
     BOOST_TEST_REQUIRE(pass("0000_basics/pass_001.depc"));
-    BOOST_TEST(pass_result->properties.line == 1);
+    BOOST_TEST(pass_result->properties.line == 7);
     BOOST_TEST(pass_result->properties.col == 1);
     BOOST_TEST(pass_result->properties.txt == file_source);
 
     BOOST_TEST_REQUIRE(pass_result->entries.size() == 1ul);
     auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[0]);
     BOOST_TEST_REQUIRE(f);
-    BOOST_TEST(f->properties.line == 1);
+    BOOST_TEST(f->properties.line == 7);
     BOOST_TEST(f->properties.col == 1);
     BOOST_TEST(f->properties.txt == source);
     BOOST_TEST(is_i32(f->value.ret_type.get()));
-    BOOST_TEST(f->value.ret_type.get().properties.line == 1);
+    BOOST_TEST(f->value.ret_type.get().properties.line == 7);
     BOOST_TEST(f->value.ret_type.get().properties.col == 16);
     BOOST_TEST(f->value.ret_type.get().properties.txt == "i32_t");
     BOOST_TEST(f->name == "main");

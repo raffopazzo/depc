@@ -1,3 +1,9 @@
+/*
+ * Copyright Raffaele Rossi 2023 - 2024.
+ *
+ * Distributed under the Boost Software License, Version 1.0.
+ * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
+ */
 // parse error: bit width must be one of 8 16 32 or 64
 typedef ascii_t = unsigned 7 bit integer from 0 to 127;
 func f() -> ascii_t { return 0; }

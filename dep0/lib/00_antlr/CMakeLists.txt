@@ -1,3 +1,9 @@
+#
+# Copyright Raffaele Rossi 2023 - 2024.
+#
+# Distributed under the Boost Software License, Version 1.0.
+# (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
+#
 find_package(antlr4-runtime 4.13.0 REQUIRED)
 find_package(Java 1.11 COMPONENTS Runtime REQUIRED)
 
@@ -16,13 +22,13 @@ set(cpp_files
     "dep0/antlr4/DepCParserVisitor.h"
     )
 set(antlr4_dir ${CMAKE_SOURCE_DIR}/antlr4)
-set(antlr4_jar_file ${antlr4_dir}/antlr-4.13.0-complete.jar)
+set(antlr4_jar_file ${antlr4_dir}/download/antlr-4.13.0-complete.jar)
 add_custom_command(
     OUTPUT ${cpp_files}
     DEPENDS ${antlr4_dir}/DepCParser.g4 ${antlr4_dir}/DepCLexer.g4
     COMMAND ${Java_JAVA_EXECUTABLE}
     ARGS
-        -jar ${antlr4_dir}/antlr-4.13.0-complete.jar
+        -jar ${antlr4_jar_file}
         -listener -visitor
         -Dlanguage=Cpp -package dep0 -o ${CMAKE_CURRENT_BINARY_DIR}/dep0/antlr4
         ${antlr4_dir}/DepCParser.g4 ${antlr4_dir}/DepCLexer.g4 

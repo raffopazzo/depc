@@ -15,3 +15,4 @@ project(
 enable_testing()
 
 add_subdirectory(dep0)
+add_subdirectory(docs)

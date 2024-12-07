@@ -4,6 +4,10 @@
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
  */
+/**
+ * @file
+ * @brief Facilities to enable tracing via the Perfetto library.
+ */
 #pragma once
 
 #include <perfetto.h>
@@ -29,11 +33,11 @@ PERFETTO_DEFINE_CATEGORIES(
 
 namespace dep0 {
 
-/** Opaque data structure holding tracing objects from perfetto library. */
+/** @brief Opaque data structure holding tracing objects from perfetto library. */
 struct tracing_session_t;
 
 /**
- * Starts a new tracing session that will be automatically stopped when all references are destroyed.
+ * @brief Starts a new tracing session that will be automatically stopped when all references are destroyed.
  *
  * @param trace_file_name The file name where the trace will be stored.
  */

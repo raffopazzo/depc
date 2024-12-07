@@ -4,6 +4,10 @@
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
  */
+/**
+ * @file
+ * @brief Helper types that allow to return descriptive error objects from functions that might fail.
+ */
 #pragma once
 
 #include "dep0/source.hpp"
@@ -15,11 +19,26 @@
 
 namespace dep0 {
 
+/**
+ * @brief Bundles an error message together with its underlying reasons and the location in the user programme.
+ *
+ * In simple cases the vector of reasons can be empty, for example if a file does not exist.
+ * In more complex cases the vector of reasons might form a tree;
+ * for example typechecking failed because:
+ * 
+ * - the left-hand operand has the wrong type
+ * - the right-hand operand failed to typecheck because:
+ *   - this happened because:
+ *     - ...
+ *   - and that also happened.
+ *
+ * @see expected
+ */
 struct error_t
 {
-    std::string error;
-    std::optional<source_loc_t> location;
-    std::vector<error_t> reasons;
+    std::string error; /**< @brief User-friendly error message. */
+    std::optional<source_loc_t> location; /**< @brief Empty if the error is not directly linked to the user programme */
+    std::vector<error_t> reasons; /**< @brief Possibly empty tree of underlying errors that lead to this error. */
 
     error_t() = default;
 
@@ -38,9 +57,19 @@ struct error_t
     bool operator!=(error_t const&) const = default;
 };
 
-std::ostream& pretty_print(std::ostream& os, error_t const&);
+/**
+ * @brief Prints an error to the given stream with pretty indendation and block-quoting for easier reading.
+ * 
+ * If `location` is available this function prints line and column numbers along with the corresponding code snippet.
+ * 
+ * If there are multiple underlying reasons, each of them is printed with extra indentation.
+ * 
+ * @return The output stream to allow method-chaining, like `pretty_print(std::cerr, err) << std::endl;`
+ */
+std::ostream& pretty_print(std::ostream&, error_t const&);
 
 // TODO use `std::expected` once available
+/** @brief Poor man's version of `std::expected`, to be replaced once we upgrade compiler. */
 template <typename T, typename E = error_t>
 class [[nodiscard]] expected
 {

@@ -4,6 +4,10 @@
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
  */
+/**
+ * @file
+ * @brief Declares `dep0::typecheck::drop_unreachable_stmts()` and associated overloads.
+ */
 #pragma once
 
 #include "dep0/typecheck/ast.hpp"
@@ -11,7 +15,8 @@
 namespace dep0::typecheck {
 
 /**
- * Remove unreachable statements from the given body.
+ * @brief Remove unreachable statements from the given body.
+ *
  * A statement is unreachable if no execution path will ever reach it,
  * regardless of the value assumed by all variables.
  *
@@ -21,7 +26,8 @@ namespace dep0::typecheck {
 bool drop_unreachable_stmts(body_t&);
 
 /**
- * Remove unreachable statements from the given range.
+ * @brief Remove unreachable statements from the given range.
+ *
  * A statement is unreachable if no execution path will ever reach it,
  * regardless of the value assumed by all variables.
  * Removal is performed similarly to `std::remove()` and `std::remove_if()`,
@@ -29,7 +35,7 @@ bool drop_unreachable_stmts(body_t&);
  * and the new past-the-end iterator is returned.
  *
  * @return  A boolean indicating whether unreachable statements have been removed,
- *          together with the new past-the-end iterator, which can be passed to std::vector::erase.
+ *          together with the new past-the-end iterator, which can be passed to `std::vector::erase()`.
  *          If the boolean is false, the iterator returned is the end iterator passed as input.
  *          Note that if the boolean is true, the returned iterator may also be the original end iterator;
  *          for example in the statement `if (true) foo(); else bar();` the else branch can be dropped,

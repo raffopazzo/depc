@@ -4,6 +4,10 @@
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
  */
+/**
+ * @file
+ * @brief Main header for Proof Search facilities, especially `dep0::typecheck::search_proof()`.
+ */
 #pragma once
 
 #include "dep0/typecheck/ast.hpp"
@@ -19,13 +23,14 @@
 namespace dep0::typecheck {
 
 /**
- * Opaque data structure to store the current state of a proof search.
- * @see search_task_t
+ * @brief Opaque data structure to store the current state of a proof search.
+ * @see `search_task_t`.
  */
 struct search_state_t;
 
 /**
- * Helper type to terminate a proof search if it gets too deep.
+ * @brief Helper type to terminate a proof search if it gets too deep.
+ *
  * Only its friends can construct a new value, everyone else must copy a value from somewhere else.
  */
 class search_depth_t
@@ -39,13 +44,16 @@ public:
 };
 
 /**
- * In complex type theories, like one with dependent types, proof-search is undecidable.
+ * @brief Explores a branch of the search space during Proof Search.
+ *
+ * In complex type theories, like one with dependent types, Proof Search is undecidable.
  * Because of this, a naive depth-first search may easily get stuck.
  * Even if it succeeds, it may follow a very long path and generate an unnecessary complex result.
  * Instead we implement a breadth-first search.
  * Each branch of the search space is assigned to single a task, so that:
  *   1. if a branch is stuck in a loop, it will not prevent other tasks from progressing
  *   2. the task following the shortest path (i.e. the simplest expression) will win.
+ *
  * Typically a task starts out by trying only one individual tactic.
  * Some tactics are terminal, meaning that they either succeed or fail.
  * Other tactics require to spawn many sub-tasks in either of 2 fashions:
@@ -55,13 +63,14 @@ public:
 class search_task_t : public std::enable_shared_from_this<search_task_t>
 {
     /**
-     * A task of this kind will apply one individual tactic.
+     * @brief A task of this kind will apply one individual tactic.
+     *
      * If the tactic needs to spawn some sub-tasks, it will do so
-     * by invoking either `when_all` or `when_any`, thereby
+     * by invoking either `when_all()` or `when_any()`, thereby
      * changing the current task kind accordingly.
      * Otherwise, the tactic in this task will either succeed or fail.
-     * Success is marked explicitly by calling `set_result`.
-     * Failure can be either explicit or implicit, by calling `set_failed` or not.
+     * Success is marked explicitly by calling `set_result()`.
+     * Failure can be either explicit or implicit, by calling `set_failed()` or not.
      */
     struct one_t
     {
@@ -69,7 +78,8 @@ class search_task_t : public std::enable_shared_from_this<search_task_t>
     };
 
     /**
-     * A task of this kind will succeed if any sub-task succeeds.
+     * @brief A task of this kind will succeed if any sub-task succeeds.
+     *
      * The result of this task is the result of the sub-task that succeeded.
      * If all sub-tasks fail, this task fails.
      */
@@ -79,7 +89,8 @@ class search_task_t : public std::enable_shared_from_this<search_task_t>
     };
 
     /**
-     * A task of this kind will succeed only if all sub-tasks succeed.
+     * @brief A task of this kind will succeed only if all sub-tasks succeed.
+     *
      * The result of this task is produced by calling `build_result` with the results of all sub-tasks.
      * If any sub-task fails, this task will fail.
      * A temporary usage object is shared by all sub-tasks;
@@ -94,15 +105,15 @@ class search_task_t : public std::enable_shared_from_this<search_task_t>
     };
 
     /**
-     * Tag that indicates that the current task is still in progress.
-     * A task may get stuck and remain forever in progress.
+     * @brief Tag that indicates that the current task is still in progress.
+     * @remarks A task may get stuck and remain forever in progress.
      */
     struct in_progress_t { };
 
-    /** Tag that indicates that the current task has failed. */
+    /** @brief Tag that indicates that the current task has failed. */
     struct failed_t { };
 
-    /** The task has succeeded and its result is stored here. */
+    /** @brief The task has succeeded and its result is stored here. */
     struct succeeded_t { expr_t result; };
 
     std::variant<one_t, any_t, all_t> m_kind;
@@ -112,8 +123,8 @@ class search_task_t : public std::enable_shared_from_this<search_task_t>
     struct private_t{};
 
 public:
-    std::uint64_t const task_id;
-    std::string const name;
+    std::uint64_t const task_id; /**< @brief Tracks the progress in the trace file across multiple `run()` calls. */
+    std::string const name; /**< @brief Reported in the trace file to help understand which tactic is being applied. */
     std::weak_ptr<search_task_t> const parent;
     search_state_t& state;
     search_depth_t const depth;
@@ -147,30 +158,37 @@ public:
         ast::qty_t usage_multiplier,
         std::function<void(search_task_t&)>);
 
-    bool done() const;      /**< True if this task has finished, either failed or succeeded. */
-    bool failed() const;    /**< True if this task has failed. */
-    bool succeeded() const; /**< True if this task has succeeded. */
+    bool done() const;      /**< @brief True if this task has finished, either failed or succeeded. */
+    bool failed() const;    /**< @brief True if this task has failed. */
+    bool succeeded() const; /**< @brief True if this task has succeeded. */
+
+    /** @brief If the task succeeded, returns its result; undefined behaviour otherwise. */
+    expr_t& result();
+
+    /** @brief Const-propagating overload. */
+    expr_t const& result() const;
 
     /**
-     * If the task succeeded, returns its result; undefined behaviour otherwise.
-     * @{
+     * @brief Explicitly mark the task as failed.
+     * 
+     * Calling this method is optional.
+     * A `one_t` task that does not call `set_result()` is implicitly failed.
      */
-    expr_t& result();
-    expr_t const& result() const;
-    /** @} */
-
     void set_failed();
+
+    /** @brief Mark the task as succeeded with the given result. */
     void set_result(expr_t);
 
     /**
-     * Try to make some progress, if this task has not yet finished.
+     * @brief Try to make some progress, if this task has not yet finished.
+     *
      * When this function returns, the task may still not have finished.
      * For example if it's still waiting for some sub-task to finish.
      */
     void run();
 
     /**
-     * Transform the current task into one that awaits all of the given sub-tasks.
+     * @brief Transform the current task into one that awaits all of the given sub-tasks.
      *
      * @param temp_usage
      *      All sub-tasks must share the same usage object.
@@ -186,26 +204,29 @@ public:
         std::function<expr_t(std::vector<expr_t>)> build_result);
 
     /**
-     * Transform the current task into one that awaits any of the given sub-tasks.
+     * @brief Transform the current task into one that awaits any of the given sub-tasks.
+     *
      * The result of this task is the result of the first task that succeeds.
      */
     void when_any(std::vector<std::shared_ptr<search_task_t>>);
 };
 
 /**
- * Search for a value of the given type in the given environment and context.
+ * @brief Starts a brand new search for a value of the given type in the given environment and context.
+ *
  * If none can be found, returns an empty optional.
+ *
  * A term is only viable if its use does not exceed what is allowed by the context.
  * For example, if the given context contains a variable of the desired type,
- * but its quantity is 0, it will only be used if the multiplier is also 0.
- * Similary if its quantity is 1 but it has already been used, then it will not be viable.
- * If no term could be found, the input usage is guaranteed to be unchanged.
+ * but its quantity is `0`, it will only be used if `usage_multiplier` is also `0`.
+ * Similary if its quantity is `1` but it has already been used, then it will not be viable.
+ *
+ * If no term could be found, `usage` is guaranteed to be unchanged.
  *
  * @param is_mutable_allowed
  *      Specifies whether mutable functions are viable proof terms.
  *
- * @param usage,usage_multiplier
- *      @see usage_t
+ * @param usage,usage_multiplier See @ref `dep0::typecheck::usage_t`.
  */
 std::optional<expr_t>
 search_proof(
@@ -217,14 +238,16 @@ search_proof(
     ast::qty_t usage_multiplier);
 
 /**
- * A meta-tactic that applies all known proof-search tactics.
+ * @brief A meta-tactic that applies all known proof-search tactics.
+ *
  * It is usually the entry point for a brand new search task.
  * Use it if you need to spawn a sub-task to search for some intermdiate proof.
  */
 void proof_search(search_task_t&);
 
 /**
- * A meta-tactic that applies only the proof-search tactics known to either succeed or fail immediately.
+ * @brief A meta-tactic that applies only the proof-search tactics known to either succeed or fail immediately.
+ *
  * As such it will itself either succeed or fail immediately thereby preventing the explosion of the search space.
  */
 void quick_search(search_task_t&);

@@ -4,13 +4,17 @@
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
  */
+/**
+ * @file
+ * @brief Defines `dep0::unique_ref`.
+ */
 #pragma once
 
 #include <memory>
 
 namespace dep0 {
 
-// Like `unique_ptr` but removes `nullptr` from its inhabitants.
+/** @brief Like `std::unique_ptr` but removes `nullptr` from its inhabitants. */
 template <typename T>
 class unique_ref
 {
@@ -34,6 +38,7 @@ public:
     T const& get() const { return *ptr; }
 };
 
+/** @brief Constructs a `unique_ref` in-place by passing all the given arguments to the element's constructor. */
 template <typename T, typename... Args>
 unique_ref<T> make_ref(Args&&... args)
 {

@@ -4,6 +4,10 @@
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
  */
+/**
+ * @file
+ * @brief Implementation details of pretty_print.hpp
+ */
 #pragma once
 
 #include "dep0/ast/pretty_print.hpp"
@@ -16,13 +20,7 @@ namespace dep0::ast {
 
 namespace detail {
 
-/**
- * @defgroup needs_new_line
- * @brief A family of functions to test whether a call to `pretty_print` would print a new line.
- *
- * For a correct result, the implementation of each function must mimic `pretty_print`.
- * @{
- */
+/** @brief Test whether a call to `dep0::ast::pretty_print()` would print a new line. */
 template <Properties P> bool needs_new_line(body_t<P> const&);
 template <Properties P> bool needs_new_line(func_arg_t<P> const&);
 template <Properties P> bool needs_new_line(expr_t<P> const&);
@@ -55,14 +53,10 @@ template <Properties P> bool needs_new_line(typename expr_t<P>::array_t const&) 
 template <Properties P> bool needs_new_line(typename expr_t<P>::init_list_t const&);
 template <Properties P> bool needs_new_line(typename expr_t<P>::subscript_t const&);
 template <Properties P> bool needs_new_line(typename expr_t<P>::because_t const&);
-/** @} */
 
 /**
- * @defgroup needs_parenthesis
- * @brief A family of functions to test whether an expression should be printed inside parenthesis.
- *
- * For example `(x + y)` but not `x[1][2]` nor `f(x+y)()`.
- * @{
+ * @brief Test whether an expression should be printed inside parenthesis,
+ * for example `(x + y)` but not `x[1][2]` nor `f(x+y)()`.
  */
 template <Properties P> bool needs_parenthesis(expr_t<P> const&);
 template <Properties P> bool needs_parenthesis(typename expr_t<P>::typename_t const&) { return false; }
@@ -94,13 +88,14 @@ template <Properties P> bool needs_parenthesis(typename expr_t<P>::array_t const
 template <Properties P> bool needs_parenthesis(typename expr_t<P>::init_list_t const&) { return false; }
 template <Properties P> bool needs_parenthesis(typename expr_t<P>::subscript_t const&) { return false; }
 template <Properties P> bool needs_parenthesis(typename expr_t<P>::because_t const&) { return false; }
-/** @} */
 
+/** @brief Prints a new line followed by the correct number of white spaces for the given indentation level. */
 inline std::ostream& new_line(std::ostream& os, std::size_t const indent)
 {
     return os << std::endl << std::string(indent * 4ul, ' ');
 }
 
+/** @brief Prints the given expression inside parenthesis if required, otherwise without. */
 template <Properties P>
 std::ostream& maybe_with_paranthesis(std::ostream& os, expr_t<P> const& x, std::size_t const indent)
 {

@@ -4,6 +4,10 @@
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
  */
+/**
+ * @file
+ * @brief Facilities to manipulate a source file.
+ */
 #pragma once
 
 #include <any>
@@ -14,8 +18,11 @@
 namespace dep0 {
 
 /**
- * Type-erased, single-threaded, reference-counted handle to some source code,
- * for example an mmap'd file or a runtime-generated string.
+ * @brief Type-erased, single-threaded, reference-counted handle to some source code.
+ *
+ * For example an mmap'd file or a runtime-generated string.
+ *
+ * @remarks
  * It is conceptually similar to `std::shared_ptr<std::any>`,
  * but cheaper and removes `nullptr` from its inhabitants,
  * so you never have to test `if (hdl)` for example.
@@ -43,7 +50,8 @@ class source_handle_t
 
 public:
     /**
-     * A tag type used by `source_text` whenever the source code is a compile-time C-string literal.
+     * @brief A tag type used by `source_text` whenever the source code is a compile-time C-string literal.
+     *
      * In this case there is no state to keep around, which might allow further optimisations.
      */
     class literal_string_tag_t
@@ -62,10 +70,10 @@ public:
 };
 
 /**
- * Construct a handle to some source code buffer,
- * for example `make_source_handle<std::string>("...")` for some runtime-generated source code,
+ * @brief Construct a handle to some source code buffer.
+ * 
+ * For example `make_source_handle<std::string>("...")` for some runtime-generated source code,
  * or `make_source_handle<boost::iostreams::mapped_file_source>(...)` for an mmap'd file.
- * Instances of `source_text` act as a view into the source code keeping the underlying buffer alive.
  */
 template <typename U, typename... Args>
 source_handle_t make_source_handle(Args&&... args)
@@ -74,7 +82,8 @@ source_handle_t make_source_handle(Args&&... args)
 }
 
 /**
- * A piece of text from some source code.
+ * @brief A piece of text from some source code.
+ *
  * Taking copies is very cheap so it is encouraged to pass by-value.
  * This is conceptually similar to a `std::string_view` but it also
  * guarantees that the underlying buffer of the source code is kept alive.
@@ -87,9 +96,9 @@ class source_text
 public:
 
     /**
-     * Helper method to construct a source text backed by a literal C-string.
+     * @brief Helper method to construct a source text backed by a literal C-string.
      *
-     * @remarks It is undefined behaviour to pass a string that is not a literal C-string.
+     * @warning It is undefined behaviour to pass a string that is not a literal C-string.
      */
     static source_text from_literal(char const*);
 
@@ -128,6 +137,14 @@ bool operator!=(std::string_view, source_text const&);
 
 std::ostream& operator<<(std::ostream&, source_text const&);
 
+/**
+ * @brief The location of some source code snippet.
+ * 
+ * Keeps track of line and column number alongside the particular snippet of code located there.
+ * In this context what constitutes a "snippet" is user-defined.
+ * For example at line 1, column 1 you can have `func f() -> i32_t`;
+ * the snippet of interest might be the keyword `func` or the whole declaration.
+ */
 struct source_loc_t
 {
     std::size_t line;

@@ -4,6 +4,11 @@
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
  */
+/**
+ * @file
+ * @brief Specializes the generic AST for the typechecking stage.
+ * @see @ref dep0_design_ast
+ */
 #pragma once
 
 #include "dep0/typecheck/derivation.hpp"
@@ -20,6 +25,7 @@
 
 namespace dep0::typecheck {
 
+/** @cond DEP0_DOXYGEN_HIDE */
 struct legal_module_t;
 struct legal_type_def_t;
 struct legal_axiom_t;
@@ -30,7 +36,20 @@ struct legal_func_arg_t;
 struct legal_body_t;
 struct legal_stmt_t;
 struct legal_expr_t;
+/** @endcond */
 
+/**
+ * @brief Trait types required to specialize the AST for the parser stage.
+ * 
+ * After typechecking succeeds we have obtained a "legal" AST.
+ * An expression is "legal" if a type can be assigned to it.
+ * In particular, the `properties` field of an `expr_t` contains the type assigned to the expression.
+ * 
+ * @remarks Currently the `derivation` field of any AST node does not really prove anything.
+ * It only proves that the node was constructed via `derivation_rules` but, ideally,
+ * it would really contain a proof that the content of the node is legal.
+ * This, however, requires dependent types, hence DepC...
+ */
 struct properties_t
 {
     using module_properties_type = legal_module_t;
@@ -57,13 +76,25 @@ using body_t = ast::body_t<properties_t>;
 using stmt_t = ast::stmt_t<properties_t>;
 using expr_t = ast::expr_t<properties_t>;
 
+/**
+ * @brief All types "have type" *Kind*, for example `%i32_t` can be assigned to variables "of type" `typename`.
+ * @see @ref kinds
+ */
 struct kind_t{};
+
+/**
+ * @brief An expression has either type *Kind* or a "real" type.
+ *
+ * For example, `%i32_t` has type *Kind* but `0` has type `%i32_t` which is itself an expression.
+ * Similarly, arrays have type `%array_t(%i32_t, n)` which is also an expression:
+ * in particular the result of the application of the *Type Constructor* `%array_t`.
+ *
+ * @see @ref kinds
+ */
 using sort_t = std::variant<expr_t, kind_t>;
 
 struct legal_module_t
 {
-    // here I would like to express that a module is legal if *all* its functions, types, etc are legal;
-    // but this requires dependent types... which is why I'm writing DepC in the first place
     derivation_t<module_t> derivation;
 
     bool operator==(legal_module_t const&) const = default;
@@ -133,7 +164,10 @@ struct legal_expr_t
     bool operator==(legal_expr_t const&) const = default;
 };
 
+/** @brief Overload of `dep0::ast::pretty_print()` for `kind_t`. */
 std::ostream& pretty_print(std::ostream&, kind_t, std::size_t indent = 0ul);
+
+/** @brief Overload of `dep0::ast::pretty_print()` for `sort_t`. */
 std::ostream& pretty_print(std::ostream&, sort_t const&, std::size_t indent = 0ul);
 
 } // namespace dep0::typecheck

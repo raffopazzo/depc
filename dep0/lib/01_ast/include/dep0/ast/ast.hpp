@@ -4,6 +4,11 @@
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
  */
+/**
+ * @file
+ * @brief Types that define the generic abstract syntax tree.
+ * @see @ref dep0_design_ast
+ */
 #pragma once
 
 #include "dep0/ast/attribute.hpp"
@@ -27,6 +32,7 @@ namespace dep0::ast {
 
 // forward declarations
 
+/** @cond DEP0_DOXYGEN_HIDE */
 template <Properties P> struct module_t;
 template <Properties P> struct type_def_t;
 template <Properties P> struct axiom_t;
@@ -37,10 +43,11 @@ template <Properties P> struct func_arg_t;
 template <Properties P> struct body_t;
 template <Properties P> struct stmt_t;
 template <Properties P> struct expr_t;
+/** @endcond */
 
 // definitions
 
-/** Represents a sequence of one or more statements, for example the body of a function or of an if-else branch. */
+/** @brief Represents a sequence of one or more statements, for example the body of a function or an if-else branch. */
 template <Properties P>
 struct body_t
 {
@@ -52,10 +59,8 @@ struct body_t
 };
 
 /**
- * Represents an expression from the Lambda Calculus of Construction with Definitions,
- * and with extensions specific to DepC.
- *
- * See `docs/01_type_theory.md` for more details on Type Theory.
+ * @brief Represents an expression from the Calculus of Construction; with definitions and DepC-specific extensions.
+ * @see @ref type_theory
  */
 template <Properties P>
 struct expr_t
@@ -63,73 +68,75 @@ struct expr_t
     using rec_t = boost::recursive_wrapper<expr_t>;
     using properties_t = typename P::expr_properties_type;
 
-    /** Represents the `typename` keyword, whose values are types; for example `i32_t` and `bool`. */
+    /** @brief Represents the `typename` keyword, whose values are types; for example `i32_t` and `%bool_t`. */
     struct typename_t {};
 
-    /** Represents the type constructor `true_t`, whose type is `(bool) -> typename`. */
+    /** @brief Represents the type constructor `%true_t`, whose type is `(%bool_t) -> typename`. */
     struct true_t {};
 
     /**
-     * Represents the keyword 'auto' when used inside an expression.
+     * @brief Represents the keyword `auto` when used inside an expression.
+     *
      * It is a placeholder for a value that must be automatically filled by the compiler.
      */
     struct auto_t {};
 
-    /** Represents the primitive type `bool`, whose values are `true` or `false`. */
+    /** @brief Represents the primitive type `%bool_t`, whose values are `true` or `false`. */
     struct bool_t {};
 
-    /** Represents the primitive type `cstr_t`, whose values are string literals. */
+    /** @brief Represents the primitive type `%cstr_t`, whose values are string literals. */
     struct cstr_t {};
 
     /**
-     * Represents the primitive type `unit_t`.
+     * @brief Represents the primitive type `%unit_t`.
      *
      * It only has a single value and can always be constructed "from nowhere", aka "the top type".
      * It is similar to `void` in C/C++ but it can also be used inside structs and arrays.
      */
     struct unit_t {};
 
-    /** Represents the primitive type `i8_t`, with values from the range `[-128, +127]`. */
+    /** @brief Represents the primitive type `%i8_t`, with values from the range `[-128, +127]`. */
     struct i8_t {};
 
-    /** Represents the primitive type `i16_t`, with values from the range `[-32768, +32767]`. */
+    /** @brief Represents the primitive type `%i16_t`, with values from the range `[-32768, +32767]`. */
     struct i16_t {};
 
-    /** Represents the primitive type `i16_t`, with values from the range `[-2147483648, +2147483647]`. */
+    /** @brief Represents the primitive type `%i16_t`, with values from the range `[-2147483648, +2147483647]`. */
     struct i32_t {};
 
     /**
-     * Represents the primitive type `i32_t`, with values from the range `[-9223372036854775808, +9223372036854775807]`
+     * @brief Represents the primitive type `%i32_t`,
+     * with values from the range `[-9223372036854775808, +9223372036854775807]`
      */
     struct i64_t {};
 
-    /** Represents the primitive type `u8_t`, with values from the range `[0, 255]`. */
+    /** @brief Represents the primitive type `%u8_t`, with values from the range `[0, 255]`. */
     struct u8_t {};
 
-    /** Represents the primitive type `u16_t`, with values from the range `[0, 65535]`. */
+    /** @brief Represents the primitive type `%u16_t`, with values from the range `[0, 65535]`. */
     struct u16_t {};
 
-    /** Represents the primitive type `u32_t`, with values from the range `[0, 4294967295]`. */
+    /** @brief Represents the primitive type `%u32_t`, with values from the range `[0, 4294967295]`. */
     struct u32_t {};
 
-    /** Represents the primitive type `u64_t`, with values from the range `[0, 18446744073709551615]`. */
+    /** @brief Represents the primitive type `%u64_t`, with values from the range `[0, 18446744073709551615]`. */
     struct u64_t {};
 
-    /** Represents the boolean constants `true` or `false`. */
+    /** @brief Represents the boolean constants `true` or `false`. */
     struct boolean_constant_t
     {
         bool value;
     };
 
     /**
-     * Represents numeric constants, for example `-99` or `18446744073709551615`.
+     * @brief Represents numeric constants, for example `-99` or `18446744073709551615`.
      *
      * Note that differently from boolean constants, numeric constants cannot be typechecked "on their own".
      * For example, the constant `0` can be assigned to all primitive and user-defined integral types.
      *
      * One might argue that it is possible to assign a type to a numerical constant if,
      * in the current context, there is only 1 viable type in which the numerical constant would fit,
-     * eg max of u64, provided the user did not define their own 64 bits integer;
+     * eg max of `%u64_t`, provided the user did not define their own 64 bits integer;
      * but having this kind of context-sensitivity is also a bit suprising, so not really great;
      * therefore the decision is to always fail type-assignment of numerical constants.
      */
@@ -138,13 +145,13 @@ struct expr_t
         boost::multiprecision::cpp_int value;
     };
 
-    /** Represents string literals, like "" and "Hello \"World\"". */
+    /** @brief Represents string literals, like `""` and `"Hello World"`. */
     struct string_literal_t
     {
         source_text value;
     };
 
-    /** Represents a boolean expression, for example `x and not y or is_even(k)`. */
+    /** @brief Represents a boolean expression, for example `x and not y or is_even(k)`. */
     struct boolean_expr_t
     {
         struct not_t { rec_t expr; };
@@ -154,7 +161,7 @@ struct expr_t
         value_t value;
     };
 
-    /** Represents a relational expression, for example `x == y`, `x <= y` or `x > f(y)`. */
+    /** @brief Represents a relational expression, for example `x == y`, `x <= y` or `x > f(y)`. */
     struct relation_expr_t
     {
         struct eq_t  { rec_t lhs, rhs; };
@@ -167,7 +174,7 @@ struct expr_t
         value_t value;
     };
 
-    /** Represents an arithmetic expression, for example `x + y`. */
+    /** @brief Represents an arithmetic expression, for example `x + y`. */
     struct arith_expr_t
     {
         struct plus_t { rec_t lhs, rhs; };
@@ -179,10 +186,11 @@ struct expr_t
     };
 
     /**
-     * Represents the name of a local variable in the current context, for example `x`.
+     * @brief Represents the name of a local variable in the current context, for example `x`.
      *
      * The field `idx` starts from 0 for all user-defined variables.
-     * It might be increased by alpha-conversion when performing capture-avoiding substitution.
+     * It might be increased by @ref alpha_equivalence "alpha-conversion" when
+     * performing @ref substitution "capture-avoiding substitution".
      *
      * Note that during the parsing stage, all identifiers are mapped to a `var_t`,
      * including those which are really referring to global names.
@@ -192,29 +200,32 @@ struct expr_t
     struct var_t
     {
         source_text name;
-        std::size_t idx = 0ul;
+        std::size_t idx = 0ul; /**< The rename index. */
         bool operator<(var_t const& that) const { return std::tie(name, idx) < std::tie(that.name, that.idx); }
         bool operator==(var_t const&) const = default;
     };
 
     /**
-     * Represents a (possibly qualified) name of a global symbol, defined either:
+     * @brief Represents a (possibly qualified) name of a global symbol, defined either:
      *   - in the current module, for example `f` or `int` (in which case it is unqualified);
      *   - in some imported module, for example `mylib::f` or `mylib::int`;
      *   - in the prelude module, for example `::basic_axiom`.
+     *
      * Note that only the 1st one is an unqualified identifier;
      * the other two are qualified (and the prelude module is referred to by the empty string).
      *
      * Therefore `module_name` can be:
+     *
      *   - an empty optional, for globals defined in the current module;
      *   - an empty string, for globals defined in the prelude module;
      *   - the name of the imported module that defines the global.
      *
      * @remarks
      *      Without knowledge of the current environment and context,
-     *      an unqualified identifier (say `f') could refer to either:
+     *      an unqualified identifier (say `f`) could refer to either:
      *        - a global symbol from the current module
      *        - or a local variable of the current function.
+     *      @par
      *      The parser does not currently track this, so it will always emit a `var_t` for an unqualified identifier;
      *      during type-checking, if `f` refers to a global, the `var_t` is "upgraded" to a `global_t`.
      */
@@ -230,7 +241,7 @@ struct expr_t
     };
 
     /**
-     * Represents an uncarried function application, for example `f(x, y, z)` or `select(which)(x, y, z)`.
+     * @brief Represents an uncarried function application, for example `f(x, y, z)` or `select(which)(x, y, z)`.
      *
      * In this example the expressions `f` and `select(which)` are stored in `func`,
      * and `args` contains all arguments `x, y, z`.
@@ -242,7 +253,7 @@ struct expr_t
     };
 
     /**
-     * Represents an uncarried function abstraction,
+     * @brief Represents an uncarried function abstraction,
      * either as a lambda or embedded inside a global function definition.
      */
     struct abs_t
@@ -254,7 +265,7 @@ struct expr_t
     };
 
     /**
-     * Represents an uncarried Pi-type, either for lambdas or global function definitions.
+     * @brief Represents an uncarried Pi-type, either for lambdas or global function definitions.
      *
      * A Pi-type can be as simple as a function type, for example `(i32_t, i32_t) -> i32_t`,
      * or a dependent type, for example `(typename t, u64_t n) -> array_t(t, n)`.
@@ -267,16 +278,17 @@ struct expr_t
     };
 
     /**
-     * Represents the keyword `array_t`, which on its own has type `(typename, u64_t) -> typename`.
+     * @brief Represents the keyword `%array_t`, which on its own has type `(typename, u64_t) -> typename`.
      *
-     * A "traditional" array is therefore the application (i.e. an `app_t`) of `array_t` to 2 arguments:
+     * A "traditional" array is therefore the application (i.e. an `app_t`) of `%array_t` to 2 arguments:
      * the first is the element type and second is the size of the array.
+     *
      * Multidimensional arrays are arrays whose element type is another array.
      */
     struct array_t {};
 
     /**
-     * Represents an initializer list, for example `{1,2,3}` or `{{1,2},{3,4},{5,6}}` for multidimensional arrays.
+     * @brief Represents an initializer list, for example `{1,2,3}` or `{{1,2},{3,4}}` for multidimensional arrays.
      *
      * Currently, initializer lists can only be used to construct arrays,
      * but in future they can be used to initialize structs too.
@@ -286,7 +298,7 @@ struct expr_t
         std::vector<expr_t> values;
     };
 
-    /** Represents an array member access (aka subscript operator), for example `xs[1]`, where `xs` is an array. */
+    /** @brief Represents an array member access (subscript operator), for example `xs[1]`, where `xs` is an array. */
     struct subscript_t
     {
         rec_t array;
@@ -294,7 +306,7 @@ struct expr_t
     };
 
     /**
-     * Represents an expression of the form `value because reason`,
+     * @brief Represents an expression of the form `value because reason`,
      * where `reason` is some auxillary proof that the compiler can use
      * to verify that `value` is legal.
      *
@@ -309,6 +321,8 @@ struct expr_t
      *      both `xs[0]` and `xs[0] because true_t(0 < 2)` are alpha-equivalent,
      *      because whatever proof the compiler used in the first expression is just as
      *      good as the auxillary proof explicitly supplied in the second one.
+     * 
+     * @see @ref alpha_equivalence
      */
     struct because_t
     {
@@ -331,9 +345,9 @@ struct expr_t
 };
 
 /**
- * If the argument is `app_t` whose function term is `array_t`, returns the `app_t` node; `nullptr` otherwise.
+ * @brief If the argument is `app_t` whose function term is `array_t`, returns the `app_t` node; `nullptr` otherwise.
  *
- * This is useful to determine whether a type is an array, for example `array_t(i32_t, n)`.
+ * This is useful to determine whether a type is an array, for example `%array_t(%i32_t, n)`.
  * If this function is called on a typechecked type expression,
  * the vector of arguments of the `app_t` node is guaranteed to have exactly 2 elements:
  * the first is the array element type and the second is the size of the array.
@@ -347,10 +361,10 @@ typename expr_t<P>::app_t const* get_if_app_of_array(expr_t<P> const& x)
 }
 
 /**
- * Represents a function argument, i.e. its type and (optional) name.
+ * @brief Represents a function argument, i.e. its type and (optional) name.
  *
  * This can be used inside:
- *   - function definitions, for example `i32_t f(i32_t, i32_t x) { ... }`
+ *   - function definitions, for example `func f(i32_t, i32_t x) -> ... { ... }`
  *   - function types, for example `(i32_t, i32_t x) -> i32_t`
  */
 template <Properties P>
@@ -366,9 +380,9 @@ struct func_arg_t
 };
 
 /**
- * Represents a statement inside a body,
+ * @brief Represents a statement inside a body,
  * for example a function call (presumably with side effects),
- * an `if-else` statement, a `return` statement, etc.
+ * an `if-else` statement, `return`, etc.
  */
 template <Properties P>
 struct stmt_t
@@ -377,7 +391,7 @@ struct stmt_t
     using body_t = ast::body_t<P>;
     using expr_t = ast::expr_t<P>;
 
-    /** Represents an `if` or `if-else` statement, whose condition must be of type `bool`. */
+    /** @brief Represents an `if` or `if-else` statement, whose condition must be of type `%bool_t`. */
     struct if_else_t
     {
         expr_t cond;
@@ -386,8 +400,9 @@ struct stmt_t
     };
 
     /**
-     * Represents a `return` statement, which can be empty only inside functions returning `unit_t`,
+     * @brief Represents a `return` statement, which can be empty only inside functions returning `%unit_t`,
      * otherwise a value of the expected return type must be supplied.
+     *
      * @remarks Because of dependent types, the return type of a function may be different in different branches.
      */
     struct return_t
@@ -396,8 +411,9 @@ struct stmt_t
     };
 
     /**
-     * The `impossible` statement marks as unreachable the current branch of execution.
-     * A proof of false, i.e. a value of type `true_t(false)`, is required to type-check this statement.
+     * @brief Represents the `impossible` statement which marks as unreachable the current branch of execution.
+     *
+     * A proof of false, i.e. a value of type `%true_t(false)`, is required to type-check this statement.
      * The compiler is allowed to remove all code leading to an `impossible` statement.
      * For example, if `impossible` is inside the `false` branch of an `if` statement,
      * this branch can be removed, possibly removing the condition too.
@@ -415,10 +431,10 @@ struct stmt_t
 };
 
 /**
- * Represents a user-defined integral type definition.
+ * @brief Represents a user-defined integral type definition.
  *
  * At the moment only integral types can be defined,
- * but it's possible to imagine extending this for structs too.
+ * but it is possible to imagine extending this for structs too.
  */
 template <Properties P>
 struct type_def_t
@@ -437,9 +453,11 @@ struct type_def_t
 };
 
 /**
- * Axioms are like function declarations, except they are not followed by a function definition.
+ * @brief Axioms are like function declarations, except they are not followed by a function definition.
+ *
  * In the Curry-Howard isomorphism, they are true propositions that cannot be proved.
- * Introducing the wrong set of axioms may lead to an inconsistent theory.
+ * 
+ * @warning Introducing the wrong set of axioms may lead to an inconsistent theory, i.e. a buggy program.
  */
 template <Properties P>
 struct axiom_t
@@ -452,10 +470,12 @@ struct axiom_t
 };
 
 /**
- * Represents an extern function declaration.
+ * @brief Represents an extern function declaration.
+ *
  * It is exactly like a function declaration but for functions provided by some external library
  * and written in a different language but with a C interface.
- * They can only be invoked from functions marked as `mutable`.
+ * 
+ * @remarks They can only be invoked from functions marked as `mutable`.
  */
 template <Properties P>
 struct extern_decl_t
@@ -468,7 +488,7 @@ struct extern_decl_t
 };
 
 /**
- * Represents a global function declaration,
+ * @brief Represents a global function declaration,
  * which is comprised of a name and a Pi-type for its signature and return type.
  */
 template <Properties P>
@@ -483,7 +503,7 @@ struct func_decl_t
 };
 
 /**
- * Represents a global function definition,
+ * @brief Represents a global function definition,
  * which is comprised of a name and a "lambda abstraction" within it.
  */
 template <Properties P>
@@ -498,7 +518,7 @@ struct func_def_t
 };
 
 /**
- * Represents an entire module of DepC code,
+ * @brief Represents an entire module of DepC code,
  * made of type definitions, function definitions, function declarations, etc.
  *
  * In future this might be extended to include imported modules.

@@ -4,6 +4,10 @@
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
  */
+/**
+ * @file
+ * @brief Types and functions useful when generating LLVM IR for a body of DepC statements.
+ */
 #pragma once
 
 #include "private/context.hpp"
@@ -21,9 +25,17 @@
 namespace dep0::llvmgen {
 
 /**
- * Snippet is a model of a block of IR code that is being built,
- * could be for example from the body of a function definition or the body of an if-else branch.
- * It contains an entry point and possibly many open blocks, i.e. blocks currently without a terminator.
+ * @brief Snippet of LLVM IR code comprised of one or more basic blocks.
+ *
+ * For example the body of a function definition or an if-else branch.
+ *
+ * Only the entry block is stored here.
+ * If the snippet is comprised of more basic blocks they will be linked
+ * to one another and somehow reachable from the entry block.
+ *
+ * It may also contain open blocks, i.e. blocks currently without a terminator.
+ * It is the caller responsibility to terminate all open blocks as necessary.
+ * Once an open block is terminated, it is removed from the list of open blocks.
  */
 struct snippet_t
 {
@@ -31,7 +43,7 @@ struct snippet_t
     std::vector<llvm::BasicBlock*> open_blocks;
 
     /**
-     * Iterate over all currently open blocks and invoke the given function to close them all.
+     * @brief Iterate over all currently open blocks and invoke the given function to close them all.
      *
      * @param builder
      *      This builder will be passed to the callback function;
@@ -55,8 +67,9 @@ struct snippet_t
 };
 
 /**
- * Generate IR code for a body of DepC statements.
- * This function will use a fresh IR builder every time.
+ * @brief Generate IR code for a body of DepC statements.
+ * @remarks This function will use a fresh IR builder every time.
+ * In other words, each nested invocation to generate a nested body will use a new IR builder.
  *
  * @param entry_block_name
  *      The name for the entry block of the generated snippet of IR code.
@@ -65,9 +78,9 @@ struct snippet_t
  *      All generated blocks will be added to this LLVM function.
  *
  * @param inlined_result
- *      If not nullptr and if this body contains return statements,
+ *      If not `nullptr` and if this body contains `return` statements,
  *      this function will emit appropriate IR instructions to
- *      store/memcpy/memset the resulting LLVM value at the runtime location
+ *      `store/memcpy/memset` the resulting LLVM value at the runtime location
  *      pointed by this LLVM value, which must be of pointer type.
  *
  * @return

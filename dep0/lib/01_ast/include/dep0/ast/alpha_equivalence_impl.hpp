@@ -4,6 +4,10 @@
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
  */
+/**
+ * @file
+ * @brief Imlpementation details of @ref alpha_equivalence.hpp
+ */
 #pragma once
 
 #include "dep0/ast/alpha_equivalence.hpp"
@@ -40,9 +44,14 @@ dep0::expected<std::true_type> is_alpha_equivalent_impl(body_t<P>&, body_t<P>&);
 template <Properties P>
 dep0::expected<std::true_type> is_alpha_equivalent_impl(stmt_t<P>&, stmt_t<P>&);
 
+/**
+ * @brief Visit two expressions to test whether they are alpha-equivalent or not.
+ * @see alpha_equivalence
+ */
 template <Properties P>
 struct alpha_equivalence_visitor
 {
+    /** @brief All functions succeed if the two expressions are equivalent, or fail with the reason why they are not. */
     using result_t = dep0::expected<std::true_type>;
 
     template <typename T, typename U>

@@ -4,6 +4,10 @@
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
  */
+/**
+ * @file
+ * @brief Entry point of the LLVM IR generation stage: the function `dep0::llvmgen::gen()`.
+ */
 #pragma once
 
 #include "dep0/typecheck/ast.hpp"
@@ -20,7 +24,7 @@
 namespace dep0::llvmgen {
 
 /**
- * Generate an LLVM module from a legal DepC module.
+ * @brief Generate an LLVM module from a legal DepC module.
  *
  * @param ctx           The LLVM context used during codegen; it holds LLVM types, the target machine, etc.
  * @param module_name   The name to assign to the generated LLVM module.
@@ -34,7 +38,8 @@ expected<unique_ref<llvm::Module>>
 gen(llvm::LLVMContext& ctx, std::string_view module_name, typecheck::module_t const&) noexcept;
 
 /**
- * Like `gen()` but the generated LLVM module is unverified so it may be invalid.
+ * @brief Like `gen()` but the generated LLVM module is unverified so it may be invalid.
+ *
  * This helps debugging `gen()` by allowing the broken module to be saved to a file for manual inspection.
  */
 expected<unique_ref<llvm::Module>>

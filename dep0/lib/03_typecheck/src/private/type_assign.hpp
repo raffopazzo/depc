@@ -4,6 +4,11 @@
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
  */
+/**
+ * @file
+ * @brief Private functions used to perform type-assignment.
+ * @see @ref type_checking
+ */
 #pragma once
 
 #include "private/usage.hpp"
@@ -18,7 +23,7 @@
 namespace dep0::typecheck {
 
 /**
- * Assign a type to the given expression in the given environment and context.
+ * @brief Assign a type to the given expression in the given environment and context.
  * 
  * Not all expressions can be assigned a type when taken in isolation;
  * for example numerical expressions and initializer lists.
@@ -26,8 +31,7 @@ namespace dep0::typecheck {
  * @param is_mutable_allowed
  *      Specifies whether it is allowed to invoke mutable functions from the current context.
  *
- * @param usage,usage_multiplier
- *      @see usage_t
+ * @param usage,usage_multiplier See @ref `dep0::typecheck::usage_t`.
  * 
  * @return The new expression with its type assigned in the properties field.
  */
@@ -41,7 +45,7 @@ type_assign(
     ast::qty_t usage_multiplier);
 
 /**
- * Assign a type to a function application in the given environment and context.
+ * @brief Assign a type to a function application in the given environment and context.
  *
  * @param loc
  *      The location in the source file where the expression was found.
@@ -50,8 +54,7 @@ type_assign(
  * @param is_mutable_allowed
  *      Specifies whether it is allowed to invoke mutable functions from the current context.
  *
- * @param usage,usage_multiplier
- *      @see usage_t
+ * @param usage,usage_multiplier See @ref `dep0::typecheck::usage_t`.
  *
  * @return The new expression with its type assigned in the properties field.
  */
@@ -66,7 +69,7 @@ type_assign_app(
     ast::qty_t usage_multiplier);
 
 /**
- * Assign a type to an abstraction in the given environment and context.
+ * @brief Assign a type to an abstraction in the given environment and context.
  *
  * @param loc
  *      The location in the source file where the expression was found.
@@ -75,8 +78,7 @@ type_assign_app(
  * @param name
  *      If the abstraction is given a name, it can call itself recursively.
  *
- * @param usage,usage_multiplier
- *      @see usage_t
+ * @param usage,usage_multiplier See @ref `dep0::typecheck::usage_t`.
  *
  * @return The new expression with its type assigned in the properties field.
  */
@@ -91,14 +93,14 @@ type_assign_abs(
     ast::qty_t usage_multiplier);
 
 /**
- * Try to assign the same type to two expressions,
- * for example if they appear in a binary expression, like `x + 1` or `1 < x`.
+ * @brief Try to assign the same type to two interconnected expressions.
+ *
+ * For example, the operands of a binary expression, like `x + 1` or `1 < x`.
  *
  * @param is_mutable_allowed
  *      Specifies whether it is allowed to invoke mutable functions from the current context.
  *
- * @param usage,usage_multiplier
- *      @see usage_t
+ * @param usage,usage_multiplier See @ref `dep0::typecheck::usage_t`.
  *
  * @return
  *      The result of each individual type-assignment; either one or both might have either failed or succeded.

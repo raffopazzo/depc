@@ -4,6 +4,10 @@
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
  */
+/**
+ * @file
+ * @brief Types and functions to construct temporary files.
+ */
 #pragma once
 
 #include "dep0/error.hpp"
@@ -15,6 +19,7 @@
 
 namespace dep0 {
 
+/** @brief A temporary file can be opened either in binary or in text mode. */
 enum class temp_file_open_mode_t
 {
     binary,
@@ -22,7 +27,9 @@ enum class temp_file_open_mode_t
 };
 
 /**
- * A temporary file that will be automatically deleted unless `rename_and_keep` is invoked.
+ * @brief A temporary file that will be automatically deleted unless `rename_and_keep` is invoked.
+ * 
+ * You can only construct a temporary file by calling `make_temp_file()`.
  */
 class temp_file_t
 {
@@ -48,16 +55,16 @@ public:
     temp_file_t& operator=(temp_file_t&&);
 
     /**
-     * Return the file descriptor of this file.
+     * @brief Return the file descriptor of this file.
      * @remarks If `rename_and_keep` succeeded, the return value is the file descriptor of the new file.
      */
     int fd() const;
 
-    /** Return the name of this file. */
+    /** @brief Return the name of this file. */
     std::filesystem::path const& path() const;
 
     /**
-     * Rename (or move) the temporary file to its final destination and ensure it is kept.
+     * @brief Rename (or move) the temporary file to its final destination and ensure it is kept.
      *
      * @param name  The desired name of the file (i.e. both file and directory).
      * 
@@ -68,6 +75,10 @@ public:
     expected<std::true_type> rename_and_keep(std::filesystem::path name);
 };
 
+/**
+ * @brief Constructs a temporary file with a random name.
+ * @return The new temporary file or an error.
+ */
 expected<temp_file_t> make_temp_file(temp_file_open_mode_t = temp_file_open_mode_t::binary);
 
 } // namespace dep0

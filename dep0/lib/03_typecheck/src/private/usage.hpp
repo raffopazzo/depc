@@ -4,6 +4,10 @@
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
  */
+/**
+ * @file
+ * @brief Facilities to implement Quantitative Type Theory.
+ */
 #pragma once
 
 #include "dep0/typecheck/ast.hpp"
@@ -18,7 +22,9 @@
 namespace dep0::typecheck {
 
 /**
- * Helper object to keep track of how many times every variable has been used inside a function.
+ * @brief The main type needed to implement Quantitative Type Theory.
+ * 
+ * This is a helper object to keep track of how many times every variable has been used inside a function.
  * During type-checking/type-assignment this object is used to count the number of times
  * that a variable has been used and compare against the maximum allowed by the current context.
  * Typically the usage of a variable should be scaled up by a factor (aka "usage multiplier")

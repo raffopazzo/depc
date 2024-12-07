@@ -13,5 +13,9 @@ perfetto/48.1
 # conflicts
 zlib/1.2.13 # boost vs llvm-core
 
+# TODO update conan to use doxygen
+# [tool_requires]
+# doxygen/1.12.0
+
 [generators]
 cmake_find_package

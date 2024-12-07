@@ -4,6 +4,10 @@
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
  */
+/**
+ * @file
+ * @brief Defines `dep0::typecheck::derivation_rules` and associated factory functions.
+ */
 #pragma once
 
 #include "dep0/typecheck/ast.hpp"
@@ -11,36 +15,88 @@
 
 namespace dep0::typecheck {
 
+/**
+ * @brief Private friend of `dep0::typecheck::derivation_t` that must be used to construct derivation proofs.
+ *
+ * By being a private type we try to guarantee that a legal AST node was constructed by the typechecking stage.
+ *
+ * @remarks At the moment there is no requirements to make any derivation; but could add some, if useful.
+ */
 struct derivation_rules
 {
-    // At the moment there is no requirements to make any derivation; but could add some, if useful.
     template <typename T>
     static derivation_t<T> make_derivation();
 
+    /** @brief Constructs a `expr_t::typename_t` whose type is Kind. */
     static expr_t make_typename();
+
+    /** @brief Constructs an `expr_t::true_t` whose type is `(0 bool_t) -> typename`. */
     static expr_t make_true_t();
+
+    /**
+     * @brief Constructs a `true_t(expr)` whose type is `typename`.
+     * 
+     * @warning It is the caller's responsibility to ensure that the given expression has type `bool_t`.
+     */
     static expr_t make_true_t(expr_t);
+
+    /** @brief Constructs the type `bool_t` whose type is `typename`. */
     static expr_t make_bool();
+
+    /** @brief Constructs the type `cstr_t` whose type is `typename`. */
     static expr_t make_cstr();
+
+    /** @brief Constructs the type `unit_t` whose type is `typename`. */
     static expr_t make_unit();
+
+    /** @brief Constructs the type `i8_t` whose type is `typename`. */
     static expr_t make_i8();
+
+    /** @brief Constructs the type `i16_t` whose type is `typename`. */
     static expr_t make_i16();
+
+    /** @brief Constructs the type `i32_t` whose type is `typename`. */
     static expr_t make_i32();
+
+    /** @brief Constructs the type `i64_t` whose type is `typename`. */
     static expr_t make_i64();
+
+    /** @brief Constructs the type `u8_t` whose type is `typename`. */
     static expr_t make_u8();
+
+    /** @brief Constructs the type `u16_t` whose type is `typename`. */
     static expr_t make_u16();
+
+    /** @brief Constructs the type `u32_t` whose type is `typename`. */
     static expr_t make_u32();
+
+    /** @brief Constructs the type `u64_t` whose type is `typename`. */
     static expr_t make_u64();
 
+    /** @brief Constructs the boolean value `true`. */
     static expr_t make_true();
+
+    /** @brief Constructs the boolean value `false`. */
     static expr_t make_false();
 
+    /** @brief Constructs an `expr_t::boolean_expr_t` containing the given value; it's type is `bool_t`. */
     static expr_t make_boolean_expr(expr_t::boolean_expr_t::value_t);
+
+    /** @brief Constructs an `expr_t::relation_expr_t` containing the given value; it's type is `bool_t`. */
     static expr_t make_relation_expr(expr_t::relation_expr_t::value_t);
 
+    /** @brief Constructs an `expr_t::array_t` whose type is `(0 typename, 0 u64_t) -> typename`. */
     static expr_t make_array();
 
-    static expr_t make_app(expr_t, std::vector<expr_t>);
+    /**
+     * @brief Constructs an `expr_t::app_t` from a function and its argument.
+     * 
+     * The type of the returned expression is the return type of the function.
+     * 
+     * @warning The type of the returned expression might depend on the arguments to which the function is applied.
+     * It is the caller's responsibility to ensure that substitution of all arguments has been done correctly.
+     */
+    static expr_t make_app(expr_t func, std::vector<expr_t> args);
 };
 
 template <typename... Args>

@@ -4,6 +4,10 @@
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
  */
+/**
+ * @file
+ * @brief Single-function header defining `dep0::vector_splice()`.
+ */
 #pragma once
 
 #include <iterator>
@@ -12,9 +16,10 @@
 namespace dep0 {
 
 /**
- * Insert new elements in the given vector at exactly the given position.
+ * @brief Insert new elements in the given vector at exactly the given position.
+ *
  * If `pos` is the end iterator, this behaves exactly like `std::vector::insert`.
- * If `elements` is empty, this behaves exactly like `std::vector::erase(it)`,
+ * If `elements` is empty, this behaves exactly like `std::vector::erase(pos)`,
  * except that passing the end iterator is fine.
  * Otherwise, the element pointed by `pos` is replaced by the first of `elements`,
  * and all other new elements are inserted after it.

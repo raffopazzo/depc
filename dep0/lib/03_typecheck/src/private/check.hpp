@@ -4,12 +4,11 @@
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
  */
-
 /**
- * @file check.hpp
- * @brief Family of functions to perform type-checking of expressions obtained from the parsing stage.
+ * @file
+ * @brief Private functions used to perform type-checking.
+ * @see @ref type_checking
  */
-
 #pragma once
 
 #include "private/proof_state.hpp"
@@ -28,7 +27,7 @@
 namespace dep0::typecheck {
 
 /**
- * Checks whether a type definition is legal;
+ * @brief Checks whether a type definition is legal;
  * if it is, the type is stored in the given environment.
  *
  * @return A legal type definition or an error.
@@ -36,7 +35,7 @@ namespace dep0::typecheck {
 expected<type_def_t> check_type_def(env_t&, parser::type_def_t const&);
 
 /**
- * Checks whether an axiom declaration is legal;
+ * @brief Checks whether an axiom declaration is legal;
  * if it is, the declaration is stored in the given environment.
  *
  * @return A legal axiom declaration or an error.
@@ -44,7 +43,7 @@ expected<type_def_t> check_type_def(env_t&, parser::type_def_t const&);
 expected<axiom_t> check_axiom(env_t&, parser::axiom_t const&);
 
 /**
- * Checks whether an extern function declaration is legal;
+ * @brief Checks whether an extern function declaration is legal;
  * if it is, the declaration is stored in the given environment.
  *
  * @return A legal extern function declaration or an error.
@@ -52,7 +51,7 @@ expected<axiom_t> check_axiom(env_t&, parser::axiom_t const&);
 expected<extern_decl_t> check_extern_decl(env_t&, parser::extern_decl_t const&);
 
 /**
- * Checks whether a function declaration is legal;
+ * @brief Checks whether a function declaration is legal;
  * if it is, the declaration is stored in the given environment.
  *
  * @return A legal function declaration or an error.
@@ -60,7 +59,7 @@ expected<extern_decl_t> check_extern_decl(env_t&, parser::extern_decl_t const&);
 expected<func_decl_t> check_func_decl(env_t&, parser::func_decl_t const&);
 
 /**
- * Checks whether a function definition is legal;
+ * @brief Checks whether a function definition is legal;
  * if it is, the function is stored in the given environment.
  *
  * @return A legal function definition or an error.
@@ -68,7 +67,7 @@ expected<func_decl_t> check_func_decl(env_t&, parser::func_decl_t const&);
 expected<func_def_t> check_func_def(env_t&, parser::func_def_t const&);
 
 /**
- * Checks whether a body is legal, i.e. if all its statements are legal and it returns from all paths.
+ * @brief Checks whether a body is legal, i.e. if all its statements are legal and it returns from all paths.
  *
  * The proof state is passed by value because this body cannot refine the proof state of any parent body,
  * but its child statements can refine its proof state.
@@ -80,8 +79,7 @@ expected<func_def_t> check_func_def(env_t&, parser::func_def_t const&);
  *      Specifies whether the given body appears inside a mutable function;
  *      if it does, it is legal to invoke other mutable functions.
  *
- * @param usage,usage_multiplier
- *      @see usage_t
+ * @param usage,usage_multiplier See @ref `dep0::typecheck::usage_t`.
  *
  * @return A legal body or an error.
  */
@@ -95,7 +93,7 @@ check_body(
     ast::qty_t usage_multiplier);
 
 /**
- * Checks whether a statement is legal, i.e. if all its expressions and bodies are legal.
+ * @brief Checks whether a statement is legal, i.e. if all its expressions and bodies are legal.
  *
  * This function might refine the proof state of the enclosing body.
  * For example, an `if` statement without the `false` branch which returns from all paths of the `true` branch,
@@ -105,8 +103,7 @@ check_body(
  *      Specifies whether the given statement appears inside a mutable function;
  *      if it does, it is legal to invoke other mutable functions.
  *
- * @param usage,usage_multiplier
- *      @see usage_t
+ * @param usage,usage_multiplier See @ref `dep0::typecheck::usage_t`.
  *
  * @return A legal statement or an error.
  */
@@ -120,14 +117,14 @@ check_stmt(
     ast::qty_t usage_multiplier);
 
 /**
- * Checks whether the given expression is of sort type or kind in the given environment and context.
+ * @brief Checks whether the given expression is of sort type or kind in the given environment and context.
  *
  * @return A legal type or kind, otherwise an error.
  */
 expected<expr_t> check_type(env_t const&, ctx_t const&, parser::expr_t const&);
 
 /**
- * Checks whether the given expression has the expected type/kind, in the given environment and context.
+ * @brief Checks whether the given expression has the expected type/kind, in the given environment and context.
  *
  * @param expected_type
  *      The type/kind that the expression must have.
@@ -136,8 +133,7 @@ expected<expr_t> check_type(env_t const&, ctx_t const&, parser::expr_t const&);
  *      Specifies whether the given expression appears inside a mutable function;
  *      if it does, it is legal to invoke other mutable functions.
  *
- * @param usage,usage_multiplier
- *      @see usage_t
+ * @param usage,usage_multiplier See @ref `dep0::typecheck::usage_t`.
  *
  * @return A legal expression or an error.
  */
@@ -152,7 +148,7 @@ check_expr(
     ast::qty_t usage_multiplier);
 
 /**
- * Checks whether a numerical expression, eg `42`, has the expected type in the given environment and context.
+ * @brief Checks whether a numerical expression, eg `42`, has the expected type in the given environment and context.
  *
  * @param loc
  *      The location in the source file where the expression was found.
@@ -171,7 +167,7 @@ expected<expr_t> check_numeric_expr(
     expr_t const& expected_type);
 
 /**
- * Checks whether the given function arguments and return type form a legal Pi-type.
+ * @brief Checks whether the given function arguments and return type form a legal Pi-type.
  *
  * @param ctx
  *      The context in which type-checking will be performed;
@@ -201,7 +197,7 @@ expected<expr_t> check_pi_type(
     parser::expr_t const& ret_ty);
 
 /**
- * If `expected_type` is nullptr, tries to type-assign the given arithmetic expression;
+ * @brief If `expected_type` is nullptr, tries to type-assign the given arithmetic expression;
  * otherwise checks that it has the given expected type.
  *
  * @param loc
@@ -211,8 +207,7 @@ expected<expr_t> check_pi_type(
  * @param is_mutable_allowed
  *      Specifies whether it is allowed to invoke mutable functions from the current context.
  *
- * @param usage,usage_multiplier
- *      @see usage_t
+ * @param usage,usage_multiplier See @ref `dep0::typecheck::usage_t`.
  */
 expected<expr_t> check_or_assign(
     env_t const&,

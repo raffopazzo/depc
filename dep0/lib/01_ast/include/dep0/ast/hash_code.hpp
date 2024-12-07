@@ -4,6 +4,10 @@
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
  */
+/**
+ * @file
+ * @brief Single-function header declaring `dep0::ast::hash_code()`.
+ */
 #pragma once
 
 #include "dep0/ast/ast.hpp"
@@ -11,8 +15,9 @@
 namespace dep0::ast {
 
 /**
- * Compute the hash code of the given expression.
- * Alpha-equivalent expressions are guaranteeed to have the same hash code.
+ * @brief Compute the hash code of the given expression.
+ * @remarks Alpha-equivalent expressions are guaranteeed to have the same hash code.
+ * @see @ref alpha_equivalence
  */
 template <Properties P> std::size_t hash_code(expr_t<P> const&);
 

@@ -1,0 +1,35 @@
+/*
+ * Copyright Raffaele Rossi 2023 - 2024.
+ *
+ * Distributed under the Boost Software License, Version 1.0.
+ * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
+ */
+
+/**
+@page motivation Motivation and Goal
+
+I started this project as a challenge.
+I discovered dependent types when learning Idris.
+After some time I started thinking:
+
+> if I had to write a programming language like C++,
+> it would certainly be a big project for me;
+> but, given enough time, I might be able to do it.
+> But if I had to write a language like Idris,
+> I would not even know where to start!
+
+So I bought [Type Theory and Formal Proof: An Introduction](https://amzn.eu/d/8dl6Ktx)
+with the only intention to learn something.
+But then, what was initially unimaginable became actually quite feasible.
+
+DepC is, therefore, both a challenge and an experiment:
+what if C/C++ had dependent types?
+
+The goal of this project is a bit open-ended.
+It would, obviously, be great if I could get to a
+fully-working, industry-ready programming language
+as efficient as C/C++ and as safe as Idris.
+But that's a big project, and I don't know how far I can take it.
+I will try to take it as far as possible.
+If people start contributing it will be easier to take it further.
+*/

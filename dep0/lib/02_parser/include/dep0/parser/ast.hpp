@@ -4,6 +4,11 @@
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
  */
+/**
+ * @file
+ * @brief Specializes the generic AST for the parser stage.
+ * @see @ref dep0_design_ast
+ */
 #pragma once
 
 #include "dep0/ast/ast.hpp"
@@ -13,6 +18,12 @@
 
 namespace dep0::parser {
 
+/**
+ * @brief Trait types required to specialize the AST for the parser stage.
+ * 
+ * After the parsing stage all we care about is the location in the source code where
+ * the AST nodes have been encountered, which is useful to produce descriptive error messages.
+ */
 struct properties_t
 {
     using module_properties_type = source_loc_t;

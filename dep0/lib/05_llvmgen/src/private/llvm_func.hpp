@@ -4,6 +4,10 @@
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
  */
+/**
+ * @file
+ * @brief Defines `dep0::llvmgen::llvm_func_t`.
+ */
 #pragma once
 
 #include <llvm/IR/DerivedTypes.h>
@@ -13,7 +17,8 @@
 namespace dep0::llvmgen {
 
 /**
- * Like `llvm::FunctionCallee`, it represents a callable function together with its type.
+ * @brief Like `llvm::FunctionCallee`, it represents a callable function together with its type.
+ *
  * But unlike it, this allows access to the two fields via const-ref.
  * If upstream fixes their API, we can remove this and use theirs instead.
  */

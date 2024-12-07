@@ -37,3 +37,9 @@ RUN apt-get update \
 RUN apt-get update \
  && apt-get install -y default-jdk \
  && rm -fr /var/lib/apt/lists
+
+# Install doxygen
+# TODO replace with doxygen from conan after upgrading conan
+RUN apt-get update \
+ && apt-get install -y doxygen \
+ && rm -fr /var/lib/apt/lists

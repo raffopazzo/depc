@@ -4,6 +4,10 @@
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
  */
+/**
+ * @file
+ * @brief Single-function header declaring `dep0::typecheck::is_list_initializable()`.
+ */
 #pragma once
 
 #include "dep0/typecheck/ast.hpp"
@@ -12,28 +16,20 @@
 
 namespace dep0::typecheck {
 
-/**
- * Contains the possible results returned from `is_list_initializable()`.
- */
+/** @brief Contains the possible results returned from `is_list_initializable()`. */
 namespace is_list_initializable_result
 {
-    /**
-     * The type cannot be initialized with an initializer list.
-     */
+    /** @brief The type passed to `is_list_initializable()` cannot be initialized with an initializer list. */
     struct no_t{};
 
-    /**
-     * The type is `unit_t`, which can be initialized with `{}`.
-     */
+    /** @brief The type passed to `is_list_initializable()`  is `unit_t`, which can be initialized with `{}`. */
     struct unit_t{};
 
-    /**
-     * The type is `true_t(true)`, which can be initialized with `{}`.
-     */
+    /** @brief The type passed to `is_list_initializable()` is `true_t(true)`, which can be initialized with `{}`. */
     struct true_t{};
 
     /**
-     * The type is an `array_t(type, N)` for some constant `N`,
+     * @brief The type passed to `is_list_initializable()` is an `array_t(type, N)` for some constant `N`,
      * which can be initialized with `{value1, ..., valueN}`.
      */
     struct array_t
@@ -51,7 +47,7 @@ using is_list_initializable_result_t =
         is_list_initializable_result::array_t>;
 
 /**
- * Decide whether the given type can be initialized with a (possibly empty) initializer list,
+ * @brief Decide whether the given type can be initialized with a (possibly empty) initializer list,
  * i.e. an expression of the form `{expr1, ..., exprN}`.
  */
 is_list_initializable_result_t is_list_initializable(expr_t const& type);

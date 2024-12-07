@@ -4,6 +4,10 @@
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
  */
+/**
+ * @file
+ * @brief Implements the equivalent to Haskell's `fmap` for `std::vector`.
+ */
 #pragma once
 
 #include "dep0/error.hpp"
@@ -14,6 +18,7 @@
 
 namespace dep0 {
 
+/** @brief Pretty standard, applies `f` to each element of `xs` and returns a new vector with the results. */
 template <typename T, typename F>
 auto fmap(std::vector<T> const& xs, F&& f)
 -> std::vector<std::invoke_result_t<F, typename std::vector<T>::value_type>>
@@ -25,6 +30,7 @@ auto fmap(std::vector<T> const& xs, F&& f)
     return result;
 }
 
+/** @brief Overload taking a pair of iterators. */
 template <typename T, typename F>
 auto fmap(
     typename std::vector<T>::const_iterator const begin,
@@ -39,6 +45,7 @@ auto fmap(
     return result;
 }
 
+/** @brief If `f` succeeds for all elements, returns a vector of the results; otherwise returns the first error. */
 template <typename T, typename F>
 // requires ...
 auto fmap_or_error(std::vector<T> const& xs, F&& f)
@@ -61,6 +68,5 @@ auto fmap_or_error(std::vector<T> const& xs, F&& f)
             return std::move(r.error());
     return result;
 }
-
 
 } // namespace dep0

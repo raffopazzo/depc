@@ -4,6 +4,10 @@
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
  */
+/**
+ * @file
+ * @brief Defines `dep0::transform::run()` and associated overloads.
+ */
 #pragma once
 
 #include "dep0/transform/transform.hpp"
@@ -13,9 +17,13 @@
 
 namespace dep0::transform {
 
+/**
+ * @brief Applies all transformations from the given range to the given module.
+ * @return Either success or the first failure if any transformations fails.
+ */
 template <std::ranges::range R>
-requires (std::is_same_v<transform_t, std::ranges::range_value_t<R>>)
 expected<std::true_type> run(typecheck::module_t& m, R&& r) noexcept
+requires (std::is_same_v<transform_t, std::ranges::range_value_t<R>>)
 {
     for (auto&& f: std::forward<R>(r))
         if (auto result = f(m); not result)
@@ -23,6 +31,10 @@ expected<std::true_type> run(typecheck::module_t& m, R&& r) noexcept
     return std::true_type{};
 }
 
+/**
+ * @brief Applies all given transformations to the given module.
+ * @return Either success or the first failure if any transformations fails.
+ */
 template <Transform... F>
 expected<std::true_type> run(typecheck::module_t& m, F&&... f) noexcept
 {

@@ -1,17 +1,17 @@
->
-> Copyright Raffaele Rossi 2023 - 2024. 
->
-> Distributed under the Boost Software License, Version 1.0.  
-> (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)  
->
-
-# Dep0: AST, Pipeline and Performance
+/*
+ * Copyright Raffaele Rossi 2023 - 2024.
+ *
+ * Distributed under the Boost Software License, Version 1.0.
+ * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
+ */
+/**
+@page dep0_design Dep0: AST, Pipeline and Performance
 
 The **single most important** thing to be familiar with in Dep0 is the AST.
 However, describing the Pipeline first and the AST later,
 might actually help in understanding the AST better.
 
-## Pipeline
+@section dep0_design_pipeline Pipeline
 
 The pipeline is fairly standard:
 
@@ -36,16 +36,17 @@ i.e. a `typecheck::module_t`, and produces an LLVM module.
 Finally, the LLVM module is passed to the LLVM Pipeline;
 here the LLVM IR gets optimised and the final object code emitted.
 
-## AST
+@section dep0_design_ast AST
 
 From the above description it is hopefully clear that all stages of the Dep0 pipeline,
 from parser to LLVM IR gen, operate (or produce) an AST.
 This AST is either:
-* a "parser AST", which merely represents the input source code as a data structure in memory;
+
+- a "parser AST", which merely represents the input source code as a data structure in memory;
   quite obviously the source code did not contain any parsing error,
   else you would not have a "parser AST" at all,
   but it may still contain compilation errors (aka typechecking errors);
-* a "legal AST", which means that the source code is valid,
+- a "legal AST", which means that the source code is valid,
   i.e. it does not contain any typechecking error.
 
 Because of this double usage, the AST is actually a template.
@@ -57,11 +58,11 @@ The properties of this node will contain the location in the text file
 where the string `a + b` was located.
 After typechecking, a new AST is produced; obviously, this too contains a node for `a + b`.
 Now, though, the properties of this node will contain the type of this expression.
-For more details, take a look at [ast.hpp](/dep0/lib/01_ast/include/dep0/ast/ast.hpp).
+For more details, take a look at @ref dep0/ast/ast.hpp.
 
-## Performance
+@section dep0_design_performance Performance
 
-Another fundamental design decision of Dep0 is: it must have high performance.
+Another fundamental design decision of Dep0 is: it must be fast.
 The main reason for this requirement is:
 typechecking with Dependent Types is, potentially, quite intensive because,
 in principle, in order to check the type of an expression,
@@ -74,16 +75,21 @@ This would replicate the interactive coding experience
 that is, so far, unique to Idris.
 For this interactive experience to be any good, the compiler must be fast!
 
-Two immediate consequences of this speed requirement are:
-* fail immediately:
+With this speed requirement in mind, here are some fundamental design decisions:
+
+- fail immediately:
   most languages try to recover from parsing errors by guessing
   what the user intended to write and continue with compilation,
   as if they did write that;
   this, usually/sometimes/often, ends up being just a waste of time
   with cluttered build logs, full of non-sensical errors,
   because the compiler guessed wrong; so don't even try.
-* do not ever copy strings:
-  the source file is mmap-ed and, instead of storing strings in the AST,
-  only string views into the mmap-ed file are stored in the AST.
+- the source file is mmap-ed and string views are stored in the AST.
   This also have some consequences for things like renaming,
   where, instead of generating a new string, we just bump a "subscript index".
+- (not yet done) type-sharing: not a novel idea for compilers (Haskell has this),
+  bascically multiple expressions can have the same type;
+  by sharing the type among these expressions we can save both memory usage and
+  computation time as beta-delta-normalization can be done only once for all expressions
+  that share the same type.
+*/

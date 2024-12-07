@@ -4,12 +4,17 @@
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
  */
+/**
+ * @file
+ * @brief Fundamental concepts that AST nodes must satisfy.
+ */
 #pragma once
 
 namespace dep0::ast {
 
 /**
- * Checks whether `T` is a trait-type providing the type of properties for each node of the AST.
+ * @brief Checks whether `T` is a trait-type providing the type of properties for each node of the AST.
+ * @see @ref dep0_design_ast
  */
 template <typename T>
 concept Properties = requires(T)

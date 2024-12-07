@@ -1,0 +1,162 @@
+/*
+ * Copyright Raffaele Rossi 2023 - 2024.
+ *
+ * Distributed under the Boost Software License, Version 1.0.
+ * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
+ */
+#nav-tree .label a
+{
+    display: inline-block;
+    white-space: break-spaces;
+    max-width: 15em;
+    vertical-align: top;
+    text-align: start;
+    text-indent: -2em;
+    padding-left: 2em;
+}
+#projectname { color: #354C7B; }
+#projectbrief { font-style: italic; color: #354C7B; }
+#titlearea
+{
+    border-bottom-color: #C4CFE5;
+}
+.ui-resizable .ui-resizable-handle
+{
+    visibility: hidden;
+    background: #C4CFE5;
+    width: 1px;
+}
+.contents
+{
+    text-align: justify;
+    max-width: 80em;
+    margin: 0 auto;
+}
+code
+{
+    border: 1px solid lightgray;
+    color: orangered;
+    margin: 0 3px;
+    padding: 0 3px;
+}
+div.fragment
+{
+    padding: 1em;
+    white-space: nowrap;
+}
+div.line
+{
+    white-space: pre;
+}
+div.header
+{
+    background-image: none;
+    background-color: inherit;
+    border: none;
+    text-align: left;
+}
+div.header .summary
+{
+    display: none;
+}
+div.header .ingroups
+{
+    width: 100%;
+    text-align: center;
+}
+div.textblock
+{
+    max-width: 840px;
+    text-align: justify;
+}
+.directory td.entry
+{
+    font-family: monospace;
+}
+.directory td.entry a, .directory td.entry b, a.el
+{
+    font-weight: normal;
+}
+.directory td.desc
+{
+    border: none;
+}
+.navpath ul
+{
+    background-image: none;
+}
+.sm-dox
+{
+    background-image: none;
+    background: #e7f2fa;
+}
+
+.memberdecls,
+.memname,
+.memtitle,
+.title
+{
+    font-family: monospace;
+}
+.paramname
+{
+    font-family: monospace;
+}
+.SelectItem
+{
+    font: inherit;
+}
+#MSearchSelectWindow
+{
+    -webkit-border-top-left-radius: 0px;
+    -webkit-border-top-right-radius: 0px;
+    -webkit-border-bottom-left-radius: 0px;
+    -webkit-border-bottom-right-radius: 0px;
+    -webkit-box-shadow: none;
+}
+
+.memdoc,
+.memproto
+{
+    border-bottom-left-radius: 0px;
+    border-bottom-right-radius: 0px;
+    border-top-left-radius: 0px;
+    border-top-right-radius: 0px;
+    -webkit-border-bottom-left-radius: 0px;
+    -webkit-border-bottom-right-radius: 0px;
+    -webkit-border-top-left-radius: 0px;
+    -webkit-border-top-right-radius: 0px;
+}
+
+.memdoc,
+.memproto
+{
+    box-shadow: none;
+    -webkit-box-shadow: none;
+}
+
+.memdoc,
+.memtitle
+{
+    background-image: none;
+}
+.memproto, dl.reflist dt
+{
+    text-shadow: none;
+}
+
+.memtitle
+{
+    border-radius: 0px;
+    color: #354C7B;
+}
+
+.title
+{
+    color: #354C7B;
+}
+
+.memTemplParams, .memTemplItemLeft, .memTemplItemRight { background-color: inherit; }
+.memItemLeft, .memItemRight { background-color: inherit; text-align: left; }
+.mdescLeft, .mdescRight { background-color: inherit; font: 400 14px/22px Roboto,sans-serif; color: inherit; }
+.memTemplItemRight, .memItemRight { background-color: #DFE5F1; color: #253555; }

@@ -4,6 +4,10 @@
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
  */
+/**
+ * @file
+ * @brief Implementation details for @ref hash_code.hpp.
+ */
 #pragma once
 
 #include "dep0/ast/hash_code.hpp"
@@ -33,12 +37,16 @@ static std::size_t combine(std::size_t a, std::size_t const b, std::size_t const
 }
 
 /**
- * Helper object to keep track of unique IDs assigned in place of ordinary variable names.
+ * @brief Helper object to keep track of unique IDs assigned in place of ordinary variable names.
+ *
  * This is required to ensure that the hash code of alpha-equivalent expressions are the same.
  * It works somewhat similarly to a DeBrujin index in the sense that each binder is assigned a unique ID.
  * Under this mapping, the hash code of a variable name is either:
+ *
  *   - its unique ID, if it is bound to a function argument;
  *   - or the hash of its actual name, if it is a free variable.
+ * 
+ * @see @ref alpha_equivalence
  */
 template <typename P>
 class hash_code_state_t

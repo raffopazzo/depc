@@ -4,6 +4,10 @@
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
  */
+/**
+ * @file
+ * @brief Functions that check whether a type in DepC is representable by a type in C.
+ */
 #pragma once
 
 #include "dep0/parser/ast.hpp"
@@ -15,13 +19,13 @@
 namespace dep0::typecheck {
 
 /**
- * Checks whether the given type is representable by a type in C.
- * @note This is required for extern function declarations.
+ * @brief Checks whether the given type is representable by a type in C.
+ * @remarks This is required for extern function declarations.
  */
 dep0::expected<std::true_type> is_c_type(parser::expr_t const& type);
 
 /**
- * Checks whether the given function type is representable by a type in C.
+ * @brief Checks whether the given function type is representable by a type in C.
  *
  * @param origin
  *      The location in the source file where the given pi-type was found.

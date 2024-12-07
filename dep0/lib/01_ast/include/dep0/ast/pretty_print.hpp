@@ -6,7 +6,7 @@
  */
 
 /**
- * @file pretty_print.hpp
+ * @file
  * @brief A family of functions to print the AST in a fairly human-readable format.
  *
  * Each `pretty_print` function will start writing from the current stream position;
@@ -22,6 +22,10 @@
 
 namespace dep0::ast {
 
+/**
+ * @brief Print the AST to the given output stream with pretty indentation spaces if needed.
+ * @return The same output stream for method chaiing, for example `pretty_print(std::cout, x) << std::endl`.
+ */
 template <Properties P>
 std::ostream& pretty_print(std::ostream&, module_t<P> const&, std::size_t indent = 0ul);
 

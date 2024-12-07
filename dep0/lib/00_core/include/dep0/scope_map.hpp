@@ -4,6 +4,10 @@
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
  */
+/**
+ * @file
+ * @brief Defines `dep0::scope_map`.
+ */
 #pragma once
 
 #include "dep0/source.hpp"
@@ -14,6 +18,12 @@
 
 namespace dep0 {
 
+/**
+ * @brief Key-Value pair dictionary that can be inherited to allow shadowing inside a different scope.
+ *
+ * This is useful for example to track variables declared inside a function scope which
+ * might shadow other variables with the same name declared in outer function scopes.
+ */
 template <typename K, typename V>
 class scope_map
 {
@@ -31,40 +41,112 @@ public:
     using iterator = typename data_map::iterator;
     using const_iterator = typename data_map::const_iterator;
 
-    // A default constructed scope is empty and you can move it, obviously.
-    // If you copy it, the new instance behaves like the original,
-    // for instance adding a duplicate entry will fail.
-    // But if you add a new entry the original will not see it.
-    // Obviously you can also extend the new copy as normal.
+    /** @brief Constructs an empty scope. */
     scope_map();
+
+    /**
+     * @brief Constructs a copy that behaves like the original but separate from other copies.
+     * 
+     * For example, adding a duplicate entry will fail.
+     * But if you add a new entry to the copy, the original will not see it.
+     *
+     * Obviously you can also extend the new copy as normal.
+     */
     scope_map(scope_map const&);
+
+    /** @brief Copy-assignment behaves like the copy-constructor. */
     scope_map& operator=(scope_map const&);
+
+    /**
+     * @brief Steals the content from another scope.
+     *
+     * The moved-out object cannot be used; it can only be destroyed.
+     */
     scope_map(scope_map&&) = default;
+
+    /**
+     * @brief Move-assignment behaves like the move-constructor.
+     *
+     * In particular, the moved-out object cannot be used; it can only be destroyed.
+     */
     scope_map& operator=(scope_map&&) = default;
 
+    /**
+     * @brief Const-iterator to the key-value pairs at the current scope level.
+     *
+     * Key-value pairs of the parent level are not visited.
+     * To also iterate on the parent level you have to invoke `parent()` and iterate on its result.
+     * Note, however, that in doing so you will also iterate on any key-value pair shadowed by child levels.
+     */
     const_iterator begin() const;
+
+    /** @brief End iterator at the current scope level. */
     const_iterator end() const;
 
-    // Create a new scope that extend the current one, where new declarations can be added shadowing old ones.
+    /**
+     * @brief Creates a new scope that extends the current one, where new key-value pairs can shadow old ones.
+     * 
+     * - Adding a new key to the new scope will succeed even if the same key already existed in the parent scope.
+     * - However, adding the same key multiple times to the new scope will only succeed once.
+     * - A lookup from the new scope will return the new value, whilst from the parent scope will return the old one.
+     * - A new key added to the new scope, that does not exist in the old scope, will not appear in the old scope.
+     */
     scope_map extend() const;
 
+    /**
+     * @brief Return the parent of this scope or `nullopt` if this is the root scope.
+     *
+     * Changes to the parent scope made via the returned object will be reflected to the original one and viceversa.
+     */
     std::optional<scope_map> parent();
+
+    /**
+     * @brief Const-propagating overload.
+     *
+     * Similarly to the non-const overload, changes to the parent scope will be reflected to the returned object.
+     */
     std::optional<scope_map const> parent() const;
 
-    // Try to insert an element with the given key.
-    // Insertion succeeds iff there is no element with the given key at the current scope level,
-    // even though there is one at the parent scope level, thereby shadowing the parent one.
+    /**
+     * @brief Inserts a new key-value pair, if the key does not already exist at the current scope.
+     * 
+     * Insertion succeeds if and only if there is no element with the given key at the current scope level,
+     * even though there is one at the parent scope level, thereby shadowing the parent one.
+     *
+     * In any case, if insertion takes place the value is constructed in-place by forwarding all remaining arguments.
+     *
+     * @return The iterator to the key-value pair with a flag which is true if insertion took place.
+     */
     template <typename... Args> std::pair<iterator, bool> try_emplace(K const&, Args&&...);
+
+    /**
+     * @brief Overload taking an rvalue-reference to the key.
+     *
+     * Except for this, every other detail is the same as the overload taking a const-reference.
+     */
     template <typename... Args> std::pair<iterator, bool> try_emplace(K&&, Args&&...);
 
     // Find an element by the given key, either at the current scope level or any parent level.
     // Return nullptr if the element does not exist at any scope level or a (stable) pointer to the found element.
+
+    /**
+     * @brief Find an element by the given key, either at the current scope level or any parent level.
+     *
+     * Because of shadowing, this may require a lookup at every parent level until
+     * an element is found or the root level is reached.
+     *
+     * @return A stable pointer to the found element or `nullptr if the element does not exist at any scope level.
+     * Stable means that future insertions, at any scope level, will not invalidate the returned pointer.
+     */
     V* operator[](K const&);
+
+    /** @brief Const-propagating overload, returning a const-pointer if the element is found. */
     V const* operator[](K const&) const;
 };
 
 // implementation
 
+/** @brief Stores the internal state at a specific scope level and a pointer to the parent level. */
 template <typename K, typename V>
 struct scope_map<K, V>::state_t
 {

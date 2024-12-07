@@ -4,6 +4,10 @@
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
  */
+/**
+ * @file
+ * @brief Functions useful to generate the LLVM `alloca` instruction, when necessary.
+ */
 #pragma once
 
 #include "private/context.hpp"
@@ -19,19 +23,13 @@
 
 namespace dep0::llvmgen {
 
-/**
- * Contains the possible results returned by `needs_alloca()`
- */
+/** @brief Contains the possible results returned by `needs_alloca()` */
 namespace needs_alloca_result
 {
-    /**
-     * The type does not require an allocation.
-     */
+    /** @brief The type passed to `needs_alloca()` does not require an allocation. */
     struct no_t{};
 
-    /**
-     * The type requires an allocation because it is an array.
-     */
+    /** @brief The type passed to `needs_alloca()` requires an allocation because it is an array. */
     struct array_t
     {
         array_properties_view_t properties;
@@ -43,31 +41,26 @@ using needs_alloca_result_t =
         needs_alloca_result::array_t>;
 
 /**
- * Decides whether the given type expression requires an allocation or not.
- *
- * @param type
- *      The type expression to check, which must have sort `typename_t`.
+ * @brief Decides whether the given type expression requires an allocation or not.
+ * @param type The type expression to check, which must have sort `typename_t`.
  */
 needs_alloca_result_t needs_alloca(typecheck::expr_t const& type);
 
 /**
- * Checks whether the given type expression requires an allocation or not.
- *
- * @param type
- *      The type expression to check, which must have sort `typename_t`.
- *
+ * @brief Checks whether the given type expression requires an allocation or not.
+ * @param type The type expression to check, which must have sort `typename_t`.
  * @return True if allocation is required for the given type, false otherwise.
  */
 bool is_alloca_needed(typecheck::expr_t const& type);
 
 /**
- * Generates an alloca instruction but only if the input type requires an allocation.
+ * @brief Generates an `alloca` instruction, but only if the input type requires an allocation.
  *
  * @param type
  *      A type expression that may or may not require an allocation;
  *      for example `array_t(i32_t, n)` does but `i32_t` on its own does not.
  *
- * @return The generated alloca instruction, or nullptr if allocation is not required for the given type.
+ * @return The generated `alloca` instruction, or `nullptr` if allocation is not required for the given type.
  */
 llvm::Instruction* gen_alloca_if_needed(
     global_ctx_t&,

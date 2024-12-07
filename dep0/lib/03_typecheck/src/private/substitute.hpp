@@ -4,6 +4,10 @@
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
  */
+/**
+ * @file
+ * @brief Functions that perform @ref substitution.
+ */
 #pragma once
 
 #include "dep0/typecheck/ast.hpp"
@@ -11,16 +15,18 @@
 namespace dep0::typecheck {
 
 /**
- * Perform capture-avoiding substitution inside all arguments,
- * return type and (for lambda abstractions) the body of
- * either pi-types or lambda abstractions.
+ * @brief Perform capture-avoiding substitution inside Pi-Types and Lambda-Abstractions.
  *
- * @remarks In order to avoid accidental capture,
- * the function arguments inside the range [begin, end) may be modified.
+ * @param var The name of the variable to substitute.
+ * @param expr The expression that should be substituted for `var`.
+ * @param begin Perform substitution inside all function arguments in the range `[begin, end)`.
+ * @param end Ditto.
+ * @param ret_type Perform substitution inside the return type of the Pi-Type/Lambda-Abstraction.
+ * @param body If not `nullptr`, perform substitution inside the body of a Lambda-Abstraction.
  */
 void substitute(
-    expr_t::var_t const&,
-    expr_t const&,
+    expr_t::var_t const& var,
+    expr_t const& expr,
     std::vector<func_arg_t>::iterator begin,
     std::vector<func_arg_t>::iterator end,
     expr_t& ret_type,

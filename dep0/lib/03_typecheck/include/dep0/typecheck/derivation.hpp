@@ -4,14 +4,32 @@
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
  */
+/**
+ * @file
+ * @brief Defines `dep0::typecheck::derivation_t`
+ */
 #pragma once
 
 namespace dep0::typecheck {
 
-// In general, a derivation is a proof that a term or a type is valid, although currently it has no properties.
-// By extension, it can also be a proof that other AST nodes (eg func_def_t or module_t) are valid.
-// It can only be constructed using `derivation_rules`, which is private within the typecheck module;
-// therefore typechecking is the only way to construct a legal AST.
+/**
+ * @brief Proof that an AST node is legal because it has a valid derivation.
+ *
+ * For example, when specialized to `expr_t`, this is a proof that a term or a type is legal.
+ * By extension, when specialized to other AST nodes, this is a proof that the node is legal.
+ *
+ * It can only be constructed using `derivation_rules`, which is private within the typecheck module;
+ * therefore typechecking is the only way to construct a legal AST.
+ *
+ * @remarks Currently this contains no fields so the only thing that it is proving is that
+ * the AST node was constructed via `derivation_rules`.
+ * Ideally each specialization should contain the real proof of why the node was legal but
+ * that requires dependent types in C++.
+ * It might still be useful to add some fields in some cases, but currently there are none.
+ *
+ * @warning This type is copiable, so one could forge a derivation by copying from another one.
+ * But we are trying to "guard against Murphy, not Machiavelli".
+ */
 template <typename /* NodeType */>
 struct derivation_t
 {

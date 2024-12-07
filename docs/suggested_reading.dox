@@ -1,0 +1,29 @@
+/*
+ * Copyright Raffaele Rossi 2023 - 2024.
+ *
+ * Distributed under the Boost Software License, Version 1.0.
+ * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
+ */
+/**
+@page suggested_reading Suggested Reading
+
+- [Type Theory and Formal Proof: An Introduction](https://amzn.eu/d/8dl6Ktx)
+  this is **the most important** book.
+  If you read nothing else, try at least to read the first 6 chapters of this.
+- [Types and Programming Languages](https://amzn.eu/d/iBVHn9a)
+  is a famous textbook in this field.
+  You might come across many papers and publications that reference it.
+- [Interactive Theorem Proving and Program Development: Coq’Art](https://amzn.eu/d/2syZqOi)
+  is a bit of a more advanced reading.
+  It covers advanced topics like the Calculus of Inductive Construction,
+  whilst also showing the famous theorem prover _Coq_.
+  It is also referenced by many papers and publications,
+  including the above 2 books.
+- [I Got Plenty o' Nuttin'](https://personal.cis.strath.ac.uk/conor.mcbride/PlentyO-CR.pdf)
+  is the seminal paper introducing Quantitative Type Theory.
+  As usual from Conor McBride, it's written in a very peotic style,
+  which makes it fun to read but you might also want to read the next one.
+- [The Syntax and Semantics of Quantitative Type Theory](https://bentnib.org/quantitative-type-theory.pdf)
+  this is a follow up paper on Quantitative Type Theory from Bob Atkey;
+  it reads a bit easier than Conor's paper and it also fixes a couple of "bugs".
+*/

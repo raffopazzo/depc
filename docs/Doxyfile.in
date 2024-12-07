@@ -1,0 +1,75 @@
+# Copyright Raffaele Rossi 2023 - 2024.
+# 
+# Distributed under the Boost Software License, Version 1.0.
+# (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
+
+PROJECT_NAME           = "DepC"
+PROJECT_BRIEF          = "Like C and C++ but with Dependent Types."
+PROJECT_NUMBER         = ${PROJECT_VERSION}
+
+OUTPUT_DIRECTORY       = ${CMAKE_CURRENT_BINARY_DIR}
+
+RECURSIVE              = YES
+INPUT                  =
+INPUT                 += motivation.dox
+INPUT                 += dependent_types_intro.dox
+INPUT                 += type_theory.dox
+INPUT                 += suggested_reading.dox
+INPUT                 += code_organisation.dox
+INPUT                 += coding_style.dox
+INPUT                 += dep0_design.dox
+INPUT                 += ../dep0/lib/00_core/include
+INPUT                 += ../dep0/lib/01_ast/include
+INPUT                 += ../dep0/lib/02_parser/include
+INPUT                 += ../dep0/lib/02_parser/src/private
+INPUT                 += ../dep0/lib/03_typecheck/include
+INPUT                 += ../dep0/lib/03_typecheck/src/private
+INPUT                 += ../dep0/lib/04_transform/include
+INPUT                 += ../dep0/lib/05_llvmgen/include
+INPUT                 += ../dep0/lib/05_llvmgen/src/private
+INPUT                 += ../dep0/lib/06_compile/include
+INPUT                 += ../dep0/lib/07_link/include
+INPUT                 += ../dep0/lib/07_link/src/private
+
+EXAMPLE_PATH           =
+EXAMPLE_PATH          += coding_style.cpp
+EXAMPLE_PATTERNS       = *
+
+STRIP_FROM_PATH        = ../dep0/lib/
+
+ABBREVIATE_BRIEF       =
+EXTRACT_STATIC         = YES
+CASE_SENSE_NAMES       = YES
+SHOW_INCLUDE_FILES     = NO
+ENABLE_PREPROCESSING   = NO
+QUIET                  = YES
+WARNINGS               = YES
+WARN_IF_UNDOCUMENTED   = NO
+WARN_IF_DOC_ERROR      = NO
+
+GENERATE_HTML          = YES
+DISABLE_INDEX          = YES
+GENERATE_TREEVIEW      = YES
+TREEVIEW_WIDTH         = 320
+HTML_OUTPUT            = html
+HTML_HEADER            =
+HTML_FOOTER            =
+HTML_EXTRA_STYLESHEET  = depc.css
+HTML_EXTRA_FILES       =
+HTML_COLORSTYLE_HUE    = 220
+HTML_COLORSTYLE_SAT    = 100
+HTML_COLORSTYLE_GAMMA  = 80
+HTML_TIMESTAMP         = YES
+HTML_DYNAMIC_MENUS     = YES
+HTML_DYNAMIC_SECTIONS  = NO
+
+GENERATE_DOCSET        = NO
+GENERATE_LATEX         = NO
+GENERATE_RTF           = NO
+GENERATE_MAN           = NO
+GENERATE_XML           = NO
+GENERATE_DOCBOOK       = NO
+GENERATE_AUTOGEN_DEF   = NO
+GENERATE_PERLMOD       = NO
+CLASS_DIAGRAMS         = NO
+HAVE_DOT               = NO

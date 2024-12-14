@@ -126,6 +126,10 @@ void substitute(expr_t::var_t const& var, expr_t const& expr, expr_t& x)
         {
             substitute(var, expr, x.args.begin(), x.args.end(), x.ret_type.get(), nullptr);
         },
+        [&] (expr_t::sigma_t& x)
+        {
+            substitute(var, expr, x.args.begin(), x.args.end());
+        },
         [] (expr_t::array_t const&)
         {
         },
@@ -159,6 +163,35 @@ void substitute(
     expr_t::var_t const& var,
     expr_t const& y,
     std::vector<func_arg_t>::iterator it,
+    std::vector<func_arg_t>::iterator const end)
+{
+    for (; it != end; ++it)
+    {
+        auto& arg = *it;
+        impl::substitute(var, y, arg.type);
+        if (arg.var == var)
+        {
+            // `arg.var` is now a new binding type-variable;
+            // any later arguments refer to `arg.var` not to the initial `var`;
+            // so substitution must stop, including for the return type
+            return;
+        }
+        // We need to check if `arg.var` appears in `y` and, if so, rename it.
+        // Technically it would suffice to check whether `arg.var` appears free in `y`,
+        // but we prefer to check if it appears anywhere (i.e. also as binding variable)
+        // because it renames possibly confusing types like `(typename t) -> (typename t) -> t` to
+        // `(typename t:1) -> (typename t) -> t`, making it obvious to see which `t` is binding.
+        // Also note that we are modifying the elements of the very vector we are iterating on,
+        // but we are only modifying the values, not the vector; so iteration is safe.
+        if (arg.var and ast::occurs_in(*arg.var, y, ast::occurrence_style::anywhere))
+            arg.var = ast::rename<properties_t>(*arg.var, std::next(it), end);
+    }
+}
+
+void substitute(
+    expr_t::var_t const& var,
+    expr_t const& y,
+    std::vector<func_arg_t>::iterator it,
     std::vector<func_arg_t>::iterator const end,
     expr_t& ret_type,
     body_t* body)
@@ -180,7 +213,7 @@ void substitute(
         // because it renames possibly confusing types like `(typename t) -> (typename t) -> t` to
         // `(typename t:1) -> (typename t) -> t`, making it obvious to see which `t` is binding.
         // Also note that we are modifying the elements of the very vector we are iterating on,
-        // but we are only modifying the values, no the vector; so iteration is safe.
+        // but we are only modifying the values, not the vector; so iteration is safe.
         if (arg.var and ast::occurs_in(*arg.var, y, ast::occurrence_style::anywhere))
             arg.var = ast::rename(*arg.var, std::next(it), end, ret_type, body);
     }

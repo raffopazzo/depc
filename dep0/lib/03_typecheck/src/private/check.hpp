@@ -197,6 +197,21 @@ expected<expr_t> check_pi_type(
     parser::expr_t const& ret_ty);
 
 /**
+ * @brief Checks whether the given Sigma-type is legal.
+ *
+ * @param loc
+ *      The location in the source file where the expression was found.
+ *      If type-checking fails, it will be copied in the error message.
+ *
+ * @return A legal Sigma-type or an error.
+ */
+expected<expr_t> check_sigma_type(
+    env_t const&,
+    ctx_t&,
+    source_loc_t const& loc,
+    parser::expr_t::sigma_t const&);
+
+/**
  * @brief If `expected_type` is nullptr, tries to type-assign the given arithmetic expression;
  * otherwise checks that it has the given expected type.
  *

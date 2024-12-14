@@ -47,6 +47,13 @@ typename expr_t<P>::var_t rename(
     expr_t<P>& ret_type,
     body_t<P>* body);
 
+/** @brief Overload to perform renaming inside a Sigma-Type. */
+template <Properties P>
+typename expr_t<P>::var_t rename(
+    typename expr_t<P>::var_t const& var,
+    typename std::vector<func_arg_t<P>>::iterator begin,
+    typename std::vector<func_arg_t<P>>::iterator end);
+
 } // namespace dep0::ast
 
 #include "dep0/ast/rename_impl.hpp"

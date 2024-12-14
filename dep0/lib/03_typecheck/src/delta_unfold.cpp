@@ -63,6 +63,7 @@ static bool delta_unfold(env_t const&, ctx_t const&, expr_t::global_t&);
 static bool delta_unfold(env_t const&, ctx_t const&, expr_t::app_t&);
 static bool delta_unfold(env_t const&, ctx_t const&, expr_t::abs_t&);
 static bool delta_unfold(env_t const&, ctx_t const&, expr_t::pi_t&);
+static bool delta_unfold(env_t const&, ctx_t const&, expr_t::sigma_t&);
 static bool delta_unfold(env_t const&, ctx_t const&, expr_t::array_t&) { return false; }
 static bool delta_unfold(env_t const&, ctx_t const&, expr_t::init_list_t&);
 static bool delta_unfold(env_t const&, ctx_t const&, expr_t::subscript_t&);
@@ -208,6 +209,18 @@ bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t::pi_t& pi)
     return delta_unfold(env, ctx2, pi.ret_type.get());
 }
 
+bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t::sigma_t& sigma)
+{
+    auto ctx2 = ctx.extend();
+    for (auto& arg: sigma.args)
+    {
+        if (delta_unfold(env, ctx2, arg.type))
+            return true;
+        auto const inserted = ctx2.try_emplace(arg.var, std::nullopt, ctx_t::var_decl_t{arg.qty, arg.type});
+        assert(inserted.has_value());
+    }
+    return false;
+}
 
 bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t::init_list_t& init_list)
 {

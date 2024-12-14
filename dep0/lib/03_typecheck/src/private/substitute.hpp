@@ -32,4 +32,11 @@ void substitute(
     expr_t& ret_type,
     body_t* body);
 
+/** @brief Overload to use for Sigma-Types. */
+void substitute(
+    expr_t::var_t const& var,
+    expr_t const& expr,
+    std::vector<func_arg_t>::iterator begin,
+    std::vector<func_arg_t>::iterator end);
+
 } // namespace dep0::typecheck

@@ -29,6 +29,17 @@ namespace is_list_initializable_result
     struct true_t{};
 
     /**
+     * @brief The type passed to `is_list_initializable()` is a tuple `(t1; ...; tN)`.
+     *
+     * The tuple can be initialized with `{value1, ..., valueN}` of appropriate types,
+     * which may depend on previous values.
+     */
+    struct sigma_t
+    {
+        std::vector<func_arg_t> const& args;
+    };
+
+    /**
      * @brief The type passed to `is_list_initializable()` is an `array_t(type, N)` for some constant `N`,
      * which can be initialized with `{value1, ..., valueN}`.
      */
@@ -44,6 +55,7 @@ using is_list_initializable_result_t =
         is_list_initializable_result::no_t,
         is_list_initializable_result::unit_t,
         is_list_initializable_result::true_t,
+        is_list_initializable_result::sigma_t,
         is_list_initializable_result::array_t>;
 
 /**

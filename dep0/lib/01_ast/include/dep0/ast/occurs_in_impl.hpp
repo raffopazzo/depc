@@ -138,6 +138,10 @@ bool occurs_in(typename expr_t<P>::var_t const& var, expr_t<P> const& x, occurre
         {
             return occurs_in<P>(var, x.args.begin(), x.args.end(), x.ret_type.get(), nullptr, style);
         },
+        [&] (expr_t<P>::sigma_t const& x)
+        {
+            return occurs_in<P>(var, x.args.begin(), x.args.end(), style);
+        },
         [] (expr_t<P>::array_t const&)
         {
             return false;

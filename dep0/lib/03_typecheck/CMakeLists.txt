@@ -18,6 +18,7 @@ add_library(dep0_typecheck_lib
   include/dep0/typecheck/is_impossible.hpp
   include/dep0/typecheck/is_mutable.hpp
   include/dep0/typecheck/list_initialization.hpp
+  include/dep0/typecheck/subscript_access.hpp
   # private headers
   src/private/beta_delta_equivalence.hpp
   src/private/beta_reduction.hpp
@@ -69,6 +70,7 @@ add_library(dep0_typecheck_lib
   src/proof_state.cpp
   src/returns_from_all_branches.cpp
   src/rewrite.cpp
+  src/subscript_access.cpp
   src/substitute.cpp
   src/unification.cpp
   src/usage.cpp

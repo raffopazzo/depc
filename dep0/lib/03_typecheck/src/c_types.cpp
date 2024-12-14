@@ -48,6 +48,7 @@ dep0::expected<std::true_type> is_c_type(parser::expr_t const& x)
         },
         [&] (parser::expr_t::abs_t const&) { return no(); },
         [&] (parser::expr_t::pi_t const& pi) { return is_c_func_type(pi, x.properties); },
+        [&] (parser::expr_t::sigma_t const&) { return no(); }, // TODO
         [&] (parser::expr_t::array_t const&) { return no(); },
         [&] (parser::expr_t::init_list_t const&) { return no(); },
         [&] (parser::expr_t::subscript_t const&) { return no(); },

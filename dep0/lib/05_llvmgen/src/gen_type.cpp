@@ -9,6 +9,7 @@
 #include "private/gen_alloca.hpp"
 #include "private/gen_array.hpp"
 
+#include "dep0/fmap.hpp"
 #include "dep0/match.hpp"
 
 #include <vector>
@@ -25,6 +26,11 @@ llvm::FunctionType* gen_func_type(global_ctx_t& global, llvm_func_proto_t const&
             [&] (needs_alloca_result::no_t)
             {
                 return gen_type(global, proto.ret_type());
+            },
+            [&] (needs_alloca_result::sigma_t const&)
+            {
+                arg_types.push_back(gen_type(global, proto.ret_type())->getPointerTo());
+                return llvm::Type::getVoidTy(global.llvm_ctx);
             },
             [&] (needs_alloca_result::array_t const& array)
             {
@@ -173,6 +179,12 @@ llvm::Type* gen_type(global_ctx_t& global, typecheck::expr_t const& x)
             auto proto = llvm_func_proto_t::from_pi(x);
             assert(proto and "can only generate an llvm type for 1st order function types");
             return gen_func_type(global, *proto)->getPointerTo();
+        },
+        [&] (typecheck::expr_t::sigma_t const& x) -> llvm::Type*
+        {
+            // TODO handle dependency?
+            auto const& element_types = fmap(x.args, [&] (auto const& arg) { return gen_type(global, arg.type); });
+            return llvm::StructType::get(global.llvm_ctx, element_types);
         },
         [] (typecheck::expr_t::array_t const&) -> llvm::Type*
         {

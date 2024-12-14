@@ -1,0 +1,14 @@
+/*
+ * Copyright Raffaele Rossi 2023 - 2024.
+ *
+ * Distributed under the Boost Software License, Version 1.0.
+ * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
+ */
+func f1() -> (0 i32_t x; 1 u32_t; u16_t z)
+{
+    return {0, 1, 2};
+}
+func f2((0 i32_t x; 1 u32_t; u16_t z) x) -> u32_t
+{
+    return x[1];
+}

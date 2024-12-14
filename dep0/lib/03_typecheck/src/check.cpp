@@ -13,6 +13,7 @@
 #include "private/derivation_rules.hpp"
 #include "private/proof_search.hpp"
 #include "private/returns_from_all_branches.hpp"
+#include "private/substitute.hpp"
 #include "private/type_assign.hpp"
 
 #include "dep0/typecheck/beta_delta_reduction.hpp"
@@ -588,6 +589,37 @@ check_expr(
                             }
                             return make_legal_expr(expected_type, expr_t::init_list_t{});
                         },
+                        [&] (is_list_initializable_result::sigma_t const& sigma) -> expected<expr_t>
+                        {
+                            if (sigma.args.size() != list.values.size())
+                            {
+                                std::ostringstream err;
+                                pretty_print(err << "initializer list for `", expected_type) << '`';
+                                err << " has " << list.values.size()
+                                    << " elements but was expecting " << sigma.args.size();
+                                return error_t(err.str(), loc);
+                            }
+                            std::vector<expr_t> values;
+                            auto& element_types = std::get<expr_t::sigma_t>(expected_type.value).args;
+                            for (auto const i: std::views::iota(0ul, sigma.args.size()))
+                            {
+                                auto v = check_expr(
+                                    env, ctx,
+                                    list.values[i],
+                                    element_types[i].type,
+                                    is_mutable, usage, usage_multiplier);
+                                if (not v)
+                                    return v;
+                                if (sigma.args[i].var)
+                                    substitute(
+                                        *sigma.args[i].var,
+                                        *v,
+                                        element_types.begin() + i + 1,
+                                        element_types.end());
+                                values.push_back(std::move(*v));
+                            }
+                            return make_legal_expr(expected_type, expr_t::init_list_t{std::move(values)});
+                        },
                         [&] (is_list_initializable_result::array_t const& array) -> expected<expr_t>
                         {
                             if (array.size.value != list.values.size())
@@ -680,6 +712,38 @@ expected<expr_t> check_pi_type(
     return make_legal_expr(
         ret_type->properties.sort.get(),
         expr_t::pi_t{is_mutable, std::move(*args), *ret_type});
+}
+
+expected<expr_t> check_sigma_type(
+    env_t const& env,
+    ctx_t& ctx,
+    source_loc_t const& loc,
+    parser::expr_t::sigma_t const& sigma)
+{
+    auto args = fmap_or_error(
+        sigma.args,
+        [&, next_arg_index=0] (parser::func_arg_t const& arg) mutable -> expected<func_arg_t>
+        {
+            auto const arg_index = next_arg_index++;
+            auto const arg_loc = arg.properties;
+            auto var = arg.var ? std::optional{expr_t::var_t{arg.var->name}} : std::nullopt;
+            auto type = check_type(env, ctx, arg.type);
+            if (not type)
+            {
+                std::ostringstream err;
+                if (var)
+                    pretty_print<properties_t>(err << "cannot typecheck tuple argument `", *var) << '`';
+                else
+                    err << "cannot typecheck tuple argument at index " << arg_index;
+                return error_t(err.str(), loc, {std::move(type.error())});
+            }
+            if (auto ok = ctx.try_emplace(var, arg_loc, ctx_t::var_decl_t{arg.qty, *type}); not ok)
+                return std::move(ok.error());
+            return make_legal_func_arg(arg.qty, std::move(*type), std::move(var));
+        });
+    if (not args)
+        return std::move(args.error());
+    return make_legal_expr(derivation_rules::make_typename(), expr_t::sigma_t{std::move(*args)});
 }
 
 expected<expr_t> check_or_assign(

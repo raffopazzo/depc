@@ -77,7 +77,7 @@ template <Properties P> std::size_t hash_code_impl(
     hash_code_state_t<P>&,
     typename std::vector<func_arg_t<P>>::const_iterator begin,
     typename std::vector<func_arg_t<P>>::const_iterator end,
-    expr_t<P> const& ret_type,
+    expr_t<P> const* ret_type, // nullptr for sigma-types
     body_t<P> const* body);
 
 template <Properties P>
@@ -134,7 +134,7 @@ std::size_t hash_code_impl(
     hash_code_state_t<P>& state,
     typename std::vector<func_arg_t<P>>::const_iterator const begin,
     typename std::vector<func_arg_t<P>>::const_iterator const end,
-    expr_t<P> const& ret_type,
+    expr_t<P> const* ret_type,
     body_t<P> const* body)
 {
     std::size_t result = 0ul;
@@ -145,7 +145,8 @@ std::size_t hash_code_impl(
         boost::hash_combine(result, boost::hash_value(arg.qty));
         boost::hash_combine(result, hash_code_impl(state, arg.type));
     }
-    boost::hash_combine(result, hash_code_impl(state, ret_type));
+    if (ret_type)
+        boost::hash_combine(result, hash_code_impl(state, *ret_type));
     if (body)
         boost::hash_combine(result, hash_code_impl(state, *body));
     return result;
@@ -225,13 +226,17 @@ std::size_t hash_code_impl(hash_code_state_t<P>& state, expr_t<P> const& x)
             {
                 return combine(
                     boost::hash_value(x.is_mutable),
-                    hash_code_impl<P>(state, x.args.begin(), x.args.end(), x.ret_type.get(), &x.body));
+                    hash_code_impl<P>(state, x.args.begin(), x.args.end(), &x.ret_type.get(), &x.body));
             },
             [&] (expr_t<P>::pi_t const& x)
             {
                 return combine(
                     boost::hash_value(x.is_mutable),
-                    hash_code_impl<P>(state, x.args.begin(), x.args.end(), x.ret_type.get(), nullptr));
+                    hash_code_impl<P>(state, x.args.begin(), x.args.end(), &x.ret_type.get(), nullptr));
+            },
+            [&] (expr_t<P>::sigma_t const& x)
+            {
+                return hash_code_impl<P>(state, x.args.begin(), x.args.end(), nullptr, nullptr);
             },
             [] (expr_t<P>::array_t const&)
             {

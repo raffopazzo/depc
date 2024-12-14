@@ -38,6 +38,10 @@ is_list_initializable_result_t is_list_initializable(expr_t const& type)
                 },
                 [&] (auto const&) -> is_list_initializable_result_t { return no; });
         },
+        [&] (expr_t::sigma_t const& sigma) -> is_list_initializable_result_t
+        {
+            return is_list_initializable_result::sigma_t{sigma.args};
+        },
         [&] (auto const&) -> is_list_initializable_result_t { return no; });
 }
 

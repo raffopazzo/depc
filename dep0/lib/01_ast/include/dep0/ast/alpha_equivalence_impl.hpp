@@ -33,10 +33,16 @@ dep0::expected<std::true_type> is_alpha_equivalent_impl(expr_t<P>&, expr_t<P>&);
 template <Properties P>
 dep0::expected<std::true_type> is_alpha_equivalent_impl(typename expr_t<P>::app_t&, typename expr_t<P>::app_t&);
 
+/**
+ * @brief Check whether two Pi-Types, Sigma-Types or Lambda-Abstractions are alpha-equivalent.
+ *
+ * @param x_ret_type,y_ret_type     Pass `nullptr` to check two Sigma-Types.
+ * @param x_body,y_body             Pass `nullptr` to check two Pi-Types or two Sigma-Types.
+ */
 template <Properties P>
 dep0::expected<std::true_type> is_alpha_equivalent_impl(
-    is_mutable_t x_mutable, std::vector<func_arg_t<P>>& x_args, expr_t<P>& x_ret_type, body_t<P>* x_body,
-    is_mutable_t y_mutable, std::vector<func_arg_t<P>>& y_args, expr_t<P>& y_ret_type, body_t<P>* y_body);
+    is_mutable_t x_mutable, std::vector<func_arg_t<P>>& x_args, expr_t<P>*x_ret_type, body_t<P>* x_body,
+    is_mutable_t y_mutable, std::vector<func_arg_t<P>>& y_args, expr_t<P>*y_ret_type, body_t<P>* y_body);
 
 template <Properties P>
 dep0::expected<std::true_type> is_alpha_equivalent_impl(body_t<P>&, body_t<P>&);
@@ -197,15 +203,22 @@ struct alpha_equivalence_visitor
     result_t operator()(typename expr_t<P>::abs_t& x, typename expr_t<P>::abs_t& y) const
     {
         return is_alpha_equivalent_impl(
-            x.is_mutable, x.args, x.ret_type.get(), &x.body,
-            y.is_mutable, y.args, y.ret_type.get(), &y.body);
+            x.is_mutable, x.args, &x.ret_type.get(), &x.body,
+            y.is_mutable, y.args, &y.ret_type.get(), &y.body);
     }
 
     result_t operator()(typename expr_t<P>::pi_t& x, typename expr_t<P>::pi_t& y) const
     {
         return is_alpha_equivalent_impl<P>(
-            x.is_mutable, x.args, x.ret_type.get(), nullptr,
-            y.is_mutable, y.args, y.ret_type.get(), nullptr);
+            x.is_mutable, x.args, &x.ret_type.get(), nullptr,
+            y.is_mutable, y.args, &y.ret_type.get(), nullptr);
+    }
+
+    result_t operator()(typename expr_t<P>::sigma_t& x, typename expr_t<P>::sigma_t& y) const
+    {
+        return is_alpha_equivalent_impl<P>(
+            ast::is_mutable_t::no, x.args, nullptr, nullptr,
+            ast::is_mutable_t::no, y.args, nullptr, nullptr);
     }
 
     result_t operator()(typename expr_t<P>::array_t&, typename expr_t<P>::array_t&) const
@@ -308,8 +321,8 @@ dep0::expected<std::true_type> is_alpha_equivalent_impl(typename expr_t<P>::app_
 
 template <Properties P>
 dep0::expected<std::true_type> is_alpha_equivalent_impl(
-    is_mutable_t const x_mutable, std::vector<func_arg_t<P>>& x_args, expr_t<P>& x_ret_type, body_t<P>* x_body,
-    is_mutable_t const y_mutable, std::vector<func_arg_t<P>>& y_args, expr_t<P>& y_ret_type, body_t<P>* y_body)
+    is_mutable_t const x_mutable, std::vector<func_arg_t<P>>& x_args, expr_t<P>* x_ret_type, body_t<P>* x_body,
+    is_mutable_t const y_mutable, std::vector<func_arg_t<P>>& y_args, expr_t<P>* y_ret_type, body_t<P>* y_body)
 {
     if (x_mutable != y_mutable)
         return dep0::error_t(
@@ -360,8 +373,13 @@ dep0::expected<std::true_type> is_alpha_equivalent_impl(
             auto& y_var = *y_arg.var;
             if (x_var == y_var)
                 continue;
-            x_var = rename(x_var, x_args.begin() + i + 1, x_args.end(), x_ret_type, x_body);
-            y_var = rename(y_var, y_args.begin() + i + 1, y_args.end(), y_ret_type, y_body);
+            x_var = x_ret_type
+                ? rename(x_var, x_args.begin() + i + 1, x_args.end(), *x_ret_type, x_body)
+                : rename<P>(x_var, x_args.begin() + i + 1, x_args.end());
+            y_var = y_ret_type
+                ? rename(y_var, y_args.begin() + i + 1, y_args.end(), *y_ret_type, y_body)
+                : rename<P>(y_var, y_args.begin() + i + 1, y_args.end());
+
             if (x_var == y_var)
                 // by pure luck renaming assigned the same name to both
                 continue;
@@ -370,12 +388,18 @@ dep0::expected<std::true_type> is_alpha_equivalent_impl(
             // in the renamed y, and viceversa; we can therefore safely replace x_var in y (or viceversa);
             if (x_var.idx > y_var.idx)
             {
-                replace(y_var, x_var, y_args.begin() + i + 1, y_args.end(), y_ret_type, y_body);
+                if (y_ret_type)
+                    replace(y_var, x_var, y_args.begin() + i + 1, y_args.end(), *y_ret_type, y_body);
+                else
+                    replace<P>(y_var, x_var, y_args.begin() + i + 1, y_args.end());
                 y_var = x_var; // just in case; otherwise error messages might look odd and even confusing
             }
             else
             {
-                replace(x_var, y_var, x_args.begin() + i + 1, x_args.end(), x_ret_type, x_body);
+                if (x_ret_type)
+                    replace(x_var, y_var, x_args.begin() + i + 1, x_args.end(), *x_ret_type, x_body);
+                else
+                    replace<P>(x_var, y_var, x_args.begin() + i + 1, x_args.end());
                 x_var = y_var; // ditto
             }
         }
@@ -398,23 +422,34 @@ dep0::expected<std::true_type> is_alpha_equivalent_impl(
             };
             if (x_arg.var)
             {
-                if (occurs_in(*x_arg.var, x_args.begin() + i + 1, x_args.end(), x_ret_type, x_body, occurrence_style::free))
+                if (x_ret_type)
+                {
+                    if (occurs_in(*x_arg.var, x_args.begin() + i + 1, x_args.end(), *x_ret_type, x_body, occurrence_style::free))
+                        return occurs_somewhere();
+                }
+                else if (occurs_in<P>(*x_arg.var, x_args.begin() + i + 1, x_args.end(), occurrence_style::free))
                     return occurs_somewhere();
             }
             else
             {
-                if (occurs_in(*y_arg.var, y_args.begin() + i + 1, y_args.end(), y_ret_type, y_body, occurrence_style::free))
+                if (y_ret_type)
+                {
+                    if (occurs_in(*y_arg.var, y_args.begin() + i + 1, y_args.end(), *y_ret_type, y_body, occurrence_style::free))
+                        return occurs_somewhere();
+                }
+                else if (occurs_in<P>(*y_arg.var, y_args.begin() + i + 1, y_args.end(), occurrence_style::free))
                     return occurs_somewhere();
             }
         }
     }
-    if (auto eq = is_alpha_equivalent_impl(x_ret_type, y_ret_type); not eq)
-    {
-        std::ostringstream err;
-        pretty_print(err << "return type `", x_ret_type) << '`';
-        pretty_print(err << " is not alpha-equivalent to `", y_ret_type) << '`';
-        return dep0::error_t(err.str(), {std::move(eq.error())});
-    }
+    if (x_ret_type and y_ret_type)
+        if (auto eq = is_alpha_equivalent_impl(*x_ret_type, *y_ret_type); not eq)
+        {
+            std::ostringstream err;
+            pretty_print(err << "return type `", *x_ret_type) << '`';
+            pretty_print(err << " is not alpha-equivalent to `", *y_ret_type) << '`';
+            return dep0::error_t(err.str(), {std::move(eq.error())});
+        }
     return x_body and y_body ? is_alpha_equivalent_impl(*x_body, *y_body) : dep0::expected<std::true_type>{};
 }
 

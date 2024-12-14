@@ -56,6 +56,7 @@ static bool beta_normalize(expr_t::global_t&) { return false; }
 static bool beta_normalize(expr_t::app_t&);
 static bool beta_normalize(expr_t::abs_t&);
 static bool beta_normalize(expr_t::pi_t&);
+static bool beta_normalize(expr_t::sigma_t&);
 static bool beta_normalize(expr_t::array_t&) { return false; }
 static bool beta_normalize(expr_t::init_list_t&);
 static bool beta_normalize(expr_t::subscript_t&);
@@ -161,6 +162,14 @@ bool beta_normalize(expr_t::pi_t& pi)
     for (auto& arg: pi.args)
         changed |= beta_normalize(arg.type);
     changed |= beta_normalize(pi.ret_type.get());
+    return changed;
+}
+
+bool beta_normalize(expr_t::sigma_t& sigma)
+{
+    bool changed = false;
+    for (auto& arg: sigma.args)
+        changed |= beta_normalize(arg.type);
     return changed;
 }
 

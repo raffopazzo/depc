@@ -278,6 +278,17 @@ struct expr_t
     };
 
     /**
+     * @brief Represents an uncarried Sigma-type, in other words a "regular" tuple or a dependent tuple.
+     * 
+     * Similarly to a Pi-type, in a dependent tuple the type of a later argument can depend on the value
+     * of a previous one, for example the dependent pair `(u64_t n; array_t(i32_t, n))`.
+     */
+    struct sigma_t
+    {
+        std::vector<func_arg_t<P>> args;
+    };
+
+    /**
      * @brief Represents the keyword `%array_t`, which on its own has type `(typename, u64_t) -> typename`.
      *
      * A "traditional" array is therefore the application (i.e. an `app_t`) of `%array_t` to 2 arguments:
@@ -336,7 +347,7 @@ struct expr_t
             bool_t, cstr_t, unit_t, i8_t, i16_t, i32_t, i64_t, u8_t, u16_t, u32_t, u64_t,
             boolean_constant_t, numeric_constant_t, string_literal_t,
             boolean_expr_t, relation_expr_t, arith_expr_t,
-            var_t, global_t, app_t, abs_t, pi_t,
+            var_t, global_t, app_t, abs_t, pi_t, sigma_t,
             array_t, init_list_t, subscript_t, because_t
         >;
 

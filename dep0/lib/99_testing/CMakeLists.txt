@@ -17,9 +17,10 @@ add_library(dep0_testing_lib
     include/dep0/testing/ast_predicates/global.hpp
     include/dep0/testing/ast_predicates/init_list.hpp
     include/dep0/testing/ast_predicates/pi.hpp
+    include/dep0/testing/ast_predicates/relation_expr.hpp
+    include/dep0/testing/ast_predicates/sigma.hpp
     include/dep0/testing/ast_predicates/stmt.hpp
     include/dep0/testing/ast_predicates/subscript.hpp
-    include/dep0/testing/ast_predicates/relation_expr.hpp
     include/dep0/testing/ast_predicates/true_t.hpp
     include/dep0/testing/ast_predicates/type_def.hpp
     include/dep0/testing/ast_predicates/types.hpp
@@ -41,9 +42,10 @@ add_library(dep0_testing_lib
     src/ast_predicates/global.cpp
     src/ast_predicates/init_list.cpp
     src/ast_predicates/pi.cpp
+    src/ast_predicates/relation_expr.cpp
+    src/ast_predicates/sigma.cpp
     src/ast_predicates/stmt.cpp
     src/ast_predicates/subscript.cpp
-    src/ast_predicates/relation_expr.cpp
     src/ast_predicates/true_t.cpp
     src/ast_predicates/type_def.cpp
     src/ast_predicates/types.cpp

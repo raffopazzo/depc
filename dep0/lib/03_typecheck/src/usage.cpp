@@ -178,6 +178,7 @@ expected<std::true_type> usage_t::try_add(ctx_t const& ctx, expr_t const& expr, 
             return dep0::error_t("adding usages of abs_t not yet implemented");
         },
         [&] (expr_t::pi_t const&) { return ok(); }, // types never really use anything
+        [&] (expr_t::sigma_t const&) { return ok(); }, // types never really use anything
         [&] (expr_t::array_t const&) { return ok(); },
         [&] (expr_t::init_list_t const& x)
         {

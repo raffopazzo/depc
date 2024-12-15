@@ -188,6 +188,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         assert(ctx);
         if (ctx->primitiveType()) return visitPrimitiveType(ctx->primitiveType());
         if (ctx->funcType()) return visitFuncType(ctx->funcType());
+        if (ctx->tupleType()) return visitTupleType(ctx->tupleType());
         if (ctx->typeVar()) return visitTypeVar(ctx->typeVar());
         throw error_t("unexpected alternative when parsing TypeContext", get_loc(src, *ctx));
     }
@@ -223,6 +224,12 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         };
         auto const is_mutable = ctx->KW_MUTABLE() ? ast::is_mutable_t::yes : ast::is_mutable_t::no;
         return expr_t{loc, expr_t::pi_t{is_mutable, visitFuncArgs(ctx->funcArg()), ret_type()}};
+    }
+
+    virtual std::any visitTupleType(DepCParser::TupleTypeContext* ctx) override
+    {
+        assert(ctx);
+        return expr_t{get_loc(src, *ctx), expr_t::sigma_t{visitFuncArgs(ctx->funcArg())}};
     }
 
     virtual std::any visitTypeVar(DepCParser::TypeVarContext* ctx) override

@@ -30,6 +30,13 @@ void search_trivial_value(search_task_t& task)
         {
             task.set_result(make_legal_expr(target, expr_t::init_list_t{}));
         },
+        [&] (is_list_initializable_result::sigma_t const& sigma)
+        {
+            // TODO add a test
+            // TODO a tuple whose all elements are trivial values is itself trivial, eg `((); ())` is `{{}, {}}`
+            if (sigma.args.empty())
+                task.set_result(make_legal_expr(target, expr_t::init_list_t{}));
+        },
         [&] (is_list_initializable_result::array_t const& array)
         {
             if (array.size.value.is_zero())

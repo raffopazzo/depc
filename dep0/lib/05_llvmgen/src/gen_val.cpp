@@ -54,22 +54,6 @@ static bool is_signed_integral(global_ctx_t const& ctx, typecheck::expr_t const&
         [] (auto const&) { return false; });
 }
 
-/**
- * Move the given instruction to the entry block of the given function.
- * If the instruction is already in its entry block, this function does nothing.
- */
-static void move_to_entry_block(llvm::Instruction* const i, llvm::Function* const f)
-{
-    auto& bb = f->getEntryBlock();
-    if (&bb == i->getParent())
-        // already in entry block
-        return;
-    if (auto const t = f->getEntryBlock().getTerminator())
-        i->moveBefore(t);
-    else
-        i->moveAfter(&bb.back());
-}
-
 static bool needs_escaping(std::string_view const s)
 {
     return s.find('\\') != s.npos;
@@ -377,11 +361,7 @@ llvm::Value* gen_val(
                         assert(merged and "llvm could not merge inlined entry block");
                         builder.SetInsertPoint(next_block);
                     };
-                    auto const dest2 = dest ? dest : gen_alloca_if_needed(global, local, builder, abs->ret_type.get());
-                    // Note, if we generated an alloca here,
-                    // there is no need to move it to the entry block,
-                    // because mem2reg will not be able to optimize it.
-                    if (dest2)
+                    if (auto const dest2 = dest ? dest : gen_alloca_if_needed(global, local, builder, abs->ret_type.get()))
                     {
                         gen_inlined_body(dest2);
                         return dest2;
@@ -406,6 +386,11 @@ llvm::Value* gen_val(
         [&] (typecheck::expr_t::pi_t const&) -> llvm::Value*
         {
             assert(false and "cannot generate a value for a pi-type");
+            __builtin_unreachable();
+        },
+        [&] (typecheck::expr_t::sigma_t const&) -> llvm::Value*
+        {
+            assert(false and "cannot generate a value for a sigma-type");
             __builtin_unreachable();
         },
         [&] (typecheck::expr_t::array_t const&) -> llvm::Value*
@@ -436,15 +421,26 @@ llvm::Value* gen_val(
                 {
                     return llvm::ConstantAggregateZero::get(gen_type(global, expr_type));
                 },
+                [&] (typecheck::is_list_initializable_result::sigma_t const& sigma) -> llvm::Value*
+                {
+                    auto const type = gen_type(global, expr_type);
+                    auto const dest2 = dest ? dest : gen_alloca_if_needed(global, local, builder, expr_type);
+                    assert(dest2 and "initializer list for tuple needs alloca");
+                    auto const int32 = llvm::Type::getInt32Ty(global.llvm_ctx);
+                    auto const zero = llvm::ConstantInt::get(int32, 0);
+                    for (auto const i: std::views::iota(0ul, x.values.size()))
+                    {
+                        auto const index = llvm::ConstantInt::get(int32, i);
+                        auto const p = builder.CreateGEP(type, dest2, {zero, index});
+                        gen_val(global, local, builder, x.values[i], p);
+                    }
+                    return dest2;
+                },
                 [&] (typecheck::is_list_initializable_result::array_t const&) -> llvm::Value*
                 {
                     auto const properties = get_array_properties(expr_type);
-                    auto const dest2 = dest ? dest : [&]
-                    {
-                        auto const total_size = gen_array_total_size(global, local, builder, properties);
-                        auto const element_type = gen_type(global, properties.element_type);
-                        return builder.CreateAlloca(element_type, total_size);
-                    }();
+                    auto const dest2 = dest ? dest : gen_alloca_if_needed(global, local, builder, expr_type);
+                    assert(dest2 and "initializer list for array needs alloca");
                     auto const type = dest2->getType()->getPointerElementType();
                     auto const stride_size = gen_stride_size_if_needed(global, local, builder, properties);
                     auto const int32 = llvm::Type::getInt32Ty(global.llvm_ctx); // TODO we use u64_t to typecheck arrays

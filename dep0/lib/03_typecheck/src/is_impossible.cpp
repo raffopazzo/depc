@@ -43,6 +43,7 @@ static bool is_impossible(expr_t::global_t const&) { return false; }
 static bool is_impossible(expr_t::app_t const&);
 static bool is_impossible(expr_t::abs_t const&);
 static bool is_impossible(expr_t::pi_t const&);
+static bool is_impossible(expr_t::sigma_t const&);
 static bool is_impossible(expr_t::array_t const&) { return false; }
 static bool is_impossible(expr_t::init_list_t const&);
 static bool is_impossible(expr_t::subscript_t const&);
@@ -51,7 +52,7 @@ static bool is_impossible(expr_t::because_t const&);
 static bool is_impossible(
     std::vector<func_arg_t>::const_iterator begin,
     std::vector<func_arg_t>::const_iterator end,
-    expr_t const& ret_type,
+    expr_t const* ret_type, // nullptr for sigma-types
     body_t const*);
 
 bool is_impossible(stmt_t const& s)
@@ -132,12 +133,17 @@ bool is_impossible(expr_t::abs_t const& x)
     // its argument types or return type are impossible to construct.
     // It is still possible to construct a lambda whose body is impossible;
     // it is impossible to invoke it, but it can still be constructed.
-    return is_impossible(x.args.begin(), x.args.end(), x.ret_type.get(), nullptr);
+    return is_impossible(x.args.begin(), x.args.end(), &x.ret_type.get(), nullptr);
 }
 
 bool is_impossible(expr_t::pi_t const& x)
 {
-    return is_impossible(x.args.begin(), x.args.end(), x.ret_type.get(), nullptr);
+    return is_impossible(x.args.begin(), x.args.end(), &x.ret_type.get(), nullptr);
+}
+
+bool is_impossible(expr_t::sigma_t const& x)
+{
+    return is_impossible(x.args.begin(), x.args.end(), nullptr, nullptr);
 }
 
 bool is_impossible(expr_t::init_list_t const& x)
@@ -158,11 +164,11 @@ bool is_impossible(expr_t::because_t const& x)
 bool is_impossible(
     std::vector<func_arg_t>::const_iterator begin,
     std::vector<func_arg_t>::const_iterator end,
-    expr_t const& ret_type,
+    expr_t const* ret_type,
     body_t const* body)
 {
     return std::any_of(begin, end, [] (func_arg_t const& x) { return is_impossible(x.type); })
-        or is_impossible(ret_type)
+        or ret_type and is_impossible(*ret_type)
         or body and is_impossible(*body);
 }
 

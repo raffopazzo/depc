@@ -39,6 +39,12 @@ struct ParserTestsFixture
     }
 
     template <typename... Args>
+    static constexpr auto sigma_of(Args&&... args)
+    {
+        return dep0::testing::sigma_of<dep0::parser::properties_t>(std::forward<Args>(args)...);
+    }
+
+    template <typename... Args>
     static constexpr auto array_of(Args&&... args)
     {
         return dep0::testing::array_of<dep0::parser::properties_t>(std::forward<Args>(args)...);

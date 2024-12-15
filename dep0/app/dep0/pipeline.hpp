@@ -89,6 +89,7 @@ struct pipeline_t<parser_stage_t, typecheck_stage_t, transform_stage_t>
 
 struct llvmgen_stage_t
 {
+    std::reference_wrapper<llvm::TargetMachine> machine;
     std::reference_wrapper<llvm::LLVMContext> llvm_context;
     bool unverified = false;
 };

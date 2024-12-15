@@ -17,6 +17,7 @@
 
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
+#include <llvm/Target/TargetMachine.h>
 
 #include <memory>
 #include <string_view>
@@ -35,7 +36,7 @@ namespace dep0::llvmgen {
  *      can be invalidated if the llvm module gets moved around.
  */
 expected<unique_ref<llvm::Module>>
-gen(llvm::LLVMContext& ctx, std::string_view module_name, typecheck::module_t const&) noexcept;
+gen(llvm::LLVMContext& ctx, std::string_view module_name, typecheck::module_t const&, llvm::TargetMachine&) noexcept;
 
 /**
  * @brief Like `gen()` but the generated LLVM module is unverified so it may be invalid.
@@ -43,6 +44,6 @@ gen(llvm::LLVMContext& ctx, std::string_view module_name, typecheck::module_t co
  * This helps debugging `gen()` by allowing the broken module to be saved to a file for manual inspection.
  */
 expected<unique_ref<llvm::Module>>
-gen_unverified(llvm::LLVMContext&, std::string_view, typecheck::module_t const&) noexcept;
+gen_unverified(llvm::LLVMContext&, std::string_view, typecheck::module_t const&, llvm::TargetMachine&) noexcept;
 
 } // namespace dep0::llvmgen

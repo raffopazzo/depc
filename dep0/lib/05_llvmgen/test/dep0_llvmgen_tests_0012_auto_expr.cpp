@@ -151,6 +151,7 @@ BOOST_AUTO_TEST_CASE(pass_003)
                 f->getEntryBlock().getTerminator(),
                 direct_call_of(
                     exactly(pass_result.value()->getFunction("f")),
+                    // for some reason align of empty struct is 8... but 1 would be more intuitive, no?
                     call_arg(alloca_of(struct_of(), constant(0), align_of(8))))));
     }
 }

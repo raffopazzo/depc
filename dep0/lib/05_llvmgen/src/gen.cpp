@@ -18,6 +18,18 @@
 
 namespace dep0::llvmgen {
 
+static unique_ref<llvm::Module>
+build_empty_module(
+    llvm::LLVMContext& llvm_ctx,
+    std::string_view const name,
+    llvm::TargetMachine& machine)
+{
+    auto m = make_ref<llvm::Module>(name, llvm_ctx);
+    m->setDataLayout(machine.createDataLayout());
+    m->setTargetTriple(machine.getTargetTriple().str());
+    return m;
+}
+
 static void gen_impl(llvm::Module& llvm_module, typecheck::module_t const& m) noexcept
 {
     global_ctx_t global(llvm_module);
@@ -55,9 +67,10 @@ static void gen_impl(llvm::Module& llvm_module, typecheck::module_t const& m) no
 }
 
 expected<unique_ref<llvm::Module>>
-gen(llvm::LLVMContext& llvm_ctx, std::string_view const name, typecheck::module_t const& m) noexcept
+gen(llvm::LLVMContext& llvm_ctx, std::string_view const name, typecheck::module_t const& m,
+    llvm::TargetMachine& machine) noexcept
 {
-    auto result = make_ref<llvm::Module>(name, llvm_ctx);
+    auto result = build_empty_module(llvm_ctx, name, machine);
     gen_impl(*result, m);
     std::string err;
     llvm::raw_string_ostream ostream(err);
@@ -68,9 +81,13 @@ gen(llvm::LLVMContext& llvm_ctx, std::string_view const name, typecheck::module_
 }
 
 expected<unique_ref<llvm::Module>>
-gen_unverified(llvm::LLVMContext& llvm_ctx, std::string_view const name, typecheck::module_t const& m) noexcept
+gen_unverified(
+    llvm::LLVMContext& llvm_ctx,
+    std::string_view const name,
+    typecheck::module_t const& m,
+    llvm::TargetMachine& machine) noexcept
 {
-    auto result = make_ref<llvm::Module>(name, llvm_ctx);
+    auto result = build_empty_module(llvm_ctx, name, machine);
     gen_impl(*result, m);
     return std::move(result);
 }

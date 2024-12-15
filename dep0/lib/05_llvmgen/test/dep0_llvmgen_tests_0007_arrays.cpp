@@ -1577,6 +1577,28 @@ BOOST_AUTO_TEST_CASE(pass_021)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_022)
+{
+    apply_beta_delta_normalization = false;
+    BOOST_TEST_REQUIRE(pass("0007_arrays/pass_022.depc"));
+    {
+        auto const f = pass_result.value()->getFunction("f");
+        BOOST_TEST_REQUIRE(is_function_of(
+                f,
+                std::tuple{
+                    arg_of(pointer_to(is_i64), "xs", nonnull),
+                    arg_of(struct_of())
+                },
+                is_i64, zext));
+        auto const xs = f->getArg(0);
+        auto const xs_0 = load_of(is_i64, gep_of(is_i64, exactly(xs), constant(0)), align_of(8));
+        BOOST_TEST(
+            is_return_of(
+                f->getEntryBlock().getTerminator(),
+                load_of(is_i64, gep_of(is_i64, exactly(xs), xs_0), align_of(8))));
+    }
+}
+
 // BOOST_AUTO_TEST_CASE(typecheck_error_000)
 // BOOST_AUTO_TEST_CASE(typecheck_error_001)
 // BOOST_AUTO_TEST_CASE(typecheck_error_002)

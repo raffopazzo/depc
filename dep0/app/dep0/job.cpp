@@ -81,6 +81,7 @@ int run(job_t const& job)
                         .skip = job.skip_transformations
                     },
                     llvmgen_stage_t{
+                        .machine = job.machine,
                         .llvm_context = std::ref(llvm_context),
                         .unverified = job.unverified
                     });
@@ -116,6 +117,7 @@ int run(job_t const& job)
                         .skip = job.skip_transformations
                     },
                     llvmgen_stage_t{
+                        .machine = job.machine,
                         .llvm_context = std::ref(llvm_context),
                         .unverified = false
                     },
@@ -150,6 +152,7 @@ int run(job_t const& job)
                         .skip = job.skip_transformations
                     },
                     llvmgen_stage_t{
+                        .machine = job.machine,
                         .llvm_context = std::ref(llvm_context),
                         .unverified = false
                     },

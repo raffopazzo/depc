@@ -195,7 +195,8 @@ int main(int argc, char** argv)
             .out_file_name = out_file_name.empty() ? std::nullopt : std::optional<fs::path>{out_file_name.getValue()},
             .no_prelude =  no_prelude,
             .skip_transformations = skip_transformations,
-            .unverified = emit_llvm_unverified
+            .unverified = emit_llvm_unverified,
+            .machine = std::ref(*machine),
         }});
     if (compile_and_assemble or compile_only or file_type == llvm::CGFT_AssemblyFile)
         return run(job_t{job_t::compile_only_t{

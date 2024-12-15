@@ -80,6 +80,7 @@ target_link_libraries(dep0_llvmgen_tests_fixture
     DepC::Dep0::Transform
     DepC::Dep0::Testing
     Boost::Boost
+    ${LLVM_COMPONENTS}
     )
 
 macro(add_dep0_llvmgen_test name)

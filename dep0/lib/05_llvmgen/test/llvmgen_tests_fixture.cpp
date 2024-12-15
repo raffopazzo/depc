@@ -13,6 +13,12 @@
 
 #include "dep0/llvmgen/gen.hpp"
 
+#include "dep0/testing/failure.hpp"
+
+#include <llvm/Support/TargetRegistry.h>
+#include <llvm/Support/TargetSelect.h>
+#include <llvm/Target/TargetOptions.h>
+
 /**
  * Helper function used to ensure that the base environment is constructed only once for an entire test suite.
  * This is helpful because constructing a fresh base environment for each test would make running the test suite
@@ -26,8 +32,24 @@ static dep0::typecheck::env_t const& get_base_env()
     return env;
 }
 
+LLVMGenTestsFixture::LLVMGenTestsFixture()
+{
+    llvm::InitializeAllTargets();
+    llvm::InitializeAllTargetMCs();
+    llvm::InitializeAllAsmPrinters();
+    llvm::InitializeAllAsmParsers();
+}
+
 boost::test_tools::predicate_result LLVMGenTestsFixture::pass(std::filesystem::path const file)
 {
+    auto const target_triple = std::string("x86_64-unknown-linux-gnu");
+    std::string llvm_err;
+    auto const target = llvm::TargetRegistry::lookupTarget(target_triple, llvm_err);
+    if (not target)
+        return dep0::testing::failure("failed to lookup LLVM target from triple `", target_triple, "`: ", llvm_err);
+    auto const machine = target->createTargetMachine(target_triple, "", "", {}, {});
+    if (not machine)
+        return dep0::testing::failure("failed to create target machine");
     auto parse_result = dep0::parser::parse(testfiles / file);
     if (parse_result.has_error())
     {
@@ -53,7 +75,7 @@ boost::test_tools::predicate_result LLVMGenTestsFixture::pass(std::filesystem::p
             return res;
         }
     }
-    auto gen_result = dep0::llvmgen::gen(llvm_ctx, "test.depc", *check_result);
+    auto gen_result = dep0::llvmgen::gen(llvm_ctx, "test.depc", *check_result, *machine);
     if (gen_result.has_error())
     {
         auto res = boost::test_tools::predicate_result(false);

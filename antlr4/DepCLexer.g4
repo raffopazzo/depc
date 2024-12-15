@@ -52,7 +52,7 @@ EQ2: '==';
 GT: '>';
 GTE: '>=';
 LBRACK: '[';
-LBRACK2: '[[';
+LBRACK2: '[[' -> pushMode(Attribute);
 LCURLY: '{';
 LPAREN: '(';
 LT: '<';
@@ -61,7 +61,6 @@ MINUS: '-';
 NEQ: '!=';
 PLUS: '+';
 RBRACK: ']';
-RBRACK2: ']]';
 RCURLY: '}';
 RPAREN: ')';
 SEMI: ';';
@@ -77,6 +76,11 @@ STR: '"' (' ' | '!' | '\\' '"' | [\u0023-\u007E])* '"';
 BLOCK_COMMENT: '/*' -> channel(HIDDEN), pushMode(BlockComment);
 LINE_COMMENT: '//' .*? '\r'? '\n' -> channel(HIDDEN);
 WS: [ \n\t\r\f]+ -> channel(HIDDEN);
+
+// Attributes
+mode Attribute;
+RBRACK2: ']]' -> popMode;
+ATTR: ALPHA ALPHANUM*;
 
 mode BlockComment;
 CLOSE_COMMENT: '*/' -> channel(HIDDEN), popMode;

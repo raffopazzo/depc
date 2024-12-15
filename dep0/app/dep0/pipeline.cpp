@@ -91,8 +91,8 @@ dep0::expected<dep0::unique_ref<llvm::Module>> llvmgen_pipeline_t::run(std::file
         return module.error();
     TRACE_EVENT(TRACE_LLVMGEN, "llvmgen_pipeline_t::run()", "file", f.native());
     auto result = options.unverified
-        ? dep0::llvmgen::gen_unverified(options.llvm_context.get(), f.filename().native(), *module)
-        : dep0::llvmgen::gen(options.llvm_context.get(), f.filename().native(), *module);
+        ? dep0::llvmgen::gen_unverified(options.llvm_context.get(), f.filename().native(), *module, options.machine)
+        : dep0::llvmgen::gen(options.llvm_context.get(), f.filename().native(), *module, options.machine);
     if (not result)
         return dep0::error_t("llvmgen failed", {std::move(result.error())});
     return result;

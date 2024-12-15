@@ -63,6 +63,7 @@ struct job_t
         bool no_prelude;
         bool skip_transformations;
         bool unverified;
+        std::reference_wrapper<llvm::TargetMachine> machine;
     };
 
     /**

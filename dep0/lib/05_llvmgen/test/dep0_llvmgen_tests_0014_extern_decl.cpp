@@ -36,6 +36,7 @@ BOOST_AUTO_TEST_CASE(pass_000)
             is_i32, sext));
     BOOST_TEST_REQUIRE(is_function_of(g, std::tuple{}, is_i32, sext));
     BOOST_TEST_REQUIRE(g->size() == 1ul);
+    auto const zero = constant(0);
     BOOST_TEST(
         is_return_of(
             g->getEntryBlock().getTerminator(),
@@ -44,7 +45,7 @@ BOOST_AUTO_TEST_CASE(pass_000)
                 direct_call_of(
                     exactly(f1),
                     call_arg(constant(1), sext),
-                    call_arg(const_expr_of(gep_of(array_of(2, is_i8), global_of(cstr("2")), constant(0))))))));
+                    call_arg(const_expr_of(gep_of(array_of(2, is_i8), global_of(cstr("2")), zero, zero)))))));
 }
 
 BOOST_AUTO_TEST_CASE(pass_001)
@@ -117,7 +118,8 @@ BOOST_AUTO_TEST_CASE(pass_002)
     apply_beta_delta_normalization = true;
     BOOST_TEST_REQUIRE(pass("0014_extern_decl/pass_002.depc"));
     auto const puts = pass_result.value()->getFunction("puts");
-    auto const debug_msg = const_expr_of(gep_of(array_of(10, is_i8), global_of(cstr("debug msg")), constant(0)));
+    auto const zero = constant(0);
+    auto const debug_msg = const_expr_of(gep_of(array_of(10, is_i8), global_of(cstr("debug msg")), zero, zero));
     {
         auto const f = pass_result.value()->getFunction("debug");
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, sext));

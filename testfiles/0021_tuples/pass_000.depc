@@ -4,19 +4,19 @@
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
  */
-func f1(i32_t x, u32_t y) -> (i32_t; u32_t)
+func f1(i32_t x, u32_t y) -> (i32_t, u32_t)
 {
     return {x, y};
 }
-func f2() -> (i32_t;)
+func f2() -> (i32_t,)
 {
     return {0};
 }
-func f3() -> (i32_t x; u32_t y)
+func f3() -> (i32_t x, u32_t y)
 {
     return f1(0, 1);
 }
-func f4() -> array_t((i32_t; u32_t), 3)
+func f4() -> array_t((i32_t, u32_t), 3)
 {
     return {{0, 1}, f1(2, 3), f3()};
 }

@@ -4,7 +4,7 @@
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
  */
-func f((i32_t; i32_t) x) -> i32_t
+func f((i32_t, i32_t) x) -> i32_t
 {
     return x[2]; // typecheck error: x[2] not a valid tuple index
 }

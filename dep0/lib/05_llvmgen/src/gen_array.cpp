@@ -14,8 +14,7 @@ namespace dep0::llvmgen {
 
 bool is_array(typecheck::expr_t const& type)
 {
-    auto const app = std::get_if<typecheck::expr_t::app_t>(&type.value);
-    return app and std::holds_alternative<typecheck::expr_t::array_t>(app->func.get().value);
+    return ast::get_if_app_of_array(type) != nullptr;
 }
 
 std::optional<array_properties_view_t> get_properties_if_array(typecheck::expr_t const& type)

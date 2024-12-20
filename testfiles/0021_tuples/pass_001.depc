@@ -18,5 +18,9 @@ func f3((i32_t x, u32_t) x) -> i32_t
 }
 func f4(array_t((i32_t, u32_t), 3) xs) -> u32_t
 {
-    return f1(xs[0]);
+    return f1(xs[2]);
+}
+func f5((i32_t, (i16_t, i8_t)) x) -> i8_t
+{
+    return x[1][1];
 }

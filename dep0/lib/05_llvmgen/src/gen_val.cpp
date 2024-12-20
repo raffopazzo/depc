@@ -17,6 +17,7 @@
 #include "private/proto.hpp"
 
 #include "dep0/typecheck/list_initialization.hpp"
+#include "dep0/typecheck/subscript_access.hpp"
 
 #include "dep0/match.hpp"
 
@@ -361,14 +362,19 @@ llvm::Value* gen_val(
                         assert(merged and "llvm could not merge inlined entry block");
                         builder.SetInsertPoint(next_block);
                     };
-                    if (auto const dest2 = dest ? dest : gen_alloca_if_needed(global, local, builder, abs->ret_type.get()))
+                    auto const& ret_type = abs->ret_type.get();
+                    auto const dest2 =
+                        dest ? dest
+                        : is_pass_by_ptr(global, ret_type) ? gen_alloca(global, local, builder, ret_type)
+                        : nullptr;
+                    if (dest2)
                     {
                         gen_inlined_body(dest2);
                         return dest2;
                     }
                     else
                     {
-                        auto const inlined_type = gen_type(global, abs->ret_type.get());
+                        auto const inlined_type = gen_type(global, ret_type);
                         auto const inlined_result = builder.CreateAlloca(inlined_type, builder.getInt32(1));
                         move_to_entry_block(inlined_result, current_func);
                         gen_inlined_body(inlined_result);
@@ -424,8 +430,7 @@ llvm::Value* gen_val(
                 [&] (typecheck::is_list_initializable_result::sigma_t const& sigma) -> llvm::Value*
                 {
                     auto const type = gen_type(global, expr_type);
-                    auto const dest2 = dest ? dest : gen_alloca_if_needed(global, local, builder, expr_type);
-                    assert(dest2 and "initializer list for tuple needs alloca");
+                    auto const dest2 = dest ? dest : gen_alloca(global, local, builder, expr_type);
                     auto const int32 = llvm::Type::getInt32Ty(global.llvm_ctx);
                     auto const zero = llvm::ConstantInt::get(int32, 0);
                     for (auto const i: std::views::iota(0ul, x.values.size()))
@@ -439,8 +444,7 @@ llvm::Value* gen_val(
                 [&] (typecheck::is_list_initializable_result::array_t const&) -> llvm::Value*
                 {
                     auto const properties = get_array_properties(expr_type);
-                    auto const dest2 = dest ? dest : gen_alloca_if_needed(global, local, builder, expr_type);
-                    assert(dest2 and "initializer list for array needs alloca");
+                    auto const dest2 = dest ? dest : gen_alloca(global, local, builder, expr_type);
                     auto const type = dest2->getType()->getPointerElementType();
                     auto const stride_size = gen_stride_size_if_needed(global, local, builder, properties);
                     auto const int32 = llvm::Type::getInt32Ty(global.llvm_ctx); // TODO we use u64_t to typecheck arrays
@@ -456,18 +460,41 @@ llvm::Value* gen_val(
         },
         [&] (typecheck::expr_t::subscript_t const& subscript) -> llvm::Value*
         {
-            auto const& array = subscript.array.get();
-            auto const properties = get_array_properties(std::get<typecheck::expr_t>(array.properties.sort.get()));
-            auto const stride_size = gen_stride_size_if_needed(global, local, builder, properties);
-            auto const type = gen_type(global, properties.element_type);
-            auto const base = gen_val(global, local, builder, subscript.array.get(), nullptr);
-            auto const index = gen_val(global, local, builder, subscript.index.get(), nullptr);
-            auto const offset = stride_size ? builder.CreateMul(stride_size, index) : index;
-            auto const ptr = builder.CreateGEP(type, base, offset);
-            return storeOrReturn(
-                is_array(std::get<typecheck::expr_t>(expr.properties.sort.get()))
-                    ? ptr
-                    : builder.CreateLoad(type, ptr));
+            auto const& object_type = std::get<typecheck::expr_t>(subscript.array.get().properties.sort.get());
+            return match(
+                typecheck::has_subscript_access(object_type),
+                [] (typecheck::has_subscript_access_result::no_t) -> llvm::Value*
+                {
+                    assert(false and "unexpected subscript expression; typechecking must be broken");
+                    __builtin_unreachable();
+                },
+                [&] (typecheck::has_subscript_access_result::sigma_t const&) -> llvm::Value*
+                {
+                    auto const type = gen_type(global, object_type);
+                    auto const base = gen_val(global, local, builder, subscript.array.get(), nullptr);
+                    auto const index = std::get_if<typecheck::expr_t::numeric_constant_t>(&subscript.index.get().value);
+                    assert(index and "subscript operand on tuples must be a numeric literal");
+                    auto const int32 = llvm::Type::getInt32Ty(global.llvm_ctx);
+                    auto const zero = llvm::ConstantInt::get(int32, 0);
+                    auto const index_val = llvm::ConstantInt::get(int32, index->value.convert_to<std::int32_t>());
+                    auto const ptr = builder.CreateGEP(type, base, {zero, index_val});
+                    auto const element_type = ptr->getType()->getPointerElementType();
+                    // TODO needs a test for the case of a tuple containing an array;
+                    // also, why don't we need a storeOrReturn() here? needs a test or an explanation
+                    return is_pass_by_ptr(global, expr_type) ? ptr : builder.CreateLoad(element_type, ptr);
+                },
+                [&] (typecheck::has_subscript_access_result::array_t const&) -> llvm::Value*
+                {
+                    auto const& array = subscript.array.get();
+                    auto const properties = get_array_properties(std::get<typecheck::expr_t>(array.properties.sort.get()));
+                    auto const stride_size = gen_stride_size_if_needed(global, local, builder, properties);
+                    auto const type = gen_type(global, properties.element_type);
+                    auto const base = gen_val(global, local, builder, subscript.array.get(), nullptr);
+                    auto const index = gen_val(global, local, builder, subscript.index.get(), nullptr);
+                    auto const offset = stride_size ? builder.CreateMul(stride_size, index) : index;
+                    auto const ptr = builder.CreateGEP(type, base, offset);
+                    return storeOrReturn(is_pass_by_ptr(global, expr_type) ? ptr : builder.CreateLoad(type, ptr));
+                });
         },
         [&] (typecheck::expr_t::because_t const& x) -> llvm::Value*
         {
@@ -538,7 +565,7 @@ llvm::Value* gen_func_call(
     auto const llvm_func_type = gen_func_type(global, proto);
     auto const llvm_func = gen_val(global, local, builder, app.func.get(), nullptr);
     std::vector<llvm::Value*> llvm_args; // modifiable before generating the call
-    auto const has_ret_arg = is_alloca_needed(proto.ret_type());
+    auto const has_ret_arg = is_pass_by_ptr(global, proto.ret_type());
     auto const gen_call = [&, arg_offset = has_ret_arg ? 1ul : 0ul]
     {
         llvm_args.reserve(llvm_args.size() + proto.runtime_args().size());
@@ -557,8 +584,7 @@ llvm::Value* gen_func_call(
     };
     if (has_ret_arg)
     {
-        auto const dest2 = dest ? dest : gen_alloca_if_needed(global, local, builder, proto.ret_type());
-        assert(dest2 and "function call needs an alloca for the return value but does not have one");
+        auto const dest2 = dest ? dest : gen_alloca(global, local, builder, proto.ret_type());
         llvm_args.push_back(dest2);
         gen_call();
         return dest2;

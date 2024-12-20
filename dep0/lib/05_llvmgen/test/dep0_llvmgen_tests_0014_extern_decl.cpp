@@ -66,7 +66,7 @@ BOOST_AUTO_TEST_CASE(pass_001)
         BOOST_TEST_REQUIRE(
             is_function_of(
                 f,
-                std::tuple{arg_of(fnptr_type(std::tuple{}, is_i32), "f")},
+                std::tuple{arg_of(fnptr_type(std::tuple{}, is_i32), "f", nonnull)},
                 is_i1, zext));
         BOOST_TEST(
             is_return_of(
@@ -81,7 +81,7 @@ BOOST_AUTO_TEST_CASE(pass_001)
         BOOST_TEST_REQUIRE(
             is_function_of(
                 f,
-                std::tuple{arg_of(fnptr_type(std::tuple{}, is_i32), "f")},
+                std::tuple{arg_of(fnptr_type(std::tuple{}, is_i32), "f", nonnull)},
                 is_i1, zext));
         BOOST_TEST(
             is_return_of(

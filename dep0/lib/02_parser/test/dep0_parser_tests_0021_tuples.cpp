@@ -16,7 +16,7 @@ BOOST_FIXTURE_TEST_SUITE(dep0_parser_tests_0021_tuples, ParserTestsFixture)
 BOOST_AUTO_TEST_CASE(pass_000)
 {
     BOOST_TEST_REQUIRE(pass("0021_tuples/pass_000.depc"));
-    BOOST_TEST_REQUIRE(pass_result->entries.size() == 4ul);
+    BOOST_TEST_REQUIRE(pass_result->entries.size() == 5ul);
     {
         auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[0]);
         BOOST_TEST_REQUIRE(f);
@@ -64,12 +64,27 @@ BOOST_AUTO_TEST_CASE(pass_000)
                     app_of(var("f1"), constant(2), constant(3)),
                     app_of(var("f3")))));
     }
+    {
+        auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[4]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "f5");
+        BOOST_TEST(f->value.args.size() == 0ul);
+        BOOST_TEST(
+            is_sigma_of(
+                f->value.ret_type.get(),
+                std::tuple{arg_of(is_i32), arg_of(sigma_of(std::tuple{arg_of(is_i16), arg_of(is_i8)}))}));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(
+            is_return_of(
+                f->value.body.stmts[0ul],
+                init_list_of(constant(7), init_list_of(constant(8), constant(9)))));
+    }
 }
 
 BOOST_AUTO_TEST_CASE(pass_001)
 {
     BOOST_TEST_REQUIRE(pass("0021_tuples/pass_001.depc"));
-    BOOST_TEST_REQUIRE(pass_result->entries.size() == 4ul);
+    BOOST_TEST_REQUIRE(pass_result->entries.size() == 5ul);
     {
         auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[0]);
         BOOST_TEST_REQUIRE(f);
@@ -112,7 +127,24 @@ BOOST_AUTO_TEST_CASE(pass_001)
                 "xs"));
         BOOST_TEST(is_u32(f->value.ret_type.get()));
         BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
-        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], app_of(var("f1"), subscript_of(var("xs"), constant(0)))));
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], app_of(var("f1"), subscript_of(var("xs"), constant(2)))));
+    }
+    {
+        auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[4]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "f5");
+        BOOST_TEST_REQUIRE(f->value.args.size() == 1ul);
+        BOOST_TEST(
+            is_arg(
+                f->value.args[0],
+                sigma_of(std::tuple{arg_of(is_i32), arg_of(sigma_of(std::tuple{arg_of(is_i16), arg_of(is_i8)}))}),
+                "x"));
+        BOOST_TEST(is_i8(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(
+            is_return_of(
+                f->value.body.stmts[0ul],
+                subscript_of(subscript_of(var("x"), constant(1)), constant(1))));
     }
 }
 

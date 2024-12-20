@@ -48,7 +48,7 @@ boost::test_tools::predicate_result is_i16(llvm::Type const* const p)
 {
     if (not p)
         return dep0::testing::failure("type is null");
-    return is_i8(*p);
+    return is_i16(*p);
 }
 
 boost::test_tools::predicate_result is_i32(llvm::Type const& x)

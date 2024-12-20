@@ -41,8 +41,8 @@ dep0::expected<std::true_type> is_alpha_equivalent_impl(typename expr_t<P>::app_
  */
 template <Properties P>
 dep0::expected<std::true_type> is_alpha_equivalent_impl(
-    is_mutable_t x_mutable, std::vector<func_arg_t<P>>& x_args, expr_t<P>*x_ret_type, body_t<P>* x_body,
-    is_mutable_t y_mutable, std::vector<func_arg_t<P>>& y_args, expr_t<P>*y_ret_type, body_t<P>* y_body);
+    is_mutable_t x_mutable, std::vector<func_arg_t<P>>& x_args, expr_t<P>* x_ret_type, body_t<P>* x_body,
+    is_mutable_t y_mutable, std::vector<func_arg_t<P>>& y_args, expr_t<P>* y_ret_type, body_t<P>* y_body);
 
 template <Properties P>
 dep0::expected<std::true_type> is_alpha_equivalent_impl(body_t<P>&, body_t<P>&);

@@ -23,6 +23,14 @@ BOOST_AUTO_TEST_CASE(pass_000)
 {
     BOOST_TEST_REQUIRE(pass("0021_tuples/pass_000.depc"));
     {
+        auto const f = pass_result.value()->getFunction("f0");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{ret_ptr_to(struct_of())}, is_void));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        auto const inst = get_instructions(f->getEntryBlock());
+        BOOST_TEST_REQUIRE(inst.size() == 1ul);
+        BOOST_TEST(is_return_of_void(inst[0]));
+    }
+    {
         auto const f = pass_result.value()->getFunction("f1");
         auto const tuple_type = struct_of(is_i32, is_i32);
         BOOST_TEST_REQUIRE(
@@ -146,6 +154,13 @@ BOOST_AUTO_TEST_CASE(pass_000)
 BOOST_AUTO_TEST_CASE(pass_001)
 {
     BOOST_TEST_REQUIRE(pass("0021_tuples/pass_001.depc"));
+    {
+        auto const f = pass_result.value()->getFunction("f0");
+        BOOST_TEST_REQUIRE(
+            is_function_of(f, std::tuple{arg_of(pointer_to(struct_of()), std::nullopt, nonnull)}, is_i32, sext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(0)));
+    }
     {
         auto const f = pass_result.value()->getFunction("f1");
         auto const tuple_type = struct_of(is_i32, is_i32);

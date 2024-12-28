@@ -6,6 +6,7 @@
  */
 #include "private/gen_alloca.hpp"
 
+#include "private/gen_array.hpp"
 #include "private/gen_type.hpp"
 #include "private/gen_val.hpp"
 
@@ -13,57 +14,43 @@
 
 namespace dep0::llvmgen {
 
-/**
- * Helper function to share implementation code between needs_alloca and is_alloca_needed.
- *
- * @param type
- *      The type expression originally passed to needs_alloca and is_alloca_needed.
- *
- * @param result
- *      Optional pointer to the result, used by needs_alloca.
- *
- * @return bool True if the input type expression requires allocation.
- */
-static bool needs_alloca_impl(typecheck::expr_t const& type, needs_alloca_result_t* const result)
-{
-    if (is_array(type))
-    {
-        if (result)
-            result->emplace<needs_alloca_result::array_t>(get_array_properties(type));
-        return true;
-    }
-    if (result)
-        result->emplace<needs_alloca_result::no_t>();
-    return false;
-}
-
-needs_alloca_result_t needs_alloca(typecheck::expr_t const& type)
-{
-    needs_alloca_result_t result;
-    needs_alloca_impl(type, &result);
-    return result;
-}
-
-bool is_alloca_needed(typecheck::expr_t const& type)
-{
-    return needs_alloca_impl(type, nullptr);
-}
-
-llvm::Instruction* gen_alloca_if_needed(
+llvm::AllocaInst* gen_alloca(
     global_ctx_t& global,
     local_ctx_t const& local,
     llvm::IRBuilder<>& builder,
     typecheck::expr_t const& type)
 {
-    return match(
-        needs_alloca(type),
-        [] (needs_alloca_result::no_t) -> llvm::Instruction* { return nullptr; },
-        [&] (needs_alloca_result::array_t const& array) -> llvm::Instruction*
+    auto const alloca = [&]
+    {
+        auto const array_properties = get_properties_if_array(type);
+        if (array_properties)
         {
-            auto const total_size = gen_array_total_size(global, local, builder, array.properties);
-            auto const type = gen_type(global, array.properties.element_type);
-            return builder.CreateAlloca(type, total_size);
-        });
+            auto const total_size = gen_array_total_size(global, local, builder, *array_properties);
+            auto const llvm_type = gen_type(global, array_properties->element_type);
+            return builder.CreateAlloca(llvm_type, total_size);
+        }
+        else
+            return builder.CreateAlloca(gen_type(global, type));
+    }();
+    move_to_entry_block(alloca, builder.GetInsertBlock()->getParent());
+    return alloca;
+}
+
+void move_to_entry_block(llvm::AllocaInst* const alloca, llvm::Function* const f)
+{
+    // scan the entry block and place the new `alloca` before the first non-`alloca`
+    for (llvm::Instruction& i: f->getEntryBlock())
+        if (auto const alloca2 = llvm::dyn_cast<llvm::AllocaInst>(&i))
+        {
+            if (alloca2 == alloca)
+                return; // coincidentally, the new `alloca` is already in the "alloca group", so leave it here
+        }
+        else
+        {
+            alloca->moveBefore(&i);
+            return;
+        }
+    assert(false and "entry block does not have a terminator");
 }
 
 } // namespace dep0::llvmgen

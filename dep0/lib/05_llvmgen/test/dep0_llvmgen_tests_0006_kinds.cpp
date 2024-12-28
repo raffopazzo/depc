@@ -13,6 +13,7 @@
 
 using namespace dep0::llvmgen::testing;
 
+static auto const nonnull = std::vector{llvm::Attribute::NonNull};
 static auto const sext = std::vector{llvm::Attribute::SExt};
 static auto const zext = std::vector{llvm::Attribute::ZExt};
 
@@ -204,7 +205,7 @@ BOOST_AUTO_TEST_CASE(pass_007)
     }
     {
         auto const f = pass_result.value()->getFunction("apply_0");
-        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(fnptr_type(std::tuple{is_i32}, is_i32), "f")}, is_i32, sext));
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(fnptr_type(std::tuple{is_i32}, is_i32), "f", nonnull)}, is_i32, sext));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
         BOOST_TEST(
             is_return_of(

@@ -36,7 +36,7 @@ void gen_func_args(
     llvm::Function* const llvm_f)
 {
     auto llvm_arg_it = llvm_f->arg_begin();
-    if (is_alloca_needed(proto.ret_type()))
+    if (is_pass_by_ptr(global, proto.ret_type()))
     {
         assert(llvm_f->arg_size() == proto.runtime_args().size() + 1ul and "function with sret must have 1 more argument");
         llvm_arg_it->addAttr(llvm::Attribute::StructRet);
@@ -50,7 +50,7 @@ void gen_func_args(
         auto& llvm_arg = *llvm_arg_it++;
         if (auto const attr = get_sign_ext_attribute(global, arg.type); attr != llvm::Attribute::None)
             llvm_arg.addAttr(attr);
-        if (is_alloca_needed(arg.type) or std::holds_alternative<typecheck::expr_t::cstr_t>(arg.type.value))
+        if (llvm_arg.getType()->isPointerTy()) // for pointer types, currently we never emit null pointer values
             // TODO should we also set noalias, byval, etc? maybe for the return argument too?
             llvm_arg.addAttr(llvm::Attribute::NonNull);
         if (arg.var)

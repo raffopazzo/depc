@@ -141,6 +141,9 @@ template <Properties P>
 std::ostream& pretty_print(std::ostream&, typename expr_t<P>::pi_t const&, std::size_t indent = 0ul);
 
 template <Properties P>
+std::ostream& pretty_print(std::ostream&, typename expr_t<P>::sigma_t const&, std::size_t indent = 0ul);
+
+template <Properties P>
 std::ostream& pretty_print(std::ostream&, typename expr_t<P>::array_t const&, std::size_t indent = 0ul);
 
 template <Properties P>

@@ -38,6 +38,7 @@ static bool is_mutable(expr_t::var_t const&) { return false; }
 static bool is_mutable(expr_t::global_t const&) { return false; }
 static bool is_mutable(expr_t::abs_t const&);
 static bool is_mutable(expr_t::pi_t const&);
+static bool is_mutable(expr_t::sigma_t const&) { return false; }
 static bool is_mutable(expr_t::array_t const&) { return false; }
 static bool is_mutable(expr_t::init_list_t const&);
 static bool is_mutable(expr_t::subscript_t const&);

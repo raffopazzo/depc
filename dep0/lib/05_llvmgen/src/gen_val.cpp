@@ -479,9 +479,7 @@ llvm::Value* gen_val(
                     auto const index_val = llvm::ConstantInt::get(int32, index->value.convert_to<std::int32_t>());
                     auto const ptr = builder.CreateGEP(type, base, {zero, index_val});
                     auto const element_type = ptr->getType()->getPointerElementType();
-                    // TODO needs a test for the case of a tuple containing an array;
-                    // also, why don't we need a storeOrReturn() here? needs a test or an explanation
-                    return is_pass_by_ptr(global, expr_type) ? ptr : builder.CreateLoad(element_type, ptr);
+                    return storeOrReturn(is_pass_by_ptr(global, expr_type) ? ptr : builder.CreateLoad(element_type, ptr));
                 },
                 [&] (typecheck::has_subscript_access_result::array_t const&) -> llvm::Value*
                 {
@@ -512,19 +510,32 @@ llvm::Value* maybe_gen_store(
 {
     if (not dest)
         return value;
-    if (auto const pty = get_properties_if_array(type))
-    {
-        assert(dest->getType()->isPointerTy() and "memcpy destination must be a pointer");
-        auto const& data_layout = global.llvm_module.getDataLayout();
-        auto const pointed_type = dest->getType()->getPointerElementType();
-        auto const align = data_layout.getPrefTypeAlign(pointed_type);
-        auto const bytes = data_layout.getTypeAllocSize(pointed_type);
-        auto const size = gen_array_total_size(global, local, builder, *pty);
-        auto const total_bytes = builder.CreateMul(size, builder.getInt64(bytes.getFixedSize()));
-        builder.CreateMemCpy(dest, align, value, align, total_bytes);
-    }
-    else
-        builder.CreateStore(value, dest);
+    match(
+        pass_by_ptr(global, type),
+        [&] (pass_by_ptr_result::no_t)
+        {
+            builder.CreateStore(value, dest);
+        },
+        [&] (pass_by_ptr_result::sigma_t const& sigma)
+        {
+            assert(dest->getType()->isPointerTy() and "memcpy destination must be a pointer");
+            auto const& data_layout = global.llvm_module.getDataLayout();
+            auto const pointed_type = dest->getType()->getPointerElementType();
+            auto const align = data_layout.getPrefTypeAlign(pointed_type);
+            auto const bytes = data_layout.getTypeAllocSize(pointed_type);
+            builder.CreateMemCpy(dest, align, value, align, builder.getInt64(bytes.getFixedSize()));
+        },
+        [&] (pass_by_ptr_result::array_t const& array)
+        {
+            assert(dest->getType()->isPointerTy() and "memcpy destination must be a pointer");
+            auto const& data_layout = global.llvm_module.getDataLayout();
+            auto const pointed_type = dest->getType()->getPointerElementType();
+            auto const align = data_layout.getPrefTypeAlign(pointed_type);
+            auto const bytes = data_layout.getTypeAllocSize(pointed_type);
+            auto const size = gen_array_total_size(global, local, builder, array.properties);
+            auto const total_bytes = builder.CreateMul(size, builder.getInt64(bytes.getFixedSize()));
+            builder.CreateMemCpy(dest, align, value, align, total_bytes);
+        });
     return dest;
 };
 

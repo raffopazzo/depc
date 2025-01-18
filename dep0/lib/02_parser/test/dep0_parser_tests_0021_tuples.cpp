@@ -167,7 +167,7 @@ BOOST_AUTO_TEST_CASE(pass_001)
     }
 }
 
-// BOOST_AUTO_TEST_CASE(pass_002) { BOOST_TEST_REQUIRE(pass("0021_tuples/pass_002.depc")); }
+BOOST_AUTO_TEST_CASE(pass_002) { BOOST_TEST(pass("0021_tuples/pass_002.depc")); }
 
 BOOST_AUTO_TEST_CASE(parse_error_000) { BOOST_TEST_REQUIRE(fail("0021_tuples/parse_error_000.depc")); }
 // BOOST_AUTO_TEST_CASE(parse_error_001) { BOOST_TEST_REQUIRE(fail("0021_tuples/parse_error_001.depc")); }

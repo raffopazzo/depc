@@ -345,9 +345,12 @@ type_assign(
                                 return dep0::error_t(
                                     "tuple object can only be accessed via numeric literal",
                                     subscript.index.get().properties);
+                            auto const idx_value = constant->value.template convert_to<std::uint64_t>();
+                            if (idx_value >= sigma.args.size())
+                                return dep0::error_t("invalid tuple index", loc);
                             // we're about to move from `obj`, which holds the element type; so must take a copy
                             // TODO element type depends on values of previous arguments so need substitution
-                            auto el_type = sigma.args[constant->value.template convert_to<std::uint64_t>()].type;
+                            auto el_type = sigma.args[idx_value].type;
                             return make_legal_expr(
                                 std::move(el_type),
                                 expr_t::subscript_t{std::move(*obj), std::move(*idx)});

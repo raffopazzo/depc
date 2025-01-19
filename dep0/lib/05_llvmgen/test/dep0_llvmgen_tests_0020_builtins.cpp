@@ -84,7 +84,7 @@ BOOST_AUTO_TEST_CASE(pass_000)
             BOOST_TEST(
                 is_direct_call(
                     memcpy,
-                    exactly(pass_result.value()->getFunction(llvm_memcpy_name)),
+                    is_memcpy,
                     call_arg(exactly(dst), {llvm::Attribute::Alignment}, llvm::Align(4)),
                     call_arg(exactly(src), {llvm::Attribute::Alignment}, llvm::Align(4)),
                     call_arg(constant(8)),
@@ -105,7 +105,7 @@ BOOST_AUTO_TEST_CASE(pass_000)
             BOOST_TEST(
                 is_direct_call(
                     memcpy,
-                    exactly(pass_result.value()->getFunction(llvm_memcpy_name)),
+                    is_memcpy,
                     call_arg(exactly(dst), {llvm::Attribute::Alignment}, llvm::Align(4)),
                     call_arg(exactly(src), {llvm::Attribute::Alignment}, llvm::Align(4)),
                     call_arg(constant(8)),

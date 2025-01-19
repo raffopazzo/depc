@@ -808,7 +808,7 @@ BOOST_AUTO_TEST_CASE(pass_014)
             BOOST_TEST(
                 is_direct_call(
                     memcpy,
-                    exactly(pass_result.value()->getFunction(llvm_memcpy_name)),
+                    is_memcpy,
                     call_arg(exactly(dst), {llvm::Attribute::Alignment}, llvm::Align(4)),
                     call_arg(exactly(src), {llvm::Attribute::Alignment}, llvm::Align(4)),
                     call_arg(constant(12)),
@@ -852,7 +852,7 @@ BOOST_AUTO_TEST_CASE(pass_014)
             BOOST_TEST(
                 is_direct_call(
                     memcpy,
-                    exactly(pass_result.value()->getFunction(llvm_memcpy_name)),
+                    is_memcpy,
                     call_arg(exactly(dst), {llvm::Attribute::Alignment}, llvm::Align(4)),
                     call_arg(exactly(src), {llvm::Attribute::Alignment}, llvm::Align(4)),
                     call_arg(constant(12)),
@@ -871,7 +871,7 @@ BOOST_AUTO_TEST_CASE(pass_014)
             BOOST_TEST(
                 is_direct_call(
                     memcpy,
-                    exactly(pass_result.value()->getFunction(llvm_memcpy_name)),
+                    is_memcpy,
                     call_arg(exactly(dst), {llvm::Attribute::Alignment}, llvm::Align(4)),
                     call_arg(exactly(src), {llvm::Attribute::Alignment}, llvm::Align(4)),
                     call_arg(constant(12)),
@@ -925,7 +925,7 @@ BOOST_AUTO_TEST_CASE(pass_015)
             BOOST_TEST(
                 is_direct_call(
                     memcpy,
-                    exactly(pass_result.value()->getFunction(llvm_memcpy_name)),
+                    is_memcpy,
                     call_arg(exactly(dst), {llvm::Attribute::Alignment}, llvm::Align(4)),
                     call_arg(exactly(src), {llvm::Attribute::Alignment}, llvm::Align(4)),
                     call_arg(exactly(mul)),
@@ -946,7 +946,7 @@ BOOST_AUTO_TEST_CASE(pass_015)
             BOOST_TEST(
                 is_direct_call(
                     memcpy,
-                    exactly(pass_result.value()->getFunction(llvm_memcpy_name)),
+                    is_memcpy,
                     call_arg(exactly(dst), {llvm::Attribute::Alignment}, llvm::Align(4)),
                     call_arg(exactly(src), {llvm::Attribute::Alignment}, llvm::Align(4)),
                     call_arg(exactly(mul)),
@@ -1205,8 +1205,6 @@ BOOST_AUTO_TEST_CASE(pass_017)
 {
     apply_beta_delta_normalization = false;
     BOOST_TEST_REQUIRE(pass("0007_arrays/pass_017.depc"));
-    auto const memcpy_fn = pass_result.value()->getFunction(llvm_memcpy_name);
-    BOOST_TEST_REQUIRE(memcpy_fn);
     {
         auto const f = pass_result.value()->getFunction("f");
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(pointer_to(is_i32), "xs", nonnull)}, is_i32, sext));
@@ -1269,7 +1267,7 @@ BOOST_AUTO_TEST_CASE(pass_017)
         BOOST_TEST(
             is_direct_call(
                 memcpy_0,
-                exactly(memcpy_fn),
+                is_memcpy,
                 call_arg(exactly(dst_tmp_0), {llvm::Attribute::Alignment}, llvm::Align(4)),
                 call_arg(exactly(src_xs_1), {llvm::Attribute::Alignment}, llvm::Align(4)),
                 call_arg(constant(8)),
@@ -1277,7 +1275,7 @@ BOOST_AUTO_TEST_CASE(pass_017)
         BOOST_TEST(
             is_direct_call(
                 memcpy_1,
-                exactly(memcpy_fn),
+                is_memcpy,
                 call_arg(exactly(dst_tmp_1), {llvm::Attribute::Alignment}, llvm::Align(4)),
                 call_arg(exactly(src_xs_0), {llvm::Attribute::Alignment}, llvm::Align(4)),
                 call_arg(constant(8)),
@@ -1317,7 +1315,7 @@ BOOST_AUTO_TEST_CASE(pass_017)
         BOOST_TEST(
             is_direct_call(
                 memcpy_0,
-                exactly(memcpy_fn),
+                is_memcpy,
                 call_arg(exactly(dst_tmp_0), {llvm::Attribute::Alignment}, llvm::Align(4)),
                 call_arg(exactly(src_xs_1), {llvm::Attribute::Alignment}, llvm::Align(4)),
                 call_arg(constant(16)),
@@ -1325,7 +1323,7 @@ BOOST_AUTO_TEST_CASE(pass_017)
         BOOST_TEST(
             is_direct_call(
                 memcpy_1,
-                exactly(memcpy_fn),
+                is_memcpy,
                 call_arg(exactly(dst_tmp_1), {llvm::Attribute::Alignment}, llvm::Align(4)),
                 call_arg(exactly(src_xs_0), {llvm::Attribute::Alignment}, llvm::Align(4)),
                 call_arg(constant(16)),

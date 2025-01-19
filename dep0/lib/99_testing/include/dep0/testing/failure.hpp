@@ -14,7 +14,7 @@ template <typename... Args>
 boost::test_tools::predicate_result failure(Args&&... args)
 {
     auto result = boost::test_tools::predicate_result(false);
-    (result.message().stream() << ... << args);
+    (result.message().stream() << ... << std::forward<Args>(args));
     return result;
 }
 

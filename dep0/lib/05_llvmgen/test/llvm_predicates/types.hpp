@@ -100,7 +100,7 @@ boost::test_tools::predicate_result is_struct(llvm::StructType const& s, Types&&
         if (result)
         {
             auto const i = next++;
-            if (auto const tmp = std::forward<Types>(types)(s.getElementType(i)); not tmp)
+            if (auto const tmp = std::forward<Types>(types)(*s.getElementType(i)); not tmp)
                 result = failure("literal struct element predidcate failed at index ", i, ": ", tmp.message());
         }
     }(), ...);

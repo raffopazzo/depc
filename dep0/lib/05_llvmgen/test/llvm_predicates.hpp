@@ -22,6 +22,7 @@
 #include "llvm_predicates/function_type.hpp"
 #include "llvm_predicates/gep.hpp"
 #include "llvm_predicates/global.hpp"
+#include "llvm_predicates/intrinsics.hpp"
 #include "llvm_predicates/load.hpp"
 #include "llvm_predicates/mul.hpp"
 #include "llvm_predicates/or.hpp"

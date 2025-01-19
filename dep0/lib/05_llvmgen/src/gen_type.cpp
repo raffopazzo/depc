@@ -39,12 +39,21 @@ llvm::FunctionType* gen_func_type(global_ctx_t& global, llvm_func_proto_t const&
             });
     arg_types.reserve(arg_types.size() + proto.runtime_args().size());
     for (typecheck::func_arg_t const& arg: proto.runtime_args())
-    {
-        auto type = gen_type(global, arg.type);
-        if (is_pass_by_ptr(global, arg.type) and not type->isPointerTy())
-            type = type->getPointerTo();
-        arg_types.push_back(type);
-    }
+        arg_types.push_back(
+            match(
+                pass_by_ptr(global, arg.type),
+                [&] (pass_by_ptr_result::no_t) -> llvm::Type*
+                {
+                    return gen_type(global, arg.type);
+                },
+                [&] (pass_by_ptr_result::sigma_t const&) -> llvm::Type*
+                {
+                    return gen_type(global, arg.type)->getPointerTo();
+                },
+                [&] (pass_by_ptr_result::array_t const& array) -> llvm::Type*
+                {
+                    return gen_type(global, array.properties.element_type)->getPointerTo();
+                }));
     return llvm::FunctionType::get(ret_type, std::move(arg_types), is_var_arg);
 }
 
@@ -166,7 +175,21 @@ llvm::Type* gen_type(global_ctx_t& global, typecheck::expr_t const& x)
                 [&] (typecheck::expr_t::array_t const&) -> llvm::Type*
                 {
                     auto const properties = get_array_properties(x);
-                    return gen_type(global, properties.element_type)->getPointerTo();
+                    auto const total_size =
+                        std::accumulate(
+                            properties.dimensions.begin(), properties.dimensions.end(),
+                            std::optional{boost::multiprecision::cpp_int{1}},
+                            [] (std::optional<boost::multiprecision::cpp_int> const x, typecheck::expr_t const* const p)
+                            {
+                                auto const v = std::get_if<typecheck::expr_t::numeric_constant_t>(&p->value);
+                                return v and x ? std::optional{v->value * *x} : std::nullopt;
+                            });
+                    return total_size
+                        ? static_cast<llvm::Type*>(
+                            llvm::ArrayType::get(
+                                gen_type(global, properties.element_type),
+                                total_size->template convert_to<std::uint64_t>()))
+                        : gen_type(global, properties.element_type)->getPointerTo();
                 },
                 [] (auto const&) -> llvm::Type*
                 {

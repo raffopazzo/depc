@@ -168,6 +168,7 @@ BOOST_AUTO_TEST_CASE(pass_001)
 }
 
 BOOST_AUTO_TEST_CASE(pass_002) { BOOST_TEST(pass("0021_tuples/pass_002.depc")); }
+BOOST_AUTO_TEST_CASE(pass_003) { BOOST_TEST(pass("0021_tuples/pass_003.depc")); }
 
 // BOOST_AUTO_TEST_CASE(parse_error_000)
 // BOOST_AUTO_TEST_CASE(parse_error_001)

@@ -41,6 +41,8 @@ add_library(dep0_llvmgen_tests_fixture
     llvm_predicates/gep.cpp
     llvm_predicates/global.hpp
     llvm_predicates/global.cpp
+    llvm_predicates/intrinsics.hpp
+    llvm_predicates/intrinsics.cpp
     llvm_predicates/load.hpp
     llvm_predicates/load.cpp
     llvm_predicates/mul.hpp

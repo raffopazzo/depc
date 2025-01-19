@@ -76,13 +76,12 @@ BOOST_AUTO_TEST_CASE(pass_000)
         BOOST_TEST_REQUIRE(f->size() == 1ul);
         auto const inst = get_instructions(f->getEntryBlock());
         BOOST_TEST_REQUIRE(inst.size() == 2ul);
-        BOOST_TEST(
-            is_direct_call(
-                inst[0],
-                exactly(pass_result.value()->getFunction("f1")),
-                call_arg(exactly(f->getArg(0ul))),
-                call_arg(constant(0), {sext}),
-                call_arg(constant(1), {zext})));
+        BOOST_TEST(is_direct_call(
+            inst[0],
+            exactly(pass_result.value()->getFunction("f1")),
+            call_arg(exactly(f->getArg(0ul))),
+            call_arg(constant(0), {sext}),
+            call_arg(constant(1), {zext})));
         BOOST_TEST(is_return_of_void(inst[1]));
     }
     {
@@ -109,18 +108,16 @@ BOOST_AUTO_TEST_CASE(pass_000)
         BOOST_TEST(is_gep_of(gep_tuple_1, tuple_type, exactly(gep_array_0), constant(0), constant(1)));
         BOOST_TEST(is_store_of(store1, is_i32, constant(0), exactly(gep_tuple_0), align_of(4)));
         BOOST_TEST(is_store_of(store2, is_i32, constant(1), exactly(gep_tuple_1), align_of(4)));
-        BOOST_TEST(
-            is_direct_call(
-                call1,
-                exactly(pass_result.value()->getFunction("f1")),
-                call_arg(exactly(gep_array_1)),
-                call_arg(constant(2), {sext}),
-                call_arg(constant(3), {zext})));
-        BOOST_TEST(
-            is_direct_call(
-                call2,
-                exactly(pass_result.value()->getFunction("f3")),
-                call_arg(exactly(gep_array_2))));
+        BOOST_TEST(is_direct_call(
+            call1,
+            exactly(pass_result.value()->getFunction("f1")),
+            call_arg(exactly(gep_array_1)),
+            call_arg(constant(2), {sext}),
+            call_arg(constant(3), {zext})));
+        BOOST_TEST(is_direct_call(
+            call2,
+            exactly(pass_result.value()->getFunction("f3")),
+            call_arg(exactly(gep_array_2))));
 
         BOOST_TEST(is_return_of_void(ret));
     }
@@ -225,17 +222,9 @@ BOOST_AUTO_TEST_CASE(pass_001)
 BOOST_AUTO_TEST_CASE(pass_002)
 {
     BOOST_TEST_REQUIRE(pass("0021_tuples/pass_002.depc"));
+    auto const attrs = std::vector{llvm::Attribute::Alignment};
+    auto const align = llvm::Align(8);
     auto const tuple_type = struct_of(is_i32, is_i16);
-    auto const is_memcpy = [&] (llvm::Value const* const x, llvm::Value const* const dst, llvm::Value const* const src)
-    {
-        return is_direct_call(
-            x,
-            exactly(pass_result.value()->getFunction(llvm_memcpy_name)),
-            call_arg(exactly(dst), {llvm::Attribute::Alignment}, llvm::Align(8)),
-            call_arg(exactly(src), {llvm::Attribute::Alignment}, llvm::Align(8)),
-            call_arg(constant(8)),
-            call_arg(constant(false)));
-    };
     {
         auto const f = pass_result.value()->getFunction("f");
         BOOST_TEST_REQUIRE(
@@ -247,19 +236,20 @@ BOOST_AUTO_TEST_CASE(pass_002)
                     arg_of(is_i64, "i", zext)
                 },
                 is_void));
+        auto const result = exactly(f->getArg(0));
+        auto const xs     = exactly(f->getArg(1));
+        auto const i      = exactly(f->getArg(2));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
         auto const inst = get_instructions(f->getEntryBlock());
-        BOOST_TEST_REQUIRE(inst.size() == 5ul);
-        auto const value  = inst[0];
-        auto const dst    = inst[1];
-        auto const src    = inst[2];
-        auto const memcpy = inst[3];
-        auto const ret    = inst[4];
-        BOOST_TEST(is_gep_of(value, tuple_type, exactly(f->getArg(1)), exactly(f->getArg(2))));
-        BOOST_TEST(is_bitcast_of(dst, exactly(f->getArg(0)), pointer_to(tuple_type), pointer_to(is_i8)));
-        BOOST_TEST(is_bitcast_of(src, exactly(value), pointer_to(tuple_type), pointer_to(is_i8)));
-        BOOST_TEST(is_memcpy(memcpy, dst, src));
-        BOOST_TEST(is_return_of_void(ret));
+        BOOST_TEST_REQUIRE(inst.size() > 2ul);
+        BOOST_TEST(is_direct_call(
+            inst[inst.size() - 2],
+            is_memcpy,
+            call_arg(bitcast_of(result, pointer_to(tuple_type), pointer_to(is_i8)), attrs, align),
+            call_arg(bitcast_of(gep_of(tuple_type, xs, i), pointer_to(tuple_type), pointer_to(is_i8)), attrs, align),
+            call_arg(constant(8)),
+            call_arg(constant(false))));
+        BOOST_TEST(is_return_of_void(inst[inst.size() - 1]));
     }
     {
         auto const f = pass_result.value()->getFunction("f2");
@@ -273,45 +263,51 @@ BOOST_AUTO_TEST_CASE(pass_002)
                     arg_of(is_i1, "which", zext),
                 },
                 is_void));
+        auto const result = exactly(f->getArg(0));
+        auto const xs     = exactly(f->getArg(1));
+        auto const which  = exactly(f->getArg(2));
         auto const blks = get_blocks(*f);
         BOOST_TEST_REQUIRE(blks.size() == 3ul);
         auto const entry = blks[0];
         auto const then0 = blks[1];
         auto const else0 = blks[2];
-        auto const result = exactly(f->getArg(0));
-        auto const xs = exactly(f->getArg(1));
-        auto const which = exactly(f->getArg(2));
         {
             BOOST_TEST_REQUIRE(entry->size() == 1ul);
             BOOST_TEST(is_branch_of(entry->getTerminator(), which, exactly(then0), exactly(else0)));
         }
         {
             auto const inst = get_instructions(*then0);
-            BOOST_TEST_REQUIRE(inst.size() == 5ul);
-            auto const value  = inst[0];
-            auto const dst    = inst[1];
-            auto const src    = inst[2];
-            auto const memcpy = inst[3];
-            auto const ret    = inst[4];
-            BOOST_TEST(is_gep_of(value, struct_of(tuple_type, tuple_type), xs, constant(0), constant(0)));
-            BOOST_TEST(is_bitcast_of(dst, result, pointer_to(tuple_type), pointer_to(is_i8)));
-            BOOST_TEST(is_bitcast_of(src, exactly(value), pointer_to(tuple_type), pointer_to(is_i8)));
-            BOOST_TEST(is_memcpy(memcpy, dst, src));
-            BOOST_TEST(is_return_of_void(ret));
+            BOOST_TEST_REQUIRE(inst.size() > 2ul);
+            BOOST_TEST(is_direct_call(
+                inst[inst.size() - 2],
+                is_memcpy,
+                call_arg(bitcast_of(result, pointer_to(tuple_type), pointer_to(is_i8)), attrs, align),
+                call_arg(
+                    bitcast_of(
+                        gep_of(struct_of(tuple_type, tuple_type), xs, constant(0), constant(0)),
+                        pointer_to(tuple_type),
+                        pointer_to(is_i8)),
+                    attrs, align),
+                call_arg(constant(8)),
+                call_arg(constant(false))));
+            BOOST_TEST(is_return_of_void(inst[inst.size() - 1]));
         }
         {
             auto const inst = get_instructions(*else0);
-            BOOST_TEST_REQUIRE(inst.size() == 5ul);
-            auto const value  = inst[0];
-            auto const dst    = inst[1];
-            auto const src    = inst[2];
-            auto const memcpy = inst[3];
-            auto const ret    = inst[4];
-            BOOST_TEST(is_gep_of(value, struct_of(tuple_type, tuple_type), xs, constant(0), constant(1)));
-            BOOST_TEST(is_bitcast_of(dst, result, pointer_to(tuple_type), pointer_to(is_i8)));
-            BOOST_TEST(is_bitcast_of(src, exactly(value), pointer_to(tuple_type), pointer_to(is_i8)));
-            BOOST_TEST(is_memcpy(memcpy, dst, src));
-            BOOST_TEST(is_return_of_void(ret));
+            BOOST_TEST_REQUIRE(inst.size() > 2ul);
+            BOOST_TEST(is_direct_call(
+                inst[inst.size() - 2],
+                is_memcpy,
+                call_arg(bitcast_of(result, pointer_to(tuple_type), pointer_to(is_i8)), attrs, align),
+                call_arg(
+                    bitcast_of(
+                        gep_of(struct_of(tuple_type, tuple_type), xs, constant(0), constant(1)),
+                        pointer_to(tuple_type),
+                        pointer_to(is_i8)),
+                    attrs, align),
+                call_arg(constant(8)),
+                call_arg(constant(false))));
+            BOOST_TEST(is_return_of_void(inst[inst.size() - 1]));
         }
     }
     {
@@ -327,42 +323,111 @@ BOOST_AUTO_TEST_CASE(pass_002)
                     arg_of(is_i1, "which", zext),
                 },
                 is_void));
+        auto const result = exactly(f->getArg(0));
+        auto const x      = exactly(f->getArg(1));
+        auto const y      = exactly(f->getArg(2));
+        auto const which  = exactly(f->getArg(3));
         auto const blks = get_blocks(*f);
         BOOST_TEST_REQUIRE(blks.size() == 3ul);
         auto const entry = blks[0];
         auto const then0 = blks[1];
         auto const else0 = blks[2];
-        auto const result = exactly(f->getArg(0));
-        auto const x = exactly(f->getArg(1));
-        auto const y = exactly(f->getArg(2));
-        auto const which = exactly(f->getArg(3));
         {
             BOOST_TEST_REQUIRE(entry->size() == 1ul);
             BOOST_TEST(is_branch_of(entry->getTerminator(), which, exactly(then0), exactly(else0)));
         }
         {
             auto const inst = get_instructions(*then0);
-            BOOST_TEST_REQUIRE(inst.size() == 4ul);
-            auto const dst    = inst[0];
-            auto const src    = inst[1];
-            auto const memcpy = inst[2];
-            auto const ret    = inst[3];
-            BOOST_TEST(is_bitcast_of(dst, result, pointer_to(tuple_type), pointer_to(is_i8)));
-            BOOST_TEST(is_bitcast_of(src, x, pointer_to(tuple_type), pointer_to(is_i8)));
-            BOOST_TEST(is_memcpy(memcpy, dst, src));
-            BOOST_TEST(is_return_of_void(ret));
+            BOOST_TEST_REQUIRE(inst.size() > 2ul);
+            BOOST_TEST(is_direct_call(
+                inst[inst.size() - 2],
+                is_memcpy,
+                call_arg(bitcast_of(result, pointer_to(tuple_type), pointer_to(is_i8)), attrs, align),
+                call_arg(bitcast_of(x, pointer_to(tuple_type), pointer_to(is_i8)), attrs, align),
+                call_arg(constant(8)),
+                call_arg(constant(false))));
+            BOOST_TEST(is_return_of_void(inst[inst.size() - 1]));
         }
         {
             auto const inst = get_instructions(*else0);
-            BOOST_TEST_REQUIRE(inst.size() == 4ul);
-            auto const dst    = inst[0];
-            auto const src    = inst[1];
-            auto const memcpy = inst[2];
-            auto const ret    = inst[3];
-            BOOST_TEST(is_bitcast_of(dst, result, pointer_to(tuple_type), pointer_to(is_i8)));
-            BOOST_TEST(is_bitcast_of(src, y, pointer_to(tuple_type), pointer_to(is_i8)));
-            BOOST_TEST(is_memcpy(memcpy, dst, src));
-            BOOST_TEST(is_return_of_void(ret));
+            BOOST_TEST_REQUIRE(inst.size() > 2ul);
+            BOOST_TEST(is_direct_call(
+                inst[inst.size() - 2],
+                is_memcpy,
+                call_arg(bitcast_of(result, pointer_to(tuple_type), pointer_to(is_i8)), attrs, align),
+                call_arg(bitcast_of(y, pointer_to(tuple_type), pointer_to(is_i8)), attrs, align),
+                call_arg(constant(8)),
+                call_arg(constant(false))));
+            BOOST_TEST(is_return_of_void(inst[inst.size() - 1]));
+        }
+    }
+}
+
+BOOST_AUTO_TEST_CASE(pass_003)
+{
+    BOOST_TEST_REQUIRE(pass("0021_tuples/pass_003.depc"));
+    {
+        auto const f = pass_result.value()->getFunction("f1");
+        auto const array_type = array_of(2, is_i32);
+        auto const tuple_type = struct_of(array_type, array_type);
+        BOOST_TEST_REQUIRE(
+            is_function_of(
+                f,
+                std::tuple{
+                    ret_ptr_to(is_i32),
+                    arg_of(pointer_to(tuple_type), "xs", nonnull),
+                    arg_of(is_i1, "which", zext),
+                },
+                is_void));
+        auto const blks = get_blocks(*f);
+        BOOST_TEST_REQUIRE(blks.size() == 3ul);
+        auto const entry = blks[0];
+        auto const then0 = blks[1];
+        auto const else0 = blks[2];
+        auto const result = exactly(f->getArg(0));
+        auto const xs = exactly(f->getArg(1));
+        auto const which = exactly(f->getArg(2));
+        {
+            BOOST_TEST_REQUIRE(entry->size() == 1ul);
+            BOOST_TEST(is_branch_of(entry->getTerminator(), which, exactly(then0), exactly(else0)));
+        }
+        auto const attrs = std::vector{llvm::Attribute::Alignment};
+        auto const align = llvm::Align(4);
+        {
+            auto const inst = get_instructions(*then0);
+            BOOST_TEST_REQUIRE(inst.size() > 2ul);
+            BOOST_TEST(is_direct_call(
+                inst[inst.size() - 2],
+                is_memcpy,
+                call_arg(bitcast_of(result, pointer_to(is_i32), pointer_to(is_i8)), attrs, align),
+                call_arg(
+                    bitcast_of(
+                        gep_of(tuple_type, xs, constant(0), constant(0)),
+                        pointer_to(array_type),
+                        pointer_to(is_i8)),
+                    attrs,
+                    align),
+                call_arg(constant(8)),
+                call_arg(constant(false))));
+            BOOST_TEST(is_return_of_void(inst[inst.size() - 1]));
+        }
+        {
+            auto const inst = get_instructions(*else0);
+            BOOST_TEST_REQUIRE(inst.size() > 2ul);
+            BOOST_TEST(is_direct_call(
+                inst[inst.size() - 2],
+                is_memcpy,
+                call_arg(bitcast_of(result, pointer_to(is_i32), pointer_to(is_i8)), attrs, align),
+                call_arg(
+                    bitcast_of(
+                        gep_of(tuple_type, xs, constant(0), constant(1)),
+                        pointer_to(array_type),
+                        pointer_to(is_i8)),
+                    attrs,
+                    align),
+                call_arg(constant(8)),
+                call_arg(constant(false))));
+            BOOST_TEST(is_return_of_void(inst[inst.size() - 1]));
         }
     }
 }

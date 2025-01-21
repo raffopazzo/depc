@@ -1,10 +1,12 @@
 /*
- * Copyright Raffaele Rossi 2023 - 2024.
+ * Copyright Raffaele Rossi 2023 - 2025.
  *
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
  */
-func f((1 i32_t, i32_t) x) -> i32_t
+func f(u64_t n, (u64_t n, array_t(i32_t, n)) x, 0 true_t(2 < n)) -> i32_t
 {
-    return x[0] + x[0]; // typecheck error: cannot used x[0] twice
+    // `n` inside `true_t(2 < n)` refers to the first argument of `f`, not the binding element of the dependant pair;
+    // should instead require a proof of `2 < x[0]`, which is not available
+    return x[1][2];
 }

@@ -73,6 +73,9 @@ struct derivation_rules
     /** @brief Constructs the type `u64_t` whose type is `typename`. */
     static expr_t make_u64();
 
+    /** @brief Constructs a numeric constant of type `u64_t` containing the given value. */
+    static expr_t make_u64(std::size_t);
+
     /** @brief Constructs the boolean value `true`. */
     static expr_t make_true();
 
@@ -97,6 +100,14 @@ struct derivation_rules
      * It is the caller's responsibility to ensure that substitution of all arguments has been done correctly.
      */
     static expr_t make_app(expr_t func, std::vector<expr_t> args);
+
+    /**
+     * @brief Constructs an expression `obj[idx]`, of the given element type, for a constant index `idx`.
+     *
+     * @warning For dependent tuples, the type of `obj[idx]` may depend on the values of `obj[idx-1], obj[idx-2], ...`.
+     * It is the caller's responsibility to ensure that substitution of all values has been done correctly.
+     */
+    static expr_t make_subscript(expr_t obj, std::size_t idx, sort_t type);
 };
 
 template <typename... Args>

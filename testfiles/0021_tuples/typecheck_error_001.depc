@@ -1,10 +1,15 @@
 /*
- * Copyright Raffaele Rossi 2023 - 2024.
+ * Copyright Raffaele Rossi 2023 - 2025.
  *
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
  */
-func f((0 i32_t, i32_t) x) -> i32_t
+func f(u64_t n, (u64_t n, array_t(i32_t, n)) x) -> i32_t
 {
-    return x[0]; // typecheck error: x[0] cannot be used at runtime
+    // here `n` refers to the first argument of f, not the binding element of the dependant pair;
+    // should instead require a proof of `2 < x[0]`, which is not available
+    if (2 < n)
+        return x[1][2];
+    else
+        return 0;
 }

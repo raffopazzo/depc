@@ -348,9 +348,21 @@ type_assign(
                             auto const idx_value = constant->value.template convert_to<std::uint64_t>();
                             if (idx_value >= sigma.args.size())
                                 return dep0::error_t("invalid tuple index", loc);
-                            // we're about to move from `obj`, which holds the element type; so must take a copy
-                            // TODO element type depends on values of previous arguments so need substitution
-                            auto el_type = sigma.args[idx_value].type;
+                            // the element type may depend on values of previous arguments so need substitution
+                            // e.g. the *type* of `x[2]` may depend on the *value* of `x[1]`,
+                            // whose type may itself depend on the *value* of `x[0]`
+                            auto el_type = [&]
+                            {
+                                auto args = std::vector(sigma.args.begin(), sigma.args.begin() + idx_value + 1);
+                                for (auto const j: std::views::iota(0ul, idx_value))
+                                    if (args[j].var)
+                                        substitute(
+                                            *args[j].var,
+                                            derivation_rules::make_subscript(*obj, j, args[j].type),
+                                            args.begin() + j + 1,
+                                            args.end());
+                                return std::move(args[idx_value].type);
+                            }();
                             return make_legal_expr(
                                 std::move(el_type),
                                 expr_t::subscript_t{std::move(*obj), std::move(*idx)});

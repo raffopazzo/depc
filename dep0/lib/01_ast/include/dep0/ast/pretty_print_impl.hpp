@@ -512,9 +512,9 @@ std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::sigma_t const& 
         if (not std::exchange(first, false))
         {
             if (args_on_separate_lines)
-                detail::new_line(os << ';', indent + 1ul);
+                detail::new_line(os << ',', indent + 1ul);
             else
-                os << "; ";
+                os << ", ";
         }
         pretty_print(os, arg, indent + 1ul);
     }

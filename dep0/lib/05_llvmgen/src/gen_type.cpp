@@ -175,15 +175,7 @@ llvm::Type* gen_type(global_ctx_t& global, typecheck::expr_t const& x)
                 [&] (typecheck::expr_t::array_t const&) -> llvm::Type*
                 {
                     auto const properties = get_array_properties(x);
-                    auto const total_size =
-                        std::accumulate(
-                            properties.dimensions.begin(), properties.dimensions.end(),
-                            std::optional{boost::multiprecision::cpp_int{1}},
-                            [] (std::optional<boost::multiprecision::cpp_int> const x, typecheck::expr_t const* const p)
-                            {
-                                auto const v = std::get_if<typecheck::expr_t::numeric_constant_t>(&p->value);
-                                return v and x ? std::optional{v->value * *x} : std::nullopt;
-                            });
+                    auto const total_size = get_compile_time_size(properties);
                     return total_size
                         ? static_cast<llvm::Type*>(
                             llvm::ArrayType::get(

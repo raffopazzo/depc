@@ -8,9 +8,32 @@
 
 #include "private/gen_val.hpp"
 
+#include <algorithm>
 #include <numeric>
 
 namespace dep0::llvmgen {
+
+std::optional<boost::multiprecision::cpp_int> get_compile_time_size(array_properties_view_t const& properties)
+{
+    return std::accumulate(
+        properties.dimensions.begin(), properties.dimensions.end(),
+        std::optional{boost::multiprecision::cpp_int{1}},
+        [] (std::optional<boost::multiprecision::cpp_int> const x, typecheck::expr_t const* const p)
+        {
+            auto const v = std::get_if<typecheck::expr_t::numeric_constant_t>(&p->value);
+            return v and x ? std::optional{v->value * *x} : std::nullopt;
+        });
+}
+
+bool has_compile_time_size(array_properties_view_t const& properties)
+{
+    return std::ranges::all_of(
+        properties.dimensions,
+        [] (typecheck::expr_t const* const p)
+        {
+            return std::holds_alternative<typecheck::expr_t::numeric_constant_t>(p->value);
+        });
+}
 
 bool is_array(typecheck::expr_t const& type)
 {

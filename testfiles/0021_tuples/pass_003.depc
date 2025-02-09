@@ -11,3 +11,8 @@ func f1((array_t(i32_t, 2), array_t(i32_t, 2)) xs, bool_t which) -> array_t(i32_
     else
         return xs[1];
 }
+
+func f2((array_t(i32_t, 3), array_t(i32_t, 3)) x) -> i32_t
+{
+    return x[0][1] + x[1][0];
+}

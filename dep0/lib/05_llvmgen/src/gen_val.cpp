@@ -479,7 +479,15 @@ llvm::Value* gen_val(
                     auto const index_val = llvm::ConstantInt::get(int32, index->value.convert_to<std::int32_t>());
                     auto const ptr = builder.CreateGEP(type, base, {zero, index_val});
                     auto const element_type = ptr->getType()->getPointerElementType();
-                    return storeOrReturn(is_pass_by_ptr(global, expr_type) ? ptr : builder.CreateLoad(element_type, ptr));
+                    // if the accessed element is an array with its size known at compile-time,
+                    // `ptr` will be a pointer to an LLVM array, eg `[8 x i32]*`;
+                    // but arrays are pass-by-ptr so we need to decay to a raw pointer, ie `i32*` in this example
+                    return storeOrReturn(
+                        is_pass_by_ptr(global, expr_type)
+                        ? (element_type->isArrayTy()
+                            ? builder.CreateGEP(element_type, ptr, {zero, zero}) // decay to raw pointer
+                            : ptr)
+                        : builder.CreateLoad(element_type, ptr));
                 },
                 [&] (typecheck::has_subscript_access_result::array_t const&) -> llvm::Value*
                 {

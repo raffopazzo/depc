@@ -180,7 +180,7 @@ llvm::Type* gen_type(global_ctx_t& global, typecheck::expr_t const& x)
                         ? static_cast<llvm::Type*>(
                             llvm::ArrayType::get(
                                 gen_type(global, properties.element_type),
-                                total_size->template convert_to<std::uint64_t>()))
+                                total_size->convert_to<std::uint64_t>()))
                         : gen_type(global, properties.element_type)->getPointerTo();
                 },
                 [] (auto const&) -> llvm::Type*

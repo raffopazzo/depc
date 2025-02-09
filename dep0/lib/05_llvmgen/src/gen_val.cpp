@@ -103,10 +103,10 @@ llvm::Value* gen_val(
     typecheck::expr_t const& expr,
     llvm::Value* const dest)
 {
-    auto const& expr_type = std::get<typecheck::expr_t>(expr.properties.sort.get());
+    auto const& type = std::get<typecheck::expr_t>(expr.properties.sort.get());
     auto const storeOrReturn = [&] (llvm::Value* const value)
     {
-        return maybe_gen_store(global, local, builder, value, dest, expr_type);
+        return maybe_gen_store(global, local, builder, value, dest, type);
     };
     return match(
         expr.value,
@@ -186,7 +186,7 @@ llvm::Value* gen_val(
         },
         [&] (typecheck::expr_t::numeric_constant_t const& x) -> llvm::Value*
         {
-            auto const llvm_type = cast<llvm::IntegerType>(gen_type(global, expr_type));
+            auto const llvm_type = cast<llvm::IntegerType>(gen_type(global, type));
             assert(llvm_type);
             return storeOrReturn(gen_val(llvm_type, x.value));
         },
@@ -307,7 +307,7 @@ llvm::Value* gen_val(
                         },
                         [&] (boost::hana::type<typecheck::expr_t::arith_expr_t::div_t>)
                         {
-                            return is_signed_integral(global, expr_type)
+                            return is_signed_integral(global, type)
                                 ? builder.CreateSDiv(lhs, rhs)
                                 : builder.CreateUDiv(lhs, rhs);
                         })(boost::hana::type_c<T>);
@@ -407,7 +407,7 @@ llvm::Value* gen_val(
         [&] (typecheck::expr_t::init_list_t const& x) -> llvm::Value*
         {
             return match(
-                typecheck::is_list_initializable(expr_type),
+                typecheck::is_list_initializable(type),
                 [&] (typecheck::is_list_initializable_result::no_t) -> llvm::Value*
                 {
                     // We found an initializer list whose type is not trivially initializiable from a list.
@@ -417,7 +417,7 @@ llvm::Value* gen_val(
                     // We are not going to prove again that the condition was actually true,
                     // so for now just construct a value of the empty struct.
                     // If later on we add more cases like this, we might have to inspect the type.
-                    return llvm::ConstantAggregateZero::get(gen_type(global, expr_type));
+                    return llvm::ConstantAggregateZero::get(gen_type(global, type));
                 },
                 [&] (typecheck::is_list_initializable_result::unit_t) -> llvm::Value*
                 {
@@ -425,34 +425,34 @@ llvm::Value* gen_val(
                 },
                 [&] (typecheck::is_list_initializable_result::true_t) -> llvm::Value*
                 {
-                    return llvm::ConstantAggregateZero::get(gen_type(global, expr_type));
+                    return llvm::ConstantAggregateZero::get(gen_type(global, type));
                 },
                 [&] (typecheck::is_list_initializable_result::sigma_t const& sigma) -> llvm::Value*
                 {
-                    auto const type = gen_type(global, expr_type);
-                    auto const dest2 = dest ? dest : gen_alloca(global, local, builder, expr_type);
+                    auto const tuple_type = gen_type(global, type);
+                    auto const dest2 = dest ? dest : gen_alloca(global, local, builder, type);
                     auto const int32 = llvm::Type::getInt32Ty(global.llvm_ctx);
                     auto const zero = llvm::ConstantInt::get(int32, 0);
                     for (auto const i: std::views::iota(0ul, x.values.size()))
                     {
                         auto const index = llvm::ConstantInt::get(int32, i);
-                        auto const p = builder.CreateGEP(type, dest2, {zero, index});
+                        auto const p = builder.CreateGEP(tuple_type, dest2, {zero, index});
                         gen_val(global, local, builder, x.values[i], p);
                     }
                     return dest2;
                 },
                 [&] (typecheck::is_list_initializable_result::array_t const&) -> llvm::Value*
                 {
-                    auto const properties = get_array_properties(expr_type);
-                    auto const dest2 = dest ? dest : gen_alloca(global, local, builder, expr_type);
-                    auto const type = dest2->getType()->getPointerElementType();
+                    auto const properties = get_array_properties(type);
+                    auto const dest2 = dest ? dest : gen_alloca(global, local, builder, type);
+                    auto const element_type = gen_type(global, properties.element_type);
                     auto const stride_size = gen_stride_size_if_needed(global, local, builder, properties);
                     auto const int32 = llvm::Type::getInt32Ty(global.llvm_ctx); // TODO we use u64_t to typecheck arrays
                     for (auto const i: std::views::iota(0ul, x.values.size()))
                     {
                         auto const index = llvm::ConstantInt::get(int32, i);
                         auto const offset = stride_size ? builder.CreateMul(stride_size, index) : index;
-                        auto const p = builder.CreateGEP(type, dest2, offset);
+                        auto const p = builder.CreateGEP(element_type, dest2, offset);
                         gen_val(global, local, builder, x.values[i], p);
                     }
                     return dest2;
@@ -468,23 +468,29 @@ llvm::Value* gen_val(
                     assert(false and "unexpected subscript expression; typechecking must be broken");
                     __builtin_unreachable();
                 },
-                [&] (typecheck::has_subscript_access_result::sigma_t const&) -> llvm::Value*
+                [&] (typecheck::has_subscript_access_result::sigma_t const& sigma) -> llvm::Value*
                 {
-                    auto const type = gen_type(global, object_type);
+                    auto const tuple_type = gen_type(global, object_type);
                     auto const base = gen_val(global, local, builder, subscript.array.get(), nullptr);
                     auto const index = std::get_if<typecheck::expr_t::numeric_constant_t>(&subscript.index.get().value);
                     assert(index and "subscript operand on tuples must be a numeric literal");
                     auto const int32 = llvm::Type::getInt32Ty(global.llvm_ctx);
                     auto const zero = llvm::ConstantInt::get(int32, 0);
-                    auto const index_val = llvm::ConstantInt::get(int32, index->value.convert_to<std::int32_t>());
-                    auto const ptr = builder.CreateGEP(type, base, {zero, index_val});
-                    auto const element_type = ptr->getType()->getPointerElementType();
+                    auto const i = index->value.convert_to<std::int32_t>();
+                    auto const index_val = llvm::ConstantInt::get(int32, i);
+                    auto const ptr = builder.CreateGEP(tuple_type, base, {zero, index_val});
+                    auto const element_type = gen_type(global, sigma.args[i].type);
+                    auto const needs_decaying = [] (typecheck::expr_t const& ty)
+                    {
+                        auto const properties = get_properties_if_array(ty);
+                        return properties and has_compile_time_size(*properties);
+                    };
                     // if the accessed element is an array with its size known at compile-time,
                     // `ptr` will be a pointer to an LLVM array, eg `[8 x i32]*`;
                     // but arrays are pass-by-ptr so we need to decay to a raw pointer, ie `i32*` in this example
                     return storeOrReturn(
-                        is_pass_by_ptr(global, expr_type)
-                        ? (element_type->isArrayTy()
+                        is_pass_by_ptr(global, type)
+                        ? (needs_decaying(sigma.args[i].type)
                             ? builder.CreateGEP(element_type, ptr, {zero, zero}) // decay to raw pointer
                             : ptr)
                         : builder.CreateLoad(element_type, ptr));
@@ -494,12 +500,12 @@ llvm::Value* gen_val(
                     auto const& array = subscript.array.get();
                     auto const properties = get_array_properties(std::get<typecheck::expr_t>(array.properties.sort.get()));
                     auto const stride_size = gen_stride_size_if_needed(global, local, builder, properties);
-                    auto const type = gen_type(global, properties.element_type);
+                    auto const element_type = gen_type(global, properties.element_type);
                     auto const base = gen_val(global, local, builder, subscript.array.get(), nullptr);
                     auto const index = gen_val(global, local, builder, subscript.index.get(), nullptr);
                     auto const offset = stride_size ? builder.CreateMul(stride_size, index) : index;
-                    auto const ptr = builder.CreateGEP(type, base, offset);
-                    return storeOrReturn(is_pass_by_ptr(global, expr_type) ? ptr : builder.CreateLoad(type, ptr));
+                    auto const ptr = builder.CreateGEP(element_type, base, offset);
+                    return storeOrReturn(is_pass_by_ptr(global, type) ? ptr : builder.CreateLoad(element_type, ptr));
                 });
         },
         [&] (typecheck::expr_t::because_t const& x) -> llvm::Value*
@@ -529,7 +535,7 @@ llvm::Value* maybe_gen_store(
         {
             assert(dest->getType()->isPointerTy() and "memcpy destination must be a pointer");
             auto const& data_layout = global.llvm_module.getDataLayout();
-            auto const pointed_type = dest->getType()->getPointerElementType();
+            auto const pointed_type = gen_type(global, type);
             auto const align = data_layout.getPrefTypeAlign(pointed_type);
             auto const bytes = data_layout.getTypeAllocSize(pointed_type);
             builder.CreateMemCpy(dest, align, value, align, builder.getInt64(bytes.getFixedSize()));
@@ -538,7 +544,7 @@ llvm::Value* maybe_gen_store(
         {
             assert(dest->getType()->isPointerTy() and "memcpy destination must be a pointer");
             auto const& data_layout = global.llvm_module.getDataLayout();
-            auto const pointed_type = dest->getType()->getPointerElementType();
+            auto const pointed_type = gen_type(global, array.properties.element_type);
             auto const align = data_layout.getPrefTypeAlign(pointed_type);
             auto const bytes = data_layout.getTypeAllocSize(pointed_type);
             auto const size = gen_array_total_size(global, local, builder, array.properties);

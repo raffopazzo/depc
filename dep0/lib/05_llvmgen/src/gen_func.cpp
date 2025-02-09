@@ -20,7 +20,7 @@
 
 namespace dep0::llvmgen {
 
-static void gen_func_args(global_ctx_t const&, local_ctx_t&, llvm_func_proto_t const&, llvm::Function*);
+static void gen_func_args(global_ctx_t&, local_ctx_t&, llvm_func_proto_t const&, llvm::Function*);
 static void gen_func_attributes(global_ctx_t const&, llvm_func_proto_t const&, llvm::Function*);
 static void gen_func_body(
     global_ctx_t&,
@@ -30,7 +30,7 @@ static void gen_func_body(
     llvm::Function*);
 
 void gen_func_args(
-    global_ctx_t const& global,
+    global_ctx_t& global,
     local_ctx_t& local,
     llvm_func_proto_t const& proto,
     llvm::Function* const llvm_f)
@@ -58,11 +58,12 @@ void gen_func_args(
             if (arg.var->idx == 0ul)
                 llvm_arg.setName(arg.var->name.view());
             bool inserted = false;
-            if (std::holds_alternative<typecheck::expr_t::pi_t>(arg.type.value))
+            if (auto const pi = std::get_if<typecheck::expr_t::pi_t>(&arg.type.value))
             {
                 assert(llvm_arg.getType()->isPointerTy());
-                auto const function_type = cast<llvm::FunctionType>(llvm_arg.getType()->getPointerElementType());
-                assert(function_type);
+                auto const proto = llvm_func_proto_t::from_pi(*pi);
+                assert(proto.has_value() and "function arguments must be of the 1st order");
+                auto const function_type = gen_func_type(global, *proto);
                 inserted = local.try_emplace(*arg.var, llvm_func_t(function_type, &llvm_arg)).second;
             }
             else

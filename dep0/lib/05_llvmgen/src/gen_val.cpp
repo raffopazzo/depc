@@ -518,6 +518,7 @@ llvm::Value* maybe_gen_store(
 {
     if (not dest)
         return value;
+    // TODO do not crash if the memcpy depends on some erased argument
     match(
         pass_by_ptr(global, type),
         [&] (pass_by_ptr_result::no_t)

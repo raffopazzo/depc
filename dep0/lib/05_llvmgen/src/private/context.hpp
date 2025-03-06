@@ -116,7 +116,7 @@ struct local_ctx_t
     local_ctx_t() = default;
 
     /**
-     * @brief Extend the current context, allowing new enties to shadow previous values and declarations.
+     * @brief Extend the current context, allowing new entries to shadow previous values and declarations.
      * @return A new context where shadowing can take place.
      */
     local_ctx_t extend() const;

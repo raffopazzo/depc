@@ -71,10 +71,10 @@ llvm::Value* gen_array_total_size(
     assert(properties.dimensions.size() > 0ul);
     return std::accumulate(
         std::next(properties.dimensions.begin()), properties.dimensions.end(),
-        gen_val(global, local, builder, *properties.dimensions[0ul], nullptr),
+        gen_val(global, local, builder, *properties.dimensions[0ul], value_storage_t()),
         [&] (llvm::Value* const acc, typecheck::expr_t const* size)
         {
-            return builder.CreateMul(acc, gen_val(global, local, builder, *size, nullptr));
+            return builder.CreateMul(acc, gen_val(global, local, builder, *size, value_storage_t()));
         });
 }
 
@@ -88,10 +88,10 @@ llvm::Value* gen_stride_size_if_needed(
         properties.dimensions.size() > 1ul
         ? std::accumulate(
             std::next(properties.dimensions.begin(), 2ul), properties.dimensions.end(),
-            gen_val(global, local, builder, *properties.dimensions[1ul], nullptr),
+            gen_val(global, local, builder, *properties.dimensions[1ul], value_storage_t()),
             [&] (llvm::Value* const acc, typecheck::expr_t const* size)
             {
-                return builder.CreateMul(acc, gen_val(global, local, builder, *size, nullptr));
+                return builder.CreateMul(acc, gen_val(global, local, builder, *size, value_storage_t()));
             })
         : nullptr;
 }

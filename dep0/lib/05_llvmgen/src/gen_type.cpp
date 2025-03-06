@@ -6,7 +6,6 @@
  */
 #include "private/gen_type.hpp"
 
-#include "private/gen_alloca.hpp"
 #include "private/gen_array.hpp"
 
 #include "dep0/fmap.hpp"
@@ -69,10 +68,10 @@ llvm::IntegerType* gen_type(global_ctx_t& global, ast::width_t const width)
     }
 }
 
-llvm::Type* gen_type(global_ctx_t& global, typecheck::expr_t const& x)
+llvm::Type* gen_type(global_ctx_t& global, typecheck::expr_t const& type)
 {
     return match(
-        x.value,
+        type.value,
         [] (typecheck::expr_t::typename_t const&) -> llvm::Type*
         {
             assert(false and "cannot generate a type for typename");
@@ -174,14 +173,8 @@ llvm::Type* gen_type(global_ctx_t& global, typecheck::expr_t const& x)
                 },
                 [&] (typecheck::expr_t::array_t const&) -> llvm::Type*
                 {
-                    auto const properties = get_array_properties(x);
-                    auto const total_size = get_compile_time_size(properties);
-                    return total_size
-                        ? static_cast<llvm::Type*>(
-                            llvm::ArrayType::get(
-                                gen_type(global, properties.element_type),
-                                total_size->convert_to<std::uint64_t>()))
-                        : gen_type(global, properties.element_type)->getPointerTo();
+                    auto const properties = get_array_properties(type);
+                    return gen_type(global, properties.element_type)->getPointerTo();
                 },
                 [] (auto const&) -> llvm::Type*
                 {
@@ -202,7 +195,6 @@ llvm::Type* gen_type(global_ctx_t& global, typecheck::expr_t const& x)
         },
         [&] (typecheck::expr_t::sigma_t const& x) -> llvm::Type*
         {
-            // TODO handle dependency?
             auto const& element_types = fmap(x.args, [&] (auto const& arg) { return gen_type(global, arg.type); });
             return llvm::StructType::get(global.llvm_ctx, element_types);
         },
@@ -384,4 +376,9 @@ bool is_pass_by_ptr(global_ctx_t const& global, typecheck::expr_t const& x)
     return not std::holds_alternative<pass_by_ptr_result::no_t>(pass_by_ptr(global, x));
 }
 
+bool is_boxed(typecheck::expr_t const& type)
+{
+    // Currently only arrays are boxed, but most likely closures will be boxed too.
+    return is_array(type);
+}
 } // namespace dep0::llvmgen

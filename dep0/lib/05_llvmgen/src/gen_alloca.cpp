@@ -8,32 +8,40 @@
 
 #include "private/gen_array.hpp"
 #include "private/gen_type.hpp"
-#include "private/gen_val.hpp"
 
 #include "dep0/match.hpp"
 
 namespace dep0::llvmgen {
 
-llvm::AllocaInst* gen_alloca(
+llvm::Value* gen_alloca(
     global_ctx_t& global,
     local_ctx_t const& local,
+    allocator_t const allocator,
     llvm::IRBuilder<>& builder,
     typecheck::expr_t const& type)
 {
-    auto const alloca = [&]
+    auto const array = get_properties_if_array(type);
+    auto const array_size = array ? gen_array_total_size(global, local, builder, *array) : nullptr; // default is 1
+    auto const llvm_type = gen_type(global, array ? array->element_type : type);
+    if (allocator == allocator_t::stack)
     {
-        auto const array_properties = get_properties_if_array(type);
-        if (array_properties)
-        {
-            auto const total_size = gen_array_total_size(global, local, builder, *array_properties);
-            auto const llvm_type = gen_type(global, array_properties->element_type);
-            return builder.CreateAlloca(llvm_type, total_size);
-        }
-        else
-            return builder.CreateAlloca(gen_type(global, type));
-    }();
-    move_to_entry_block(alloca, builder.GetInsertBlock()->getParent());
-    return alloca;
+        auto const alloca = builder.CreateAlloca(llvm_type, array_size);
+        move_to_entry_block(alloca, builder.GetInsertBlock()->getParent());
+        return alloca;
+    }
+    else
+    {
+        auto const& data_layout = global.llvm_module.getDataLayout();
+        auto const alloca = llvm::CallInst::CreateMalloc(
+            builder.GetInsertBlock(),
+            builder.getInt64Ty(),
+            llvm_type,
+            builder.getInt64(data_layout.getTypeAllocSize(llvm_type).getFixedSize()),
+            array_size,
+            nullptr);
+        builder.GetInsertBlock()->getInstList().push_back(alloca);
+        return alloca;
+    }
 }
 
 void move_to_entry_block(llvm::AllocaInst* const alloca, llvm::Function* const f)

@@ -82,6 +82,7 @@ struct snippet_t
  *      this function will emit appropriate IR instructions to
  *      `store/memcpy/memset` the resulting LLVM value at the runtime location
  *      pointed by this LLVM value, which must be of pointer type.
+ *      Any run-time memory allocation will be performed on the stack.
  *
  * @return
  *      A snippet object containing the entry block of the generated IR code along with any open blocks.

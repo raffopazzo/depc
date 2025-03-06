@@ -78,6 +78,17 @@ pass_by_ptr_result_t pass_by_ptr(global_ctx_t const&, typecheck::expr_t const& t
 /** @brief Returns true if the given type is pass-by-ptr; false if it is pass-by-value. */
 bool is_pass_by_ptr(global_ctx_t const&, typecheck::expr_t const&);
 
+/** @brief Returns true if the given type is pass-by-value; false if it is pass-by-ptr. */
+inline bool is_pass_by_val(global_ctx_t const& global, typecheck::expr_t const& type)
+{
+    return not is_pass_by_ptr(global, type);
+}
+
+/**
+ * @brief Returns true if the given type is boxed, for example arrays are boxed.
+ */
+bool is_boxed(typecheck::expr_t const& type);
+
 } // namespace dep0::llvmgen
 
 /**

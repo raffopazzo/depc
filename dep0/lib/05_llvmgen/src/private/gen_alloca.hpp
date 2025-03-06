@@ -23,14 +23,29 @@
 namespace dep0::llvmgen {
 
 /**
- * @brief Generates an `alloca` instruction for the given type, for example `array_t(i32_t, n)`.
- * @param type The most common example would be some `array_t(i32_t, n)` but this also works for a simple `i32_t`.
- * @remarks The new `alloca` instruction is placed at the top of the entry block of the current LLVM function.
- * @see @ref `move_to_entry_block()`.
+ * @brief Type of allocator to use when allocating new memory, typically from `gen_alloca()`.
+ * @remarks For now only stack and heap (via malloc) are available but it might be
+ * possible to extend this one day to allow custom allocators.
  */
-llvm::AllocaInst* gen_alloca(
+enum class allocator_t
+{
+    stack,
+    heap
+};
+
+/**
+ * @brief Generates instructions to allocate 1 value of the given type, for example `array_t(i32_t, n)`.
+ *
+ * Memory is allocated either on the stack or on the heap according to the given allocator type.
+ * For stack allocations, an `alloca` instruction is generated and placed at the top of the
+ * entry block of the current LLVM function (inferred from the IR builder).
+ * For heap allocations, a run-time call to `malloc()` is generated instead;
+ * it is the caller responsibility to generate a run-time call to `free()`.
+ */
+llvm::Value* gen_alloca(
     global_ctx_t&,
     local_ctx_t const&,
+    allocator_t,
     llvm::IRBuilder<>&,
     typecheck::expr_t const& type);
 

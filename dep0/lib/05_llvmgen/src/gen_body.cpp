@@ -111,7 +111,7 @@ void gen_stmt(
         stmt.value,
         [&] (typecheck::expr_t::app_t const& x)
         {
-            gen_func_call(global, local, builder, x, nullptr);
+            gen_func_call(global, local, builder, x, value_storage_t());
         },
         [&] (typecheck::stmt_t::if_else_t const& x)
         {
@@ -123,7 +123,7 @@ void gen_stmt(
             if (is_impossible(x.true_branch))
             {
                 if (is_mutable(x.cond))
-                    gen_val(global, local, builder, x.cond, nullptr);
+                    gen_val(global, local, builder, x.cond, value_storage_t());
                 if (x.false_branch)
                     gen_stmts(global, local, snippet, builder, *x.false_branch, llvm_f, inlined_result);
                 return;
@@ -131,12 +131,12 @@ void gen_stmt(
             if (x.false_branch and is_impossible(*x.false_branch))
             {
                 if (is_mutable(x.cond))
-                    gen_val(global, local, builder, x.cond, nullptr);
+                    gen_val(global, local, builder, x.cond, value_storage_t());
                 gen_stmts(global, local, snippet, builder, x.true_branch, llvm_f, inlined_result);
                 return;
             }
             // Otherwise both branches are possible and we need to emit each one in their own basic block.
-            auto const cond = gen_val(global, local, builder, x.cond, nullptr);
+            auto const cond = gen_val(global, local, builder, x.cond, value_storage_t());
             auto const then = gen_body(global, local, x.true_branch, "then", llvm_f, inlined_result);
             std::ranges::copy(then.open_blocks, std::back_inserter(snippet.open_blocks));
             if (x.false_branch)
@@ -162,17 +162,20 @@ void gen_stmt(
             }
             if (inlined_result)
             {
-                gen_val(global, local, builder, *x.expr, inlined_result);
+                gen_val(global, local, builder, *x.expr, value_storage_t(*inlined_result, allocator_t::stack));
                 snippet.open_blocks.push_back(builder.GetInsertBlock());
                 return;
             }
             auto const arg0 = llvm_f->arg_empty() ? nullptr : llvm_f->getArg(0ul);
-            auto const dest = arg0 and arg0->hasAttribute(llvm::Attribute::StructRet) ? arg0 : nullptr;
+            auto const storage =
+                arg0 and arg0->hasAttribute(llvm::Attribute::StructRet)
+                ? value_storage_t(*arg0, allocator_t::heap)
+                : value_storage_t();
             // always generate a value, even for expressions of type unit_t,
             // because it might be a function call with side effects;
             // and, if it is, just return the unit value, without complicating the CFG
-            auto const ret_val = gen_val(global, local, builder, *x.expr, dest);
-            if (dest)
+            auto const ret_val = gen_val(global, local, builder, *x.expr, storage);
+            if (storage.dest())
                 builder.CreateRetVoid();
             else if (has_unit_type(*x.expr))
                 builder.CreateRet(gen_val_unit(global));

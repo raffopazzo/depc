@@ -6,7 +6,6 @@
  */
 #include "private/gen_func.hpp"
 
-#include "private/gen_alloca.hpp"
 #include "private/gen_attrs.hpp"
 #include "private/gen_body.hpp"
 #include "private/gen_type.hpp"

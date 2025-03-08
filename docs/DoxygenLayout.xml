@@ -33,6 +33,7 @@
             <tab type="usergroup" url="[none]" title="LLVM Codegen">
                 <tab type="user" url="@ref first_order_types" title="First and Second Order Types"/>
                 <tab type="user" url="@ref pass_by_ptr_vs_pass_by_value" title="Pass-by-Pointer vs Pass-by-Value"/>
+                <tab type="user" url="@ref boxed_types" title="Boxed Types"/>
             </tab>
         </tab>
         <tab type="usergroup" title="API Reference" url="[none]">

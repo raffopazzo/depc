@@ -42,6 +42,7 @@ llvm::IntegerType* gen_type(global_ctx_t&, ast::width_t);
  *   - @ref first_order_types
  *   - @ref first_order_types.hpp
  *   - @ref pass_by_ptr_vs_pass_by_value
+ *   - @ref boxed_types
  */
 llvm::Type* gen_type(global_ctx_t&, typecheck::expr_t const& type);
 
@@ -86,6 +87,7 @@ inline bool is_pass_by_val(global_ctx_t const& global, typecheck::expr_t const& 
 
 /**
  * @brief Returns true if the given type is boxed, for example arrays are boxed.
+ * @see @ref boxed_types
  */
 bool is_boxed(typecheck::expr_t const& type);
 
@@ -112,4 +114,29 @@ bool is_boxed(typecheck::expr_t const& type);
  * This does not mean that `gen_type()` will never emit a pointer type;
  * for example for C-strings and functions it returns a pointer;
  * but in this case the pointer *is* the value to pass to (or return from) the function.
+ */
+
+/**
+ * @page boxed_types Boxed Types
+ *
+ * When generating machine code you need to decide how a DepC type is represented in memory at run-time.
+ * For primitive types and tuples of primitive types, for example `i8_t` or  `(i32_t, (i8_t, u16_t))`,
+ * the solution is straightforward: you just lay out the correct number of bytes in memory corresponding to
+ * the size of the primitive type or to the fields of the tuple, leaving padding between fields if necessary.
+ * But with dependent types there is a problem, which is best illustrated using arrays.
+ * The size of an array depends on its length, which can be known either at compile-time or at run-time.
+ * For example the size of `array_t(i32_t, n)` is known only at run-time but `array_t(i32_t, 3)` is 12 bytes long.
+ * With dependent types it is possible to cast between these two types in either direction.
+ * In this example, if you somehow learn that `n = 3` you can cast from `array_t(i32_t, n)` to `array_t(i32_t, 3)`.
+ * You can also cast in the opposite direction from `array_t(i32_t, 3)` to `array_t(i32_t, n)` by setting `n = 3`.
+ * This means that for arrays the compiler cannot just lay out 12 bytes for a value of type `array_t(i32_t, 3)`.
+ *
+ * The solution in these cases is *Boxing*, which is the typical way of implementing type-erasure.
+ * A type is boxed if its size cannot be proven constant in all possible cases.
+ * Note that, as per the previous example, this happens regardless of whether the size is known at compile-time or not.
+ * A type with size known at compile-time can still be cast to a type with size known at run-time.
+ *
+ * It is important to also know that Boxing does not necessarily imply heap-allocation.
+ * if the compiler can prove that a boxed type does not ever escape from the current function,
+ * then the box will refer to memory allocated on the stack.
  */

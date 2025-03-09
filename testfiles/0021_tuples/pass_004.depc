@@ -37,3 +37,18 @@ func f4() -> array_t((u64_t n, array_t(i32_t, n)), 3)
     // their pointers are stored directly without memcpy
     return {f2(), f2(), f2()};
 }
+
+func f5() -> i32_t
+{
+    // the memory allocated by f2() must be freed by the caller, before returning the result value
+    return f1(f2());
+}
+
+func f6() -> i32_t
+{
+    // the memory allocated by f2() must be freed by the caller, before entering the taken branch
+    if (f1(f2()) == 0)
+        return 1;
+    else
+        return 2;
+}

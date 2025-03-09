@@ -19,7 +19,7 @@ namespace dep0::llvmgen {
 /** Generate the LLVM value that results from a call to `::slice()`. */
 static llvm::Value* gen_builtin_slice(
     global_ctx_t& global,
-    local_ctx_t const& local,
+    local_ctx_t& local,
     llvm::IRBuilder<>& builder,
     typecheck::is_builtin_call_result::slice_t const& slice,
     typecheck::expr_t const& ret_type,
@@ -37,7 +37,7 @@ static llvm::Value* gen_builtin_slice(
 
 llvm::Value* try_gen_builtin(
     global_ctx_t& global,
-    local_ctx_t const& local,
+    local_ctx_t& local,
     llvm::IRBuilder<>& builder,
     typecheck::expr_t::app_t const& app,
     llvm::Value* const dest)

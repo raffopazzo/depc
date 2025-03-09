@@ -22,15 +22,15 @@
 namespace dep0::llvmgen {
 
 /** @brief Generate an LLVM function type for the given prototype. */
-llvm::FunctionType* gen_func_type(global_ctx_t&, llvm_func_proto_t const&);
+llvm::FunctionType* gen_func_type(global_ctx_t const&, llvm_func_proto_t const&);
 
 /** @brief Return the LLVM integer type of the given bit width. */
-llvm::IntegerType* gen_type(global_ctx_t&, ast::width_t);
+llvm::IntegerType* gen_type(global_ctx_t const&, ast::width_t);
 
 /**
  * @brief Generate the LLVM type for the given type expression, which must be a 1st order type.
  * @param type Must be an expression of sort `typename_t` and it must represent a 1st order type.
- * 
+ *
  * @remarks
  * The LLVM type generated is the best representation in LLVM of the DepC type.
  * This may be a primitive LLVM type, an LLVM struct or some pointer thereof.
@@ -44,7 +44,7 @@ llvm::IntegerType* gen_type(global_ctx_t&, ast::width_t);
  *   - @ref pass_by_ptr_vs_pass_by_value
  *   - @ref boxed_types
  */
-llvm::Type* gen_type(global_ctx_t&, typecheck::expr_t const& type);
+llvm::Type* gen_type(global_ctx_t const&, typecheck::expr_t const& type);
 
 /** @brief Contains the possible results returned by `pass_by_ptr()` */
 namespace pass_by_ptr_result
@@ -91,6 +91,15 @@ inline bool is_pass_by_val(global_ctx_t const& global, typecheck::expr_t const& 
  */
 bool is_boxed(typecheck::expr_t const& type);
 
+/**
+ * @brief Returns true if the given type is trivially destructible.
+ *
+ * Similarly to C++, a type is trivially destructible if deallocating its storage is enough.
+ * For example primitive types and tuples of primitive types are trivially destructible.
+ * Conversely, tuples containing boxed types are not because it might be necessary to release heap-allocated memory.
+ */
+bool is_trivially_destructible(global_ctx_t const&, typecheck::expr_t const& type);
+
 } // namespace dep0::llvmgen
 
 /**
@@ -103,14 +112,14 @@ bool is_boxed(typecheck::expr_t const& type);
  * In some cases, it is even recommended by LLVM, for example for a `struct`
  * they recommend to pass by pointer and use `getelementptr` instead of
  * passing by value and using `insert/extractvalue` instructions.
- * 
+ *
  * However, when generating an LLVM type, for example for the tuple `(i16_t, (i32_t, u32_t))`,
  * you intuitively expect `{i16, {i32, i32}}` not `{i16, {i32, i32}*}`.
  *
  * The decision of whether a pointer is required or not when invoking a function
  * is delegated to `dep0::llvmgen::pass_by_ptr()` whereas `dep0::llvmgen::gen_type()`
  * will only generate the LLVM type that best represents the given DepC type.
- * 
+ *
  * This does not mean that `gen_type()` will never emit a pointer type;
  * for example for C-strings and functions it returns a pointer;
  * but in this case the pointer *is* the value to pass to (or return from) the function.

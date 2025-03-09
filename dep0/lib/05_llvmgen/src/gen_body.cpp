@@ -6,12 +6,16 @@
  */
 #include "private/gen_body.hpp"
 
+#include "private/gen_array.hpp"
+#include "private/gen_type.hpp"
 #include "private/gen_val.hpp"
 
 #include "dep0/typecheck/is_impossible.hpp"
 #include "dep0/typecheck/is_mutable.hpp"
 
 #include "dep0/match.hpp"
+
+#include <ranges>
 
 namespace dep0::llvmgen {
 
@@ -22,7 +26,8 @@ static bool has_unit_type(typecheck::expr_t const& expr)
 }
 
 /**
- * Generate IR code for a DepC statement.
+ * @brief Generate IR code for a DepC statement.
+ *
  * This function will use the given IR builder, instead of a new one.
  *
  * @param current_snippet
@@ -77,6 +82,105 @@ static void gen_stmts(
     }
 }
 
+/**
+ * @brief Generate the destructor for a value of the given type.
+ *
+ * Destructors are generated in reverse order and recursively inside-out.
+ */
+static void gen_destructor(
+    global_ctx_t const& global,
+    local_ctx_t const& local,
+    llvm::IRBuilder<>& builder,
+    llvm::Value* const value,
+    typecheck::expr_t const& type)
+{
+    assert(not is_trivially_destructible(global, type) and "trivially destructible types do not need a destructor");
+    match(
+        type.value,
+        [] (typecheck::expr_t::typename_t const&) { },
+        [] (typecheck::expr_t::true_t const&) { },
+        [] (typecheck::expr_t::auto_t const&) { },
+        [] (typecheck::expr_t::bool_t const&) { },
+        [] (typecheck::expr_t::cstr_t const&) { },
+        [] (typecheck::expr_t::unit_t const&) { },
+        [] (typecheck::expr_t::i8_t const&) { },
+        [] (typecheck::expr_t::i16_t const&) { },
+        [] (typecheck::expr_t::i32_t const&) { },
+        [] (typecheck::expr_t::i64_t const&) { },
+        [] (typecheck::expr_t::u8_t const&) { },
+        [] (typecheck::expr_t::u16_t const&) { },
+        [] (typecheck::expr_t::u32_t const&) { },
+        [] (typecheck::expr_t::u64_t const&) { },
+        [] (typecheck::expr_t::boolean_constant_t const&) { },
+        [] (typecheck::expr_t::numeric_constant_t const&) { },
+        [] (typecheck::expr_t::string_literal_t const&) { },
+        [] (typecheck::expr_t::boolean_expr_t const&) { },
+        [] (typecheck::expr_t::relation_expr_t const&) { },
+        [] (typecheck::expr_t::arith_expr_t const&) { },
+        [] (typecheck::expr_t::var_t const&) { },
+        [&] (typecheck::expr_t::global_t const& g)
+        {
+            auto const val = global[g];
+            assert(val and "unknown type");
+            match(
+                *val,
+                [] (llvm_func_t const&) { },
+                [] (typecheck::type_def_t const&) { });
+        },
+        [&] (typecheck::expr_t::app_t const& app)
+        {
+            match(
+                app.func.get().value,
+                [] (typecheck::expr_t::true_t const&) { },
+                [&] (typecheck::expr_t::array_t const&)
+                {
+                    // TODO needs a test: iterate over all items and invoke their destructor
+                },
+                [] (auto const&) { });
+        },
+        [] (typecheck::expr_t::abs_t const&) { },
+        [] (typecheck::expr_t::pi_t const& x) { /* TODO this will change once we introduce closures */ },
+        [&] (typecheck::expr_t::sigma_t const& x)
+        {
+            auto const gep = [&, llvm_type = gen_type(global, type), zero = builder.getInt32(0)] (std::size_t const i)
+            {
+                return builder.CreateGEP(llvm_type, value, {zero, builder.getInt32(i)});
+            };
+            for (auto const i: std::views::reverse(std::views::iota(0ul, x.args.size())))
+                if (is_boxed(x.args[i].type))
+                {
+                    auto const free =
+                        llvm::CallInst::CreateFree(
+                            builder.CreateLoad(gen_type(global, x.args[i].type), gep(i)),
+                            builder.GetInsertBlock());
+                    builder.GetInsertBlock()->getInstList().push_back(free);
+                }
+                // TODO needs a test:
+                // else if (not is_trivially_destructible(global, x.args[i].type))
+                //     gen_destructor(global, local, builder, gep(i), x.args[i].type);
+        },
+        [] (typecheck::expr_t::array_t const&) { },
+        [] (typecheck::expr_t::init_list_t const&) { },
+        [] (typecheck::expr_t::subscript_t const&) { },
+        [] (typecheck::expr_t::because_t const& x)
+        {
+            // TODO needs a test: gen_destructor(global, local, builder, value, x.value.get());
+        });
+}
+
+/**
+ * @brief Generate all destructor calls associated to the given local context.
+ *
+ * Destructors are generated in reverse order and recursively inside-out.
+ *
+ * @remarks When this function returns the list of destructors of the local context will be cleared.
+ */
+static void gen_destructors(global_ctx_t const& global, local_ctx_t& local, llvm::IRBuilder<>& builder)
+{
+    for (auto const& [value, type]: std::views::reverse(local.destructors))
+        gen_destructor(global, local, builder, value, type);
+    local.destructors.clear();
+}
 
 snippet_t gen_body(
     global_ctx_t& global,
@@ -100,18 +204,20 @@ snippet_t gen_body(
 
 void gen_stmt(
     global_ctx_t& global,
-    local_ctx_t const& local,
+    local_ctx_t const& body_local,
     snippet_t& snippet,
     llvm::IRBuilder<>& builder,
     typecheck::stmt_t const& stmt,
     llvm::Function* const llvm_f,
     llvm::Value* const inlined_result)
 {
+    auto local = body_local.extend();
     match(
         stmt.value,
         [&] (typecheck::expr_t::app_t const& x)
         {
             gen_func_call(global, local, builder, x, value_category_t::temporary, nullptr);
+            // TODO gen_destructors(global, local, builder); needs a test
         },
         [&] (typecheck::stmt_t::if_else_t const& x)
         {
@@ -123,7 +229,10 @@ void gen_stmt(
             if (is_impossible(x.true_branch))
             {
                 if (is_mutable(x.cond))
+                {
                     gen_temporary_val(global, local, builder, x.cond);
+                    // TODO gen_destructors(global, local, builder); needs a test
+                }
                 if (x.false_branch)
                     gen_stmts(global, local, snippet, builder, *x.false_branch, llvm_f, inlined_result);
                 return;
@@ -131,12 +240,18 @@ void gen_stmt(
             if (x.false_branch and is_impossible(*x.false_branch))
             {
                 if (is_mutable(x.cond))
+                {
                     gen_temporary_val(global, local, builder, x.cond);
+                    // TODO gen_destructors(global, local, builder); needs a test
+                }
                 gen_stmts(global, local, snippet, builder, x.true_branch, llvm_f, inlined_result);
                 return;
             }
             // Otherwise both branches are possible and we need to emit each one in their own basic block.
+            // Also, before entering either branch, we need to make sure we invoke all destructors registered
+            // whilst generating the branch condition.
             auto const cond = gen_temporary_val(global, local, builder, x.cond);
+            gen_destructors(global, local, builder);
             auto const then = gen_body(global, local, x.true_branch, "then", llvm_f, inlined_result);
             std::ranges::copy(then.open_blocks, std::back_inserter(snippet.open_blocks));
             if (x.false_branch)
@@ -156,7 +271,8 @@ void gen_stmt(
         {
             if (not x.expr)
             {
-                // only unit_t can be missing a return expr
+                // Only unit_t can be missing a return expr.
+                // Also note that no destructor has been registered from the beginning of this function.
                 builder.CreateRet(gen_val_unit(global));
                 return;
             }
@@ -165,6 +281,7 @@ void gen_stmt(
                 // the enclosing function is being inlined, so the returned value is a temporary in the outer function
                 // TODO this might be wrong, think `return [] { return {3, {1,2,3}} }();` needs a test
                 gen_val(global, local, builder, *x.expr, value_category_t::temporary, inlined_result);
+                // TODO when and how do we generate destructors of inlined lambdas? currently we would be leaking
                 snippet.open_blocks.push_back(builder.GetInsertBlock());
                 return;
             }
@@ -174,6 +291,7 @@ void gen_stmt(
             // because it might be a function call with side effects;
             // and, if it is, just return the unit value, without complicating the CFG
             auto const ret_val = gen_val(global, local, builder, *x.expr, value_category_t::result, dest);
+            gen_destructors(global, local, builder);
             if (dest)
                 builder.CreateRetVoid();
             else if (has_unit_type(*x.expr))

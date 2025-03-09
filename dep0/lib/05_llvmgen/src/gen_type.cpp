@@ -11,11 +11,12 @@
 #include "dep0/fmap.hpp"
 #include "dep0/match.hpp"
 
+#include <algorithm>
 #include <vector>
 
 namespace dep0::llvmgen {
 
-llvm::FunctionType* gen_func_type(global_ctx_t& global, llvm_func_proto_t const& proto)
+llvm::FunctionType* gen_func_type(global_ctx_t const& global, llvm_func_proto_t const& proto)
 {
     bool constexpr is_var_arg = false;
     std::vector<llvm::Type*> arg_types; // might need to contain a return argument
@@ -56,7 +57,7 @@ llvm::FunctionType* gen_func_type(global_ctx_t& global, llvm_func_proto_t const&
     return llvm::FunctionType::get(ret_type, std::move(arg_types), is_var_arg);
 }
 
-llvm::IntegerType* gen_type(global_ctx_t& global, ast::width_t const width)
+llvm::IntegerType* gen_type(global_ctx_t const& global, ast::width_t const width)
 {
     switch (width)
     {
@@ -68,7 +69,7 @@ llvm::IntegerType* gen_type(global_ctx_t& global, ast::width_t const width)
     }
 }
 
-llvm::Type* gen_type(global_ctx_t& global, typecheck::expr_t const& type)
+llvm::Type* gen_type(global_ctx_t const& global, typecheck::expr_t const& type)
 {
     return match(
         type.value,
@@ -381,4 +382,163 @@ bool is_boxed(typecheck::expr_t const& type)
     // Currently only arrays are boxed, but most likely closures will be boxed too.
     return is_array(type);
 }
+
+bool is_trivially_destructible(global_ctx_t const& global, typecheck::expr_t const& type)
+{
+    return match(
+        type.value,
+        [] (typecheck::expr_t::typename_t const&) -> bool
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::true_t const&) -> bool
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::auto_t const&) -> bool
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::bool_t const&)
+        {
+            return true;
+        },
+        [] (typecheck::expr_t::cstr_t const&)
+        {
+            return true;
+        },
+        [] (typecheck::expr_t::unit_t const&)
+        {
+            return true;
+        },
+        [] (typecheck::expr_t::i8_t const&) { return true; },
+        [] (typecheck::expr_t::i16_t const&) { return true; },
+        [] (typecheck::expr_t::i32_t const&) { return true; },
+        [] (typecheck::expr_t::i64_t const&) { return true; },
+        [] (typecheck::expr_t::u8_t const&) { return true; },
+        [] (typecheck::expr_t::u16_t const&) { return true; },
+        [] (typecheck::expr_t::u32_t const&) { return true; },
+        [] (typecheck::expr_t::u64_t const&) { return true; },
+        [] (typecheck::expr_t::boolean_constant_t const&) -> bool
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::numeric_constant_t const&) -> bool
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::string_literal_t const&) -> bool
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::boolean_expr_t const&) -> bool
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::relation_expr_t const&) -> bool
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::arith_expr_t const&) -> bool
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::var_t const&) -> bool
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [&] (typecheck::expr_t::global_t const& g)
+        {
+            auto const val = global[g];
+            assert(val and "unknown type");
+            return match(
+                *val,
+                [] (llvm_func_t const&) -> bool
+                {
+                    assert(false and "found a function but was expecting a type");
+                    __builtin_unreachable();
+                },
+                [] (typecheck::type_def_t const& t)
+                {
+                    return match(
+                        t.value,
+                        [] (typecheck::type_def_t::integer_t const& integer)
+                        {
+                            return true;
+                        });
+                });
+        },
+        [&] (typecheck::expr_t::app_t const& app)
+        {
+            return match(
+                app.func.get().value,
+                [] (typecheck::expr_t::true_t const&)
+                {
+                    return true;
+                },
+                [&] (typecheck::expr_t::array_t const&)
+                {
+                    // TODO currently only arrays are boxed and arrays of arrays are still arrays,
+                    // so for now it is sufficient to check that element_type is trivially destructible;
+                    // in other words, currently an array cannot contain a boxed type,
+                    // but when we add more boxed types (eg closures) we need to check that element_type is not boxed
+                    return is_trivially_destructible(global, get_array_properties(type).element_type);
+                },
+                [] (auto const&) -> bool
+                {
+                    assert(false and "expression is not a type");
+                    __builtin_unreachable();
+                });
+        },
+        [] (typecheck::expr_t::abs_t const&) -> bool
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::pi_t const& x)
+        {
+            // TODO this will change once we introduce closures
+            return true;
+        },
+        [&] (typecheck::expr_t::sigma_t const& x)
+        {
+            return std::ranges::all_of(
+                x.args,
+                [&] (typecheck::func_arg_t const& arg)
+                {
+                    return not is_boxed(arg.type) and is_trivially_destructible(global, arg.type);
+                });
+        },
+        [] (typecheck::expr_t::array_t const&) -> bool
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::init_list_t const&) -> bool
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::subscript_t const&) -> bool
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [&] (typecheck::expr_t::because_t const& x)
+        {
+            // this is a type expression, eg `i32_t because true`
+            return is_trivially_destructible(global, x.value.get());
+        });
+}
+
 } // namespace dep0::llvmgen

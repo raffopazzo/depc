@@ -15,7 +15,7 @@ namespace dep0::llvmgen {
 
 llvm::Value* gen_alloca(
     global_ctx_t& global,
-    local_ctx_t const& local,
+    local_ctx_t& local,
     allocator_t const allocator,
     llvm::IRBuilder<>& builder,
     typecheck::expr_t const& type)

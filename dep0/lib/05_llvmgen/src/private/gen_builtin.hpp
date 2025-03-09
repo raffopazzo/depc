@@ -32,7 +32,7 @@ namespace dep0::llvmgen {
  */
 llvm::Value* try_gen_builtin(
     global_ctx_t&,
-    local_ctx_t const&,
+    local_ctx_t&,
     llvm::IRBuilder<>&,
     typecheck::expr_t::app_t const&,
     llvm::Value* dest);

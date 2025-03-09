@@ -44,12 +44,17 @@ llvm::Value* gen_val(llvm::IntegerType*, boost::multiprecision::cpp_int const&);
 
 /**
  * @brief Generates an LLVM value for the given expression.
+ *
+ * If the generated value is not trivially destructible it is stored in the list of destructors of the local context.
+ *
  * @param dest If not `nullptr`, emit IR instructions as explained in `maybe_gen_store()`.
  * @return The value generated or `dest` if it was not `nullptr`.
+ *
+ * @see @ref `is_trivially_destructible()`
  */
 llvm::Value* gen_val(
     global_ctx_t&,
-    local_ctx_t const&,
+    local_ctx_t&,
     llvm::IRBuilder<>&,
     typecheck::expr_t const&,
     value_category_t,
@@ -57,7 +62,7 @@ llvm::Value* gen_val(
 
 inline llvm::Value* gen_temporary_val(
     global_ctx_t& global,
-    local_ctx_t const& local,
+    local_ctx_t& local,
     llvm::IRBuilder<>& builder,
     typecheck::expr_t const& expr)
 {
@@ -79,7 +84,7 @@ inline llvm::Value* gen_temporary_val(
  */
 llvm::Value* maybe_gen_store(
     global_ctx_t&,
-    local_ctx_t const&,
+    local_ctx_t&,
     llvm::IRBuilder<>&,
     llvm::Value* value,
     llvm::Value* dest,
@@ -87,12 +92,18 @@ llvm::Value* maybe_gen_store(
 
 /**
  * @brief Generates an LLVM value from a run-time function call corresponding to the given application expression.
+ *
+ * If the return value of the function call is not trivially destructible,
+ * the result value and its type are stored in the list of destructors of the local context.
+ *
  * @param dest If not `nullptr`, emit IR instructions as explained in `maybe_gen_store()`.
  * @return The generated LLVM value or `dest` if it was not `nullptr`.
+ *
+ * @see @ref `is_trivially_destructible()`
  */
 llvm::Value* gen_func_call(
     global_ctx_t&,
-    local_ctx_t const&,
+    local_ctx_t&,
     llvm::IRBuilder<>&,
     typecheck::expr_t::app_t const&,
     value_category_t,

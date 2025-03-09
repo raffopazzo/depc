@@ -103,7 +103,7 @@ llvm::Value* gen_val(llvm::IntegerType* const type, boost::multiprecision::cpp_i
 
 llvm::Value* gen_val(
     global_ctx_t& global,
-    local_ctx_t const& local,
+    local_ctx_t& local,
     llvm::IRBuilder<>& builder,
     typecheck::expr_t const& expr,
     value_category_t const value_category,
@@ -526,7 +526,7 @@ llvm::Value* gen_val(
 
 llvm::Value* maybe_gen_store(
     global_ctx_t& global,
-    local_ctx_t const& local,
+    local_ctx_t& local,
     llvm::IRBuilder<>& builder,
     llvm::Value* const value,
     llvm::Value* const dest,
@@ -566,7 +566,7 @@ llvm::Value* maybe_gen_store(
 
 llvm::Value* gen_func_call(
     global_ctx_t& global,
-    local_ctx_t const& local,
+    local_ctx_t& local,
     llvm::IRBuilder<>& builder,
     typecheck::expr_t::app_t const& app,
     value_category_t const value_category,
@@ -637,6 +637,12 @@ llvm::Value* gen_func_call(
         else
             return gen_call();
     }();
+    // If the value constructed by the invoked function is used as a temporary in the enclosing scope,
+    // we need to make sure that it is properly destructed when all destructors are invoked.
+    // Conversely, if the constructed value is a result, it will be passed to the caller;
+    // it is their responsibility to invoke the destructor when the returned value is no longer needed.
+    if (value_category == value_category_t::temporary and not is_trivially_destructible(global, proto.ret_type()))
+        local.destructors.emplace_back(result, proto.ret_type());
     return result;
 }
 

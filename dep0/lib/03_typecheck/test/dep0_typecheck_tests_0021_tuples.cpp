@@ -173,7 +173,7 @@ BOOST_AUTO_TEST_CASE(pass_003) { BOOST_TEST(pass("0021_tuples/pass_003.depc")); 
 BOOST_AUTO_TEST_CASE(pass_004)
 {
     BOOST_TEST_REQUIRE(pass("0021_tuples/pass_004.depc"));
-    BOOST_TEST_REQUIRE(pass_result->entries.size() == 5ul);
+    BOOST_TEST_REQUIRE(pass_result->entries.size() == 7ul);
     {
         auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[0]);
         BOOST_TEST_REQUIRE(f);
@@ -270,6 +270,18 @@ BOOST_AUTO_TEST_CASE(pass_004)
                     app_of(global("f2")),
                     app_of(global("f2")),
                     app_of(global("f2")))));
+    }
+    {
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[5]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "f5");
+        // we're only interested in testing that malloc'd memory is free
+    }
+    {
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[6]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "f6");
+        // we're only interested in testing that malloc'd memory is free
     }
 }
 

@@ -102,8 +102,10 @@ private:
 /**
  * @brief Holds together things that have local visibility during IR codegen,
  * inside the current function scope or code block.
- * 
+ *
  * It contains a `scope_map`, so it follows the same model of context extension and shadowing rules.
+ *
+ * It also stores the values that need to be destructed before leaving the scope associated to this object.
  */
 struct local_ctx_t
 {
@@ -129,6 +131,14 @@ struct local_ctx_t
     {
         return values.try_emplace(std::move(name), std::forward<Args>(args)...);
     }
+
+    /**
+     * @brief Values that need to be destructed before leaving the scope associated to this object.
+     *
+     * Each value is stored alongside its original type and new values are appended at the end.
+     * If values need to be destroyed in reverse order it is the user responsibility to do so.
+     */
+    std::vector<std::pair<llvm::Value*, typecheck::expr_t>> destructors;
 
 private:
     scope_map<typecheck::expr_t::var_t, value_t> values;

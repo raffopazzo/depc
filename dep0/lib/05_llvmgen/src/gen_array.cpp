@@ -64,7 +64,7 @@ array_properties_view_t get_array_properties(typecheck::expr_t const& type)
 
 llvm::Value* gen_array_total_size(
     global_ctx_t& global,
-    local_ctx_t const& local,
+    local_ctx_t& local,
     llvm::IRBuilder<>& builder,
     array_properties_view_t const& properties)
 {
@@ -80,7 +80,7 @@ llvm::Value* gen_array_total_size(
 
 llvm::Value* gen_stride_size_if_needed(
     global_ctx_t& global,
-    local_ctx_t const& local,
+    local_ctx_t& local,
     llvm::IRBuilder<>& builder,
     array_properties_view_t const& properties)
 {

@@ -86,6 +86,11 @@ static std::string escape(std::string_view const in)
     return out;
 }
 
+static allocator_t select_allocator(value_category_t const value_category)
+{
+    return value_category == value_category_t::result ? allocator_t::heap : allocator_t::stack;
+}
+
 llvm::Value* gen_val_unit(global_ctx_t& global)
 {
     return llvm::ConstantAggregateZero::get(llvm::StructType::get(global.llvm_ctx));
@@ -101,12 +106,13 @@ llvm::Value* gen_val(
     local_ctx_t const& local,
     llvm::IRBuilder<>& builder,
     typecheck::expr_t const& expr,
-    value_storage_t storage)
+    value_category_t const value_category,
+    llvm::Value* const dest)
 {
     auto const& type = std::get<typecheck::expr_t>(expr.properties.sort.get());
     auto const storeOrReturn = [&] (llvm::Value* const value)
     {
-        return maybe_gen_store(global, local, builder, value, storage, type);
+        return maybe_gen_store(global, local, builder, value, dest, type);
     };
     return match(
         expr.value,
@@ -211,12 +217,12 @@ llvm::Value* gen_val(
                 x.value,
                 [&] (typecheck::expr_t::boolean_expr_t::not_t const& x) -> llvm::Value*
                 {
-                    return builder.CreateNot(gen_val(global, local, builder, x.expr.get(), value_storage_t()));
+                    return builder.CreateNot(gen_temporary_val(global, local, builder, x.expr.get()));
                 },
                 [&] <typename T> (T const& x) -> llvm::Value*
                 {
-                    auto const lhs_val = gen_val(global, local, builder, x.lhs.get(), value_storage_t());
-                    auto const rhs_val = gen_val(global, local, builder, x.rhs.get(), value_storage_t());
+                    auto const lhs_val = gen_temporary_val(global, local, builder, x.lhs.get());
+                    auto const rhs_val = gen_temporary_val(global, local, builder, x.rhs.get());
                     return boost::hana::overload(
                         [&] (boost::hana::type<typecheck::expr_t::boolean_expr_t::and_t>)
                         {
@@ -236,8 +242,8 @@ llvm::Value* gen_val(
                 {
                     using enum dep0::ast::sign_t;
                     using enum llvm::CmpInst::Predicate;
-                    auto const lhs_val = gen_val(global, local, builder, x.lhs.get(), value_storage_t());
-                    auto const rhs_val = gen_val(global, local, builder, x.rhs.get(), value_storage_t());
+                    auto const lhs_val = gen_temporary_val(global, local, builder, x.lhs.get());
+                    auto const rhs_val = gen_temporary_val(global, local, builder, x.rhs.get());
                     auto const sign =
                         match(
                             std::get<typecheck::expr_t>(x.lhs.get().properties.sort.get()).value,
@@ -290,8 +296,8 @@ llvm::Value* gen_val(
                 x.value,
                 [&] <typename T> (T const& x) -> llvm::Value*
                 {
-                    auto const lhs = gen_val(global, local, builder, x.lhs.get(), value_storage_t());
-                    auto const rhs = gen_val(global, local, builder, x.rhs.get(), value_storage_t());
+                    auto const lhs = gen_temporary_val(global, local, builder, x.lhs.get());
+                    auto const rhs = gen_temporary_val(global, local, builder, x.rhs.get());
                     return boost::hana::overload(
                         [&] (boost::hana::type<typecheck::expr_t::arith_expr_t::plus_t>)
                         {
@@ -363,10 +369,11 @@ llvm::Value* gen_val(
                         builder.SetInsertPoint(next_block);
                     };
                     auto const& ret_type = abs->ret_type.get();
+                    auto const allocator = select_allocator(value_category);
                     auto const dest2 =
-                        storage.dest() ? storage.dest()
+                        dest ? dest
                         : is_pass_by_val(global, ret_type) ? nullptr
-                        : gen_alloca(global, local, storage.allocator(), builder, ret_type);
+                        : gen_alloca(global, local, allocator, builder, ret_type);
                     if (dest2)
                     {
                         gen_inlined_body(dest2);
@@ -383,7 +390,7 @@ llvm::Value* gen_val(
                         return builder.CreateLoad(inlined_type, inlined_result);
                     }
                 }
-            return gen_func_call(global, local, builder, x, storage);
+            return gen_func_call(global, local, builder, x, value_category, dest);
         },
         [&] (typecheck::expr_t::abs_t const& abs) -> llvm::Value*
         {
@@ -432,10 +439,8 @@ llvm::Value* gen_val(
                 [&] (typecheck::is_list_initializable_result::sigma_t const& sigma) -> llvm::Value*
                 {
                     auto const llvm_type = gen_type(global, type);
-                    auto const dest2 =
-                        storage.dest()
-                        ? storage.dest()
-                        : gen_alloca(global, local, storage.allocator(), builder, type);
+                    auto const allocator = select_allocator(value_category);
+                    auto const dest2 = dest ? dest : gen_alloca(global, local, allocator, builder, type);
                     auto const int32 = llvm::Type::getInt32Ty(global.llvm_ctx);
                     auto const zero = llvm::ConstantInt::get(int32, 0);
                     for (auto const i: std::views::iota(0ul, x.values.size()))
@@ -444,22 +449,20 @@ llvm::Value* gen_val(
                         auto const element_ptr = builder.CreateGEP(llvm_type, dest2, {zero, index});
                         if (is_boxed(sigma.args[i].type))
                         {
-                            auto const p = gen_alloca(global, local, storage.allocator(), builder, sigma.args[i].type);
-                            gen_val(global, local, builder, x.values[i], value_storage_t(*p, storage.allocator()));
+                            auto const p = gen_alloca(global, local, allocator, builder, sigma.args[i].type);
+                            gen_val(global, local, builder, x.values[i], value_category, p);
                             builder.CreateStore(p, element_ptr);
                         }
                         else
-                            gen_val(global, local, builder, x.values[i], value_storage_t(*element_ptr, storage.allocator()));
+                            gen_val(global, local, builder, x.values[i], value_category, element_ptr);
                     }
                     return dest2;
                 },
                 [&] (typecheck::is_list_initializable_result::array_t const&) -> llvm::Value*
                 {
                     auto const properties = get_array_properties(type);
-                    auto const dest2 =
-                        storage.dest()
-                        ? storage.dest()
-                        : gen_alloca(global, local, storage.allocator(), builder, type);
+                    auto const allocator = select_allocator(value_category);
+                    auto const dest2 = dest ? dest : gen_alloca(global, local, allocator, builder, type);
                     auto const element_type = gen_type(global, properties.element_type);
                     auto const stride_size = gen_stride_size_if_needed(global, local, builder, properties);
                     auto const int32 = llvm::Type::getInt32Ty(global.llvm_ctx); // TODO we use u64_t to typecheck arrays
@@ -470,7 +473,7 @@ llvm::Value* gen_val(
                         auto const element_ptr = builder.CreateGEP(element_type, dest2, offset);
                         // TODO currently only arrays are boxed and arrays of arrays are still arrays;
                         // but when we add more boxed types (eg closures) we will need to allocate their box
-                        gen_val(global, local, builder, x.values[i], value_storage_t(*element_ptr, storage.allocator()));
+                        gen_val(global, local, builder, x.values[i], value_category, element_ptr);
                     }
                     return dest2;
                 });
@@ -488,7 +491,7 @@ llvm::Value* gen_val(
                 [&] (typecheck::has_subscript_access_result::sigma_t const& sigma) -> llvm::Value*
                 {
                     auto const tuple_type = gen_type(global, object_type);
-                    auto const base = gen_val(global, local, builder, subscript.array.get(), value_storage_t());
+                    auto const base = gen_temporary_val(global, local, builder, subscript.array.get());
                     auto const index = std::get_if<typecheck::expr_t::numeric_constant_t>(&subscript.index.get().value);
                     assert(index and "subscript operand on tuples must be a numeric literal");
                     auto const int32 = llvm::Type::getInt32Ty(global.llvm_ctx);
@@ -508,8 +511,8 @@ llvm::Value* gen_val(
                     auto const properties = get_array_properties(std::get<typecheck::expr_t>(array.properties.sort.get()));
                     auto const stride_size = gen_stride_size_if_needed(global, local, builder, properties);
                     auto const element_type = gen_type(global, properties.element_type);
-                    auto const base = gen_val(global, local, builder, subscript.array.get(), value_storage_t());
-                    auto const index = gen_val(global, local, builder, subscript.index.get(), value_storage_t());
+                    auto const base = gen_temporary_val(global, local, builder, subscript.array.get());
+                    auto const index = gen_temporary_val(global, local, builder, subscript.index.get());
                     auto const offset = stride_size ? builder.CreateMul(stride_size, index) : index;
                     auto const ptr = builder.CreateGEP(element_type, base, offset);
                     return storeOrReturn(is_pass_by_ptr(global, type) ? ptr : builder.CreateLoad(element_type, ptr));
@@ -517,7 +520,7 @@ llvm::Value* gen_val(
         },
         [&] (typecheck::expr_t::because_t const& x) -> llvm::Value*
         {
-            return gen_val(global, local, builder, x.value.get(), storage);
+            return gen_val(global, local, builder, x.value.get(), value_category, dest);
         });
 }
 
@@ -526,10 +529,9 @@ llvm::Value* maybe_gen_store(
     local_ctx_t const& local,
     llvm::IRBuilder<>& builder,
     llvm::Value* const value,
-    value_storage_t const storage,
+    llvm::Value* const dest,
     typecheck::expr_t const& type)
 {
-    auto const dest = storage.dest();
     if (not dest)
         return value;
     // TODO do not crash if the memcpy depends on some erased argument
@@ -567,9 +569,10 @@ llvm::Value* gen_func_call(
     local_ctx_t const& local,
     llvm::IRBuilder<>& builder,
     typecheck::expr_t::app_t const& app,
-    value_storage_t const storage)
+    value_category_t const value_category,
+    llvm::Value* const dest)
 {
-    if (auto const result = try_gen_builtin(global, local, builder, app, storage))
+    if (auto const result = try_gen_builtin(global, local, builder, app, dest))
         return result;
     assert(
         std::ranges::all_of(
@@ -597,7 +600,7 @@ llvm::Value* gen_func_call(
         return std::move(proto.value());
     }();
     auto const llvm_func_type = gen_func_type(global, proto);
-    auto const llvm_func = gen_val(global, local, builder, app.func.get(), value_storage_t());
+    auto const llvm_func = gen_temporary_val(global, local, builder, app.func.get());
     std::vector<llvm::Value*> llvm_args; // modifiable before generating the call
     auto const has_ret_arg = is_pass_by_ptr(global, proto.ret_type());
     auto const gen_call = [&, arg_offset = has_ret_arg ? 1ul : 0ul]
@@ -605,7 +608,7 @@ llvm::Value* gen_func_call(
         llvm_args.reserve(llvm_args.size() + proto.runtime_args().size());
         for (auto const i: std::views::iota(0ul, pi_type.args.size()))
             if (pi_type.args[i].qty > ast::qty_t::zero)
-                llvm_args.push_back(gen_val(global, local, builder, app.args[i], value_storage_t()));
+                llvm_args.push_back(gen_temporary_val(global, local, builder, app.args[i]));
         // this could be a direct call to a global function, or an indirect call via a function pointer
         auto const call = builder.CreateCall(llvm_func_type, llvm_func, std::move(llvm_args));
         for (auto const i: std::views::iota(0ul, proto.runtime_args().size()))
@@ -616,23 +619,25 @@ llvm::Value* gen_func_call(
         }
         return call;
     };
-    if (has_ret_arg)
+    auto const allocator = select_allocator(value_category);
+    auto const result = [&] () -> llvm::Value*
     {
-        auto const dest2 =
-            storage.dest()
-            ? storage.dest()
-            : gen_alloca(global, local, storage.allocator(), builder, proto.ret_type());
-        llvm_args.push_back(dest2);
-        gen_call();
-        return dest2;
-    }
-    else if (auto const dest = storage.dest())
-    {
-        builder.CreateStore(gen_call(), dest);
-        return dest;
-    }
-    else
-        return gen_call();
+        if (has_ret_arg)
+        {
+            auto const dest2 = dest ? dest : gen_alloca(global, local, allocator, builder, proto.ret_type());
+            llvm_args.push_back(dest2);
+            gen_call();
+            return dest2;
+        }
+        else if (dest)
+        {
+            builder.CreateStore(gen_call(), dest);
+            return dest;
+        }
+        else
+            return gen_call();
+    }();
+    return result;
 }
 
 } // namespace dep0::llvmgen

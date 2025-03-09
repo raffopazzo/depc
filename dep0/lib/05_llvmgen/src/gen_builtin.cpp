@@ -23,16 +23,16 @@ static llvm::Value* gen_builtin_slice(
     llvm::IRBuilder<>& builder,
     typecheck::is_builtin_call_result::slice_t const& slice,
     typecheck::expr_t const& ret_type,
-    value_storage_t const storage)
+    llvm::Value* const dest)
 {
     auto const properties = get_array_properties(std::get<typecheck::expr_t>(slice.xs.properties.sort.get()));
     auto const stride_size = gen_stride_size_if_needed(global, local, builder, properties);
     auto const type = gen_type(global, properties.element_type);
-    auto const base = gen_val(global, local, builder, slice.xs, value_storage_t());
-    auto const index = gen_val(global, local, builder, slice.k, value_storage_t());
+    auto const base = gen_temporary_val(global, local, builder, slice.xs);
+    auto const index = gen_temporary_val(global, local, builder, slice.k);
     auto const offset = stride_size ? builder.CreateMul(stride_size, index) : index;
     auto const ptr = builder.CreateGEP(type, base, offset);
-    return maybe_gen_store(global, local, builder, ptr, storage, ret_type);
+    return maybe_gen_store(global, local, builder, ptr, dest, ret_type);
 }
 
 llvm::Value* try_gen_builtin(
@@ -40,7 +40,7 @@ llvm::Value* try_gen_builtin(
     local_ctx_t const& local,
     llvm::IRBuilder<>& builder,
     typecheck::expr_t::app_t const& app,
-    value_storage_t const storage)
+    llvm::Value* const dest)
 {
     return match(
         typecheck::is_builtin_call(app),
@@ -49,7 +49,7 @@ llvm::Value* try_gen_builtin(
         {
             auto const& func_type = std::get<typecheck::expr_t>(app.func.get().properties.sort.get());
             auto const& ret_type = std::get<typecheck::expr_t::pi_t>(func_type.value).ret_type.get();
-            return gen_builtin_slice(global, local, builder, slice, ret_type, storage);
+            return gen_builtin_slice(global, local, builder, slice, ret_type, dest);
         });
 }
 

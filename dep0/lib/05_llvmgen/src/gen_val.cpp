@@ -534,7 +534,6 @@ llvm::Value* maybe_gen_store(
 {
     if (not dest)
         return value;
-    // TODO do not crash if the memcpy depends on some erased argument
     match(
         pass_by_ptr(global, type),
         [&] (pass_by_ptr_result::no_t)
@@ -544,21 +543,64 @@ llvm::Value* maybe_gen_store(
         [&] (pass_by_ptr_result::sigma_t const& sigma)
         {
             assert(dest->getType()->isPointerTy() and "memcpy destination must be a pointer");
-            auto const& data_layout = global.llvm_module.getDataLayout();
-            auto const pointed_type = gen_type(global, type);
-            auto const align = data_layout.getPrefTypeAlign(pointed_type);
-            auto const bytes = data_layout.getTypeAllocSize(pointed_type);
-            builder.CreateMemCpy(dest, align, value, align, builder.getInt64(bytes.getFixedSize()));
+            if (is_trivially_copyable(global, type))
+            {
+                auto const& data_layout = global.llvm_module.getDataLayout();
+                auto const pointed_type = gen_type(global, type);
+                auto const align = data_layout.getPrefTypeAlign(pointed_type);
+                auto const bytes = data_layout.getTypeAllocSize(pointed_type);
+                builder.CreateMemCpy(dest, align, value, align, builder.getInt64(bytes.getFixedSize()));
+            }
+            else
+            {
+                auto const gep =
+                    [&, llvm_type=gen_type(global, type), zero=builder.getInt32(0)]
+                    (llvm::Value* const p, std::size_t const i)
+                    {
+                        return builder.CreateGEP(llvm_type, p, {zero, builder.getInt32(i)});
+                    };
+                auto sigma_ctx = local.extend();
+                for (auto const i: std::views::iota(0ul, sigma.args.size()))
+                {
+                    auto const& element_type = sigma.args[i].type;
+                    auto const element_ptr = gep(value, i);
+                    auto const dest_element_ptr = gep(dest, i);
+                    if (is_boxed(element_type))
+                    {
+                        // TODO should use stack if value category is `temporary`
+                        auto const alloca = gen_alloca(global, sigma_ctx, allocator_t::heap, builder, element_type);
+                        builder.CreateStore(alloca, dest_element_ptr);
+                        maybe_gen_store(global, sigma_ctx, builder, element_ptr, alloca, element_type);
+                        if (sigma.args[i].var)
+                            sigma_ctx.try_emplace(*sigma.args[i].var, alloca);
+                    }
+                    else if (is_pass_by_ptr(global, element_type))
+                    {
+                        maybe_gen_store(global, sigma_ctx, builder, element_ptr, dest_element_ptr, element_type);
+                        if (sigma.args[i].var)
+                            sigma_ctx.try_emplace(*sigma.args[i].var, dest_element_ptr);
+                    }
+                    else
+                    {
+                        auto const element_value = builder.CreateLoad(gen_type(global, element_type), element_ptr);
+                        builder.CreateStore(element_value, dest_element_ptr);
+                        if (sigma.args[i].var)
+                            sigma_ctx.try_emplace(*sigma.args[i].var, element_value);
+                    }
+                }
+            }
         },
         [&] (pass_by_ptr_result::array_t const& array)
         {
             assert(dest->getType()->isPointerTy() and "memcpy destination must be a pointer");
+            assert(is_trivially_copyable(global, type)); // TODO
             auto const& data_layout = global.llvm_module.getDataLayout();
             auto const pointed_type = gen_type(global, array.properties.element_type);
             auto const align = data_layout.getPrefTypeAlign(pointed_type);
             auto const bytes = data_layout.getTypeAllocSize(pointed_type);
             auto const size = gen_array_total_size(global, local, builder, array.properties);
             auto const total_bytes = builder.CreateMul(size, builder.getInt64(bytes.getFixedSize()));
+            // TODO do not crash if the memcpy depends on some erased argument
             builder.CreateMemCpy(dest, align, value, align, total_bytes);
         });
     return dest;

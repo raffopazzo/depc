@@ -52,3 +52,16 @@ func f6() -> i32_t
     else
         return 2;
 }
+
+func f7((u64_t n, array_t(i32_t, n)) x) -> array_t((u64_t n, array_t(i32_t, n)), 1)
+{
+    // simple memcpy of x is not sufficient here because the array has to be allocated on the heap
+    return {x};
+}
+
+func f8() -> array_t((u64_t n, array_t(i32_t, n)), 1)
+{
+    // the memory allocated by f2() must be freed before returning the result value
+    // but not the array allocated by f7() which is returned to the caller
+    return f7(f2());
+}

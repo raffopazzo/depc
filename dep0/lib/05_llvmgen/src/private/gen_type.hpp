@@ -100,6 +100,12 @@ bool is_boxed(typecheck::expr_t const& type);
  */
 bool is_trivially_destructible(global_ctx_t const&, typecheck::expr_t const& type);
 
+inline bool is_trivially_copyable(global_ctx_t const& global, typecheck::expr_t const& type)
+{
+    // currently all trivially copyable types are also trivially destructible but this may change in future
+    return is_trivially_destructible(global, type);
+}
+
 } // namespace dep0::llvmgen
 
 /**

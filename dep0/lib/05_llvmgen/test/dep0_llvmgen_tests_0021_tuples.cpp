@@ -585,7 +585,7 @@ BOOST_AUTO_TEST_CASE(pass_004)
         auto const f = pass_result.value()->getFunction("f5");
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, sext));
         auto const inst = get_instructions(f->getEntryBlock());
-        BOOST_TEST_REQUIRE(inst.size() = 8ul);
+        BOOST_TEST_REQUIRE(inst.size() == 8ul);
         auto const alloca   = inst[0];
         auto const call_f2  = inst[1];
         auto const call_f1  = inst[2];
@@ -611,9 +611,8 @@ BOOST_AUTO_TEST_CASE(pass_004)
         auto const entry = blks[0];
         auto const then0 = blks[1];
         auto const else0 = blks[2];
-        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, sext));
         auto const inst = get_instructions(*entry);
-        BOOST_TEST_REQUIRE(inst.size() = 8ul);
+        BOOST_TEST_REQUIRE(inst.size() == 9ul);
         auto const alloca   = inst[0];
         auto const call_f2  = inst[1];
         auto const call_f1  = inst[2];

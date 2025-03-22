@@ -65,3 +65,9 @@ func f8() -> array_t((u64_t n, array_t(i32_t, n)), 1)
     // but not the array allocated by f7() which is returned to the caller
     return f7(f2());
 }
+
+func f9() -> i32_t
+{
+    // the array allocated by f7() inside f8() must now be freed before returning the result value
+    return f1(f8()[0]);
+}

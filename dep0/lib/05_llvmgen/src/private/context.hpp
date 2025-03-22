@@ -14,6 +14,7 @@
 
 #include "dep0/typecheck/ast.hpp"
 
+#include "dep0/ast/hash_code.hpp"
 #include "dep0/scope_map.hpp"
 
 #include <llvm/IR/LLVMContext.h>
@@ -66,17 +67,23 @@ struct global_ctx_t
     value_t* operator[](typecheck::expr_t::global_t const&);
     value_t const* operator[](typecheck::expr_t::global_t const&) const;
 
+    /** @brief Returns the destructor for the given type, if one exists; otherwise `nullopt`. */
+    std::optional<llvm_func_t> get_destructor(typecheck::expr_t const& type) const;
+
+    /** @brief Store a new destructor for the given type and overwrites the old one if one already exists. */
+    void store_destructor(typecheck::expr_t type, llvm_func_t);
+
     /**
      * @brief Look up the LLVM global value stored for the given string literal.
      * @details Return `nullptr` if no global value exists yet.
-     * @see `store_string_literal()`.
+     * @see @ref `store_string_literal()`.
      */
-    llvm::Value* get_string_literal(std::string_view);
+    llvm::Value* get_string_literal(std::string_view) const;
 
     /**
      * @brief Store an LLVM global value holding the given string literal
      * @remarks If one already exists, it will be overwritten.
-     * @see `get_string_literal()`.
+     * @see @ref `get_string_literal()`.
      */
     void store_string_literal(std::string, llvm::Value*);
 
@@ -91,12 +98,15 @@ struct global_ctx_t
     }
 
 private:
+    struct eq_t { bool operator()(typecheck::expr_t const&, typecheck::expr_t const&) const; };
+
     std::size_t next_id = 0ul; /**< @brief Next unique ID returned from `get_next_id()`. */
     scope_map<typecheck::expr_t::global_t, value_t> values; /**< @brief Global functions, type definitions, etc. */
     std::map<std::string, llvm::Value*, std::less<>> string_literals; /**<
         * @brief LLVM global values associated to each unique string literal.
         * @note The comparator `std::less<>` is required to allow look-up with `string_view`.
         */
+    std::unordered_map<typecheck::expr_t, llvm_func_t, std::hash<typecheck::expr_t>, eq_t> destructors;
 };
 
 /**

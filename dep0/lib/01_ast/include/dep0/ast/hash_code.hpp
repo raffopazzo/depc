@@ -24,3 +24,17 @@ template <Properties P> std::size_t hash_code(expr_t<P> const&);
 } // namespace dep0::ast
 
 #include "dep0/ast/hash_code_impl.hpp"
+
+#include <functional>
+namespace std {
+
+template <dep0::ast::Properties P>
+struct hash<dep0::ast::expr_t<P>>
+{
+    size_t operator()(dep0::ast::expr_t<P> const& x) const
+    {
+        return dep0::ast::hash_code(x);
+    }
+};
+
+} // namespace std

@@ -6,7 +6,32 @@
  */
 #include "private/context.hpp"
 
+#include "dep0/ast/alpha_equivalence.hpp"
+
 namespace dep0::llvmgen {
+
+// TODO duplicated from proof_search.cpp; should we extract something in common?
+bool global_ctx_t::eq_t::operator()(typecheck::expr_t const& x, typecheck::expr_t const& y) const
+{
+    // TODO should this be beta-delta equivalence instead? needs a test
+    return ast::is_alpha_equivalent(x, y).has_value()
+        and std::visit(
+            boost::hana::overload(
+                [] (typecheck::expr_t const& x_type, typecheck::expr_t const& y_type)
+                {
+                    return ast::is_alpha_equivalent(x_type, y_type).has_value();
+                },
+                [] (typecheck::kind_t, typecheck::kind_t)
+                {
+                    return true;
+                },
+                [] <typename T, typename U> requires (not std::is_same_v<T, U>)
+                (T const&, U const&)
+                {
+                    return false;
+                }),
+            x.properties.sort.get(), y.properties.sort.get());
+}
 
 global_ctx_t::global_ctx_t(llvm::Module& m) :
     llvm_ctx(m.getContext()),
@@ -25,7 +50,21 @@ global_ctx_t::value_t const* global_ctx_t::operator[](typecheck::expr_t::global_
     return values[k];
 }
 
-llvm::Value* global_ctx_t::get_string_literal(std::string_view const s)
+std::optional<llvm_func_t> global_ctx_t::get_destructor(typecheck::expr_t const& type) const
+{
+    std::optional<llvm_func_t> result;
+    auto const it = destructors.find(type);
+    if (it != destructors.end())
+        result.emplace(it->second);
+    return result;
+}
+
+void global_ctx_t::store_destructor(typecheck::expr_t type, llvm_func_t func)
+{
+    destructors.emplace(std::move(type), std::move(func));
+}
+
+llvm::Value* global_ctx_t::get_string_literal(std::string_view const s) const
 {
     auto const it = string_literals.find(s);
     return it == string_literals.end() ? nullptr : it->second;

@@ -26,6 +26,54 @@ static bool has_unit_type(typecheck::expr_t const& expr)
 }
 
 /**
+ * @brief Generate the destructor for the given type.
+ *
+ * Destructors are generated in reverse order and recursively inside-out.
+ */
+static llvm_func_t gen_destructor(global_ctx_t&, local_ctx_t&, typecheck::expr_t const&);
+
+/**
+ * @brief Invoke the destructor on a value of the given type.
+ *
+ * @remarks If this is the first time this function is called for the given type,
+ * a new destructor function will be emitted and registered in the global context.
+ */
+static void gen_destructor_call(global_ctx_t&, local_ctx_t&, llvm::IRBuilder<>&, llvm::Value*, typecheck::expr_t const&);
+
+template <typename F>
+static void gen_for_loop_downward_unrolled(
+    global_ctx_t& global,
+    local_ctx_t& local,
+    llvm::IRBuilder<>& builder,
+    std::size_t initial_value,
+    std::size_t const sentinel_value,
+    F&& body_gen)
+{
+    while (initial_value-- > sentinel_value)
+        body_gen(global, local, builder, builder.getInt32(initial_value));
+}
+
+/**
+ * @brief Generate a for-loop that iterates downwards from an initial value down to a sentinel value.
+ *
+ * @param body_gen  Generator of the loop body, which takes the iterator variable as argument.
+ */
+template <typename F>
+static void gen_for_loop_downward(
+    global_ctx_t& global,
+    local_ctx_t& local,
+    llvm::IRBuilder<>& builder,
+    llvm::Value* const initial_value,
+    llvm::Value* const sentinel_value,
+    F&& body_gen)
+{
+    if (auto const a = llvm::dyn_cast<llvm::ConstantInt>(initial_value))
+        if (auto const b = llvm::dyn_cast<llvm::ConstantInt>(sentinel_value))
+            gen_for_loop_downward_unrolled(global, local, builder, a->getZExtValue(), b->getZExtValue(), body_gen);
+    // else TODO generate runtime loop
+}
+
+/**
  * @brief Generate IR code for a DepC statement.
  *
  * This function will use the given IR builder, instead of a new one.
@@ -82,19 +130,19 @@ static void gen_stmts(
     }
 }
 
-/**
- * @brief Generate the destructor for a value of the given type.
- *
- * Destructors are generated in reverse order and recursively inside-out.
- */
-static void gen_destructor(
-    global_ctx_t const& global,
-    local_ctx_t const& local,
-    llvm::IRBuilder<>& builder,
-    llvm::Value* const value,
+static llvm_func_t gen_destructor(
+    global_ctx_t& global,
+    local_ctx_t& local,
     typecheck::expr_t const& type)
 {
     assert(not is_trivially_destructible(global, type) and "trivially destructible types do not need a destructor");
+    auto const name = std::string{".dtor."} + std::to_string(global.get_next_id());
+    auto const arg_type = is_boxed(type) ? gen_type(global, type) : gen_type(global, type)->getPointerTo();
+    auto const f_ty = llvm::FunctionType::get(llvm::Type::getVoidTy(global.llvm_ctx), {arg_type}, false);
+    auto const llvm_f = llvm::Function::Create(f_ty, llvm::Function::PrivateLinkage, name, global.llvm_module);
+    auto builder = llvm::IRBuilder<>(global.llvm_ctx);
+    builder.SetInsertPoint(llvm::BasicBlock::Create(global.llvm_ctx, "entry", llvm_f));
+    auto const value = llvm_f->getArg(0);
     match(
         type.value,
         [] (typecheck::expr_t::typename_t const&) { },
@@ -129,14 +177,22 @@ static void gen_destructor(
         },
         [&] (typecheck::expr_t::app_t const& app)
         {
-            match(
-                app.func.get().value,
-                [] (typecheck::expr_t::true_t const&) { },
-                [&] (typecheck::expr_t::array_t const&)
+            auto const properties = get_properties_if_array(type);
+            assert(properties and "non-trivially-destructible type is not an array");
+            gen_for_loop_downward(
+                global, local, builder,
+                gen_array_total_size(global, local, builder, *properties),
+                builder.getInt32(0),
+                [
+                    &element_type=properties->element_type,
+                    llvm_type=gen_type(global, properties->element_type),
+                    array=value
+                ]
+                (global_ctx_t& global, local_ctx_t& local, llvm::IRBuilder<>& builder, llvm::Value* const index)
                 {
-                    // TODO needs a test: iterate over all items and invoke their destructor
-                },
-                [] (auto const&) { });
+                    auto const element_ptr = builder.CreateGEP(llvm_type, array, index);
+                    gen_destructor_call(global, local, builder, element_ptr, element_type);
+                });
         },
         [] (typecheck::expr_t::abs_t const&) { },
         [] (typecheck::expr_t::pi_t const& x) { /* TODO this will change once we introduce closures */ },
@@ -147,6 +203,7 @@ static void gen_destructor(
                 return builder.CreateGEP(llvm_type, value, {zero, builder.getInt32(i)});
             };
             for (auto const i: std::views::reverse(std::views::iota(0ul, x.args.size())))
+                // TODO add test or explain: shouldn't we first call the destructor of the boxed type and then free?
                 if (is_boxed(x.args[i].type))
                 {
                     auto const free =
@@ -157,15 +214,34 @@ static void gen_destructor(
                 }
                 // TODO needs a test:
                 // else if (not is_trivially_destructible(global, x.args[i].type))
-                //     gen_destructor(global, local, builder, gep(i), x.args[i].type);
+                //     gen_destructor_call(global, local, builder, gep(i), x.args[i].type);
         },
         [] (typecheck::expr_t::array_t const&) { },
         [] (typecheck::expr_t::init_list_t const&) { },
         [] (typecheck::expr_t::subscript_t const&) { },
         [] (typecheck::expr_t::because_t const& x)
         {
-            // TODO needs a test: gen_destructor(global, local, builder, value, x.value.get());
+            // TODO needs a test: gen_destructor_call(global, local, builder, value, x.value.get());
         });
+    builder.CreateRetVoid();
+    return llvm_func_t(f_ty, llvm_f);
+}
+
+static void gen_destructor_call(
+    global_ctx_t& global,
+    local_ctx_t& local,
+    llvm::IRBuilder<>& builder,
+    llvm::Value* const value,
+    typecheck::expr_t const& type)
+{
+    auto destructor = global.get_destructor(type);
+    if (not destructor)
+    {
+        destructor = gen_destructor(global, local, type);
+        global.store_destructor(type, *destructor);
+    }
+    // TODO add attributes
+    builder.CreateCall(destructor->type, destructor->func, {value});
 }
 
 /**
@@ -175,11 +251,18 @@ static void gen_destructor(
  *
  * @remarks When this function returns the list of destructors of the local context will be cleared.
  */
-static void gen_destructors(global_ctx_t const& global, local_ctx_t& local, llvm::IRBuilder<>& builder)
+static void gen_destructors(global_ctx_t& global, local_ctx_t& local, llvm::IRBuilder<>& builder)
 {
-    for (auto const& [value, type]: std::views::reverse(local.destructors))
-        gen_destructor(global, local, builder, value, type);
-    local.destructors.clear();
+    while (not local.destructors.empty())
+    {
+        auto destructors = std::move(local.destructors);
+        for (auto const& [value, type]: std::views::reverse(destructors))
+            gen_destructor_call(global, local, builder, value, type);
+        // if calling destructors leads to needing more destructor calls,
+        // we can just loop around until we drain the list,
+        // but we really don't expect this to happen
+        assert(local.destructors.empty() and "gen_destructor_call() created more need for destructors");
+    }
 }
 
 snippet_t gen_body(

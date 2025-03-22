@@ -69,8 +69,12 @@ static void gen_for_loop_downward(
 {
     if (auto const a = llvm::dyn_cast<llvm::ConstantInt>(initial_value))
         if (auto const b = llvm::dyn_cast<llvm::ConstantInt>(sentinel_value))
+        {
             gen_for_loop_downward_unrolled(global, local, builder, a->getZExtValue(), b->getZExtValue(), body_gen);
+            return;
+        }
     // else TODO generate runtime loop
+    assert(false and "loop of variable length not yet supported");
 }
 
 /**
@@ -138,6 +142,7 @@ static llvm_func_t gen_destructor(
     assert(not is_trivially_destructible(global, type) and "trivially destructible types do not need a destructor");
     auto const name = std::string{".dtor."} + std::to_string(global.get_next_id());
     auto const arg_type = is_boxed(type) ? gen_type(global, type) : gen_type(global, type)->getPointerTo();
+    // TODO if type is some `array_t(t, n)`, we need to pass `n` as second argument
     auto const f_ty = llvm::FunctionType::get(llvm::Type::getVoidTy(global.llvm_ctx), {arg_type}, false);
     auto const llvm_f = llvm::Function::Create(f_ty, llvm::Function::PrivateLinkage, name, global.llvm_module);
     auto builder = llvm::IRBuilder<>(global.llvm_ctx);

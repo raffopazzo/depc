@@ -85,3 +85,8 @@ boost::test_tools::predicate_result LLVMGenTestsFixture::pass(std::filesystem::p
     pass_result.emplace(std::move(*gen_result));
     return true;
 }
+
+llvm::Function const* LLVMGenTestsFixture::get_function(std::string_view const name) const
+{
+    return pass_result ? pass_result.value()->getFunction(name) : nullptr;
+}

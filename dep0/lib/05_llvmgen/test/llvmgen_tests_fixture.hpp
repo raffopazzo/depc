@@ -26,8 +26,8 @@ struct LLVMGenTestsFixture
     llvm::LLVMContext llvm_ctx;
     std::optional<dep0::unique_ref<llvm::Module>> pass_result;
     bool apply_beta_delta_normalization = false;
-
     LLVMGenTestsFixture();
 
     boost::test_tools::predicate_result pass(std::filesystem::path);
+    llvm::Function const* get_function(std::string_view) const;
 };

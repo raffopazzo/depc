@@ -23,7 +23,7 @@ BOOST_AUTO_TEST_CASE(pass_000)
 {
     BOOST_TEST_REQUIRE(pass("0021_tuples/pass_000.depc"));
     {
-        auto const f = pass_result.value()->getFunction("f0");
+        auto const f = get_function("f0");
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{ret_ptr_to(struct_of())}, is_void));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
         auto const inst = get_instructions(f->getEntryBlock());
@@ -31,7 +31,7 @@ BOOST_AUTO_TEST_CASE(pass_000)
         BOOST_TEST(is_return_of_void(inst[0]));
     }
     {
-        auto const f = pass_result.value()->getFunction("f1");
+        auto const f = get_function("f1");
         auto const tuple_type = struct_of(is_i32, is_i32);
         BOOST_TEST_REQUIRE(
             is_function_of(
@@ -56,7 +56,7 @@ BOOST_AUTO_TEST_CASE(pass_000)
         BOOST_TEST(is_return_of_void(ret));
     }
     {
-        auto const f = pass_result.value()->getFunction("f2");
+        auto const f = get_function("f2");
         auto const tuple_type = struct_of(is_i32);
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{ret_ptr_to(tuple_type)}, is_void));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
@@ -70,7 +70,7 @@ BOOST_AUTO_TEST_CASE(pass_000)
         BOOST_TEST(is_return_of_void(ret));
     }
     {
-        auto const f = pass_result.value()->getFunction("f3");
+        auto const f = get_function("f3");
         auto const tuple_type = struct_of(is_i32, is_i32);
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{ret_ptr_to(tuple_type)}, is_void));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
@@ -78,14 +78,14 @@ BOOST_AUTO_TEST_CASE(pass_000)
         BOOST_TEST_REQUIRE(inst.size() == 2ul);
         BOOST_TEST(is_direct_call(
             inst[0],
-            exactly(pass_result.value()->getFunction("f1")),
+            exactly(get_function("f1")),
             call_arg(exactly(f->getArg(0ul))),
             call_arg(constant(0), {sext}),
             call_arg(constant(1), {zext})));
         BOOST_TEST(is_return_of_void(inst[1]));
     }
     {
-        auto const f = pass_result.value()->getFunction("f4");
+        auto const f = get_function("f4");
         auto const tuple_type = struct_of(is_i32, is_i32);
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{ret_ptr_to(tuple_type)}, is_void));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
@@ -110,19 +110,19 @@ BOOST_AUTO_TEST_CASE(pass_000)
         BOOST_TEST(is_store_of(store2, is_i32, constant(1), exactly(gep_tuple_1), align_of(4)));
         BOOST_TEST(is_direct_call(
             call1,
-            exactly(pass_result.value()->getFunction("f1")),
+            exactly(get_function("f1")),
             call_arg(exactly(gep_array_1)),
             call_arg(constant(2), {sext}),
             call_arg(constant(3), {zext})));
         BOOST_TEST(is_direct_call(
             call2,
-            exactly(pass_result.value()->getFunction("f3")),
+            exactly(get_function("f3")),
             call_arg(exactly(gep_array_2))));
 
         BOOST_TEST(is_return_of_void(ret));
     }
     {
-        auto const f = pass_result.value()->getFunction("f5");
+        auto const f = get_function("f5");
         auto const tuple_type = struct_of(is_i32, struct_of(is_i16, is_i8));
         auto const sub_tuple_type = struct_of(is_i16, is_i8);
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{ret_ptr_to(tuple_type)}, is_void));
@@ -152,14 +152,14 @@ BOOST_AUTO_TEST_CASE(pass_001)
 {
     BOOST_TEST_REQUIRE(pass("0021_tuples/pass_001.depc"));
     {
-        auto const f = pass_result.value()->getFunction("f0");
+        auto const f = get_function("f0");
         BOOST_TEST_REQUIRE(
             is_function_of(f, std::tuple{arg_of(pointer_to(struct_of()), std::nullopt, nonnull)}, is_i32, sext));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
         BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(0)));
     }
     {
-        auto const f = pass_result.value()->getFunction("f1");
+        auto const f = get_function("f1");
         auto const tuple_type = struct_of(is_i32, is_i32);
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(pointer_to(tuple_type), "x", nonnull)}, is_i32, zext));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
@@ -169,7 +169,7 @@ BOOST_AUTO_TEST_CASE(pass_001)
                 load_of(is_i32, gep_of(tuple_type, exactly(f->getArg(0ul)), constant(0), constant(1)), align_of(4))));
     }
     {
-        auto const f = pass_result.value()->getFunction("f2");
+        auto const f = get_function("f2");
         auto const tuple_type = struct_of(is_i32);
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(pointer_to(tuple_type), "x", nonnull)}, is_i32, sext));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
@@ -179,7 +179,7 @@ BOOST_AUTO_TEST_CASE(pass_001)
                 load_of(is_i32, gep_of(tuple_type, exactly(f->getArg(0ul)), constant(0), constant(0)), align_of(4))));
     }
     {
-        auto const f = pass_result.value()->getFunction("f3");
+        auto const f = get_function("f3");
         auto const tuple_type = struct_of(is_i32, is_i32);
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(pointer_to(tuple_type), "x", nonnull)}, is_i32, sext));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
@@ -189,7 +189,7 @@ BOOST_AUTO_TEST_CASE(pass_001)
                 load_of(is_i32, gep_of(tuple_type, exactly(f->getArg(0ul)), constant(0), constant(0)), align_of(4))));
     }
     {
-        auto const f = pass_result.value()->getFunction("f4");
+        auto const f = get_function("f4");
         auto const tuple_type = struct_of(is_i32, is_i32);
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(pointer_to(tuple_type), "xs", nonnull)}, is_i32, zext));
         auto const xs = exactly(f->getArg(0ul));
@@ -198,11 +198,11 @@ BOOST_AUTO_TEST_CASE(pass_001)
             is_return_of(
                 f->getEntryBlock().getTerminator(),
                 direct_call_of(
-                    exactly(pass_result.value()->getFunction("f1")),
+                    exactly(get_function("f1")),
                     call_arg(gep_of(tuple_type, xs, constant(2))))));
     }
     {
-        auto const f = pass_result.value()->getFunction("f5");
+        auto const f = get_function("f5");
         auto const tuple_type = struct_of(is_i32, struct_of(is_i16, is_i8));
         auto const sub_tuple_type = struct_of(is_i16, is_i8);
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(pointer_to(tuple_type), "x", nonnull)}, is_i8, sext));
@@ -226,7 +226,7 @@ BOOST_AUTO_TEST_CASE(pass_002)
     auto const align = llvm::Align(8);
     auto const tuple_type = struct_of(is_i32, is_i16);
     {
-        auto const f = pass_result.value()->getFunction("f");
+        auto const f = get_function("f");
         BOOST_TEST_REQUIRE(
             is_function_of(
                 f,
@@ -252,7 +252,7 @@ BOOST_AUTO_TEST_CASE(pass_002)
         BOOST_TEST(is_return_of_void(inst[inst.size() - 1]));
     }
     {
-        auto const f = pass_result.value()->getFunction("f2");
+        auto const f = get_function("f2");
         auto const tuple_type = struct_of(is_i32, is_i16);
         BOOST_TEST_REQUIRE(
             is_function_of(
@@ -311,7 +311,7 @@ BOOST_AUTO_TEST_CASE(pass_002)
         }
     }
     {
-        auto const f = pass_result.value()->getFunction("g");
+        auto const f = get_function("g");
         auto const tuple_type = struct_of(is_i32, is_i16);
         BOOST_TEST_REQUIRE(
             is_function_of(
@@ -367,7 +367,7 @@ BOOST_AUTO_TEST_CASE(pass_003)
 {
     BOOST_TEST_REQUIRE(pass("0021_tuples/pass_003.depc"));
     {
-        auto const f = pass_result.value()->getFunction("f1");
+        auto const f = get_function("f1");
         auto const tuple_type = struct_of(pointer_to(is_i32), pointer_to(is_i32));
         BOOST_TEST_REQUIRE(
             is_function_of(
@@ -422,7 +422,7 @@ BOOST_AUTO_TEST_CASE(pass_003)
         }
     }
     {
-        auto const f = pass_result.value()->getFunction("f2");
+        auto const f = get_function("f2");
         auto const tuple_type = struct_of(pointer_to(is_i32), pointer_to(is_i32));
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(pointer_to(tuple_type), "x", nonnull)}, is_i32, sext));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
@@ -446,9 +446,8 @@ BOOST_AUTO_TEST_CASE(pass_004)
 {
     BOOST_TEST_REQUIRE(pass("0021_tuples/pass_004.depc"));
     auto const tuple_type = struct_of(is_i64, pointer_to(is_i32));
-    auto const malloc_fn = pass_result.value()->getFunction("malloc");
     {
-        auto const f = pass_result.value()->getFunction("f1");
+        auto const f = get_function("f1");
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(pointer_to(tuple_type), "x", nonnull)}, is_i32, sext));
         auto const blks = get_blocks(*f);
         BOOST_TEST_REQUIRE(blks.size() == 3ul);
@@ -481,12 +480,12 @@ BOOST_AUTO_TEST_CASE(pass_004)
         BOOST_TEST(is_return_of(else0->getTerminator(), constant(0)));
     }
     {
-        auto const f = pass_result.value()->getFunction("f2");
+        auto const f = get_function("f2");
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{ret_ptr_to(tuple_type)}, is_void));
         // there must be exactly 5 stores:
         // 1,2. to store the size and ptr of the allocated array in the return value
         // 3,4,5. to store the values 1,2,3 in the allocated array
-        std::vector<llvm::StoreInst*> stores;
+        std::vector<llvm::StoreInst const*> stores;
         for (auto& inst: f->getEntryBlock())
             if (auto const q = llvm::dyn_cast<llvm::StoreInst>(&inst))
                 stores.push_back(q);
@@ -496,7 +495,7 @@ BOOST_AUTO_TEST_CASE(pass_004)
         BOOST_TEST(is_store_of(stores[0], is_i64, constant(3), fst, align_of(8)));
         auto const malloc =
             bitcast_of(
-                direct_call_of(exactly(malloc_fn), call_arg(constant(12))),
+                direct_call_of(exactly(get_function("malloc")), call_arg(constant(12))),
                 pointer_to(is_i8),
                 pointer_to(is_i32));
         BOOST_TEST(is_store_of(stores[1], is_i32, constant(1), gep_of(is_i32, malloc, constant(0)), align_of(4)));
@@ -505,7 +504,7 @@ BOOST_AUTO_TEST_CASE(pass_004)
         BOOST_TEST(is_store_of(stores[4], pointer_to(is_i32), malloc, snd, align_of(8)));
     }
     {
-        auto const f = pass_result.value()->getFunction("extract");
+        auto const f = get_function("extract");
         BOOST_TEST_REQUIRE(
             is_function_of(
                 f,
@@ -531,7 +530,7 @@ BOOST_AUTO_TEST_CASE(pass_004)
         BOOST_TEST(is_return_of_void(inst[inst.size() - 1]));
     }
     {
-        auto const f = pass_result.value()->getFunction("f3");
+        auto const f = get_function("f3");
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{ret_ptr_to(is_i32)}, is_void));
         // there must be exactly 5 stores:
         // 1,2. to store the size and ptr of the allocated array in the return value
@@ -555,13 +554,13 @@ BOOST_AUTO_TEST_CASE(pass_004)
         BOOST_TEST(
             is_direct_call(
                 inst[inst.size() - 2],
-                exactly(pass_result.value()->getFunction("extract")),
+                exactly(get_function("extract")),
                 call_arg(exactly(f->getArg(0))),
                 call_arg(tmp)));
         BOOST_TEST(is_return_of_void(inst[inst.size() - 1]));
     }
     {
-        auto const f = pass_result.value()->getFunction("f4");
+        auto const f = get_function("f4");
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{ret_ptr_to(tuple_type)}, is_void));
         auto const inst = get_instructions(f->getEntryBlock());
         BOOST_TEST_REQUIRE(inst.size() == 7ul);
@@ -576,34 +575,44 @@ BOOST_AUTO_TEST_CASE(pass_004)
         BOOST_TEST(is_gep_of(gep1, tuple_type, result, constant(0)));
         BOOST_TEST(is_gep_of(gep2, tuple_type, result, constant(1)));
         BOOST_TEST(is_gep_of(gep3, tuple_type, result, constant(2)));
-        BOOST_TEST(is_direct_call(call1, exactly(pass_result.value()->getFunction("f2")), call_arg(exactly(gep1))));
-        BOOST_TEST(is_direct_call(call2, exactly(pass_result.value()->getFunction("f2")), call_arg(exactly(gep2))));
-        BOOST_TEST(is_direct_call(call3, exactly(pass_result.value()->getFunction("f2")), call_arg(exactly(gep3))));
+        BOOST_TEST(is_direct_call(call1, exactly(get_function("f2")), call_arg(exactly(gep1))));
+        BOOST_TEST(is_direct_call(call2, exactly(get_function("f2")), call_arg(exactly(gep2))));
+        BOOST_TEST(is_direct_call(call3, exactly(get_function("f2")), call_arg(exactly(gep3))));
     }
     {
-        auto const f = pass_result.value()->getFunction("f5");
+        auto const f = get_function(".dtor.0");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(pointer_to(tuple_type))}, is_void));
+        auto const inst = get_instructions(f->getEntryBlock());
+        BOOST_TEST_REQUIRE(inst.size() == 5ul);
+        auto const gep      = inst[0];
+        auto const load     = inst[1];
+        auto const bitcast  = inst[2];
+        auto const free     = inst[3];
+        auto const ret      = inst[4];
+        BOOST_TEST(is_gep_of(gep, tuple_type, exactly(f->getArg(0)), constant(0), constant(1)));
+        BOOST_TEST(is_load_of(load, pointer_to(is_i32), exactly(gep), align_of(8)));
+        BOOST_TEST(is_bitcast_of(bitcast, exactly(load), pointer_to(is_i32), pointer_to(is_i8)));
+        BOOST_TEST(is_direct_call(free, exactly(get_function("free")), call_arg(exactly(bitcast))));
+        BOOST_TEST(is_return_of_void(ret));
+    }
+    {
+        auto const f = get_function("f5");
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, sext));
         auto const inst = get_instructions(f->getEntryBlock());
-        BOOST_TEST_REQUIRE(inst.size() == 8ul);
+        BOOST_TEST_REQUIRE(inst.size() == 5ul);
         auto const alloca   = inst[0];
         auto const call_f2  = inst[1];
         auto const call_f1  = inst[2];
-        auto const gep      = inst[3];
-        auto const load     = inst[4];
-        auto const bitcast  = inst[5];
-        auto const free     = inst[6];
-        auto const ret      = inst[7];
+        auto const dtor     = inst[3];
+        auto const ret      = inst[4];
         BOOST_TEST(is_alloca(alloca, tuple_type, constant(1), align_of(8)));
-        BOOST_TEST(is_direct_call(call_f2, exactly(pass_result.value()->getFunction("f2")), call_arg(exactly(alloca))));
-        BOOST_TEST(is_direct_call(call_f1, exactly(pass_result.value()->getFunction("f1")), call_arg(exactly(alloca))));
-        BOOST_TEST(is_gep_of(gep, tuple_type, exactly(alloca), constant(0), constant(1)));
-        BOOST_TEST(is_load_of(load, pointer_to(is_i32), exactly(gep), align_of(8)));
-        BOOST_TEST(is_bitcast_of(bitcast, exactly(load), pointer_to(is_i32), pointer_to(is_i8)));
-        BOOST_TEST(is_direct_call(free, exactly(pass_result.value()->getFunction("free")), call_arg(exactly(bitcast))));
+        BOOST_TEST(is_direct_call(call_f2, exactly(get_function("f2")), call_arg(exactly(alloca))));
+        BOOST_TEST(is_direct_call(call_f1, exactly(get_function("f1")), call_arg(exactly(alloca))));
+        BOOST_TEST(is_direct_call(dtor, exactly(get_function(".dtor.0")), call_arg(exactly(alloca))));
         BOOST_TEST(is_return_of(ret, exactly(call_f1)));
     }
     {
-        auto const f = pass_result.value()->getFunction("f6");
+        auto const f = get_function("f6");
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, sext));
         auto const blks = get_blocks(*f);
         BOOST_TEST_REQUIRE(blks.size() == 3ul);
@@ -611,30 +620,24 @@ BOOST_AUTO_TEST_CASE(pass_004)
         auto const then0 = blks[1];
         auto const else0 = blks[2];
         auto const inst = get_instructions(*entry);
-        BOOST_TEST_REQUIRE(inst.size() == 9ul);
+        BOOST_TEST_REQUIRE(inst.size() == 6ul);
         auto const alloca   = inst[0];
         auto const call_f2  = inst[1];
         auto const call_f1  = inst[2];
         auto const cmp      = inst[3];
-        auto const gep      = inst[4];
-        auto const load     = inst[5];
-        auto const bitcast  = inst[6];
-        auto const free     = inst[7];
-        auto const br       = inst[8];
+        auto const dtor     = inst[4];
+        auto const br       = inst[5];
         BOOST_TEST(is_alloca(alloca, tuple_type, constant(1), align_of(8)));
-        BOOST_TEST(is_direct_call(call_f2, exactly(pass_result.value()->getFunction("f2")), call_arg(exactly(alloca))));
-        BOOST_TEST(is_direct_call(call_f1, exactly(pass_result.value()->getFunction("f1")), call_arg(exactly(alloca))));
+        BOOST_TEST(is_direct_call(call_f2, exactly(get_function("f2")), call_arg(exactly(alloca))));
+        BOOST_TEST(is_direct_call(call_f1, exactly(get_function("f1")), call_arg(exactly(alloca))));
+        BOOST_TEST(is_direct_call(dtor, exactly(get_function(".dtor.0")), call_arg(exactly(alloca))));
         BOOST_TEST(is_cmp(cmp, llvm::CmpInst::ICMP_EQ, exactly(call_f1), constant(0)));
-        BOOST_TEST(is_gep_of(gep, tuple_type, exactly(alloca), constant(0), constant(1)));
-        BOOST_TEST(is_load_of(load, pointer_to(is_i32), exactly(gep), align_of(8)));
-        BOOST_TEST(is_bitcast_of(bitcast, exactly(load), pointer_to(is_i32), pointer_to(is_i8)));
-        BOOST_TEST(is_direct_call(free, exactly(pass_result.value()->getFunction("free")), call_arg(exactly(bitcast))));
         BOOST_TEST(is_branch_of(br, exactly(cmp), exactly(then0), exactly(else0)));
         BOOST_TEST(is_return_of(then0->getTerminator(), constant(1)));
         BOOST_TEST(is_return_of(else0->getTerminator(), constant(2)));
     }
     {
-        auto const f = pass_result.value()->getFunction("f7");
+        auto const f = get_function("f7");
         BOOST_TEST_REQUIRE(
             is_function_of(
                 f,
@@ -654,7 +657,7 @@ BOOST_AUTO_TEST_CASE(pass_004)
         BOOST_TEST(is_gep_of(inst[5], tuple_type, exactly(f->getArg(1)), constant(0), constant(1)));
         BOOST_TEST(is_gep_of(inst[6], tuple_type, exactly(inst[0]), constant(0), constant(1)));
         BOOST_TEST(is_mul_of(inst[7], exactly(inst[3]), constant(4)));
-        BOOST_TEST(is_direct_call(inst[8], exactly(malloc_fn), call_arg(exactly(inst[7]))));
+        BOOST_TEST(is_direct_call(inst[8], exactly(get_function("malloc")), call_arg(exactly(inst[7]))));
         BOOST_TEST(is_bitcast_of(inst[9], exactly(inst[8]), pointer_to(is_i8), pointer_to(is_i32)));
         BOOST_TEST(is_store_of(inst[10], pointer_to(is_i32), exactly(inst[9]), exactly(inst[6]), align_of(8)));
         BOOST_TEST(is_mul_of(inst[11], exactly(inst[3]), constant(4)));
@@ -669,6 +672,57 @@ BOOST_AUTO_TEST_CASE(pass_004)
                 call_arg(exactly(inst[11])),
                 call_arg(constant(false))));
         BOOST_TEST(is_return_of_void(inst[15]));
+    }
+    {
+        auto const f = get_function("f8");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{ret_ptr_to(tuple_type)}, is_void));
+        auto const inst = get_instructions(f->getEntryBlock());
+        BOOST_TEST_REQUIRE(inst.size() == 5ul);
+        auto const alloca   = inst[0];
+        auto const call_f2  = inst[1];
+        auto const call_f7  = inst[2];
+        auto const dtor     = inst[3];
+        auto const ret      = inst[4];
+        BOOST_TEST(is_alloca(alloca, tuple_type, constant(1), align_of(8)));
+        BOOST_TEST(is_direct_call(call_f2, exactly(get_function("f2")), call_arg(exactly(alloca))));
+        BOOST_TEST(
+            is_direct_call(
+                call_f7,
+                exactly(get_function("f7")),
+                call_arg(exactly(f->getArg(0))),
+                call_arg(exactly(alloca))));
+        BOOST_TEST(is_direct_call(dtor, exactly(get_function(".dtor.0")), call_arg(exactly(alloca))));
+        BOOST_TEST(is_return_of_void(ret));
+    }
+    {
+        auto const f = get_function(".dtor.1");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(pointer_to(tuple_type))}, is_void));
+        auto const inst = get_instructions(f->getEntryBlock());
+        BOOST_TEST_REQUIRE(inst.size() == 3ul);
+        auto const gep      = inst[0];
+        auto const dtor     = inst[1];
+        auto const ret      = inst[2];
+        BOOST_TEST(is_gep_of(gep, tuple_type, exactly(f->getArg(0)), constant(0)));
+        BOOST_TEST(is_direct_call(dtor, exactly(get_function(".dtor.0")), call_arg(exactly(gep))));
+        BOOST_TEST(is_return_of_void(ret));
+    }
+    {
+        auto const f = get_function("f9");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, sext));
+        auto const inst = get_instructions(f->getEntryBlock());
+        BOOST_TEST_REQUIRE(inst.size() == 6ul);
+        auto const alloca   = inst[0];
+        auto const call_f8  = inst[1];
+        auto const gep      = inst[2];
+        auto const call_f1  = inst[3];
+        auto const dtor     = inst[4];
+        auto const ret      = inst[5];
+        BOOST_TEST(is_alloca(alloca, tuple_type, constant(1), align_of(8)));
+        BOOST_TEST(is_direct_call(call_f8, exactly(get_function("f8")), call_arg(exactly(alloca))));
+        BOOST_TEST(is_gep_of(gep, tuple_type, exactly(alloca), constant(0)));
+        BOOST_TEST(is_direct_call(call_f1, exactly(get_function("f1")), call_arg(exactly(gep))));
+        BOOST_TEST(is_direct_call(dtor, exactly(get_function(".dtor.1")), call_arg(exactly(alloca))));
+        BOOST_TEST(is_return_of(ret, exactly(call_f1)));
     }
 }
 

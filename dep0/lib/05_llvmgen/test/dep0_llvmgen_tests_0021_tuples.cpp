@@ -772,12 +772,19 @@ BOOST_AUTO_TEST_CASE(pass_004)
         auto const else2    = blks[5];
         auto const cont3    = blks[6];
         llvm::Value const* size;
+        llvm::Value const* size2;
+        llvm::Value const* f2_result;
         {
             auto const inst = get_instructions(*entry);
-            BOOST_TEST_REQUIRE(inst.size() == 2ul);
-            BOOST_TEST(is_alloca(inst[0], is_i64, constant(1), align_of(8)));
-            BOOST_TEST(is_branch_of(inst[1], exactly(f->getArg(0)), exactly(then0), exactly(else0)));
-            size = inst[0];
+            BOOST_TEST_REQUIRE(inst.size() == 4ul);
+            size            = inst[0];
+            f2_result       = inst[1];
+            size2           = inst[2];
+            auto const br   = inst[3];
+            BOOST_TEST(is_alloca(size, is_i64, constant(1), align_of(8)));
+            BOOST_TEST(is_alloca(f2_result, tuple_type, constant(1), align_of(8)));
+            BOOST_TEST(is_alloca(size2, is_i64, constant(1), align_of(8)));
+            BOOST_TEST(is_branch_of(br, exactly(f->getArg(0)), exactly(then0), exactly(else0)));
         }
         {
             auto const inst = get_instructions(*then0);
@@ -792,24 +799,19 @@ BOOST_AUTO_TEST_CASE(pass_004)
             BOOST_TEST(is_unconditional_branch_to(inst[1], exactly(cont)));
         }
         llvm::Value const* copy_result;
-        llvm::Value const* f2_result;
         llvm::Value const* call_f1;
-        llvm::Value const* size2;
         {
             auto const inst = get_instructions(*cont);
-            BOOST_TEST_REQUIRE(inst.size() == 9ul);
+            BOOST_TEST_REQUIRE(inst.size() == 7ul);
             auto const load     = inst[0];
             copy_result         = inst[1];
-            f2_result           = inst[2];
-            auto const call_f2  = inst[3];
-            auto const copy     = inst[4];
-            auto const gep      = inst[5];
-            call_f1             = inst[6];
-            auto const alloca2  = inst[7];
-            auto const br       = inst[8];
+            auto const call_f2  = inst[2];
+            auto const copy     = inst[3];
+            auto const gep      = inst[4];
+            call_f1             = inst[5];
+            auto const br       = inst[6];
             BOOST_TEST(is_load_of(load, is_i64, exactly(size), align_of(8)));
             BOOST_TEST(is_alloca(copy_result, tuple_type, exactly(load), align_of(8)));
-            BOOST_TEST(is_alloca(f2_result, tuple_type, constant(1), align_of(8)));
             BOOST_TEST(is_direct_call(call_f2, exactly(get_function("f2")), call_arg(exactly(f2_result))));
             BOOST_TEST(
                 is_direct_call(
@@ -820,9 +822,7 @@ BOOST_AUTO_TEST_CASE(pass_004)
                     call_arg(exactly(f2_result))));
             BOOST_TEST(is_gep_of(gep, tuple_type, exactly(copy_result), constant(0)));
             BOOST_TEST(is_direct_call(call_f1, exactly(get_function("f1")), call_arg(exactly(gep))));
-            BOOST_TEST(is_alloca(alloca2, is_i64, constant(1), align_of(8)));
             BOOST_TEST(is_branch_of(br, exactly(f->getArg(0)), exactly(then1), exactly(else2)));
-            size2 = alloca2;
         }
         {
             auto const inst = get_instructions(*then1);

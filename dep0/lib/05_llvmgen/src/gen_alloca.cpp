@@ -24,11 +24,7 @@ llvm::Value* gen_alloca(
     auto const array_size = array ? gen_array_total_size(global, local, builder, *array) : nullptr; // default is 1
     auto const llvm_type = gen_type(global, array ? array->element_type : type);
     if (allocator == allocator_t::stack)
-    {
-        auto const alloca = builder.CreateAlloca(llvm_type, array_size);
-        try_move_to_entry_block(alloca, builder.GetInsertBlock()->getParent());
-        return alloca;
-    }
+        return builder.CreateAlloca(llvm_type, array_size);
     else
     {
         auto const& data_layout = global.llvm_module.getDataLayout();
@@ -42,27 +38,6 @@ llvm::Value* gen_alloca(
         builder.GetInsertBlock()->getInstList().push_back(alloca);
         return alloca;
     }
-}
-
-void try_move_to_entry_block(llvm::AllocaInst* const alloca, llvm::Function* const f)
-{
-    // We cannot move an alloca if it depends on other values, unless those values are just plain arguments.
-    for (auto const i: std::views::iota(0ul, alloca->getNumOperands()))
-        if (not llvm::isa<llvm::Argument>(alloca->getOperand(i)))
-            return;
-    // scan the entry block and place the new `alloca` before the first non-`alloca`
-    for (llvm::Instruction& i: f->getEntryBlock())
-        if (auto const alloca2 = llvm::dyn_cast<llvm::AllocaInst>(&i))
-        {
-            if (alloca2 == alloca)
-                return; // coincidentally, the new `alloca` is already in the "alloca group", so leave it here
-        }
-        else
-        {
-            alloca->moveBefore(&i);
-            return;
-        }
-    assert(false and "entry block does not have a terminator");
 }
 
 } // namespace dep0::llvmgen

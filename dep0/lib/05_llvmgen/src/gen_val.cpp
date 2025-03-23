@@ -366,6 +366,7 @@ llvm::Value* gen_val(
                             {
                                 builder.CreateBr(next_block);
                             });
+                        assert(not snippet.entry_block->empty() and snippet.entry_block->back().isTerminator());
                         bool const merged = llvm::MergeBlockIntoPredecessor(snippet.entry_block);
                         assert(merged and "llvm could not merge inlined entry block");
                         builder.SetInsertPoint(next_block);
@@ -387,7 +388,6 @@ llvm::Value* gen_val(
                         assert(is_pass_by_val(global, ret_type));
                         auto const inlined_type = gen_type(global, ret_type);
                         auto const inlined_result = builder.CreateAlloca(inlined_type, builder.getInt32(1));
-                        try_move_to_entry_block(inlined_result, current_func);
                         gen_inlined_body(inlined_result);
                         return builder.CreateLoad(inlined_type, inlined_result);
                     }

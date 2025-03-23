@@ -19,6 +19,53 @@
 
 namespace dep0::llvmgen {
 
+/**
+ * @brief Move all `alloca` instructions to the entry block, except those that depend on intermediate values.
+ *
+ * This is recommended by LLVM guide in order to make the `mem2reg` pass effective.
+ * As per their guide, `alloca` instructions need to also appear before any `call` instructions.
+ * So we put them all right at the beginning of the entry block, thus forming a sort of "alloca group".
+ * If the entry block already contains an alloca group, all instructions that are moved will be appended to the group.
+ *
+ * @remarks
+ * All candidate `alloca` instructions will be moved, including those appearing inside loops.
+ * It is not currently clear whether this is a sensible decision or not.
+ */
+static void move_allocas_to_entry_block(llvm::Function* const llvm_f)
+{
+    auto const should_be_moved = [] (llvm::AllocaInst const* const alloca)
+    {
+        auto const size = alloca->getArraySize();
+        // I don't know if array-size could be null but, if it is, it would just mean 1 by default.
+        return size == nullptr or llvm::isa<llvm::Argument>(size) or llvm::isa<llvm::ConstantInt>(size);
+    };
+    llvm::AllocaInst* last_alloca = nullptr;
+    std::vector<llvm::AllocaInst*> allocas_to_move;
+    for (bool alloca_group = true; auto& block: llvm_f->getBasicBlockList())
+    {
+        for (auto& inst: block)
+        {
+            if (auto const p = llvm::dyn_cast<llvm::AllocaInst>(&inst))
+            {
+                if (alloca_group)
+                    last_alloca = p;
+                else if (should_be_moved(p))
+                    allocas_to_move.push_back(p);
+            }
+            else
+                alloca_group = false;
+        }
+    }
+    for (auto const alloca: allocas_to_move)
+    {
+        if (last_alloca)
+            alloca->moveAfter(last_alloca);
+        else
+            alloca->moveBefore(&llvm_f->getEntryBlock().front());
+        last_alloca = alloca;
+    }
+}
+
 static void gen_func_args(global_ctx_t&, local_ctx_t&, llvm_func_proto_t const&, llvm::Function*);
 static void gen_func_attributes(global_ctx_t const&, llvm_func_proto_t const&, llvm::Function*);
 static void gen_func_body(
@@ -93,6 +140,7 @@ void gen_func_body(
         // this implies its return type is `unit_t`, so just return `i8 0`.
         snippet.seal_open_blocks(builder, [unit=gen_val_unit(global)] (auto& builder) { builder.CreateRet(unit); });
     }
+    move_allocas_to_entry_block(llvm_f);
 }
 
 void gen_extern_decl(

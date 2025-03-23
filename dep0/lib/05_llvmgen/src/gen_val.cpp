@@ -375,7 +375,7 @@ llvm::Value* gen_val(
                     auto const dest2 =
                         dest ? dest
                         : is_pass_by_val(global, ret_type) ? nullptr
-                        : gen_alloca(global, local, allocator, builder, ret_type);
+                        : gen_alloca(global, local, builder, allocator, ret_type);
                     if (dest2)
                     {
                         gen_inlined_body(dest2);
@@ -442,7 +442,7 @@ llvm::Value* gen_val(
                 {
                     auto const llvm_type = gen_type(global, type);
                     auto const allocator = select_allocator(value_category);
-                    auto const dest2 = dest ? dest : gen_alloca(global, local, allocator, builder, type);
+                    auto const dest2 = dest ? dest : gen_alloca(global, local, builder, allocator, type);
                     auto const int32 = llvm::Type::getInt32Ty(global.llvm_ctx);
                     auto const zero = llvm::ConstantInt::get(int32, 0);
                     auto sigma_ctx = local.extend();
@@ -452,7 +452,7 @@ llvm::Value* gen_val(
                         auto const element_ptr = builder.CreateGEP(llvm_type, dest2, {zero, index});
                         if (is_boxed(sigma.args[i].type))
                         {
-                            auto const p = gen_alloca(global, sigma_ctx, allocator, builder, sigma.args[i].type);
+                            auto const p = gen_alloca(global, sigma_ctx, builder, allocator, sigma.args[i].type);
                             gen_val(global, sigma_ctx, builder, x.values[i], value_category, p);
                             builder.CreateStore(p, element_ptr);
                             if (sigma.args[i].var)
@@ -473,7 +473,7 @@ llvm::Value* gen_val(
                 {
                     auto const properties = get_array_properties(type);
                     auto const allocator = select_allocator(value_category);
-                    auto const dest2 = dest ? dest : gen_alloca(global, local, allocator, builder, type);
+                    auto const dest2 = dest ? dest : gen_alloca(global, local, builder, allocator, type);
                     auto const element_type = gen_type(global, properties.element_type);
                     auto const stride_size = gen_stride_size_if_needed(global, local, builder, properties);
                     auto const int32 = llvm::Type::getInt32Ty(global.llvm_ctx); // TODO we use u64_t to typecheck arrays
@@ -578,7 +578,7 @@ void gen_store(
                     if (is_boxed(element_type))
                     {
                         // TODO should use stack if value category is `temporary`
-                        auto const alloca = gen_alloca(global, sigma_ctx, allocator_t::heap, builder, element_type);
+                        auto const alloca = gen_alloca(global, sigma_ctx, builder, allocator_t::heap, element_type);
                         builder.CreateStore(alloca, dest_element_ptr);
                         gen_store(global, sigma_ctx, builder, element_ptr, alloca, element_type);
                         if (sigma.args[i].var)
@@ -677,7 +677,7 @@ llvm::Value* gen_func_call(
     {
         if (has_ret_arg)
         {
-            auto const dest2 = dest ? dest : gen_alloca(global, local, allocator, builder, proto.ret_type());
+            auto const dest2 = dest ? dest : gen_alloca(global, local, builder, allocator, proto.ret_type());
             llvm_args.push_back(dest2);
             gen_call();
             return dest2;

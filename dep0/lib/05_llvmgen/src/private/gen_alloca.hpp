@@ -45,8 +45,8 @@ enum class allocator_t
 llvm::Value* gen_alloca(
     global_ctx_t&,
     local_ctx_t&,
-    allocator_t,
     llvm::IRBuilder<>&,
+    allocator_t,
     typecheck::expr_t const& type);
 
 /**

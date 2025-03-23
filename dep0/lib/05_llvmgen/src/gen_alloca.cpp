@@ -16,8 +16,8 @@ namespace dep0::llvmgen {
 llvm::Value* gen_alloca(
     global_ctx_t& global,
     local_ctx_t& local,
-    allocator_t const allocator,
     llvm::IRBuilder<>& builder,
+    allocator_t const allocator,
     typecheck::expr_t const& type)
 {
     auto const array = get_properties_if_array(type);

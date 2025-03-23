@@ -482,26 +482,34 @@ BOOST_AUTO_TEST_CASE(pass_004)
     {
         auto const f = get_function("f2");
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{ret_ptr_to(tuple_type)}, is_void));
-        // there must be exactly 5 stores:
-        // 1,2. to store the size and ptr of the allocated array in the return value
-        // 3,4,5. to store the values 1,2,3 in the allocated array
-        std::vector<llvm::StoreInst const*> stores;
-        for (auto& inst: f->getEntryBlock())
-            if (auto const q = llvm::dyn_cast<llvm::StoreInst>(&inst))
-                stores.push_back(q);
-        BOOST_TEST_REQUIRE(stores.size() == 5ul);
-        auto const fst = gep_of(tuple_type, exactly(f->getArg(0ul)), constant(0), constant(0));
-        auto const snd = gep_of(tuple_type, exactly(f->getArg(0ul)), constant(0), constant(1));
-        BOOST_TEST(is_store_of(stores[0], is_i64, constant(3), fst, align_of(8)));
-        auto const malloc =
-            bitcast_of(
-                direct_call_of(exactly(get_function("malloc")), call_arg(constant(12))),
-                pointer_to(is_i8),
-                pointer_to(is_i32));
-        BOOST_TEST(is_store_of(stores[1], is_i32, constant(1), gep_of(is_i32, malloc, constant(0)), align_of(4)));
-        BOOST_TEST(is_store_of(stores[2], is_i32, constant(2), gep_of(is_i32, malloc, constant(1)), align_of(4)));
-        BOOST_TEST(is_store_of(stores[3], is_i32, constant(3), gep_of(is_i32, malloc, constant(2)), align_of(4)));
-        BOOST_TEST(is_store_of(stores[4], pointer_to(is_i32), malloc, snd, align_of(8)));
+        auto const inst = get_instructions(f->getEntryBlock());
+        BOOST_TEST_REQUIRE(inst.size() == 13ul);
+        auto const gep_fst      = inst[0];
+        auto const store_fst    = inst[1];
+        auto const gep_snd      = inst[2];
+        auto const malloccall   = inst[3];
+        auto const i32_ptr      = inst[4];
+        auto const gep_0        = inst[5];
+        auto const store_0      = inst[6];
+        auto const gep_1        = inst[7];
+        auto const store_1      = inst[8];
+        auto const gep_2        = inst[9];
+        auto const store_2      = inst[10];
+        auto const store_ptr    = inst[11];
+        auto const ret          = inst[12];
+        BOOST_TEST(is_gep_of(gep_fst, tuple_type, exactly(f->getArg(0ul)), constant(0), constant(0)));
+        BOOST_TEST(is_store_of(store_fst, is_i64, constant(3), exactly(gep_fst), align_of(8)));
+        BOOST_TEST(is_gep_of(gep_snd, tuple_type, exactly(f->getArg(0ul)), constant(0), constant(1)));
+        BOOST_TEST(is_direct_call(malloccall, exactly(get_function("malloc")), call_arg(constant(12))));
+        BOOST_TEST(is_bitcast_of(i32_ptr, exactly(malloccall), pointer_to(is_i8), pointer_to(is_i32)));
+        BOOST_TEST(is_gep_of(gep_0, is_i32, exactly(i32_ptr), constant(0)));
+        BOOST_TEST(is_store_of(store_0, is_i32, constant(1), exactly(gep_0), align_of(4)));
+        BOOST_TEST(is_gep_of(gep_1, is_i32, exactly(i32_ptr), constant(1)));
+        BOOST_TEST(is_store_of(store_1, is_i32, constant(2), exactly(gep_1), align_of(4)));
+        BOOST_TEST(is_gep_of(gep_2, is_i32, exactly(i32_ptr), constant(2)));
+        BOOST_TEST(is_store_of(store_2, is_i32, constant(3), exactly(gep_2), align_of(4)));
+        BOOST_TEST(is_store_of(store_ptr, pointer_to(is_i32), exactly(i32_ptr), exactly(gep_snd), align_of(8)));
+        BOOST_TEST(is_return_of_void(ret));
     }
     {
         auto const f = get_function("extract");
@@ -723,6 +731,26 @@ BOOST_AUTO_TEST_CASE(pass_004)
         BOOST_TEST(is_direct_call(call_f1, exactly(get_function("f1")), call_arg(exactly(gep))));
         BOOST_TEST(is_direct_call(dtor, exactly(get_function(".dtor.1")), call_arg(exactly(alloca))));
         BOOST_TEST(is_return_of(ret, exactly(call_f1)));
+    }
+}
+
+BOOST_AUTO_TEST_CASE(pass_004_normalized)
+{
+    apply_beta_delta_normalization = true;
+    BOOST_TEST_REQUIRE(pass("0021_tuples/pass_004.depc"));
+    {
+        auto const f = get_function("f5");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, sext));
+        auto const inst = get_instructions(f->getEntryBlock());
+        BOOST_TEST_REQUIRE(inst.size() == 1ul);
+        BOOST_TEST(is_return_of(inst[0], constant(3)));
+    }
+    {
+        auto const f = get_function("f6");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, sext));
+        auto const inst = get_instructions(f->getEntryBlock());
+        BOOST_TEST_REQUIRE(inst.size() == 1ul);
+        BOOST_TEST(is_return_of(inst[0], constant(2)));
     }
 }
 

@@ -47,8 +47,9 @@ llvm::Value* gen_val(llvm::IntegerType*, boost::multiprecision::cpp_int const&);
  *
  * If the generated value is not trivially destructible it is stored in the list of destructors of the local context.
  *
- * @param dest If not `nullptr`, emit IR instructions as explained in `maybe_gen_store()`.
- * @return The value generated or `dest` if it was not `nullptr`.
+ * @param dest If not `nullptr`, constructs the new value in-place at the run-time location referred to by `dest`.
+ *
+ * @return The new LLVM value, which might be be exactly `dest`; for example when generating an array in-place.
  *
  * @see @ref `is_trivially_destructible()`
  */
@@ -76,13 +77,9 @@ inline llvm::Value* gen_temporary_val(
  * For example, for an `i32_t` a simple `store` is enough but for an `array_t(i32_t, n)` a `memcpy` might be necessary.
  *
  * @param value The input LLVM value to store or copy.
- * @param dest
- *      An LLVM value that represents the runtime location where the value must be stored or copied.
- *      This LLVM value must therefore be of an appropriate pointer type compatible with `value`.
- *
- * @return If `dest` is `nullptr` returns `value`, otherwise returns `dest`.
+ * @param dest The run-time location where the value must be stored/copied, which therefore must be of pointer type.
  */
-llvm::Value* maybe_gen_store(
+void gen_store(
     global_ctx_t&,
     local_ctx_t&,
     llvm::IRBuilder<>&,
@@ -96,8 +93,9 @@ llvm::Value* maybe_gen_store(
  * If the return value of the function call is not trivially destructible,
  * the result value and its type are stored in the list of destructors of the local context.
  *
- * @param dest If not `nullptr`, emit IR instructions as explained in `maybe_gen_store()`.
- * @return The generated LLVM value or `dest` if it was not `nullptr`.
+ * @param dest If not `nullptr`, constructs the new value in-place at the run-time location referred to by `dest`.
+ *
+ * @return The new LLVM value, which might be be exactly `dest`; for example when generating an array in-place.
  *
  * @see @ref `is_trivially_destructible()`
  */

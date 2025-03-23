@@ -32,7 +32,9 @@ static llvm::Value* gen_builtin_slice(
     auto const index = gen_temporary_val(global, local, builder, slice.k);
     auto const offset = stride_size ? builder.CreateMul(stride_size, index) : index;
     auto const ptr = builder.CreateGEP(type, base, offset);
-    return maybe_gen_store(global, local, builder, ptr, dest, ret_type);
+    if (dest)
+        gen_store(global, local, builder, ptr, dest, ret_type);
+    return ptr;
 }
 
 llvm::Value* try_gen_builtin(

@@ -27,8 +27,9 @@ namespace dep0::llvmgen {
  * generates an LLVM value corresponding to that builtin function;
  * otherwise returns `nullptr`.
  *
- * @param dest If not `nullptr`, emit IR instructions as explained in `maybe_gen_store()`.
- * @return The generated LLVM value (or `dest` if it was not `nullptr`) or `nullptr` if not a builtin function.
+ * @param dest If not `nullptr`, constructs the new value in-place at the run-time location referred to by `dest`.
+ *
+ * @return The generated LLVM value or `nullptr` if not a builtin function.
  */
 llvm::Value* try_gen_builtin(
     global_ctx_t&,

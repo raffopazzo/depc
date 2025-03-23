@@ -110,9 +110,11 @@ llvm::Value* gen_val(
     llvm::Value* const dest)
 {
     auto const& type = std::get<typecheck::expr_t>(expr.properties.sort.get());
-    auto const storeOrReturn = [&] (llvm::Value* const value)
+    auto const store_and_return = [&] (llvm::Value* const value)
     {
-        return maybe_gen_store(global, local, builder, value, dest, type);
+        if (dest)
+            gen_store(global, local, builder, value, dest, type);
+        return value;
     };
     return match(
         expr.value,
@@ -188,13 +190,13 @@ llvm::Value* gen_val(
         },
         [&] (typecheck::expr_t::boolean_constant_t const& x) -> llvm::Value*
         {
-            return storeOrReturn(llvm::ConstantInt::getBool(global.llvm_ctx, x.value));
+            return store_and_return(llvm::ConstantInt::getBool(global.llvm_ctx, x.value));
         },
         [&] (typecheck::expr_t::numeric_constant_t const& x) -> llvm::Value*
         {
             auto const llvm_type = cast<llvm::IntegerType>(gen_type(global, type));
             assert(llvm_type);
-            return storeOrReturn(gen_val(llvm_type, x.value));
+            return store_and_return(gen_val(llvm_type, x.value));
         },
         [&] (typecheck::expr_t::string_literal_t const& x) -> llvm::Value*
         {
@@ -209,11 +211,11 @@ llvm::Value* gen_val(
                 val = builder.CreateGlobalStringPtr(s, "$_str_");
                 global.store_string_literal(escaped ? std::move(*escaped) : std::string(s), val);
             }
-            return storeOrReturn(val);
+            return store_and_return(val);
         },
         [&] (typecheck::expr_t::boolean_expr_t const& x) -> llvm::Value*
         {
-            return storeOrReturn(match(
+            return store_and_return(match(
                 x.value,
                 [&] (typecheck::expr_t::boolean_expr_t::not_t const& x) -> llvm::Value*
                 {
@@ -236,7 +238,7 @@ llvm::Value* gen_val(
         },
         [&] (typecheck::expr_t::relation_expr_t const& x) -> llvm::Value*
         {
-            return storeOrReturn(match(
+            return store_and_return(match(
                 x.value,
                 [&] <typename T> (T const& x) -> llvm::Value*
                 {
@@ -292,7 +294,7 @@ llvm::Value* gen_val(
         },
         [&] (typecheck::expr_t::arith_expr_t const& x) -> llvm::Value*
         {
-            return storeOrReturn(match(
+            return store_and_return(match(
                 x.value,
                 [&] <typename T> (T const& x) -> llvm::Value*
                 {
@@ -323,7 +325,7 @@ llvm::Value* gen_val(
         {
             auto const val = local[var];
             assert(val and "unknown variable");
-            return storeOrReturn(match(
+            return store_and_return(match(
                 *val,
                 [] (llvm::Value* const p) { return p; },
                 [] (llvm_func_t const& c) { return c.func; }));
@@ -332,7 +334,7 @@ llvm::Value* gen_val(
         {
             auto const val = global[g];
             assert(val and "unknown global");
-            return storeOrReturn(match(
+            return store_and_return(match(
                 *val,
                 [] (llvm_func_t const& c) { return c.func; },
                 [] (typecheck::type_def_t const&) -> llvm::Value*
@@ -350,7 +352,7 @@ llvm::Value* gen_val(
                     if (abs->body.stmts.empty())
                         // if body is empty, gen_body produces an open block, which breaks MergeBlockIntoPredecessor;
                         // but this is only possible if return type is unit_t, so just generate the unit value
-                        return storeOrReturn(gen_val_unit(global));
+                        return store_and_return(gen_val_unit(global));
                     auto const current_func = builder.GetInsertBlock()->getParent();
                     auto const gen_inlined_body = [&] (llvm::Value* const inlined_result)
                     {
@@ -396,7 +398,7 @@ llvm::Value* gen_val(
         {
             auto const proto = llvm_func_proto_t::from_abs(abs);
             assert(proto and "can only generate a value for a 1st order function type");
-            return storeOrReturn(gen_func(global, *proto, abs));
+            return store_and_return(gen_func(global, *proto, abs));
         },
         [&] (typecheck::expr_t::pi_t const&) -> llvm::Value*
         {
@@ -443,19 +445,28 @@ llvm::Value* gen_val(
                     auto const dest2 = dest ? dest : gen_alloca(global, local, allocator, builder, type);
                     auto const int32 = llvm::Type::getInt32Ty(global.llvm_ctx);
                     auto const zero = llvm::ConstantInt::get(int32, 0);
+                    auto sigma_ctx = local.extend();
                     for (auto const i: std::views::iota(0ul, x.values.size()))
                     {
                         auto const index = llvm::ConstantInt::get(int32, i);
                         auto const element_ptr = builder.CreateGEP(llvm_type, dest2, {zero, index});
                         if (is_boxed(sigma.args[i].type))
                         {
-                            auto const p = gen_alloca(global, local, allocator, builder, sigma.args[i].type);
-                            gen_val(global, local, builder, x.values[i], value_category, p);
+                            auto const p = gen_alloca(global, sigma_ctx, allocator, builder, sigma.args[i].type);
+                            gen_val(global, sigma_ctx, builder, x.values[i], value_category, p);
                             builder.CreateStore(p, element_ptr);
+                            if (sigma.args[i].var)
+                                sigma_ctx.try_emplace(*sigma.args[i].var, p);
                         }
                         else
-                            gen_val(global, local, builder, x.values[i], value_category, element_ptr);
+                        {
+                            auto const val = gen_val(global, sigma_ctx, builder, x.values[i], value_category, element_ptr);
+                            if (sigma.args[i].var)
+                                sigma_ctx.try_emplace(*sigma.args[i].var, val);
+                        }
                     }
+                    // TODO what should we do here? maybe just append to parent destructors? explain or add a test
+                    assert(sigma_ctx.destructors.empty() and "TODO invoke destructors");
                     return dest2;
                 },
                 [&] (typecheck::is_list_initializable_result::array_t const&) -> llvm::Value*
@@ -500,7 +511,7 @@ llvm::Value* gen_val(
                     auto const index_val = llvm::ConstantInt::get(int32, i);
                     auto const ptr = builder.CreateGEP(tuple_type, base, {zero, index_val});
                     auto const element_type = gen_type(global, sigma.args[i].type);
-                    return storeOrReturn(
+                    return store_and_return(
                         is_boxed(type) or is_pass_by_val(global, type)
                         ? builder.CreateLoad(element_type, ptr)
                         : ptr);
@@ -515,7 +526,7 @@ llvm::Value* gen_val(
                     auto const index = gen_temporary_val(global, local, builder, subscript.index.get());
                     auto const offset = stride_size ? builder.CreateMul(stride_size, index) : index;
                     auto const ptr = builder.CreateGEP(element_type, base, offset);
-                    return storeOrReturn(is_pass_by_ptr(global, type) ? ptr : builder.CreateLoad(element_type, ptr));
+                    return store_and_return(is_pass_by_ptr(global, type) ? ptr : builder.CreateLoad(element_type, ptr));
                 });
         },
         [&] (typecheck::expr_t::because_t const& x) -> llvm::Value*
@@ -524,7 +535,7 @@ llvm::Value* gen_val(
         });
 }
 
-llvm::Value* maybe_gen_store(
+void gen_store(
     global_ctx_t& global,
     local_ctx_t& local,
     llvm::IRBuilder<>& builder,
@@ -532,8 +543,7 @@ llvm::Value* maybe_gen_store(
     llvm::Value* const dest,
     typecheck::expr_t const& type)
 {
-    if (not dest)
-        return value;
+    assert(dest and "gen_store() destination cannot be nullptr");
     match(
         pass_by_ptr(global, type),
         [&] (pass_by_ptr_result::no_t)
@@ -570,13 +580,13 @@ llvm::Value* maybe_gen_store(
                         // TODO should use stack if value category is `temporary`
                         auto const alloca = gen_alloca(global, sigma_ctx, allocator_t::heap, builder, element_type);
                         builder.CreateStore(alloca, dest_element_ptr);
-                        maybe_gen_store(global, sigma_ctx, builder, element_ptr, alloca, element_type);
+                        gen_store(global, sigma_ctx, builder, element_ptr, alloca, element_type);
                         if (sigma.args[i].var)
                             sigma_ctx.try_emplace(*sigma.args[i].var, alloca);
                     }
                     else if (is_pass_by_ptr(global, element_type))
                     {
-                        maybe_gen_store(global, sigma_ctx, builder, element_ptr, dest_element_ptr, element_type);
+                        gen_store(global, sigma_ctx, builder, element_ptr, dest_element_ptr, element_type);
                         if (sigma.args[i].var)
                             sigma_ctx.try_emplace(*sigma.args[i].var, dest_element_ptr);
                     }
@@ -588,6 +598,8 @@ llvm::Value* maybe_gen_store(
                             sigma_ctx.try_emplace(*sigma.args[i].var, element_value);
                     }
                 }
+                // TODO what should we do here? maybe just append to parent destructors? explain or add a test
+                assert(sigma_ctx.destructors.empty() and "TODO invoke destructors");
             }
         },
         [&] (pass_by_ptr_result::array_t const& array)
@@ -603,7 +615,6 @@ llvm::Value* maybe_gen_store(
             // TODO do not crash if the memcpy depends on some erased argument
             builder.CreateMemCpy(dest, align, value, align, total_bytes);
         });
-    return dest;
 };
 
 llvm::Value* gen_func_call(

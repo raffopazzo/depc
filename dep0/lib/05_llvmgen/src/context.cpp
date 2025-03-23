@@ -54,6 +54,7 @@ global_ctx_t::value_t const* global_ctx_t::operator[](typecheck::expr_t::global_
 
 std::optional<llvm_func_t> global_ctx_t::get_destructor(typecheck::expr_t const& type) const
 {
+    // TODO if type is some because_t we only care of its value; currently we duplicate constructors
     std::optional<llvm_func_t> result;
     if (auto const properties = get_properties_if_array(type))
     {

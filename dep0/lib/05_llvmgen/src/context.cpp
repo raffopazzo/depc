@@ -6,6 +6,8 @@
  */
 #include "private/context.hpp"
 
+#include "private/gen_array.hpp"
+
 #include "dep0/ast/alpha_equivalence.hpp"
 
 namespace dep0::llvmgen {
@@ -53,15 +55,27 @@ global_ctx_t::value_t const* global_ctx_t::operator[](typecheck::expr_t::global_
 std::optional<llvm_func_t> global_ctx_t::get_destructor(typecheck::expr_t const& type) const
 {
     std::optional<llvm_func_t> result;
-    auto const it = destructors.find(type);
-    if (it != destructors.end())
-        result.emplace(it->second);
+    if (auto const properties = get_properties_if_array(type))
+    {
+        auto const it = array_destructors.find(properties->element_type);
+        if (it != array_destructors.end())
+            result.emplace(it->second);
+    }
+    else
+    {
+        auto const it = non_array_destructors.find(type);
+        if (it != non_array_destructors.end())
+            result.emplace(it->second);
+    }
     return result;
 }
 
 void global_ctx_t::store_destructor(typecheck::expr_t type, llvm_func_t func)
 {
-    destructors.emplace(std::move(type), std::move(func));
+    if (auto const properties = get_properties_if_array(type))
+        array_destructors.emplace(properties->element_type, std::move(func));
+    else
+        non_array_destructors.emplace(std::move(type), std::move(func));
 }
 
 llvm::Value* global_ctx_t::get_string_literal(std::string_view const s) const

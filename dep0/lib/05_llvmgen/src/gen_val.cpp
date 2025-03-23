@@ -387,7 +387,7 @@ llvm::Value* gen_val(
                         assert(is_pass_by_val(global, ret_type));
                         auto const inlined_type = gen_type(global, ret_type);
                         auto const inlined_result = builder.CreateAlloca(inlined_type, builder.getInt32(1));
-                        move_to_entry_block(inlined_result, current_func);
+                        try_move_to_entry_block(inlined_result, current_func);
                         gen_inlined_body(inlined_result);
                         return builder.CreateLoad(inlined_type, inlined_result);
                     }

@@ -26,7 +26,7 @@ llvm::Value* gen_alloca(
     if (allocator == allocator_t::stack)
     {
         auto const alloca = builder.CreateAlloca(llvm_type, array_size);
-        move_to_entry_block(alloca, builder.GetInsertBlock()->getParent());
+        try_move_to_entry_block(alloca, builder.GetInsertBlock()->getParent());
         return alloca;
     }
     else
@@ -44,8 +44,12 @@ llvm::Value* gen_alloca(
     }
 }
 
-void move_to_entry_block(llvm::AllocaInst* const alloca, llvm::Function* const f)
+void try_move_to_entry_block(llvm::AllocaInst* const alloca, llvm::Function* const f)
 {
+    // We cannot move an alloca if it depends on other values, unless those values are just plain arguments.
+    for (auto const i: std::views::iota(0ul, alloca->getNumOperands()))
+        if (not llvm::isa<llvm::Argument>(alloca->getOperand(i)))
+            return;
     // scan the entry block and place the new `alloca` before the first non-`alloca`
     for (llvm::Instruction& i: f->getEntryBlock())
         if (auto const alloca2 = llvm::dyn_cast<llvm::AllocaInst>(&i))

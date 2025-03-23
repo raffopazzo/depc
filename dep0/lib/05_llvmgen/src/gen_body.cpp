@@ -29,8 +29,10 @@ static bool has_unit_type(typecheck::expr_t const& expr)
  * @brief Generate the destructor for the given type.
  *
  * Destructors are generated in reverse order and recursively inside-out.
+ *
+ * @remarks Normally a destructor only takes 1 argument, but for an array it also takes its length.
  */
-static llvm_func_t gen_destructor(global_ctx_t&, local_ctx_t&, typecheck::expr_t const&);
+static llvm_func_t gen_destructor(global_ctx_t&, typecheck::expr_t const&);
 
 /**
  * @brief Invoke the destructor on a value of the given type.
@@ -63,18 +65,34 @@ static void gen_for_loop_downward(
     global_ctx_t& global,
     local_ctx_t& local,
     llvm::IRBuilder<>& builder,
+    ast::sign_t const sign,
     llvm::Value* const initial_value,
     llvm::Value* const sentinel_value,
     F&& body_gen)
 {
-    if (auto const a = llvm::dyn_cast<llvm::ConstantInt>(initial_value))
-        if (auto const b = llvm::dyn_cast<llvm::ConstantInt>(sentinel_value))
-        {
-            gen_for_loop_downward_unrolled(global, local, builder, a->getZExtValue(), b->getZExtValue(), body_gen);
-            return;
-        }
-    // else TODO generate runtime loop
-    assert(false and "loop of variable length not yet supported");
+    if (sign == ast::sign_t::unsigned_v)
+        if (auto const a = llvm::dyn_cast<llvm::ConstantInt>(initial_value))
+            if (auto const b = llvm::dyn_cast<llvm::ConstantInt>(sentinel_value))
+            {
+                gen_for_loop_downward_unrolled(global, local, builder, a->getZExtValue(), b->getZExtValue(), body_gen);
+                return;
+            }
+    auto const header = builder.GetInsertBlock();
+    auto const loop = llvm::BasicBlock::Create(global.llvm_ctx, "loop", header->getParent());
+    auto const next = llvm::BasicBlock::Create(global.llvm_ctx, "next", header->getParent());
+    auto const cmp0 = builder.CreateCmp(llvm::CmpInst::Predicate::ICMP_UGT, initial_value, sentinel_value);
+    builder.CreateCondBr(cmp0, loop, next);
+    builder.SetInsertPoint(loop);
+    auto const value_type = initial_value->getType();
+    auto const phi = builder.CreatePHI(value_type, 2);
+    phi->addIncoming(initial_value, header);
+    auto const next_value = builder.CreateSub(initial_value, llvm::ConstantInt::get(value_type, 1));
+    phi->addIncoming(next_value, loop);
+    body_gen(global, local, builder, next_value);
+    auto const predicate = sign == ast::sign_t::signed_v ? llvm::CmpInst::ICMP_SGT : llvm::CmpInst::ICMP_UGT;
+    auto const cmp = builder.CreateCmp(predicate, next_value, sentinel_value);
+    builder.CreateCondBr(cmp, loop, next);
+    builder.SetInsertPoint(next);
 }
 
 /**
@@ -134,16 +152,17 @@ static void gen_stmts(
     }
 }
 
-static llvm_func_t gen_destructor(
-    global_ctx_t& global,
-    local_ctx_t& local,
-    typecheck::expr_t const& type)
+static llvm_func_t gen_destructor(global_ctx_t& global, typecheck::expr_t const& type)
 {
+    local_ctx_t local;
     assert(not is_trivially_destructible(global, type) and "trivially destructible types do not need a destructor");
     auto const name = std::string{".dtor."} + std::to_string(global.get_next_id());
     auto const arg_type = is_boxed(type) ? gen_type(global, type) : gen_type(global, type)->getPointerTo();
-    // TODO if type is some `array_t(t, n)`, we need to pass `n` as second argument
-    auto const f_ty = llvm::FunctionType::get(llvm::Type::getVoidTy(global.llvm_ctx), {arg_type}, false);
+    auto const void_type = llvm::Type::getVoidTy(global.llvm_ctx);
+    auto const f_ty =
+        is_array(type)
+        ? llvm::FunctionType::get(void_type, {arg_type, llvm::Type::getInt64Ty(global.llvm_ctx)}, false)
+        : llvm::FunctionType::get(void_type, {arg_type}, false);
     auto const llvm_f = llvm::Function::Create(f_ty, llvm::Function::PrivateLinkage, name, global.llvm_module);
     auto builder = llvm::IRBuilder<>(global.llvm_ctx);
     builder.SetInsertPoint(llvm::BasicBlock::Create(global.llvm_ctx, "entry", llvm_f));
@@ -186,8 +205,9 @@ static llvm_func_t gen_destructor(
             assert(properties and "non-trivially-destructible type is not an array");
             gen_for_loop_downward(
                 global, local, builder,
-                gen_array_total_size(global, local, builder, *properties),
-                builder.getInt32(0),
+                ast::sign_t::unsigned_v,
+                llvm_f->getArg(1),
+                builder.getInt64(0),
                 [
                     &element_type=properties->element_type,
                     llvm_type=gen_type(global, properties->element_type),
@@ -229,6 +249,8 @@ static llvm_func_t gen_destructor(
             // TODO needs a test: gen_destructor_call(global, local, builder, value, x.value.get());
         });
     builder.CreateRetVoid();
+    // TODO should call destructors here; needs a test
+    assert(local.destructors.empty() and "destructor will allocate more memory");
     return llvm_func_t(f_ty, llvm_f);
 }
 
@@ -242,11 +264,17 @@ static void gen_destructor_call(
     auto destructor = global.get_destructor(type);
     if (not destructor)
     {
-        destructor = gen_destructor(global, local, type);
+        destructor = gen_destructor(global, type);
         global.store_destructor(type, *destructor);
     }
     // TODO add attributes
-    builder.CreateCall(destructor->type, destructor->func, {value});
+    if (auto const properties = get_properties_if_array(type))
+    {
+        auto const size = gen_array_total_size(global, local, builder, *properties);
+        builder.CreateCall(destructor->type, destructor->func, {value, size});
+    }
+    else
+        builder.CreateCall(destructor->type, destructor->func, {value});
 }
 
 /**

@@ -50,15 +50,20 @@ llvm::Value* gen_alloca(
     typecheck::expr_t const& type);
 
 /**
- * @brief Move the given `alloca` to the entry block of the given function.
- * 
+ * @brief Move the given `alloca` to the entry block of the given function, if possible.
+ *
+ * An `alloca` cannot be moved before any of its operands,
+ * for example if the size is the multiplication of two other values,
+ * the `alloca` cannot be moved before computing the result.
+ * If the `alloca` cannot be moved, this function does nothing.
+ *
  * This is recommended by LLVM guide in order to make the `mem2reg` pass effective.
  * As per their guide, the `alloca` needs to also appear before any `call` instructions.
  * So we put it right after the most recent `alloca`, thus creating a sort of "alloca group".
- * 
+ *
  * @remarks This function is called automatically from `gen_alloca()` but,
  * if you manually generate an `alloca`, it is highly recommended that you call this function.
  */
-void move_to_entry_block(llvm::AllocaInst*, llvm::Function*);
+void try_move_to_entry_block(llvm::AllocaInst*, llvm::Function*);
 
 } // namespace dep0::llvmgen

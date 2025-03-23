@@ -71,3 +71,34 @@ func f9() -> i32_t
     // the array allocated by f7() inside f8() must now be freed before returning the result value
     return f1(f8()[0]);
 }
+
+func one_or_two(bool_t which) -> u64_t
+{
+    if (which)
+        return 1;
+    else
+        return 2;
+}
+
+func copy(bool_t which, (u64_t n, array_t(i32_t, n)) x) -> array_t((u64_t n, array_t(i32_t, n)), one_or_two(which))
+{
+    if (which)
+        return {x};
+    else
+        return {x, x};
+}
+
+func lemma(bool_t which) -> true_t(0 < one_or_two(which))
+{
+    if (which)
+        return {};
+    else
+        return {};
+}
+
+func f10(bool_t which) mutable -> i32_t
+{
+    // the memory allocated by `f2()` must be freed before returning the result value and also
+    // the memory allocated by `copy()` must be freed by iterating (1 or 2 times) over the returned elements
+    return f1(copy(which, f2())[0] because lemma(which));
+}

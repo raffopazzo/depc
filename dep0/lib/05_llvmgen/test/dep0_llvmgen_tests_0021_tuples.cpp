@@ -704,15 +704,37 @@ BOOST_AUTO_TEST_CASE(pass_004)
     }
     {
         auto const f = get_function(".dtor.1");
-        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(pointer_to(tuple_type))}, is_void));
-        auto const inst = get_instructions(f->getEntryBlock());
-        BOOST_TEST_REQUIRE(inst.size() == 3ul);
-        auto const gep      = inst[0];
-        auto const dtor     = inst[1];
-        auto const ret      = inst[2];
-        BOOST_TEST(is_gep_of(gep, tuple_type, exactly(f->getArg(0)), constant(0)));
-        BOOST_TEST(is_direct_call(dtor, exactly(get_function(".dtor.0")), call_arg(exactly(gep))));
-        BOOST_TEST(is_return_of_void(ret));
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(pointer_to(tuple_type)), arg_of(is_i64)}, is_void));
+        auto const blks = get_blocks(*f);
+        BOOST_TEST_REQUIRE(blks.size() == 3ul);
+        auto const entry    = blks[0];
+        auto const loop     = blks[1];
+        auto const next     = blks[2];
+        {
+            auto const inst = get_instructions(*entry);
+            BOOST_TEST_REQUIRE(inst.size() == 2ul);
+            BOOST_TEST(is_cmp(inst[0], llvm::CmpInst::ICMP_UGT, exactly(f->getArg(1)), constant(0)));
+            BOOST_TEST(is_branch_of(inst[1], exactly(inst[0]), exactly(loop), exactly(next)));
+        }
+        {
+            auto const inst = get_instructions(*loop);
+            BOOST_TEST_REQUIRE(inst.size() == 6ul);
+            BOOST_TEST(
+                is_phi_of(
+                    inst[0], is_i64,
+                    std::pair{exactly(f->getArg(1)), entry},
+                    std::pair{exactly(inst[1]), loop}));
+            BOOST_TEST(is_sub_of(inst[1], exactly(f->getArg(1)), constant(1)));
+            BOOST_TEST(is_gep_of(inst[2], tuple_type, exactly(f->getArg(0)), exactly(inst[1])));
+            BOOST_TEST(is_direct_call(inst[3], exactly(get_function(".dtor.0")), call_arg(exactly(inst[2]))));
+            BOOST_TEST(is_cmp(inst[4], llvm::CmpInst::ICMP_UGT, exactly(inst[1]), constant(0)));
+            BOOST_TEST(is_branch_of(inst[5], exactly(inst[4]), exactly(loop), exactly(next)));
+        }
+        {
+            auto const inst = get_instructions(*next);
+            BOOST_TEST_REQUIRE(inst.size() == 1ul);
+            BOOST_TEST(is_return_of_void(inst[0]));
+        }
     }
     {
         auto const f = get_function("f9");
@@ -729,8 +751,112 @@ BOOST_AUTO_TEST_CASE(pass_004)
         BOOST_TEST(is_direct_call(call_f8, exactly(get_function("f8")), call_arg(exactly(alloca))));
         BOOST_TEST(is_gep_of(gep, tuple_type, exactly(alloca), constant(0)));
         BOOST_TEST(is_direct_call(call_f1, exactly(get_function("f1")), call_arg(exactly(gep))));
-        BOOST_TEST(is_direct_call(dtor, exactly(get_function(".dtor.1")), call_arg(exactly(alloca))));
+        BOOST_TEST(
+            is_direct_call(
+                dtor,
+                exactly(get_function(".dtor.1")),
+                call_arg(exactly(alloca)),
+                call_arg(constant(1))));
         BOOST_TEST(is_return_of(ret, exactly(call_f1)));
+    }
+    {
+        auto const f = get_function("f10");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(is_i1, "which", zext)}, is_i32, sext));
+        auto const blks = get_blocks(*f);
+        BOOST_TEST_REQUIRE(blks.size() == 7ul);
+        auto const entry    = blks[0];
+        auto const then0    = blks[1];
+        auto const else0    = blks[2];
+        auto const cont     = blks[3];
+        auto const then1    = blks[4];
+        auto const else2    = blks[5];
+        auto const cont3    = blks[6];
+        llvm::Value const* size;
+        {
+            auto const inst = get_instructions(*entry);
+            BOOST_TEST_REQUIRE(inst.size() == 2ul);
+            BOOST_TEST(is_alloca(inst[0], is_i64, constant(1), align_of(8)));
+            BOOST_TEST(is_branch_of(inst[1], exactly(f->getArg(0)), exactly(then0), exactly(else0)));
+            size = inst[0];
+        }
+        {
+            auto const inst = get_instructions(*then0);
+            BOOST_TEST_REQUIRE(inst.size() == 2ul);
+            BOOST_TEST(is_store_of(inst[0], is_i64, constant(1), exactly(size), align_of(8)));
+            BOOST_TEST(is_unconditional_branch_to(inst[1], exactly(cont)));
+        }
+        {
+            auto const inst = get_instructions(*else0);
+            BOOST_TEST_REQUIRE(inst.size() == 2ul);
+            BOOST_TEST(is_store_of(inst[0], is_i64, constant(2), exactly(size), align_of(8)));
+            BOOST_TEST(is_unconditional_branch_to(inst[1], exactly(cont)));
+        }
+        llvm::Value const* copy_result;
+        llvm::Value const* f2_result;
+        llvm::Value const* call_f1;
+        llvm::Value const* size2;
+        {
+            auto const inst = get_instructions(*cont);
+            BOOST_TEST_REQUIRE(inst.size() == 9ul);
+            auto const load     = inst[0];
+            copy_result         = inst[1];
+            f2_result           = inst[2];
+            auto const call_f2  = inst[3];
+            auto const copy     = inst[4];
+            auto const gep      = inst[5];
+            call_f1             = inst[6];
+            auto const alloca2  = inst[7];
+            auto const br       = inst[8];
+            BOOST_TEST(is_load_of(load, is_i64, exactly(size), align_of(8)));
+            BOOST_TEST(is_alloca(copy_result, tuple_type, exactly(load), align_of(8)));
+            BOOST_TEST(is_alloca(f2_result, tuple_type, constant(1), align_of(8)));
+            BOOST_TEST(is_direct_call(call_f2, exactly(get_function("f2")), call_arg(exactly(f2_result))));
+            BOOST_TEST(
+                is_direct_call(
+                    copy,
+                    exactly(get_function("copy")),
+                    call_arg(exactly(copy_result)),
+                    call_arg(exactly(f->getArg(0)), zext),
+                    call_arg(exactly(f2_result))));
+            BOOST_TEST(is_gep_of(gep, tuple_type, exactly(copy_result), constant(0)));
+            BOOST_TEST(is_direct_call(call_f1, exactly(get_function("f1")), call_arg(exactly(gep))));
+            BOOST_TEST(is_alloca(alloca2, is_i64, constant(1), align_of(8)));
+            BOOST_TEST(is_branch_of(br, exactly(f->getArg(0)), exactly(then1), exactly(else2)));
+            size2 = alloca2;
+        }
+        {
+            auto const inst = get_instructions(*then1);
+            BOOST_TEST_REQUIRE(inst.size() == 2ul);
+            BOOST_TEST(is_store_of(inst[0], is_i64, constant(1), exactly(size2), align_of(8)));
+            BOOST_TEST(is_unconditional_branch_to(inst[1], exactly(cont3)));
+        }
+        {
+            auto const inst = get_instructions(*else2);
+            BOOST_TEST_REQUIRE(inst.size() == 2ul);
+            BOOST_TEST(is_store_of(inst[0], is_i64, constant(2), exactly(size2), align_of(8)));
+            BOOST_TEST(is_unconditional_branch_to(inst[1], exactly(cont3)));
+        }
+        {
+            auto const inst = get_instructions(*cont3);
+            BOOST_TEST_REQUIRE(inst.size() == 4ul);
+            auto const load     = inst[0];
+            auto const dtor_1   = inst[1];
+            auto const dtor_0   = inst[2];
+            auto const ret      = inst[3];
+            BOOST_TEST(is_load_of(load, is_i64, exactly(size2), align_of(8)));
+            BOOST_TEST(
+                is_direct_call(
+                    dtor_1,
+                    exactly(get_function(".dtor.1")),
+                    call_arg(exactly(copy_result)),
+                    call_arg(exactly(load))));
+            BOOST_TEST(
+                is_direct_call(
+                    dtor_0,
+                    exactly(get_function(".dtor.0")),
+                    call_arg(exactly(f2_result))));
+            BOOST_TEST(is_return_of(ret, exactly(call_f1)));
+        }
     }
 }
 

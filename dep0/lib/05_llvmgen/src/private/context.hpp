@@ -102,11 +102,18 @@ private:
 
     std::size_t next_id = 0ul; /**< @brief Next unique ID returned from `get_next_id()`. */
     scope_map<typecheck::expr_t::global_t, value_t> values; /**< @brief Global functions, type definitions, etc. */
-    std::map<std::string, llvm::Value*, std::less<>> string_literals; /**<
-        * @brief LLVM global values associated to each unique string literal.
-        * @note The comparator `std::less<>` is required to allow look-up with `string_view`.
-        */
-    std::unordered_map<typecheck::expr_t, llvm_func_t, std::hash<typecheck::expr_t>, eq_t> destructors;
+
+    /**
+     * @brief LLVM global values associated to each unique string literal.
+     * @note The comparator `std::less<>` allows look-up by `std::string_view`.
+     */
+    std::map<std::string, llvm::Value*, std::less<>> string_literals;
+
+    /** @brief Stores the destructor to invoke for a non-array type. */
+    std::unordered_map<typecheck::expr_t, llvm_func_t, std::hash<typecheck::expr_t>, eq_t> non_array_destructors;
+
+    /** @brief Dedupe array destructors by passing the length as second argument and store them by element type. */
+    std::unordered_map<typecheck::expr_t, llvm_func_t, std::hash<typecheck::expr_t>, eq_t> array_destructors;
 };
 
 /**

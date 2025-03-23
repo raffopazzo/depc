@@ -113,22 +113,12 @@ auto gep_of(F_type&& f_type, F_ptr&& f_ptr, F_idx&&... f_idx)
 
         boost::test_tools::predicate_result operator()(llvm::Instruction const& x) const
         {
-            return std::apply(
-                is_gep_of,
-                [&] <std::size_t... Is> (std::index_sequence<Is...>)
-                {
-                    return std::forward_as_tuple(x, f_type, f_ptr, std::get<Is>(f_idx)...);
-                }(std::make_index_sequence<sizeof...(F_idx)>{}));
+            return std::apply(is_gep_of, std::tuple_cat(std::tie(x, f_type, f_ptr), f_idx));
         }
 
         boost::test_tools::predicate_result operator()(llvm::Value const& x) const
         {
-            return std::apply(
-                is_gep_of,
-                [&] <std::size_t... Is> (std::index_sequence<Is...>)
-                {
-                    return std::forward_as_tuple(x, f_type, f_ptr, std::get<Is>(f_idx)...);
-                }(std::make_index_sequence<sizeof...(F_idx)>{}));
+            return std::apply(is_gep_of, std::tuple_cat(std::tie(x, f_type, f_ptr), f_idx));
         }
     };
     return predicate_t{std::forward<F_type>(f_type), std::forward<F_ptr>(f_ptr), {std::forward<F_idx>(f_idx)...}};

@@ -127,12 +127,12 @@ auto phi_of(F_ty&& f_ty, std::pair<F, llvm::BasicBlock const*>... f)
 
         boost::test_tools::predicate_result operator()(llvm::Instruction const& x) const
         {
-            return std::apply(is_phi_of, std::tuple_cat(std::forward_as_tuple(x, f_ty), f));
+            return std::apply(is_phi_of, std::tuple_cat(std::tie(x, f_ty), f));
         }
 
         boost::test_tools::predicate_result operator()(llvm::Value const& x) const
         {
-            return std::apply(is_phi_of, std::tuple_cat(std::forward_as_tuple(x, f_ty), f));
+            return std::apply(is_phi_of, std::tuple_cat(std::tie(x, f_ty), f));
         }
     };
     return predicate_t{std::forward<F_ty>(f_ty), std::move(f)...};

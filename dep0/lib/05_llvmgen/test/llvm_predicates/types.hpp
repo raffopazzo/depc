@@ -219,42 +219,22 @@ auto struct_of(Types&&... types)
 
         boost::test_tools::predicate_result operator()(llvm::StructType const& x) const
         {
-            return std::apply(
-                is_struct,
-                [&] <std::size_t... Is> (std::index_sequence<Is...>)
-                {
-                    return std::forward_as_tuple(x, std::get<Is>(types)...);
-                }(std::make_index_sequence<sizeof...(Types)>{}));
+            return std::apply(is_struct, std::tuple_cat(std::tie(x), types));
         }
 
         boost::test_tools::predicate_result operator()(llvm::StructType const* const p) const
         {
-            return std::apply(
-                is_struct,
-                [&] <std::size_t... Is> (std::index_sequence<Is...>)
-                {
-                    return std::forward_as_tuple(p, std::get<Is>(types)...);
-                }(std::make_index_sequence<sizeof...(Types)>{}));
+            return std::apply(is_struct, std::tuple_cat(std::make_tuple(p), types));
         }
 
         boost::test_tools::predicate_result operator()(llvm::Type const& x) const
         {
-            return std::apply(
-                is_struct,
-                [&] <std::size_t... Is> (std::index_sequence<Is...>)
-                {
-                    return std::forward_as_tuple(x, std::get<Is>(types)...);
-                }(std::make_index_sequence<sizeof...(Types)>{}));
+            return std::apply(is_struct, std::tuple_cat(std::tie(x), types));
         }
 
         boost::test_tools::predicate_result operator()(llvm::Type const* const p) const
         {
-            return std::apply(
-                is_struct,
-                [&] <std::size_t... Is> (std::index_sequence<Is...>)
-                {
-                    return std::forward_as_tuple(p, std::get<Is>(types)...);
-                }(std::make_index_sequence<sizeof...(Types)>{}));
+            return std::apply(is_struct, std::tuple_cat(std::make_tuple(p), types));
         }
     };
     return predicate_t{{std::move(types)...}};

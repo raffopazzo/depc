@@ -724,7 +724,7 @@ BOOST_AUTO_TEST_CASE(pass_004)
                     inst[0], is_i64,
                     std::pair{exactly(f->getArg(1)), entry},
                     std::pair{exactly(inst[1]), loop}));
-            BOOST_TEST(is_sub_of(inst[1], exactly(f->getArg(1)), constant(1)));
+            BOOST_TEST(is_sub_of(inst[1], exactly(inst[0]), constant(1)));
             BOOST_TEST(is_gep_of(inst[2], tuple_type, exactly(f->getArg(0)), exactly(inst[1])));
             BOOST_TEST(is_direct_call(inst[3], exactly(get_function(".dtor.0")), call_arg(exactly(inst[2]))));
             BOOST_TEST(is_cmp(inst[4], llvm::CmpInst::ICMP_UGT, exactly(inst[1]), constant(0)));

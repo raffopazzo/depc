@@ -589,7 +589,7 @@ BOOST_AUTO_TEST_CASE(pass_004)
     }
     {
         auto const f = get_function(".dtor.0");
-        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(pointer_to(tuple_type))}, is_void));
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(pointer_to(tuple_type), {}, nonnull)}, is_void));
         auto const inst = get_instructions(f->getEntryBlock());
         BOOST_TEST_REQUIRE(inst.size() == 5ul);
         auto const gep      = inst[0];
@@ -704,7 +704,13 @@ BOOST_AUTO_TEST_CASE(pass_004)
     }
     {
         auto const f = get_function(".dtor.1");
-        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(pointer_to(tuple_type)), arg_of(is_i64)}, is_void));
+        BOOST_TEST_REQUIRE(
+            is_function_of(
+                f,
+                std::tuple{
+                    arg_of(pointer_to(tuple_type), {}, nonnull),
+                    arg_of(is_i64, {}, zext)},
+                is_void));
         auto const blks = get_blocks(*f);
         BOOST_TEST_REQUIRE(blks.size() == 3ul);
         auto const entry    = blks[0];
@@ -756,7 +762,7 @@ BOOST_AUTO_TEST_CASE(pass_004)
                 dtor,
                 exactly(get_function(".dtor.1")),
                 call_arg(exactly(alloca)),
-                call_arg(constant(1))));
+                call_arg(constant(1), zext)));
         BOOST_TEST(is_return_of(ret, exactly(call_f1)));
     }
     {
@@ -849,7 +855,7 @@ BOOST_AUTO_TEST_CASE(pass_004)
                     dtor_1,
                     exactly(get_function(".dtor.1")),
                     call_arg(exactly(copy_result)),
-                    call_arg(exactly(load))));
+                    call_arg(exactly(load), zext)));
             BOOST_TEST(
                 is_direct_call(
                     dtor_0,
@@ -877,6 +883,115 @@ BOOST_AUTO_TEST_CASE(pass_004_normalized)
         auto const inst = get_instructions(f->getEntryBlock());
         BOOST_TEST_REQUIRE(inst.size() == 1ul);
         BOOST_TEST(is_return_of(inst[0], constant(2)));
+    }
+}
+
+BOOST_AUTO_TEST_CASE(pass_005)
+{
+    BOOST_TEST_REQUIRE(pass("0021_tuples/pass_005.depc"));
+    auto const tuple_type = struct_of(is_i64, pointer_to(is_i32));
+    auto const arg_type = struct_of(is_i64, pointer_to(tuple_type));
+    {
+        auto const f = get_function("f0");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, sext));
+        auto const inst = get_instructions(f->getEntryBlock());
+        BOOST_TEST_REQUIRE(inst.size() == 5ul);
+        auto const alloca   = inst[0];
+        auto const call1    = inst[1];
+        auto const call2    = inst[2];
+        auto const dtor0    = inst[3];
+        auto const ret      = inst[4];
+        BOOST_TEST(is_alloca(alloca, arg_type, constant(1), align_of(8)));
+        BOOST_TEST(is_direct_call(call1, exactly(get_function("make_vector_of_vectors")), call_arg(exactly(alloca))));
+        BOOST_TEST(is_direct_call(call2, exactly(get_function("use_vector_of_vectors")), call_arg(exactly(alloca))));
+        BOOST_TEST(is_direct_call(dtor0, exactly(get_function(".dtor.0")), call_arg(exactly(alloca))));
+        BOOST_TEST(is_return_of(ret, exactly(call2)));
+    }
+    {
+        auto const f = get_function(".dtor.0");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(pointer_to(arg_type), {}, nonnull)}, is_void));
+        auto const inst = get_instructions(f->getEntryBlock());
+        BOOST_TEST_REQUIRE(inst.size() == 8ul);
+        auto const gep0     = inst[0];
+        auto const load0    = inst[1];
+        auto const gep1     = inst[2];
+        auto const load1    = inst[3];
+        auto const dtor1    = inst[4];
+        auto const bitcast  = inst[5];
+        auto const free     = inst[6];
+        auto const ret      = inst[7];
+        BOOST_TEST(is_gep_of(gep0, arg_type, exactly(f->getArg(0)), constant(0), constant(0)));
+        BOOST_TEST(is_load_of(load0, is_i64, exactly(gep0), align_of(8)));
+        BOOST_TEST(is_gep_of(gep1, arg_type, exactly(f->getArg(0)), constant(0), constant(1)));
+        BOOST_TEST(is_load_of(load1, pointer_to(tuple_type), exactly(gep1), align_of(8)));
+        BOOST_TEST(
+            is_direct_call(
+                dtor1,
+                exactly(get_function(".dtor.1")),
+                call_arg(exactly(load1)),
+                call_arg(exactly(load0), zext)));
+        BOOST_TEST(is_bitcast_of(bitcast, exactly(load1), pointer_to(tuple_type), pointer_to(is_i8)));
+        BOOST_TEST(is_direct_call(free, exactly(get_function("free")), call_arg(exactly(bitcast))));
+        BOOST_TEST(is_return_of_void(ret));
+    }
+    {
+        auto const f = get_function(".dtor.1");
+        BOOST_TEST_REQUIRE(
+            is_function_of(
+                f,
+                std::tuple{
+                    arg_of(pointer_to(tuple_type), {}, nonnull),
+                    arg_of(is_i64, {}, zext)
+                },
+                is_void));
+        auto const blks = get_blocks(*f);
+        BOOST_TEST_REQUIRE(blks.size() == 3ul);
+        auto const entry    = blks[0];
+        auto const loop     = blks[1];
+        auto const next     = blks[2];
+        {
+            auto const inst = get_instructions(*entry);
+            BOOST_TEST_REQUIRE(inst.size() == 2ul);
+            BOOST_TEST(is_cmp(inst[0], llvm::CmpInst::Predicate::ICMP_UGT, exactly(f->getArg(1)), constant(0)));
+            BOOST_TEST(is_branch_of(inst[1], exactly(inst[0]), exactly(loop), exactly(next)));
+        }
+        {
+            auto const inst = get_instructions(*loop);
+            BOOST_TEST_REQUIRE(inst.size() == 6ul);
+            auto const phi      = inst[0];
+            auto const sub      = inst[1];
+            auto const gep      = inst[2];
+            auto const dtor2    = inst[3];
+            auto const cmp      = inst[4];
+            auto const br       = inst[5];
+            BOOST_TEST(is_phi_of(phi, is_i64, std::pair{exactly(f->getArg(1)), entry}, std::pair{exactly(sub), loop}));
+            BOOST_TEST(is_sub_of(sub, exactly(phi), constant(1)));
+            BOOST_TEST(is_gep_of(gep, tuple_type, exactly(f->getArg(0)), exactly(sub)));
+            BOOST_TEST(is_direct_call(dtor2, exactly(get_function(".dtor.2")), call_arg(exactly(gep))));
+            BOOST_TEST(is_cmp(cmp, llvm::CmpInst::Predicate::ICMP_UGT, exactly(sub), constant(0)));
+            BOOST_TEST(is_branch_of(br, exactly(cmp), exactly(loop), exactly(next)));
+        }
+        {
+            auto const inst = get_instructions(*next);
+            BOOST_TEST_REQUIRE(inst.size() == 1ul);
+            BOOST_TEST(is_return_of_void(inst[0]));
+        }
+    }
+    {
+        auto const f = get_function(".dtor.2");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(pointer_to(tuple_type), {}, nonnull)}, is_void));
+        auto const inst = get_instructions(f->getEntryBlock());
+        BOOST_TEST_REQUIRE(inst.size() == 5ul);
+        auto const gep      = inst[0];
+        auto const load     = inst[1];
+        auto const bitcast  = inst[2];
+        auto const free     = inst[3];
+        auto const ret      = inst[4];
+        BOOST_TEST(is_gep_of(gep, tuple_type, exactly(f->getArg(0)), constant(0), constant(1)));
+        BOOST_TEST(is_load_of(load, pointer_to(is_i32), exactly(gep), align_of(8)));
+        BOOST_TEST(is_bitcast_of(bitcast, exactly(load), pointer_to(is_i32), pointer_to(is_i8)));
+        BOOST_TEST(is_direct_call(free, exactly(get_function("free")), call_arg(exactly(bitcast))));
+        BOOST_TEST(is_return_of_void(ret));
     }
 }
 

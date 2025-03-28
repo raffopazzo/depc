@@ -9,6 +9,7 @@
 #include "private/gen_array.hpp"
 #include "private/gen_type.hpp"
 #include "private/gen_val.hpp"
+#include "private/llvm_func.hpp"
 
 #include "dep0/typecheck/is_impossible.hpp"
 #include "dep0/typecheck/is_mutable.hpp"
@@ -164,6 +165,11 @@ static llvm_func_t gen_destructor(global_ctx_t& global, typecheck::expr_t const&
         ? llvm::FunctionType::get(void_type, {arg_type, llvm::Type::getInt64Ty(global.llvm_ctx)}, false)
         : llvm::FunctionType::get(void_type, {arg_type}, false);
     auto const llvm_f = llvm::Function::Create(f_ty, llvm::Function::PrivateLinkage, name, global.llvm_module);
+    // currently the first argument is always a non-null pointer,
+    // and only arrays take a second arugment which can be marked zext
+    llvm_f->getArg(0)->addAttr(llvm::Attribute::NonNull);
+    if (llvm_f->arg_size() > 1)
+        llvm_f->getArg(1)->addAttr(llvm::Attribute::ZExt);
     auto builder = llvm::IRBuilder<>(global.llvm_ctx);
     builder.SetInsertPoint(llvm::BasicBlock::Create(global.llvm_ctx, "entry", llvm_f));
     auto const value = llvm_f->getArg(0);
@@ -227,19 +233,30 @@ static llvm_func_t gen_destructor(global_ctx_t& global, typecheck::expr_t const&
             {
                 return builder.CreateGEP(llvm_type, value, {zero, builder.getInt32(i)});
             };
+            auto sigma_ctx = local.extend();
+            for (auto const i: std::views::iota(0ul, x.args.size()))
+                if (x.args[i].var)
+                    sigma_ctx.try_emplace(
+                        *x.args[i].var,
+                        is_boxed(x.args[i].type) or is_pass_by_val(global, x.args[i].type)
+                        ? builder.CreateLoad(gen_type(global, x.args[i].type), gep(i))
+                        : gep(i));
             for (auto const i: std::views::reverse(std::views::iota(0ul, x.args.size())))
-                // TODO add test or explain: shouldn't we first call the destructor of the boxed type and then free?
+            {
                 if (is_boxed(x.args[i].type))
                 {
-                    auto const free =
-                        llvm::CallInst::CreateFree(
-                            builder.CreateLoad(gen_type(global, x.args[i].type), gep(i)),
-                            builder.GetInsertBlock());
+                    auto const element_ptr = builder.CreateLoad(gen_type(global, x.args[i].type), gep(i));
+                    if (not is_trivially_destructible(global, x.args[i].type))
+                        gen_destructor_call(global, sigma_ctx, builder, element_ptr, x.args[i].type);
+                    auto const free = llvm::CallInst::CreateFree(element_ptr, builder.GetInsertBlock());
                     builder.GetInsertBlock()->getInstList().push_back(free);
                 }
                 // TODO needs a test:
                 // else if (not is_trivially_destructible(global, x.args[i].type))
-                //     gen_destructor_call(global, local, builder, gep(i), x.args[i].type);
+                //     gen_destructor_call(global, sigma_ctx, builder, gep(i), x.args[i].type);
+            }
+            // TODO what should we do here? maybe just append to parent destructors? explain or add a test
+            assert(sigma_ctx.destructors.empty() and "TODO invoke destructors");
         },
         [] (typecheck::expr_t::array_t const&) { },
         [] (typecheck::expr_t::init_list_t const&) { },
@@ -251,6 +268,7 @@ static llvm_func_t gen_destructor(global_ctx_t& global, typecheck::expr_t const&
     builder.CreateRetVoid();
     // TODO should call destructors here; needs a test
     assert(local.destructors.empty() and "destructor will allocate more memory");
+    finalize_llvm_func(llvm_f);
     return llvm_func_t(f_ty, llvm_f);
 }
 
@@ -271,7 +289,8 @@ static void gen_destructor_call(
     if (auto const properties = get_properties_if_array(type))
     {
         auto const size = gen_array_total_size(global, local, builder, *properties);
-        builder.CreateCall(destructor->type, destructor->func, {value, size});
+        auto const call = builder.CreateCall(destructor->type, destructor->func, {value, size});
+        call->addParamAttr(1, llvm::Attribute::ZExt);
     }
     else
         builder.CreateCall(destructor->type, destructor->func, {value});

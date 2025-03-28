@@ -1,0 +1,25 @@
+/*
+ * Copyright Raffaele Rossi 2025.
+ *
+ * Distributed under the Boost Software License, Version 1.0.
+ * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
+ */
+
+func make_vector_of_vectors() -> (u64_t n, array_t((u64_t m, array_t(i32_t, m)), n))
+{
+    // the caller of this function can allocate a value of type `{i64, i32*}` on the stack
+    // but the array {1,2,3} must be heap-allocated because its size depends on 3;
+    // more importantly the caller of `f3()` is responsible to free the array
+   return {2, {{1, {2}}, {2, {3, 4}}}};
+}
+
+func use_vector_of_vectors((u64_t n, array_t((u64_t m, array_t(i32_t, m)), n))) -> i32_t
+{
+    return 0;
+}
+
+func f0() -> i32_t
+{
+    // the destructor of the outer vector should first call the destructor of the inner vector and then free
+    return use_vector_of_vectors(make_vector_of_vectors());
+}

@@ -656,30 +656,48 @@ BOOST_AUTO_TEST_CASE(pass_004)
         auto const attrs = std::vector{llvm::Attribute::Alignment};
         auto const align = llvm::Align(4);
         auto const inst = get_instructions(f->getEntryBlock());
-        BOOST_TEST_REQUIRE(inst.size() == 16ul);
-        BOOST_TEST(is_gep_of(inst[0], tuple_type, exactly(f->getArg(0)), constant(0)));
-        BOOST_TEST(is_gep_of(inst[1], tuple_type, exactly(f->getArg(1)), constant(0), constant(0)));
-        BOOST_TEST(is_gep_of(inst[2], tuple_type, exactly(inst[0]), constant(0), constant(0)));
-        BOOST_TEST(is_load_of(inst[3], is_i64, exactly(inst[1]), align_of(8)));
-        BOOST_TEST(is_store_of(inst[4], is_i64, exactly(inst[3]), exactly(inst[2]), align_of(8)));
-        BOOST_TEST(is_gep_of(inst[5], tuple_type, exactly(f->getArg(1)), constant(0), constant(1)));
-        BOOST_TEST(is_gep_of(inst[6], tuple_type, exactly(inst[0]), constant(0), constant(1)));
-        BOOST_TEST(is_mul_of(inst[7], exactly(inst[3]), constant(4)));
-        BOOST_TEST(is_direct_call(inst[8], exactly(get_function("malloc")), call_arg(exactly(inst[7]))));
-        BOOST_TEST(is_bitcast_of(inst[9], exactly(inst[8]), pointer_to(is_i8), pointer_to(is_i32)));
-        BOOST_TEST(is_store_of(inst[10], pointer_to(is_i32), exactly(inst[9]), exactly(inst[6]), align_of(8)));
-        BOOST_TEST(is_mul_of(inst[11], exactly(inst[3]), constant(4)));
-        BOOST_TEST(is_bitcast_of(inst[12], exactly(inst[9]), pointer_to(is_i32), pointer_to(is_i8)));
-        BOOST_TEST(is_bitcast_of(inst[13], exactly(inst[5]), pointer_to(pointer_to(is_i32)), pointer_to(is_i8)));
+        BOOST_TEST_REQUIRE(inst.size() == 17ul);
+        auto const gep_0        = inst[0];
+        auto const gep_x_0      = inst[1];
+        auto const gep_r_0      = inst[2];
+        auto const load_x_0     = inst[3];
+        auto const store_r_0    = inst[4];
+        auto const gep_x_1      = inst[5];
+        auto const gep_r_1      = inst[6];
+        auto const malloc_size  = inst[7];
+        auto const malloc_call  = inst[8];
+        auto const bitcast_p32  = inst[9];
+        auto const store_r_1    = inst[10];
+        auto const load_x_1     = inst[11];
+        auto const memcpy_size  = inst[12];
+        auto const bitcast_r_1  = inst[13];
+        auto const bitcast_x_1  = inst[14];
+        auto const memcpy_call  = inst[15];
+        auto const ret          = inst[16];
+        BOOST_TEST(is_gep_of(gep_0, tuple_type, exactly(f->getArg(0)), constant(0)));
+        BOOST_TEST(is_gep_of(gep_x_0, tuple_type, exactly(f->getArg(1)), constant(0), constant(0)));
+        BOOST_TEST(is_gep_of(gep_r_0, tuple_type, exactly(gep_0), constant(0), constant(0)));
+        BOOST_TEST(is_load_of(load_x_0, is_i64, exactly(gep_x_0), align_of(8)));
+        BOOST_TEST(is_store_of(store_r_0, is_i64, exactly(load_x_0), exactly(gep_r_0), align_of(8)));
+        BOOST_TEST(is_gep_of(gep_x_1, tuple_type, exactly(f->getArg(1)), constant(0), constant(1)));
+        BOOST_TEST(is_gep_of(gep_r_1, tuple_type, exactly(gep_0), constant(0), constant(1)));
+        BOOST_TEST(is_mul_of(malloc_size, exactly(load_x_0), constant(4)));
+        BOOST_TEST(is_direct_call(malloc_call, exactly(get_function("malloc")), call_arg(exactly(malloc_size))));
+        BOOST_TEST(is_bitcast_of(bitcast_p32, exactly(malloc_call), pointer_to(is_i8), pointer_to(is_i32)));
+        BOOST_TEST(is_store_of(store_r_1, pointer_to(is_i32), exactly(bitcast_p32), exactly(gep_r_1), align_of(8)));
+        BOOST_TEST(is_load_of(load_x_1, pointer_to(is_i32), exactly(gep_x_1), align_of(8)));
+        BOOST_TEST(is_mul_of(memcpy_size, exactly(load_x_0), constant(4)));
+        BOOST_TEST(is_bitcast_of(bitcast_r_1, exactly(bitcast_p32), pointer_to(is_i32), pointer_to(is_i8)));
+        BOOST_TEST(is_bitcast_of(bitcast_x_1, exactly(load_x_1), pointer_to(is_i32), pointer_to(is_i8)));
         BOOST_TEST(
             is_direct_call(
-                inst[14],
+                memcpy_call,
                 is_memcpy,
-                call_arg(exactly(inst[12]), attrs, align),
-                call_arg(exactly(inst[13]), attrs, align),
-                call_arg(exactly(inst[11])),
+                call_arg(exactly(bitcast_r_1), attrs, align),
+                call_arg(exactly(bitcast_x_1), attrs, align),
+                call_arg(exactly(memcpy_size)),
                 call_arg(constant(false))));
-        BOOST_TEST(is_return_of_void(inst[15]));
+        BOOST_TEST(is_return_of_void(ret));
     }
     {
         auto const f = get_function("f8");

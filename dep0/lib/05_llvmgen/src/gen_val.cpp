@@ -580,7 +580,8 @@ void gen_store(
                         // TODO should use stack if value category is `temporary`
                         auto const alloca = gen_alloca(global, sigma_ctx, builder, allocator_t::heap, element_type);
                         builder.CreateStore(alloca, dest_element_ptr);
-                        gen_store(global, sigma_ctx, builder, element_ptr, alloca, element_type);
+                        auto const element_value = builder.CreateLoad(gen_type(global, element_type), element_ptr);
+                        gen_store(global, sigma_ctx, builder, element_value, alloca, element_type);
                         if (sigma.args[i].var)
                             sigma_ctx.try_emplace(*sigma.args[i].var, alloca);
                     }

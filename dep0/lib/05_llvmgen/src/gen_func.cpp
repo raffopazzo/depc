@@ -39,7 +39,9 @@ void gen_func_args(
     if (is_pass_by_ptr(global, proto.ret_type()))
     {
         assert(llvm_f->arg_size() == proto.runtime_args().size() + 1ul and "function with sret must have 1 more argument");
-        llvm_arg_it->addAttr(llvm::Attribute::StructRet);
+        auto const maybe_array = get_properties_if_array(proto.ret_type());
+        auto const return_value_type = gen_type(global, maybe_array ? maybe_array->element_type : proto.ret_type());
+        llvm_arg_it->addAttr(llvm::Attribute::getWithStructRetType(global.llvm_ctx, return_value_type));
         llvm_arg_it->addAttr(llvm::Attribute::NonNull);
         ++llvm_arg_it;
     }

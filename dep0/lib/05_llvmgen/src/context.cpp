@@ -54,9 +54,10 @@ global_ctx_t::value_t const* global_ctx_t::operator[](typecheck::expr_t::global_
 
 std::optional<llvm_func_t> global_ctx_t::get_destructor(typecheck::expr_t const& type) const
 {
-    // TODO if type is some because_t we only care of its value; currently we duplicate constructors
     std::optional<llvm_func_t> result;
-    if (auto const properties = get_properties_if_array(type))
+    if (auto const because = std::get_if<typecheck::expr_t::because_t>(&type.value))
+        result = get_destructor(because->value.get());
+    else if (auto const properties = get_properties_if_array(type))
     {
         auto const it = array_destructors.find(properties->element_type);
         if (it != array_destructors.end())
@@ -73,7 +74,9 @@ std::optional<llvm_func_t> global_ctx_t::get_destructor(typecheck::expr_t const&
 
 void global_ctx_t::store_destructor(typecheck::expr_t type, llvm_func_t func)
 {
-    if (auto const properties = get_properties_if_array(type))
+    if (auto const because = std::get_if<typecheck::expr_t::because_t>(&type.value))
+        store_destructor(std::move(because->value.get()), func);
+    else if (auto const properties = get_properties_if_array(type))
         array_destructors.emplace(properties->element_type, std::move(func));
     else
         non_array_destructors.emplace(std::move(type), std::move(func));

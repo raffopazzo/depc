@@ -439,7 +439,7 @@ llvm::Value* gen_val(
                 {
                     return llvm::ConstantAggregateZero::get(gen_type(global, type));
                 },
-                [&] (typecheck::is_list_initializable_result::sigma_t const& sigma) -> llvm::Value*
+                [&] (typecheck::is_list_initializable_result::sigma_const_t sigma) -> llvm::Value*
                 {
                     auto const llvm_type = gen_type(global, type);
                     auto const allocator = select_allocator(value_category);
@@ -470,7 +470,7 @@ llvm::Value* gen_val(
                     assert(sigma_ctx.destructors.empty() and "TODO invoke destructors");
                     return dest2;
                 },
-                [&] (typecheck::is_list_initializable_result::array_t const&) -> llvm::Value*
+                [&] (typecheck::is_list_initializable_result::array_const_t) -> llvm::Value*
                 {
                     auto const properties = get_array_properties(type);
                     auto const allocator = select_allocator(value_category);

@@ -589,7 +589,7 @@ check_expr(
                             }
                             return make_legal_expr(expected_type, expr_t::init_list_t{});
                         },
-                        [&] (is_list_initializable_result::sigma_t const& sigma) -> expected<expr_t>
+                        [&] (is_list_initializable_result::sigma_ref_t sigma) -> expected<expr_t>
                         {
                             if (sigma.args.size() != list.values.size())
                             {
@@ -600,7 +600,7 @@ check_expr(
                                 return error_t(err.str(), loc);
                             }
                             std::vector<expr_t> values;
-                            auto& element_types = std::get<expr_t::sigma_t>(expected_type.value).args;
+                            auto& element_types = sigma.args;
                             for (auto const i: std::views::iota(0ul, sigma.args.size()))
                             {
                                 auto v = check_expr(
@@ -620,7 +620,7 @@ check_expr(
                             }
                             return make_legal_expr(expected_type, expr_t::init_list_t{std::move(values)});
                         },
-                        [&] (is_list_initializable_result::array_t const& array) -> expected<expr_t>
+                        [&] (is_list_initializable_result::array_ref_t array) -> expected<expr_t>
                         {
                             if (array.size.value != list.values.size())
                             {

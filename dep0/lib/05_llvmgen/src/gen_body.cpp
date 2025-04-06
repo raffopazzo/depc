@@ -103,8 +103,10 @@ static void gen_stmts(
 
 static llvm_func_t gen_destructor(global_ctx_t& global, typecheck::expr_t const& type)
 {
-    local_ctx_t local;
     assert(not is_trivially_destructible(global, type) and "trivially destructible types do not need a destructor");
+    if (auto const because = std::get_if<typecheck::expr_t::because_t>(&type.value))
+        return gen_destructor(global, because->value.get());
+    local_ctx_t local;
     auto const name = std::string{".dtor."} + std::to_string(global.get_next_id());
     auto const arg_type = is_boxed(type) ? gen_type(global, type) : gen_type(global, type)->getPointerTo();
     auto const void_type = llvm::Type::getVoidTy(global.llvm_ctx);
@@ -208,9 +210,9 @@ static llvm_func_t gen_destructor(global_ctx_t& global, typecheck::expr_t const&
         [] (typecheck::expr_t::array_t const&) { },
         [] (typecheck::expr_t::init_list_t const&) { },
         [] (typecheck::expr_t::subscript_t const&) { },
-        [] (typecheck::expr_t::because_t const& x)
+        [] (typecheck::expr_t::because_t const&)
         {
-            // TODO needs a test: gen_destructor_call(global, local, builder, value, x.value.get());
+            assert(false and "destructor of because-type should delegate to destructor of underlying value type");
         });
     builder.CreateRetVoid();
     // TODO should call destructors here; needs a test

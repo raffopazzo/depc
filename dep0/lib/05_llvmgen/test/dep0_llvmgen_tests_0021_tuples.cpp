@@ -1254,4 +1254,33 @@ BOOST_AUTO_TEST_CASE(pass_008)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_009)
+{
+    BOOST_TEST_REQUIRE(pass("0021_tuples/pass_009.depc"));
+    {
+        auto const f = get_function("f0");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, sext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(0)));
+    }
+    {
+        auto const f = get_function("f1");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, sext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), constant(0)));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("g0");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, sext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), direct_call_of(exactly(get_function("f0")))));
+    }
+    {
+        auto const f = pass_result.value()->getFunction("g1");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, sext));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), direct_call_of(exactly(get_function("f1")))));
+    }
+}
+
 BOOST_AUTO_TEST_SUITE_END()

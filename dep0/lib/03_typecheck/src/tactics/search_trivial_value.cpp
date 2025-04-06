@@ -14,34 +14,42 @@
 
 namespace dep0::typecheck {
 
+static std::optional<expr_t> try_make_trivial_value(expr_t const& type)
+{
+    return match(
+        is_list_initializable(type),
+        [&] (is_list_initializable_result::no_t) -> std::optional<expr_t>
+        {
+            return std::nullopt;
+        },
+        [&] (is_list_initializable_result::unit_t) -> std::optional<expr_t>
+        {
+            return make_legal_expr(type, expr_t::init_list_t{});
+        },
+        [&] (is_list_initializable_result::true_t) -> std::optional<expr_t>
+        {
+            return make_legal_expr(type, expr_t::init_list_t{});
+        },
+        [&] (is_list_initializable_result::sigma_const_t const sigma) -> std::optional<expr_t>
+        {
+            std::vector<expr_t> values;
+            for (auto const& arg: sigma.args)
+                if (auto val = try_make_trivial_value(arg.type))
+                    values.push_back(std::move(*val));
+                else
+                    return std::nullopt;
+            return make_legal_expr(type, expr_t::init_list_t{std::move(values)});
+        },
+        [&] (is_list_initializable_result::array_const_t const array) -> std::optional<expr_t>
+        {
+            return make_legal_expr(type, expr_t::init_list_t{});
+        });
+}
+
 void search_trivial_value(search_task_t& task)
 {
-    auto const& target = *task.target;
-    match(
-        is_list_initializable(target),
-        [&] (is_list_initializable_result::no_t)
-        {
-        },
-        [&] (is_list_initializable_result::unit_t)
-        {
-            task.set_result(make_legal_expr(target, expr_t::init_list_t{}));
-        },
-        [&] (is_list_initializable_result::true_t)
-        {
-            task.set_result(make_legal_expr(target, expr_t::init_list_t{}));
-        },
-        [&] (is_list_initializable_result::sigma_const_t const sigma)
-        {
-            // TODO add a test
-            // TODO a tuple whose all elements are trivial values is itself trivial, eg `((); ())` is `{{}, {}}`
-            if (sigma.args.empty())
-                task.set_result(make_legal_expr(target, expr_t::init_list_t{}));
-        },
-        [&] (is_list_initializable_result::array_const_t const array)
-        {
-            if (array.size.value.is_zero())
-                task.set_result(make_legal_expr(target, expr_t::init_list_t{}));
-        });
+    if (auto val = try_make_trivial_value(*task.target))
+        task.set_result(std::move(*val));
 }
 
 } // namespace dep0::typecheck

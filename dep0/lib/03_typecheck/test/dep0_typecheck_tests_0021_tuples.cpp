@@ -175,6 +175,62 @@ BOOST_AUTO_TEST_CASE(pass_006) { BOOST_TEST(pass("0021_tuples/pass_006.depc")); 
 BOOST_AUTO_TEST_CASE(pass_007) { BOOST_TEST(pass("0021_tuples/pass_007.depc")); }
 BOOST_AUTO_TEST_CASE(pass_008) { BOOST_TEST(pass("0021_tuples/pass_008.depc")); }
 
+BOOST_AUTO_TEST_CASE(pass_009)
+{
+    BOOST_TEST_REQUIRE(pass("0021_tuples/pass_009.depc"));
+    BOOST_TEST_REQUIRE(pass_result->entries.size() == 4ul);
+    {
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[0]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "f0");
+        BOOST_TEST_REQUIRE(f->value.args.size() == 1ul);
+        BOOST_TEST(is_arg(f->value.args[0], sigma_of(std::tuple{}), std::nullopt, dep0::ast::qty_t::zero));
+        BOOST_TEST(is_i32(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant(0)));
+    }
+    {
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[1]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "f1");
+        BOOST_TEST_REQUIRE(f->value.args.size() == 1ul);
+        BOOST_TEST(
+            is_arg(
+                f->value.args[0],
+                sigma_of(
+                    std::tuple{
+                        arg_of(sigma_of(std::tuple{})),
+                        arg_of(sigma_of(std::tuple{}))
+                }),
+                std::nullopt,
+                dep0::ast::qty_t::zero));
+        BOOST_TEST(is_i32(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], constant(0)));
+    }
+    {
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[2]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "g0");
+        BOOST_TEST(f->value.args.size() == 0ul);
+        BOOST_TEST(is_i32(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(is_return_of(f->value.body.stmts[0ul], app_of(global("f0"), init_list_of())));
+    }
+    {
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[3]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "g1");
+        BOOST_TEST(f->value.args.size() == 0ul);
+        BOOST_TEST(is_i32(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(
+            is_return_of(
+                f->value.body.stmts[0ul],
+                app_of(global("f1"), init_list_of(init_list_of(), init_list_of()))));
+    }
+}
+
 BOOST_AUTO_TEST_CASE(typecheck_error_000) { BOOST_TEST(fail("0021_tuples/typecheck_error_000.depc")); }
 BOOST_AUTO_TEST_CASE(typecheck_error_001) { BOOST_TEST(fail("0021_tuples/typecheck_error_001.depc")); }
 BOOST_AUTO_TEST_CASE(typecheck_error_002) { BOOST_TEST(fail("0021_tuples/typecheck_error_002.depc")); }

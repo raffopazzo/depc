@@ -279,7 +279,7 @@ struct expr_t
 
     /**
      * @brief Represents an uncarried Sigma-type, in other words a "regular" tuple or a dependent tuple.
-     * 
+     *
      * Similarly to a Pi-type, in a dependent tuple the type of a later argument can depend on the value
      * of a previous one, for example the dependent pair `(u64_t n; array_t(i32_t, n))`.
      */
@@ -332,7 +332,7 @@ struct expr_t
      *      both `xs[0]` and `xs[0] because true_t(0 < 2)` are alpha-equivalent,
      *      because whatever proof the compiler used in the first expression is just as
      *      good as the auxillary proof explicitly supplied in the second one.
-     * 
+     *
      * @see @ref alpha_equivalence
      */
     struct because_t
@@ -354,22 +354,6 @@ struct expr_t
     properties_t properties;
     value_t value;
 };
-
-/**
- * @brief If the argument is `app_t` whose function term is `array_t`, returns the `app_t` node; `nullptr` otherwise.
- *
- * This is useful to determine whether a type is an array, for example `%array_t(%i32_t, n)`.
- * If this function is called on a typechecked type expression,
- * the vector of arguments of the `app_t` node is guaranteed to have exactly 2 elements:
- * the first is the array element type and the second is the size of the array.
- * Multidimensional arrays are arrays whose element type is another array.
- */
-template <Properties P>
-typename expr_t<P>::app_t const* get_if_app_of_array(expr_t<P> const& x)
-{
-    auto const app = std::get_if<typename expr_t<P>::app_t>(&x.value);
-    return app and std::holds_alternative<typename expr_t<P>::array_t>(app->func.get().value) ? app : nullptr;
-}
 
 /**
  * @brief Represents a function argument, i.e. its type and (optional) name.
@@ -467,7 +451,7 @@ struct type_def_t
  * @brief Axioms are like function declarations, except they are not followed by a function definition.
  *
  * In the Curry-Howard isomorphism, they are true propositions that cannot be proved.
- * 
+ *
  * @warning Introducing the wrong set of axioms may lead to an inconsistent theory, i.e. a buggy program.
  */
 template <Properties P>
@@ -485,7 +469,7 @@ struct axiom_t
  *
  * It is exactly like a function declaration but for functions provided by some external library
  * and written in a different language but with a C interface.
- * 
+ *
  * @remarks They can only be invoked from functions marked as `mutable`.
  */
 template <Properties P>

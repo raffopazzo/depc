@@ -8,6 +8,8 @@
 
 #include "private/gen_val.hpp"
 
+#include "dep0/ast/get_if_array.hpp"
+
 #include <algorithm>
 #include <numeric>
 
@@ -37,22 +39,22 @@ bool has_compile_time_size(array_properties_view_t const& properties)
 
 bool is_array(typecheck::expr_t const& type)
 {
-    return ast::get_if_app_of_array(type) != nullptr;
+    return ast::get_if_array(type).has_value();
 }
 
 std::optional<array_properties_view_t> get_properties_if_array(typecheck::expr_t const& type)
 {
-    auto curr = get_if_app_of_array(type);
+    auto curr = get_if_array(type);
     if (not curr)
         return std::nullopt;
     std::vector<typecheck::expr_t const*> dimensions;
-    dimensions.push_back(&curr->args[1ul]);
-    while (auto const next = get_if_app_of_array(curr->args[0ul]))
+    dimensions.push_back(&curr->size.get());
+    while (auto const next = get_if_array(curr->element_type.get()))
     {
-        dimensions.push_back(&next->args[1ul]);
+        dimensions.push_back(&next->size.get());
         curr = next;
     }
-    return array_properties_view_t{curr->args[0ul], std::move(dimensions)};
+    return array_properties_view_t{curr->element_type.get(), std::move(dimensions)};
 }
 
 array_properties_view_t get_array_properties(typecheck::expr_t const& type)

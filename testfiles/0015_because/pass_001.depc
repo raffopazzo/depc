@@ -11,7 +11,7 @@ extern rand() -> i32_t;
 
 func f1() -> i32_t
 {
-    // false is a proof that bool_tean exists,
+    // false is a proof that boolean exists,
     // which is simply irrelevant in this case
     return 0 because (false because true);
 }

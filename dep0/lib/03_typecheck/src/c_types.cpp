@@ -6,6 +6,8 @@
  */
 #include "private/c_types.hpp"
 
+#include "dep0/ast/get_if_array.hpp"
+
 #include "dep0/match.hpp"
 
 namespace dep0::typecheck {
@@ -43,8 +45,8 @@ dep0::expected<std::true_type> is_c_type(parser::expr_t const& x)
         [&] (parser::expr_t::global_t const&) { return no(); },
         [&] (parser::expr_t::app_t const&)
         {
-            auto const app = get_if_app_of_array(x);
-            return app and is_c_type(app->args[0]) ? yes : no();
+            auto const arr = get_if_array(x);
+            return arr and is_c_type(arr->element_type.get()) ? yes : no();
         },
         [&] (parser::expr_t::abs_t const&) { return no(); },
         [&] (parser::expr_t::pi_t const& pi) { return is_c_func_type(pi, x.properties); },

@@ -199,9 +199,8 @@ static llvm_func_t gen_destructor(global_ctx_t& global, typecheck::expr_t const&
                     auto const free = llvm::CallInst::CreateFree(element_ptr, builder.GetInsertBlock());
                     builder.GetInsertBlock()->getInstList().push_back(free);
                 }
-                // TODO needs a test:
-                // else if (not is_trivially_destructible(global, x.args[i].type))
-                //     gen_destructor_call(global, sigma_ctx, builder, gep(i), x.args[i].type);
+                else if (not is_trivially_destructible(global, x.args[i].type))
+                    gen_destructor_call(global, sigma_ctx, builder, gep(i), x.args[i].type);
             }
             // TODO what should we do here? maybe just append to parent destructors? explain or add a test
             assert(sigma_ctx.destructors.empty() and "TODO invoke destructors");

@@ -48,10 +48,9 @@ void gen_for_loop_downward(
     if (sign == ast::sign_t::unsigned_v)
         if (auto const a = llvm::dyn_cast<llvm::ConstantInt>(initial_value))
             if (auto const b = llvm::dyn_cast<llvm::ConstantInt>(sentinel_value))
-            {
-                gen_for_loop_downward_unrolled(global, local, builder, a->getZExtValue(), b->getZExtValue(), body_gen);
-                return;
-            }
+                if (a->getZExtValue() - b->getZExtValue() < 2ul)
+                    return gen_for_loop_downward_unrolled(
+                        global, local, builder, a->getZExtValue(), b->getZExtValue(), body_gen);
     auto const header = builder.GetInsertBlock();
     auto const loop = llvm::BasicBlock::Create(global.llvm_ctx, "loop", header->getParent());
     auto const next = llvm::BasicBlock::Create(global.llvm_ctx, "next", header->getParent());
@@ -101,10 +100,9 @@ void gen_for_loop_upward(
     if (sign == ast::sign_t::unsigned_v)
         if (auto const a = llvm::dyn_cast<llvm::ConstantInt>(initial_value))
             if (auto const b = llvm::dyn_cast<llvm::ConstantInt>(sentinel_value))
-            {
-                gen_for_loop_upward_unrolled(global, local, builder, a->getZExtValue(), b->getZExtValue(), body_gen);
-                return;
-            }
+                if (b->getZExtValue() - a->getZExtValue() < 2ul)
+                    return gen_for_loop_upward_unrolled(
+                        global, local, builder, a->getZExtValue(), b->getZExtValue(), body_gen);
     auto const header = builder.GetInsertBlock();
     auto const loop = llvm::BasicBlock::Create(global.llvm_ctx, "loop", header->getParent());
     auto const next = llvm::BasicBlock::Create(global.llvm_ctx, "next", header->getParent());

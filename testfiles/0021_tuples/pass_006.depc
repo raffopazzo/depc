@@ -1,0 +1,44 @@
+/*
+ * Copyright Raffaele Rossi 2025.
+ *
+ * Distributed under the Boost Software License, Version 1.0.
+ * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
+ */
+
+func copy(array_t((u64_t n, array_t(i32_t, n)), 2) x) -> array_t((u64_t n, array_t(i32_t, n)), 2)
+{
+    // the 2 arrays-of-vector are not trivially copyable,
+    // so should malloc the memory and copy each element
+    return x;
+}
+
+func copy_k(u64_t k, array_t((u64_t n, array_t(i32_t, n)), k) x) -> array_t((u64_t n, array_t(i32_t, n)), k)
+{
+    // the k arrays-of-vector are not trivially copyable,
+    // so should malloc the memory and copy each element
+    return x;
+}
+
+func use_vector((u64_t n, array_t(i32_t, n))) -> i32_t
+{
+    return 0;
+}
+func f0() -> i32_t
+{
+    return use_vector(copy(
+        {
+            {1, {5}},
+            {2, {3,4}}
+        })[0]);
+}
+
+
+func f1() -> i32_t
+{
+    return use_vector(copy_k(
+        2,
+        {
+            {1, {5}},
+            {2, {3,4}}
+        })[0]);
+}

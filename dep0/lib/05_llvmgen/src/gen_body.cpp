@@ -7,6 +7,7 @@
 #include "private/gen_body.hpp"
 
 #include "private/gen_array.hpp"
+#include "private/gen_loop.hpp"
 #include "private/gen_type.hpp"
 #include "private/gen_val.hpp"
 #include "private/llvm_func.hpp"
@@ -42,59 +43,6 @@ static llvm_func_t gen_destructor(global_ctx_t&, typecheck::expr_t const&);
  * a new destructor function will be emitted and registered in the global context.
  */
 static void gen_destructor_call(global_ctx_t&, local_ctx_t&, llvm::IRBuilder<>&, llvm::Value*, typecheck::expr_t const&);
-
-template <typename F>
-static void gen_for_loop_downward_unrolled(
-    global_ctx_t& global,
-    local_ctx_t& local,
-    llvm::IRBuilder<>& builder,
-    std::size_t initial_value,
-    std::size_t const sentinel_value,
-    F&& body_gen)
-{
-    while (initial_value-- > sentinel_value)
-        body_gen(global, local, builder, builder.getInt32(initial_value));
-}
-
-/**
- * @brief Generate a for-loop that iterates downwards from an initial value down to a sentinel value.
- *
- * @param body_gen  Generator of the loop body, which takes the iterator variable as argument.
- */
-template <typename F>
-static void gen_for_loop_downward(
-    global_ctx_t& global,
-    local_ctx_t& local,
-    llvm::IRBuilder<>& builder,
-    ast::sign_t const sign,
-    llvm::Value* const initial_value,
-    llvm::Value* const sentinel_value,
-    F&& body_gen)
-{
-    if (sign == ast::sign_t::unsigned_v)
-        if (auto const a = llvm::dyn_cast<llvm::ConstantInt>(initial_value))
-            if (auto const b = llvm::dyn_cast<llvm::ConstantInt>(sentinel_value))
-            {
-                gen_for_loop_downward_unrolled(global, local, builder, a->getZExtValue(), b->getZExtValue(), body_gen);
-                return;
-            }
-    auto const header = builder.GetInsertBlock();
-    auto const loop = llvm::BasicBlock::Create(global.llvm_ctx, "loop", header->getParent());
-    auto const next = llvm::BasicBlock::Create(global.llvm_ctx, "next", header->getParent());
-    auto const predicate = sign == ast::sign_t::signed_v ? llvm::CmpInst::ICMP_SGT : llvm::CmpInst::ICMP_UGT;
-    auto const cmp0 = builder.CreateCmp(predicate, initial_value, sentinel_value);
-    builder.CreateCondBr(cmp0, loop, next);
-    builder.SetInsertPoint(loop);
-    auto const value_type = initial_value->getType();
-    auto const phi = builder.CreatePHI(value_type, 2);
-    phi->addIncoming(initial_value, header);
-    auto const next_value = builder.CreateSub(phi, llvm::ConstantInt::get(value_type, 1));
-    phi->addIncoming(next_value, loop);
-    body_gen(global, local, builder, next_value);
-    auto const cmp = builder.CreateCmp(predicate, next_value, sentinel_value);
-    builder.CreateCondBr(cmp, loop, next);
-    builder.SetInsertPoint(next);
-}
 
 /**
  * @brief Generate IR code for a DepC statement.

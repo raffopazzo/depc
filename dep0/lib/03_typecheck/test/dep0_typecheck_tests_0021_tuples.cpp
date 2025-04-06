@@ -171,6 +171,7 @@ BOOST_AUTO_TEST_CASE(pass_002) { BOOST_TEST(pass("0021_tuples/pass_002.depc")); 
 BOOST_AUTO_TEST_CASE(pass_003) { BOOST_TEST(pass("0021_tuples/pass_003.depc")); }
 BOOST_AUTO_TEST_CASE(pass_004) { BOOST_TEST(pass("0021_tuples/pass_004.depc")); }
 BOOST_AUTO_TEST_CASE(pass_005) { BOOST_TEST(pass("0021_tuples/pass_005.depc")); }
+BOOST_AUTO_TEST_CASE(pass_006) { BOOST_TEST(pass("0021_tuples/pass_006.depc")); }
 
 BOOST_AUTO_TEST_CASE(typecheck_error_000) { BOOST_TEST(fail("0021_tuples/typecheck_error_000.depc")); }
 BOOST_AUTO_TEST_CASE(typecheck_error_001) { BOOST_TEST(fail("0021_tuples/typecheck_error_001.depc")); }

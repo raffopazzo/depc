@@ -13,6 +13,7 @@
 #include "private/gen_body.hpp"
 #include "private/gen_builtin.hpp"
 #include "private/gen_func.hpp"
+#include "private/gen_loop.hpp"
 #include "private/gen_type.hpp"
 #include "private/proto.hpp"
 
@@ -544,6 +545,7 @@ void gen_store(
     typecheck::expr_t const& type)
 {
     assert(dest and "gen_store() destination cannot be nullptr");
+    assert(dest->getType()->isPointerTy() and "gen_store() destination must be a pointer");
     match(
         pass_by_ptr(global, type),
         [&] (pass_by_ptr_result::no_t)
@@ -552,7 +554,6 @@ void gen_store(
         },
         [&] (pass_by_ptr_result::sigma_t const& sigma)
         {
-            assert(dest->getType()->isPointerTy() and "memcpy destination must be a pointer");
             if (is_trivially_copyable(global, type))
             {
                 auto const& data_layout = global.llvm_module.getDataLayout();
@@ -605,16 +606,36 @@ void gen_store(
         },
         [&] (pass_by_ptr_result::array_t const& array)
         {
-            assert(dest->getType()->isPointerTy() and "memcpy destination must be a pointer");
-            assert(is_trivially_copyable(global, type)); // TODO
-            auto const& data_layout = global.llvm_module.getDataLayout();
-            auto const pointed_type = gen_type(global, array.properties.element_type);
-            auto const align = data_layout.getPrefTypeAlign(pointed_type);
-            auto const bytes = data_layout.getTypeAllocSize(pointed_type);
+            // TODO do not crash if the array size is erased at runtime
             auto const size = gen_array_total_size(global, local, builder, array.properties);
-            auto const total_bytes = builder.CreateMul(size, builder.getInt64(bytes.getFixedSize()));
-            // TODO do not crash if the memcpy depends on some erased argument
-            builder.CreateMemCpy(dest, align, value, align, total_bytes);
+            if (is_trivially_copyable(global, type))
+            {
+                auto const& data_layout = global.llvm_module.getDataLayout();
+                auto const pointed_type = gen_type(global, array.properties.element_type);
+                auto const align = data_layout.getPrefTypeAlign(pointed_type);
+                auto const bytes = data_layout.getTypeAllocSize(pointed_type);
+                auto const total_bytes = builder.CreateMul(size, builder.getInt64(bytes.getFixedSize()));
+                builder.CreateMemCpy(dest, align, value, align, total_bytes);
+            }
+            else
+            {
+                gen_for_loop_upward(
+                    global, local, builder,
+                    ast::sign_t::unsigned_v,
+                    builder.getInt64(0),
+                    size,
+                    [
+                        &element_type=array.properties.element_type,
+                        llvm_type=gen_type(global, array.properties.element_type),
+                        value, dest
+                    ]
+                    (global_ctx_t& global, local_ctx_t& local, llvm::IRBuilder<>& builder, llvm::Value* const i)
+                    {
+                        auto const element_ptr = builder.CreateGEP(llvm_type, value, i);
+                        auto const dest_element_ptr = builder.CreateGEP(llvm_type, dest, i);
+                        gen_store(global, local, builder, element_ptr, dest_element_ptr, element_type);
+                    });
+            }
         });
 };
 

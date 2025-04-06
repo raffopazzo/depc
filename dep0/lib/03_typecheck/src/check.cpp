@@ -726,6 +726,8 @@ expected<expr_t> check_sigma_type(
         {
             auto const arg_index = next_arg_index++;
             auto const arg_loc = arg.properties;
+            if (arg.qty != ast::qty_t::many)
+                return error_t("only unrestricted elements are permitted inside tuples", arg_loc);
             auto var = arg.var ? std::optional{expr_t::var_t{arg.var->name}} : std::nullopt;
             auto type = check_type(env, ctx, arg.type);
             if (not type)

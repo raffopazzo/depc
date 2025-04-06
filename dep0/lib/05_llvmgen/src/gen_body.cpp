@@ -232,7 +232,6 @@ static void gen_destructor_call(
         destructor = gen_destructor(global, type);
         global.store_destructor(type, *destructor);
     }
-    // TODO add attributes
     if (auto const properties = get_properties_if_array(type))
     {
         auto const size = gen_array_total_size(global, local, builder, *properties);

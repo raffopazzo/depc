@@ -31,7 +31,7 @@ namespace is_list_initializable_result
     struct true_t{};
 
     /**
-     * @brief The type passed to `is_list_initializable()` is a tuple `(t1; ...; tN)`.
+     * @brief The type passed to `is_list_initializable()` is a tuple `(t1, ..., tN)`.
      *
      * The tuple can be initialized with `{value1, ..., valueN}` of appropriate types,
      * which may depend on previous values.

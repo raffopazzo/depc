@@ -620,7 +620,7 @@ check_expr(
                             }
                             return make_legal_expr(expected_type, expr_t::init_list_t{std::move(values)});
                         },
-                        [&] (is_list_initializable_result::array_const_t array) -> expected<expr_t>
+                        [&] (is_list_initializable_result::array_const_t const array) -> expected<expr_t>
                         {
                             if (array.size.value != list.values.size())
                             {

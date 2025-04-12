@@ -40,6 +40,12 @@ namespace is_list_initializable_result
     struct sigma_t
     {
         maybe_const_ref<Const, std::vector<func_arg_t>> args;
+
+        /**
+         * @brief Allows converting from ref to const-ref.
+         * @details This is useful when pattern matching on a mutable reference but the case handler is immutable.
+         */
+        operator sigma_t<const_t::yes>() const { return {args}; }
     };
     using sigma_const_t = sigma_t<const_t::yes>;
     using sigma_ref_t = sigma_t<const_t::no>;
@@ -53,6 +59,12 @@ namespace is_list_initializable_result
     {
         maybe_const_ref<Const, expr_t> element_type;
         maybe_const_ref<Const, expr_t::numeric_constant_t> size;
+
+        /**
+         * @brief Allows converting from ref to const-ref.
+         * @details This is useful when pattern matching on a mutable reference but the case handler is immutable.
+         */
+        operator array_t<const_t::yes>() const { return {element_type, size}; }
     };
     using array_const_t = array_t<const_t::yes>;
     using array_ref_t = array_t<const_t::no>;

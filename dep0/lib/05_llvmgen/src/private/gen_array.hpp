@@ -41,12 +41,6 @@ struct array_properties_view_t
     std::vector<typecheck::expr_t const*> dimensions;
 };
 
-/** Return the size of the array described by the given properties, if known at compile-time; nullopt otherwise. */
-std::optional<boost::multiprecision::cpp_int> get_compile_time_size(array_properties_view_t const&);
-
-/** Return true if the size of the array described by the given properties is known at compile-time. */
-bool has_compile_time_size(array_properties_view_t const&);
-
 /**
  * @brief Checks whether the given type expression is an array, i.e. the application of `array_t`.
  * @param type The type to check, which must have sort `typename_t`.

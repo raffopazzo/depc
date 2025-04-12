@@ -309,10 +309,10 @@ struct expr_t
         std::vector<expr_t> values;
     };
 
-    /** @brief Represents an array member access (subscript operator), for example `xs[1]`, where `xs` is an array. */
+    /** @brief Represents an expression of the form `object[index]`, where `object` could be an array or tuple. */
     struct subscript_t
     {
-        rec_t array;
+        rec_t object;
         rec_t index;
     };
 

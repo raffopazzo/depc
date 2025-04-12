@@ -190,7 +190,7 @@ expected<std::true_type> usage_t::try_add(ctx_t const& ctx, expr_t const& expr, 
         },
         [&] (expr_t::subscript_t const& x)
         {
-            auto result = try_add(ctx, x.array.get(), usage_multiplier);
+            auto result = try_add(ctx, x.object.get(), usage_multiplier);
             if (result)
                 result = try_add(ctx, x.index.get(), usage_multiplier);
             return result;

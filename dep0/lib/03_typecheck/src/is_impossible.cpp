@@ -153,7 +153,7 @@ bool is_impossible(expr_t::init_list_t const& x)
 
 bool is_impossible(expr_t::subscript_t const& x)
 {
-    return is_impossible(x.array.get()) or is_impossible(x.index.get());
+    return is_impossible(x.object.get()) or is_impossible(x.index.get());
 }
 
 bool is_impossible(expr_t::because_t const& x)

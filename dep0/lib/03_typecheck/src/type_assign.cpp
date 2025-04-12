@@ -313,7 +313,7 @@ type_assign(
             // The exact same reasoning applies also if the object of the subscript operator is a tuple.
             auto obj =
                 type_assign(
-                    env, ctx, subscript.array.get(), is_mutable_allowed,
+                    env, ctx, subscript.object.get(), is_mutable_allowed,
                     usage, usage_multiplier * ast::qty_t::many);
             if (not obj)
                 return std::move(obj.error());

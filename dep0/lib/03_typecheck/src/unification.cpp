@@ -131,7 +131,7 @@ bool unify(expr_t const& from, expr_t const& to, std::map<expr_t::var_t, expr_t>
             },
             [&] (expr_t::subscript_t const& x, expr_t::subscript_t const& y)
             {
-                return unify(x.array.get(), y.array.get(), result) and unify(x.index.get(), y.index.get(), result);
+                return unify(x.object.get(), y.object.get(), result) and unify(x.index.get(), y.index.get(), result);
             },
             [&] (expr_t::because_t const& x, expr_t::because_t const& y)
             {

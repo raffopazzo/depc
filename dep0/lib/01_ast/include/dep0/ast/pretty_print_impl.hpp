@@ -551,7 +551,7 @@ std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::init_list_t con
 template <Properties P>
 std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::subscript_t const& x, std::size_t const indent)
 {
-    pretty_print(os, x.array.get(), indent) << '[';
+    pretty_print(os, x.object.get(), indent) << '[';
     pretty_print(os, x.index.get(), indent) << ']';
     return os;
 }
@@ -697,7 +697,7 @@ bool needs_new_line(typename expr_t<P>::init_list_t const& x)
 template <Properties P>
 bool needs_new_line(typename expr_t<P>::subscript_t const& x)
 {
-    return needs_new_line(x.array.get()) or needs_new_line(x.index.get());
+    return needs_new_line(x.object.get()) or needs_new_line(x.index.get());
 }
 
 template <Properties P>

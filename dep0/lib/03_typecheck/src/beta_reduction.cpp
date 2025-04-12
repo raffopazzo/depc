@@ -183,7 +183,7 @@ bool beta_normalize(expr_t::init_list_t& init_list)
 
 bool beta_normalize(expr_t::subscript_t& subscript)
 {
-    return beta_normalize(subscript.array.get()) | beta_normalize(subscript.index.get());
+    return beta_normalize(subscript.object.get()) | beta_normalize(subscript.index.get());
 }
 
 bool beta_normalize(expr_t::because_t& x)

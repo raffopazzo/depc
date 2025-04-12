@@ -84,7 +84,7 @@ static bool is_mutable(expr_t::init_list_t const& x)
 
 static bool is_mutable(expr_t::subscript_t const& x)
 {
-    return is_mutable(x.array.get()) or is_mutable(x.index.get());
+    return is_mutable(x.object.get()) or is_mutable(x.index.get());
 }
 
 static bool is_mutable(expr_t::because_t const& x)

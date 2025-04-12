@@ -243,7 +243,7 @@ struct alpha_equivalence_visitor
 
     result_t operator()(typename expr_t<P>::subscript_t& x, typename expr_t<P>::subscript_t& y) const
     {
-        auto eq = is_alpha_equivalent_impl(x.array.get(), y.array.get());
+        auto eq = is_alpha_equivalent_impl(x.object.get(), y.object.get());
         if (eq)
             eq = is_alpha_equivalent_impl(x.index.get(), y.index.get());
         return eq;

@@ -232,7 +232,7 @@ bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t::init_list_t& init_
 
 bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t::subscript_t& subscript)
 {
-    return delta_unfold(env, ctx, subscript.array.get()) or delta_unfold(env, ctx, subscript.index.get());
+    return delta_unfold(env, ctx, subscript.object.get()) or delta_unfold(env, ctx, subscript.index.get());
 }
 
 bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t::because_t& x)
@@ -475,7 +475,7 @@ bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t& expr)
         [&] (expr_t::subscript_t& subscript)
         {
             bool changed = false;
-            if (auto const init_list = std::get_if<expr_t::init_list_t>(&subscript.array.get().value))
+            if (auto const init_list = std::get_if<expr_t::init_list_t>(&subscript.object.get().value))
                 if (auto const i = std::get_if<expr_t::numeric_constant_t>(&subscript.index.get().value))
                     if (i->value <= std::numeric_limits<std::size_t>::max())
                     {

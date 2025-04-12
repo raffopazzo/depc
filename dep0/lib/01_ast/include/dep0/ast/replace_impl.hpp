@@ -148,7 +148,7 @@ void replace(typename expr_t<P>::var_t const& from, typename expr_t<P>::var_t co
         },
         [&] (typename expr_t<P>::subscript_t& subscript)
         {
-            replace(from, to, subscript.array.get());
+            replace(from, to, subscript.object.get());
             replace(from, to, subscript.index.get());
         },
         [&] (typename expr_t<P>::because_t& x)

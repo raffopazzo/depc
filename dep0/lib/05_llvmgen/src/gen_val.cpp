@@ -492,7 +492,7 @@ llvm::Value* gen_val(
         },
         [&] (typecheck::expr_t::subscript_t const& subscript) -> llvm::Value*
         {
-            auto const& object_type = std::get<typecheck::expr_t>(subscript.array.get().properties.sort.get());
+            auto const& object_type = std::get<typecheck::expr_t>(subscript.object.get().properties.sort.get());
             return match(
                 typecheck::has_subscript_access(object_type),
                 [] (typecheck::has_subscript_access_result::no_t) -> llvm::Value*
@@ -503,7 +503,7 @@ llvm::Value* gen_val(
                 [&] (typecheck::has_subscript_access_result::sigma_t const& sigma) -> llvm::Value*
                 {
                     auto const tuple_type = gen_type(global, object_type);
-                    auto const base = gen_temporary_val(global, local, builder, subscript.array.get());
+                    auto const base = gen_temporary_val(global, local, builder, subscript.object.get());
                     auto const index = std::get_if<typecheck::expr_t::numeric_constant_t>(&subscript.index.get().value);
                     assert(index and "subscript operand on tuples must be a numeric literal");
                     auto const int32 = llvm::Type::getInt32Ty(global.llvm_ctx);
@@ -519,11 +519,11 @@ llvm::Value* gen_val(
                 },
                 [&] (typecheck::has_subscript_access_result::array_t const&) -> llvm::Value*
                 {
-                    auto const& array = subscript.array.get();
+                    auto const& array = subscript.object.get();
                     auto const properties = get_array_properties(std::get<typecheck::expr_t>(array.properties.sort.get()));
                     auto const stride_size = gen_stride_size_if_needed(global, local, builder, properties);
                     auto const element_type = gen_type(global, properties.element_type);
-                    auto const base = gen_temporary_val(global, local, builder, subscript.array.get());
+                    auto const base = gen_temporary_val(global, local, builder, array);
                     auto const index = gen_temporary_val(global, local, builder, subscript.index.get());
                     auto const offset = stride_size ? builder.CreateMul(stride_size, index) : index;
                     auto const ptr = builder.CreateGEP(element_type, base, offset);

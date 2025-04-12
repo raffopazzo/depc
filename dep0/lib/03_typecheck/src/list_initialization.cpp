@@ -10,7 +10,7 @@
 
 namespace dep0::typecheck {
 
-template <bool Const>
+template <const_t Const>
 is_list_initializable_result_t<Const> is_list_initializable_impl(maybe_const_ref<Const, expr_t> type)
 {
     using result_t = is_list_initializable_result_t<Const>;
@@ -51,14 +51,14 @@ is_list_initializable_result_t<Const> is_list_initializable_impl(maybe_const_ref
         [&] (auto const&) -> result_t { return no; });
 }
 
-is_list_initializable_result_t<true> is_list_initializable(expr_t const& type)
+is_list_initializable_result_t<const_t::yes> is_list_initializable(expr_t const& type)
 {
-    return is_list_initializable_impl<true>(type);
+    return is_list_initializable_impl<const_t::yes>(type);
 }
 
-is_list_initializable_result_t<false> is_list_initializable(expr_t& type)
+is_list_initializable_result_t<const_t::no> is_list_initializable(expr_t& type)
 {
-    return is_list_initializable_impl<false>(type);
+    return is_list_initializable_impl<const_t::no>(type);
 }
 
 } // namespace dep0::typecheck

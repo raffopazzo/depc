@@ -36,29 +36,29 @@ namespace is_list_initializable_result
      * The tuple can be initialized with `{value1, ..., valueN}` of appropriate types,
      * which may depend on previous values.
      */
-    template <bool Const>
+    template <const_t Const>
     struct sigma_t
     {
         maybe_const_ref<Const, std::vector<func_arg_t>> args;
     };
-    using sigma_const_t = sigma_t<true>;
-    using sigma_ref_t = sigma_t<false>;
+    using sigma_const_t = sigma_t<const_t::yes>;
+    using sigma_ref_t = sigma_t<const_t::no>;
 
     /**
      * @brief The type passed to `is_list_initializable()` is an `array_t(type, N)` for some constant `N`,
      * which can be initialized with `{value1, ..., valueN}`.
      */
-    template <bool Const>
+    template <const_t Const>
     struct array_t
     {
         maybe_const_ref<Const, expr_t> element_type;
         maybe_const_ref<Const, expr_t::numeric_constant_t> size;
     };
-    using array_const_t = array_t<true>;
-    using array_ref_t = array_t<false>;
+    using array_const_t = array_t<const_t::yes>;
+    using array_ref_t = array_t<const_t::no>;
 };
 
-template <bool Const>
+template <const_t Const>
 using is_list_initializable_result_t =
     std::variant<
         is_list_initializable_result::no_t,
@@ -71,7 +71,7 @@ using is_list_initializable_result_t =
  * @brief Decide whether the given type can be initialized with a (possibly empty) initializer list,
  * i.e. an expression of the form `{expr1, ..., exprN}`.
  */
-is_list_initializable_result_t<true> is_list_initializable(expr_t const& type);
-is_list_initializable_result_t<false> is_list_initializable(expr_t& type);
+is_list_initializable_result_t<const_t::yes> is_list_initializable(expr_t const& type);
+is_list_initializable_result_t<const_t::no> is_list_initializable(expr_t& type);
 
 } // namespace dep0::typecheck

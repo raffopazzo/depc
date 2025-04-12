@@ -30,7 +30,7 @@ struct array_view_t
  *
  * For example `%array_t(%i32_t, n)` and `%array_t(%i32_t, n) because lemma` are valid array types.
  *
- * @remarks Multidimensional arrays are arrays whose element type is another array.
+ * @remarks A multi-dimensional array has another array in its element type.
  */
 template <Properties P>
 std::optional<array_view_t<P>> get_if_array(expr_t<P> const& x)

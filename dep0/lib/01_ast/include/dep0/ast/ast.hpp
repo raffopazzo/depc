@@ -281,7 +281,7 @@ struct expr_t
      * @brief Represents an uncarried Sigma-type, in other words a "regular" tuple or a dependent tuple.
      *
      * Similarly to a Pi-type, in a dependent tuple the type of a later argument can depend on the value
-     * of a previous one, for example the dependent pair `(u64_t n; array_t(i32_t, n))`.
+     * of a previous one, for example the dependent pair `(u64_t n, array_t(i32_t, n))`.
      */
     struct sigma_t
     {

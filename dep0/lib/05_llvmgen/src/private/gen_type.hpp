@@ -52,7 +52,7 @@ namespace pass_by_ptr_result
     /** @brief The type passed to `pass_by_ptr()` is pass-by-value. */
     struct no_t{};
 
-    /** @brief The type passed to `pass_by_ptr()` is pass-by-ptr because it is a tuple `(t1; ...; tN)`. */
+    /** @brief The type passed to `pass_by_ptr()` is pass-by-ptr because it is a tuple `(t1; ..., tN)`. */
     struct sigma_t
     {
         std::vector<typecheck::func_arg_t> const& args;

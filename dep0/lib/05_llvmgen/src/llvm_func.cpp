@@ -59,6 +59,8 @@ static void move_allocas_to_entry_block(llvm::Function* const llvm_f)
             else
                 alloca_group = false;
         }
+        // we assume to work on valid blocks, i.e. blocks with a terminator, so we must have seen a non-alloca
+        assert(not alloca_group and "entry block does not have a terminator");
     }
     for (auto const alloca: allocas_to_move)
     {

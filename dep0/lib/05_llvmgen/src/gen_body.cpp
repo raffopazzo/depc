@@ -204,8 +204,7 @@ static llvm_func_t gen_destructor(global_ctx_t& global, typecheck::expr_t const&
                 else if (not is_trivially_destructible(global, x.args[i].type))
                     gen_destructor_call(global, sigma_ctx, builder, gep(i), x.args[i].type);
             }
-            // TODO what should we do here? maybe just append to parent destructors? explain or add a test
-            assert(sigma_ctx.destructors.empty() and "TODO invoke destructors");
+            assert(sigma_ctx.destructors.empty() and "destructors must not allocate");
         },
         [] (typecheck::expr_t::array_t const&) { },
         [] (typecheck::expr_t::init_list_t const&) { },
@@ -215,8 +214,7 @@ static llvm_func_t gen_destructor(global_ctx_t& global, typecheck::expr_t const&
             assert(false and "destructor of because-type should delegate to destructor of underlying value type");
         });
     builder.CreateRetVoid();
-    // TODO should call destructors here; needs a test
-    assert(local.destructors.empty() and "destructor will allocate more memory");
+    assert(local.destructors.empty() and "destructors must not allocated");
     finalize_llvm_func(llvm_f);
     return llvm_func_t(f_ty, llvm_f);
 }
@@ -261,7 +259,7 @@ static void gen_destructors(global_ctx_t& global, local_ctx_t& local, llvm::IRBu
         // if calling destructors leads to needing more destructor calls,
         // we can just loop around until we drain the list,
         // but we really don't expect this to happen
-        assert(local.destructors.empty() and "gen_destructor_call() created more need for destructors");
+        assert(local.destructors.empty() and "destructors must not allocate");
     }
 }
 

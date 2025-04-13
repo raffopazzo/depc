@@ -1283,4 +1283,15 @@ BOOST_AUTO_TEST_CASE(pass_009)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_010)
+{
+    BOOST_TEST_REQUIRE(pass("0021_tuples/pass_010.depc"));
+    BOOST_TEST_REQUIRE(
+        is_function_of(
+            get_function("f"),
+            std::tuple{arg_of(pointer_to(struct_of(is_i32, is_i16)), std::nullopt, nonnull)},
+            is_i32, sext));
+    BOOST_TEST(get_function("f")->getLinkage() == llvm::GlobalValue::LinkageTypes::ExternalLinkage);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

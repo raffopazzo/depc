@@ -6,7 +6,7 @@
  */
 /**
  * @file
- * @brief Functions useful to generate and manipulate the LLVM `alloca` instruction.
+ * @brief Declares `gen_alloca()` and its auxiliary types.
  */
 #pragma once
 

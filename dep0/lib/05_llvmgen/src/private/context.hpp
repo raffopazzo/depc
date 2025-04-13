@@ -23,6 +23,10 @@
 
 #include <variant>
 
+#ifndef NDEBUG
+#include <cassert>
+#endif
+
 namespace dep0::llvmgen {
 
 /**
@@ -133,6 +137,10 @@ struct local_ctx_t
         >;
 
     local_ctx_t() = default;
+
+#ifndef NDEBUG
+    ~local_ctx_t() { assert(destructors.empty() and "local context would leak resources"); }
+#endif
 
     /**
      * @brief Extend the current context, allowing new entries to shadow previous values and declarations.

@@ -1294,4 +1294,58 @@ BOOST_AUTO_TEST_CASE(pass_010)
     BOOST_TEST(get_function("f")->getLinkage() == llvm::GlobalValue::LinkageTypes::ExternalLinkage);
 }
 
+BOOST_AUTO_TEST_CASE(pass_011)
+{
+    BOOST_TEST_REQUIRE(pass("0021_tuples/pass_011.depc"));
+    auto const tuple_type = struct_of(is_i64, pointer_to(is_i32));
+    {
+        auto const f = get_function("f0");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, sext));
+        auto const inst = get_instructions(f->getEntryBlock());
+        BOOST_TEST_REQUIRE(inst.size() == 5);
+        auto const alloca   = inst[0];
+        auto const make_vec = inst[1];
+        auto const use_vec  = inst[2];
+        auto const dtor     = inst[3];
+        auto const ret      = inst[4];
+        BOOST_TEST(is_alloca(alloca, tuple_type, constant(1), align_of(8)));
+        BOOST_TEST(is_direct_call(make_vec, exactly(get_function("make_vec")), call_arg(exactly(alloca))));
+        BOOST_TEST(is_direct_call(use_vec, exactly(get_function("use_vec")), call_arg(exactly(alloca))));
+        BOOST_TEST(is_direct_call(dtor, exactly(get_function(".dtor.0")), call_arg(exactly(alloca))));
+        BOOST_TEST(is_return_of(ret, constant(0)));
+    }
+    {
+        auto const f = get_function("f1");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, sext));
+        auto const inst = get_instructions(f->getEntryBlock());
+        BOOST_TEST_REQUIRE(inst.size() == 5);
+        auto const alloca   = inst[0];
+        auto const new_vec  = inst[1];
+        auto const use_vec  = inst[2];
+        auto const dtor     = inst[3];
+        auto const ret      = inst[4];
+        BOOST_TEST(is_alloca(alloca, tuple_type, constant(1), align_of(8)));
+        BOOST_TEST(is_direct_call(new_vec, exactly(get_function("new_vec")), call_arg(exactly(alloca))));
+        BOOST_TEST(is_direct_call(use_vec, exactly(get_function("use_vec")), call_arg(exactly(alloca))));
+        BOOST_TEST(is_direct_call(dtor, exactly(get_function(".dtor.0")), call_arg(exactly(alloca))));
+        BOOST_TEST(is_return_of(ret, constant(0)));
+    }
+    {
+        auto const f = get_function("f2");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, sext));
+        auto const inst = get_instructions(f->getEntryBlock());
+        BOOST_TEST_REQUIRE(inst.size() == 5);
+        auto const alloca   = inst[0];
+        auto const new_vec  = inst[1];
+        auto const use_vec  = inst[2];
+        auto const dtor     = inst[3];
+        auto const ret      = inst[4];
+        BOOST_TEST(is_alloca(alloca, tuple_type, constant(1), align_of(8)));
+        BOOST_TEST(is_direct_call(new_vec, exactly(get_function("new_vec")), call_arg(exactly(alloca))));
+        BOOST_TEST(is_direct_call(use_vec, exactly(get_function("use_vec")), call_arg(exactly(alloca))));
+        BOOST_TEST(is_direct_call(dtor, exactly(get_function(".dtor.0")), call_arg(exactly(alloca))));
+        BOOST_TEST(is_return_of(ret, constant(0)));
+    }
+}
+
 BOOST_AUTO_TEST_SUITE_END()

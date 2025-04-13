@@ -214,7 +214,7 @@ static llvm_func_t gen_destructor(global_ctx_t& global, typecheck::expr_t const&
             assert(false and "destructor of because-type should delegate to destructor of underlying value type");
         });
     builder.CreateRetVoid();
-    assert(local.destructors.empty() and "destructors must not allocated");
+    assert(local.destructors.empty() and "destructors must not allocate");
     finalize_llvm_func(llvm_f);
     return llvm_func_t(f_ty, llvm_f);
 }
@@ -285,20 +285,20 @@ snippet_t gen_body(
 
 void gen_stmt(
     global_ctx_t& global,
-    local_ctx_t const& body_local,
+    local_ctx_t const& local,
     snippet_t& snippet,
     llvm::IRBuilder<>& builder,
     typecheck::stmt_t const& stmt,
     llvm::Function* const llvm_f,
     llvm::Value* const inlined_result)
 {
-    auto local = body_local.extend();
+    auto local_stmt = local.extend();
     match(
         stmt.value,
         [&] (typecheck::expr_t::app_t const& x)
         {
-            gen_func_call(global, local, builder, x, value_category_t::temporary, nullptr);
-            // TODO gen_destructors(global, local, builder); needs a test
+            gen_func_call(global, local_stmt, builder, x, value_category_t::temporary, nullptr);
+            gen_destructors(global, local_stmt, builder);
         },
         [&] (typecheck::stmt_t::if_else_t const& x)
         {
@@ -311,33 +311,33 @@ void gen_stmt(
             {
                 if (is_mutable(x.cond))
                 {
-                    gen_temporary_val(global, local, builder, x.cond);
-                    // TODO gen_destructors(global, local, builder); needs a test
+                    gen_temporary_val(global, local_stmt, builder, x.cond);
+                    gen_destructors(global, local_stmt, builder);
                 }
                 if (x.false_branch)
-                    gen_stmts(global, local, snippet, builder, *x.false_branch, llvm_f, inlined_result);
+                    gen_stmts(global, local_stmt, snippet, builder, *x.false_branch, llvm_f, inlined_result);
                 return;
             }
             if (x.false_branch and is_impossible(*x.false_branch))
             {
                 if (is_mutable(x.cond))
                 {
-                    gen_temporary_val(global, local, builder, x.cond);
-                    // TODO gen_destructors(global, local, builder); needs a test
+                    gen_temporary_val(global, local_stmt, builder, x.cond);
+                    gen_destructors(global, local_stmt, builder);
                 }
-                gen_stmts(global, local, snippet, builder, x.true_branch, llvm_f, inlined_result);
+                gen_stmts(global, local_stmt, snippet, builder, x.true_branch, llvm_f, inlined_result);
                 return;
             }
             // Otherwise both branches are possible and we need to emit each one in their own basic block.
             // Also, before entering either branch, we need to make sure we invoke all destructors registered
             // whilst generating the branch condition.
-            auto const cond = gen_temporary_val(global, local, builder, x.cond);
-            gen_destructors(global, local, builder);
-            auto const then = gen_body(global, local, x.true_branch, "then", llvm_f, inlined_result);
+            auto const cond = gen_temporary_val(global, local_stmt, builder, x.cond);
+            gen_destructors(global, local_stmt, builder);
+            auto const then = gen_body(global, local_stmt, x.true_branch, "then", llvm_f, inlined_result);
             std::ranges::copy(then.open_blocks, std::back_inserter(snippet.open_blocks));
             if (x.false_branch)
             {
-                auto const else_ = gen_body(global, local, *x.false_branch, "else", llvm_f, inlined_result);
+                auto const else_ = gen_body(global, local_stmt, *x.false_branch, "else", llvm_f, inlined_result);
                 std::ranges::copy(else_.open_blocks, std::back_inserter(snippet.open_blocks));
                 builder.CreateCondBr(cond, then.entry_block, else_.entry_block);
             }
@@ -353,7 +353,6 @@ void gen_stmt(
             if (not x.expr)
             {
                 // Only unit_t can be missing a return expr.
-                // Also note that no destructor has been registered from the beginning of this function.
                 builder.CreateRet(gen_val_unit(global));
                 return;
             }
@@ -361,7 +360,7 @@ void gen_stmt(
             {
                 // the enclosing function is being inlined, so the returned value is a temporary in the outer function
                 // TODO this might be wrong, think `return [] { return {3, {1,2,3}} }();` needs a test
-                gen_val(global, local, builder, *x.expr, value_category_t::temporary, inlined_result);
+                gen_val(global, local_stmt, builder, *x.expr, value_category_t::temporary, inlined_result);
                 // TODO when and how do we generate destructors of inlined lambdas? currently we would be leaking
                 snippet.open_blocks.push_back(builder.GetInsertBlock());
                 return;
@@ -371,8 +370,8 @@ void gen_stmt(
             // always generate a value, even for expressions of type unit_t,
             // because it might be a function call with side effects;
             // and, if it is, just return the unit value, without complicating the CFG
-            auto const ret_val = gen_val(global, local, builder, *x.expr, value_category_t::result, dest);
-            gen_destructors(global, local, builder);
+            auto const ret_val = gen_val(global, local_stmt, builder, *x.expr, value_category_t::result, dest);
+            gen_destructors(global, local_stmt, builder);
             if (dest)
                 builder.CreateRetVoid();
             else if (has_unit_type(*x.expr))

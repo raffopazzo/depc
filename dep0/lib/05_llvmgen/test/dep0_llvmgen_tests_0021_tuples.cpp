@@ -1348,4 +1348,157 @@ BOOST_AUTO_TEST_CASE(pass_011)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_012)
+{
+    apply_beta_delta_normalization = true;
+    BOOST_TEST_REQUIRE(pass("0021_tuples/pass_012.depc"));
+    auto const tuple_type = struct_of(is_i64, pointer_to(is_i32));
+    {
+        auto const f = get_function("f1");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{ret_ptr_to(tuple_type), arg_of(is_i1, "x", zext)}, is_void));
+        auto const blks = get_blocks(*f);
+        BOOST_TEST_REQUIRE(blks.size() == 4ul);
+        auto const entry    = blks[0];
+        auto const then0    = blks[1];
+        auto const else0    = blks[2];
+        auto const cont     = blks[3];
+        BOOST_TEST(is_branch_of(entry->getTerminator(), exactly(f->getArg(1)), exactly(then0), exactly(else0)));
+        {
+            auto const inst = get_instructions(*then0);
+            BOOST_TEST_REQUIRE(inst.size() == 9);
+            auto const gep0     = inst[0];
+            auto const store0   = inst[1];
+            auto const gep1     = inst[2];
+            auto const malloc   = inst[3];
+            auto const bitcast  = inst[4];
+            auto const gep_r0   = inst[5];
+            auto const store1   = inst[6];
+            auto const store_p  = inst[7];
+            auto const br       = inst[8];
+            BOOST_TEST(is_gep_of(gep0, tuple_type, exactly(f->getArg(0)), constant(0), constant(0)));
+            BOOST_TEST(is_store_of(store0, is_i64, constant(1), exactly(gep0), align_of(8)));
+            BOOST_TEST(is_gep_of(gep1, tuple_type, exactly(f->getArg(0)), constant(0), constant(1)));
+            BOOST_TEST(is_direct_call(malloc, exactly(get_function("malloc")), call_arg(constant(4))));
+            BOOST_TEST(is_bitcast_of(bitcast, exactly(malloc), pointer_to(is_i8), pointer_to(is_i32)));
+            BOOST_TEST(is_gep_of(gep_r0, is_i32, exactly(bitcast), constant(0)));
+            BOOST_TEST(is_store_of(store1, is_i32, constant(2), exactly(gep_r0), align_of(4)));
+            BOOST_TEST(is_store_of(store_p, pointer_to(is_i32), exactly(bitcast), exactly(gep1), align_of(8)));
+            BOOST_TEST(is_unconditional_branch_to(br, exactly(cont)));
+        }
+        {
+            auto const inst = get_instructions(*else0);
+            BOOST_TEST_REQUIRE(inst.size() == 11);
+            auto const gep0     = inst[0];
+            auto const store0   = inst[1];
+            auto const gep1     = inst[2];
+            auto const malloc   = inst[3];
+            auto const bitcast  = inst[4];
+            auto const gep_r0   = inst[5];
+            auto const store1   = inst[6];
+            auto const gep_r1   = inst[7];
+            auto const store2   = inst[8];
+            auto const store_p  = inst[9];
+            auto const br       = inst[10];
+            BOOST_TEST(is_gep_of(gep0, tuple_type, exactly(f->getArg(0)), constant(0), constant(0)));
+            BOOST_TEST(is_store_of(store0, is_i64, constant(2), exactly(gep0), align_of(8)));
+            BOOST_TEST(is_gep_of(gep1, tuple_type, exactly(f->getArg(0)), constant(0), constant(1)));
+            BOOST_TEST(is_direct_call(malloc, exactly(get_function("malloc")), call_arg(constant(8))));
+            BOOST_TEST(is_bitcast_of(bitcast, exactly(malloc), pointer_to(is_i8), pointer_to(is_i32)));
+            BOOST_TEST(is_gep_of(gep_r0, is_i32, exactly(bitcast), constant(0)));
+            BOOST_TEST(is_store_of(store1, is_i32, constant(3), exactly(gep_r0), align_of(4)));
+            BOOST_TEST(is_gep_of(gep_r1, is_i32, exactly(bitcast), constant(1)));
+            BOOST_TEST(is_store_of(store2, is_i32, constant(4), exactly(gep_r1), align_of(4)));
+            BOOST_TEST(is_store_of(store_p, pointer_to(is_i32), exactly(bitcast), exactly(gep1), align_of(8)));
+            BOOST_TEST(is_unconditional_branch_to(br, exactly(cont)));
+        }
+        BOOST_TEST(is_return_of_void(cont->getTerminator()));
+    }
+    {
+        auto const f = get_function("f2");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(is_i1, "x", zext)}, is_i32, sext));
+        auto const blks = get_blocks(*f);
+        BOOST_TEST_REQUIRE(blks.size() == 6ul);
+        auto const entry    = blks[0];
+        auto const then0    = blks[1];
+        auto const else0    = blks[2];
+        auto const cont     = blks[3];
+        auto const then1    = blks[4];
+        auto const else2    = blks[5];
+        auto const [alloca1, alloca2, alloca3] = [&]
+        {
+            auto const inst = get_instructions(*entry);
+            BOOST_TEST_REQUIRE(inst.size() == 4);
+            auto const alloca1  = inst[0];
+            auto const alloca2  = inst[1];
+            auto const alloca3  = inst[2];
+            auto const br       = inst[3];
+            BOOST_TEST(is_alloca(alloca1, tuple_type, constant(1), align_of(8)));
+            BOOST_TEST(is_alloca(alloca2, is_i32, constant(1), align_of(4)));
+            BOOST_TEST(is_alloca(alloca3, is_i32, constant(2), align_of(4)));
+            BOOST_TEST(is_branch_of(br, exactly(f->getArg(0)), exactly(then0), exactly(else0)));
+            return std::tuple{alloca1, alloca2, alloca3};
+        }();
+        {
+            auto const inst = get_instructions(*then0);
+            BOOST_TEST_REQUIRE(inst.size() == 7);
+            auto const gep0     = inst[0];
+            auto const store0   = inst[1];
+            auto const gep1     = inst[2];
+            auto const gep_r0   = inst[3];
+            auto const store1   = inst[4];
+            auto const store_p  = inst[5];
+            auto const br       = inst[6];
+            BOOST_TEST(is_gep_of(gep0, tuple_type, exactly(alloca1), constant(0), constant(0)));
+            BOOST_TEST(is_store_of(store0, is_i64, constant(1), exactly(gep0), align_of(8)));
+            BOOST_TEST(is_gep_of(gep1, tuple_type, exactly(alloca1), constant(0), constant(1)));
+            BOOST_TEST(is_gep_of(gep_r0, is_i32, exactly(alloca2), constant(0)));
+            BOOST_TEST(is_store_of(store1, is_i32, constant(2), exactly(gep_r0), align_of(4)));
+            BOOST_TEST(is_store_of(store_p, pointer_to(is_i32), exactly(alloca2), exactly(gep1), align_of(8)));
+            BOOST_TEST(is_unconditional_branch_to(br, exactly(cont)));
+        }
+        {
+            auto const inst = get_instructions(*else0);
+            BOOST_TEST_REQUIRE(inst.size() == 9);
+            auto const gep0     = inst[0];
+            auto const store0   = inst[1];
+            auto const gep1     = inst[2];
+            auto const gep_r0   = inst[3];
+            auto const store1   = inst[4];
+            auto const gep_r1   = inst[5];
+            auto const store2   = inst[6];
+            auto const store_p  = inst[7];
+            auto const br       = inst[8];
+            BOOST_TEST(is_gep_of(gep0, tuple_type, exactly(alloca1), constant(0), constant(0)));
+            BOOST_TEST(is_store_of(store0, is_i64, constant(2), exactly(gep0), align_of(8)));
+            BOOST_TEST(is_gep_of(gep1, tuple_type, exactly(alloca1), constant(0), constant(1)));
+            BOOST_TEST(is_gep_of(gep_r0, is_i32, exactly(alloca3), constant(0)));
+            BOOST_TEST(is_store_of(store1, is_i32, constant(3), exactly(gep_r0), align_of(4)));
+            BOOST_TEST(is_gep_of(gep_r1, is_i32, exactly(alloca3), constant(1)));
+            BOOST_TEST(is_store_of(store2, is_i32, constant(4), exactly(gep_r1), align_of(4)));
+            BOOST_TEST(is_store_of(store_p, pointer_to(is_i32), exactly(alloca3), exactly(gep1), align_of(8)));
+            BOOST_TEST(is_unconditional_branch_to(br, exactly(cont)));
+        }
+        {
+            auto const inst = get_instructions(*cont);
+            BOOST_TEST_REQUIRE(inst.size() == 4);
+            auto const gep      = inst[0];
+            auto const load     = inst[1];
+            auto const cmp      = inst[2];
+            auto const br       = inst[3];
+            BOOST_TEST(is_gep_of(gep, tuple_type, exactly(alloca1), constant(0), constant(0)));
+            BOOST_TEST(is_load_of(load, is_i64, exactly(gep), align_of(8)));
+            BOOST_TEST(is_cmp(cmp, llvm::CmpInst::Predicate::ICMP_EQ, exactly(load), constant(0)));
+            BOOST_TEST(is_branch_of(br, exactly(cmp), exactly(then1), exactly(else2)));
+        }
+        {
+            BOOST_TEST(then1->size() == 1ul);
+            BOOST_TEST(is_return_of(then1->getTerminator(), constant(0)));
+        }
+        {
+            BOOST_TEST(else2->size() == 1ul);
+            BOOST_TEST(is_return_of(else2->getTerminator(), constant(1)));
+        }
+    }
+}
+
 BOOST_AUTO_TEST_SUITE_END()

@@ -230,6 +230,7 @@ BOOST_AUTO_TEST_CASE(pass_009)
 
 BOOST_AUTO_TEST_CASE(pass_010) { BOOST_TEST(pass("0021_tuples/pass_010.depc")); }
 BOOST_AUTO_TEST_CASE(pass_011) { BOOST_TEST(pass("0021_tuples/pass_011.depc")); }
+BOOST_AUTO_TEST_CASE(pass_012) { BOOST_TEST(pass("0021_tuples/pass_012.depc")); }
 
 BOOST_AUTO_TEST_CASE(parse_error_000) { BOOST_TEST_REQUIRE(fail("0021_tuples/parse_error_000.depc")); }
 

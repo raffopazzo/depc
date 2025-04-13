@@ -355,7 +355,7 @@ llvm::Value* gen_val(
                         // but this is only possible if return type is unit_t, so just generate the unit value
                         return store_and_return(gen_val_unit(global));
                     auto const current_func = builder.GetInsertBlock()->getParent();
-                    auto const gen_inlined_body = [&] (llvm::Value* const inlined_result)
+                    auto const gen_inlined_body = [&] (inlined_result_t const inlined_result)
                     {
                         auto snippet = gen_body(global, local, abs->body, "inlined", current_func, inlined_result);
                         builder.CreateBr(snippet.entry_block);
@@ -380,7 +380,7 @@ llvm::Value* gen_val(
                         : gen_alloca(global, local, builder, allocator, ret_type);
                     if (dest2)
                     {
-                        gen_inlined_body(dest2);
+                        gen_inlined_body({value_category, dest2});
                         return dest2;
                     }
                     else
@@ -389,7 +389,7 @@ llvm::Value* gen_val(
                         assert(is_pass_by_val(global, ret_type));
                         auto const inlined_type = gen_type(global, ret_type);
                         auto const inlined_result = builder.CreateAlloca(inlined_type, builder.getInt32(1));
-                        gen_inlined_body(inlined_result);
+                        gen_inlined_body({value_category, inlined_result});
                         return builder.CreateLoad(inlined_type, inlined_result);
                     }
                 }

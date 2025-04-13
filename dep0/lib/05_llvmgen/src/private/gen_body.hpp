@@ -11,6 +11,7 @@
 #pragma once
 
 #include "private/context.hpp"
+#include "private/gen_val.hpp"
 
 #include "dep0/typecheck/ast.hpp"
 
@@ -20,6 +21,7 @@
 #include <llvm/IR/Value.h>
 
 #include <string_view>
+#include <optional>
 #include <vector>
 
 namespace dep0::llvmgen {
@@ -67,6 +69,19 @@ struct snippet_t
 };
 
 /**
+ * @brief If a function body is being inlined, this struct will contain the runtime location where
+ * the result value of the inlined function must be stored and its value category.
+ *
+ * For example, `if (inlined_function())` will store a `temporary` value at some runtime location,
+ * whilst `return inlined_function()` will store a `result` value at that location.
+ */
+struct inlined_result_t
+{
+    value_category_t value_category;
+    llvm::Value* dest;
+};
+
+/**
  * @brief Generate IR code for a body of DepC statements.
  * @remarks This function will use a fresh IR builder every time.
  * In other words, each nested invocation to generate a nested body will use a new IR builder.
@@ -90,10 +105,10 @@ struct snippet_t
  */
 snippet_t gen_body(
     global_ctx_t&,
-    local_ctx_t const& ,
+    local_ctx_t const&,
     typecheck::body_t const&,
     std::string_view entry_block_name,
     llvm::Function* parent_function,
-    llvm::Value* inlined_result);
+    std::optional<inlined_result_t>);
 
 } // namespace dep0::llvmgen

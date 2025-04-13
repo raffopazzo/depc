@@ -88,7 +88,7 @@ void gen_func_body(
     typecheck::body_t const& body,
     llvm::Function* const llvm_f)
 {
-    auto snippet = gen_body(global, local, body, "entry", llvm_f, nullptr);
+    auto snippet = gen_body(global, local, body, "entry", llvm_f, std::nullopt);
     if (snippet.open_blocks.size() and std::holds_alternative<typecheck::expr_t::unit_t>(proto.ret_type().value))
     {
         auto builder = llvm::IRBuilder<>(global.llvm_ctx);

@@ -17,6 +17,8 @@
 
 #include "dep0/match.hpp"
 
+#include <algorithm>
+#include <iterator>
 #include <ranges>
 
 namespace dep0::llvmgen {
@@ -66,21 +68,21 @@ static void gen_destructor_call(global_ctx_t&, local_ctx_t&, llvm::IRBuilder<>&,
  */
 static void gen_stmt(
     global_ctx_t&,
-    local_ctx_t const&,
+    local_ctx_t&,
     snippet_t& current_snippet,
     llvm::IRBuilder<>& builder,
     typecheck::stmt_t const&,
     llvm::Function* parent_function,
-    llvm::Value* inlined_result);
+    std::optional<inlined_result_t>);
 
 static void gen_stmts(
     global_ctx_t& global,
-    local_ctx_t const& local,
+    local_ctx_t& local,
     snippet_t& snippet,
     llvm::IRBuilder<>& builder,
     typecheck::body_t const& body,
     llvm::Function* const llvm_f,
-    llvm::Value* const inlined_result)
+    std::optional<inlined_result_t> const inlined_result)
 {
     auto it = body.stmts.begin();
     if (it == body.stmts.end())
@@ -269,7 +271,7 @@ snippet_t gen_body(
     typecheck::body_t const& body,
     std::string_view const entry_block_name,
     llvm::Function* const llvm_f,
-    llvm::Value* const inlined_result)
+    std::optional<inlined_result_t> const inlined_result)
 {
     snippet_t snippet;
     auto builder = llvm::IRBuilder<>(global.llvm_ctx);
@@ -279,18 +281,19 @@ snippet_t gen_body(
         builder.CreateUnreachable();
         return snippet;
     }
-    gen_stmts(global, local, snippet, builder, body, llvm_f, inlined_result);
+    auto local_body = local.extend();
+    gen_stmts(global, local_body, snippet, builder, body, llvm_f, inlined_result);
     return snippet;
 }
 
 void gen_stmt(
     global_ctx_t& global,
-    local_ctx_t const& local,
+    local_ctx_t& local,
     snippet_t& snippet,
     llvm::IRBuilder<>& builder,
     typecheck::stmt_t const& stmt,
     llvm::Function* const llvm_f,
-    llvm::Value* const inlined_result)
+    std::optional<inlined_result_t> const inlined_result)
 {
     auto local_stmt = local.extend();
     match(
@@ -350,19 +353,23 @@ void gen_stmt(
         },
         [&] (typecheck::stmt_t::return_t const& x)
         {
+            auto const create_ret = [&] (llvm::Value* const maybe_val)
+            {
+                gen_destructors(global, local, builder);
+                return maybe_val ? builder.CreateRet(maybe_val) : builder.CreateRetVoid();
+            };
             if (not x.expr)
             {
                 // Only unit_t can be missing a return expr.
-                builder.CreateRet(gen_val_unit(global));
+                create_ret(gen_val_unit(global));
                 return;
             }
             if (inlined_result)
             {
-                // the enclosing function is being inlined, so the returned value is a temporary in the outer function
-                // TODO this might be wrong, think `return [] { return {3, {1,2,3}} }();` needs a test
-                gen_val(global, local_stmt, builder, *x.expr, value_category_t::temporary, inlined_result);
-                // TODO when and how do we generate destructors of inlined lambdas? currently we would be leaking
+                gen_val(global, local_stmt, builder, *x.expr, inlined_result->value_category, inlined_result->dest);
                 snippet.open_blocks.push_back(builder.GetInsertBlock());
+                std::ranges::copy(local_stmt.destructors, std::back_inserter(local.destructors));
+                local_stmt.destructors.clear();
                 return;
             }
             auto const arg0 = llvm_f->arg_empty() ? nullptr : llvm_f->getArg(0ul);
@@ -373,11 +380,11 @@ void gen_stmt(
             auto const ret_val = gen_val(global, local_stmt, builder, *x.expr, value_category_t::result, dest);
             gen_destructors(global, local_stmt, builder);
             if (dest)
-                builder.CreateRetVoid();
+                create_ret(nullptr);
             else if (has_unit_type(*x.expr))
-                builder.CreateRet(gen_val_unit(global));
+                create_ret(gen_val_unit(global));
             else
-                builder.CreateRet(ret_val);
+                create_ret(ret_val);
         },
         [&] (typecheck::stmt_t::impossible_t const&)
         {

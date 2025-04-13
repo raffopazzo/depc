@@ -1,0 +1,31 @@
+/*
+ * Copyright Raffaele Rossi 2025.
+ *
+ * Distributed under the Boost Software License, Version 1.0.
+ * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
+ */
+func make_vec(bool_t x) -> (u64_t n, array_t(i32_t, n))
+{
+    if (x)
+        return {1, {2}};
+    else
+        return {2, {3, 4}};
+}
+
+func f1(bool_t x) -> (u64_t n, array_t(i32_t, n))
+{
+    return make_vec(x);
+}
+
+func use_vec((u64_t n, array_t(i32_t, n)) x) -> bool_t
+{
+    return x[0] == 0;
+}
+
+func f2(bool_t x) -> i32_t
+{
+    if (use_vec(make_vec(x)))
+        return 0;
+    else
+        return 1;
+}

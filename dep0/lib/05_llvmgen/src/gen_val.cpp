@@ -466,8 +466,8 @@ llvm::Value* gen_val(
                                 sigma_ctx.try_emplace(*sigma.args[i].var, val);
                         }
                     }
-                    // TODO what should we do here? maybe just append to parent destructors? explain or add a test
-                    assert(sigma_ctx.destructors.empty() and "TODO invoke destructors");
+                    std::ranges::copy(sigma_ctx.destructors, std::back_inserter(local.destructors));
+                    sigma_ctx.destructors.clear();
                     return dest2;
                 },
                 [&] (typecheck::is_list_initializable_result::array_const_t) -> llvm::Value*

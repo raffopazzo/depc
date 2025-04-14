@@ -1501,4 +1501,41 @@ BOOST_AUTO_TEST_CASE(pass_012)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_013)
+{
+    BOOST_TEST_REQUIRE(pass("0021_tuples/pass_013.depc"));
+    auto const tuple_type = struct_of(is_i64, struct_of(is_i64, pointer_to(is_i32)));
+    {
+        auto const f = get_function("f");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, sext));
+        auto const blks = get_blocks(*f);
+        BOOST_TEST_REQUIRE(blks.size() == 3ul);
+        auto const entry    = blks[0];
+        auto const then0    = blks[1];
+        auto const else0    = blks[2];
+        {
+            auto const inst = get_instructions(*entry);
+            BOOST_TEST_REQUIRE(inst.size() == 8);
+            auto const alloca   = inst[0];
+            auto const gep0     = inst[1];
+            auto const store0   = inst[2];
+            auto const gep1     = inst[3];
+            auto const make     = inst[4];
+            auto const use      = inst[5];
+            auto const dtor     = inst[6];
+            auto const br       = inst[7];
+            BOOST_TEST(is_alloca(alloca, tuple_type, constant(1), align_of(8)));
+            BOOST_TEST(is_gep_of(gep0, tuple_type, exactly(alloca), constant(0), constant(0)));
+            BOOST_TEST(is_store_of(store0, is_i64, constant(3), exactly(gep0), align_of(8)));
+            BOOST_TEST(is_gep_of(gep1, tuple_type, exactly(alloca), constant(0), constant(1)));
+            BOOST_TEST(is_direct_call(make, exactly(get_function("make")), call_arg(exactly(gep1))));
+            BOOST_TEST(is_direct_call(use, exactly(get_function("use")), call_arg(exactly(alloca))));
+            BOOST_TEST(is_direct_call(dtor, exactly(get_function(".dtor.0")), call_arg(exactly(gep1))));
+            BOOST_TEST(is_branch_of(br, exactly(use), exactly(then0), exactly(else0)));
+        }
+        BOOST_TEST(is_return_of(then0->getTerminator(), constant(1)));
+        BOOST_TEST(is_return_of(else0->getTerminator(), constant(0)));
+    }
+}
+
 BOOST_AUTO_TEST_SUITE_END()

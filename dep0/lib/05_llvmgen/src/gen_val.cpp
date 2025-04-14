@@ -601,8 +601,8 @@ void gen_store(
                             sigma_ctx.try_emplace(*sigma.args[i].var, element_value);
                     }
                 }
-                // TODO what should we do here? maybe just append to parent destructors? explain or add a test
-                assert(sigma_ctx.destructors.empty() and "TODO invoke destructors");
+                std::ranges::copy(sigma_ctx.destructors, std::back_inserter(local.destructors));
+                sigma_ctx.destructors.clear();
             }
         },
         [&] (pass_by_ptr_result::array_t const& array)

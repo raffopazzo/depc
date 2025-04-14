@@ -21,6 +21,7 @@ static llvm::Value* gen_builtin_slice(
     global_ctx_t& global,
     local_ctx_t& local,
     llvm::IRBuilder<>& builder,
+    value_category_t const value_category,
     typecheck::is_builtin_call_result::slice_t const& slice,
     typecheck::expr_t const& ret_type,
     llvm::Value* const dest)
@@ -33,7 +34,7 @@ static llvm::Value* gen_builtin_slice(
     auto const offset = stride_size ? builder.CreateMul(stride_size, index) : index;
     auto const ptr = builder.CreateGEP(type, base, offset);
     if (dest)
-        gen_store(global, local, builder, ptr, dest, ret_type);
+        gen_store(global, local, builder, value_category, ptr, dest, ret_type);
     return ptr;
 }
 
@@ -42,6 +43,7 @@ llvm::Value* try_gen_builtin(
     local_ctx_t& local,
     llvm::IRBuilder<>& builder,
     typecheck::expr_t::app_t const& app,
+    value_category_t const value_category,
     llvm::Value* const dest)
 {
     return match(
@@ -51,7 +53,7 @@ llvm::Value* try_gen_builtin(
         {
             auto const& func_type = std::get<typecheck::expr_t>(app.func.get().properties.sort.get());
             auto const& ret_type = std::get<typecheck::expr_t::pi_t>(func_type.value).ret_type.get();
-            return gen_builtin_slice(global, local, builder, slice, ret_type, dest);
+            return gen_builtin_slice(global, local, builder, value_category, slice, ret_type, dest);
         });
 }
 

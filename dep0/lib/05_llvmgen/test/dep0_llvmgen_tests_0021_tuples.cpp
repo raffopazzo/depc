@@ -1538,4 +1538,68 @@ BOOST_AUTO_TEST_CASE(pass_013)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_014)
+{
+    BOOST_TEST_REQUIRE(pass("0021_tuples/pass_014.depc"));
+    auto const tuple_type = struct_of(is_i64, pointer_to(is_i32));
+    {
+        auto const f = get_function("f");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(pointer_to(tuple_type), "x", nonnull)}, is_i32, sext));
+        auto const blks = get_blocks(*f);
+        BOOST_TEST_REQUIRE(blks.size() == 3ul);
+        auto const entry    = blks[0];
+        auto const then0    = blks[1];
+        auto const else0    = blks[2];
+        {
+            auto const inst = get_instructions(*entry);
+            BOOST_TEST_REQUIRE(inst.size() == 17);
+            auto const alloca1  = inst[0];
+            auto const gep_0    = inst[1];
+            auto const gep_x_00 = inst[2];
+            auto const gep_0_00 = inst[3];
+            auto const load_1   = inst[4];
+            auto const store_1  = inst[5];
+            auto const gep_x_01 = inst[6];
+            auto const gep_0_01 = inst[7];
+            auto const alloca2  = inst[8];
+            auto const store_p  = inst[9];
+            auto const load_2   = inst[10];
+            auto const mul      = inst[11];
+            auto const bitcast1 = inst[12];
+            auto const bitcast2 = inst[13];
+            auto const memcpy   = inst[14];
+            auto const use      = inst[15];
+            auto const br       = inst[16];
+            BOOST_TEST(is_alloca(alloca1, tuple_type, constant(1), align_of(8)));
+            BOOST_TEST(is_gep_of(gep_0, tuple_type, exactly(alloca1), constant(0)));
+            BOOST_TEST(is_gep_of(gep_x_00, tuple_type, exactly(f->getArg(0)), constant(0), constant(0)));
+            BOOST_TEST(is_gep_of(gep_0_00, tuple_type, exactly(gep_0), constant(0), constant(0)));
+            BOOST_TEST(is_load_of(load_1, is_i64, exactly(gep_x_00), align_of(8)));
+            BOOST_TEST(is_store_of(store_1, is_i64, exactly(load_1), exactly(gep_0_00), align_of(8)));
+            BOOST_TEST(is_gep_of(gep_x_01, tuple_type, exactly(f->getArg(0)), constant(0), constant(1)));
+            BOOST_TEST(is_gep_of(gep_0_01, tuple_type, exactly(gep_0), constant(0), constant(1)));
+            BOOST_TEST(is_alloca(alloca2, is_i32, exactly(load_1), align_of(4)));
+            BOOST_TEST(is_store_of(store_p, pointer_to(is_i32), exactly(alloca2), exactly(gep_0_01), align_of(8)));
+            BOOST_TEST(is_load_of(load_2, pointer_to(is_i32), exactly(gep_x_01), align_of(8)));
+            BOOST_TEST(is_mul_of(mul, exactly(load_1), constant(4)));
+            BOOST_TEST(is_bitcast_of(bitcast1, exactly(alloca2), pointer_to(is_i32), pointer_to(is_i8)));
+            BOOST_TEST(is_bitcast_of(bitcast2, exactly(load_2), pointer_to(is_i32), pointer_to(is_i8)));
+            auto const attrs = std::vector{llvm::Attribute::Alignment};
+            auto const align = llvm::Align(4);
+            BOOST_TEST(
+                is_direct_call(
+                    memcpy,
+                    is_memcpy,
+                    call_arg(exactly(bitcast1), attrs, align),
+                    call_arg(exactly(bitcast2), attrs, align),
+                    call_arg(exactly(mul)),
+                    call_arg(constant(false))));
+            BOOST_TEST(is_direct_call(use, exactly(get_function("use")), call_arg(exactly(alloca1))));
+            BOOST_TEST(is_branch_of(br, exactly(use), exactly(then0), exactly(else0)));
+        }
+        BOOST_TEST(is_return_of(then0->getTerminator(), constant(1)));
+        BOOST_TEST(is_return_of(else0->getTerminator(), constant(0)));
+    }
+}
+
 BOOST_AUTO_TEST_SUITE_END()

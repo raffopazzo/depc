@@ -36,6 +36,7 @@ llvm::Value* try_gen_builtin(
     local_ctx_t&,
     llvm::IRBuilder<>&,
     typecheck::expr_t::app_t const&,
+    value_category_t,
     llvm::Value* dest);
 
 } // namespace dep0::llvmgen

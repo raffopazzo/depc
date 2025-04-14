@@ -114,7 +114,7 @@ llvm::Value* gen_val(
     auto const store_and_return = [&] (llvm::Value* const value)
     {
         if (dest)
-            gen_store(global, local, builder, value, dest, type);
+            gen_store(global, local, builder, value_category, value, dest, type);
         return value;
     };
     return match(
@@ -540,6 +540,7 @@ void gen_store(
     global_ctx_t& global,
     local_ctx_t& local,
     llvm::IRBuilder<>& builder,
+    value_category_t const value_category,
     llvm::Value* const value,
     llvm::Value* const dest,
     typecheck::expr_t const& type)
@@ -578,17 +579,17 @@ void gen_store(
                     auto const dest_element_ptr = gep(dest, i);
                     if (is_boxed(element_type))
                     {
-                        // TODO should use stack if value category is `temporary`
-                        auto const alloca = gen_alloca(global, sigma_ctx, builder, allocator_t::heap, element_type);
+                        auto const allocator = select_allocator(value_category);
+                        auto const alloca = gen_alloca(global, sigma_ctx, builder, allocator, element_type);
                         builder.CreateStore(alloca, dest_element_ptr);
                         auto const element_value = builder.CreateLoad(gen_type(global, element_type), element_ptr);
-                        gen_store(global, sigma_ctx, builder, element_value, alloca, element_type);
+                        gen_store(global, sigma_ctx, builder, value_category, element_value, alloca, element_type);
                         if (sigma.args[i].var)
                             sigma_ctx.try_emplace(*sigma.args[i].var, alloca);
                     }
                     else if (is_pass_by_ptr(global, element_type))
                     {
-                        gen_store(global, sigma_ctx, builder, element_ptr, dest_element_ptr, element_type);
+                        gen_store(global, sigma_ctx, builder, value_category, element_ptr, dest_element_ptr, element_type);
                         if (sigma.args[i].var)
                             sigma_ctx.try_emplace(*sigma.args[i].var, dest_element_ptr);
                     }
@@ -627,13 +628,13 @@ void gen_store(
                     [
                         &element_type=array.properties.element_type,
                         llvm_type=gen_type(global, array.properties.element_type),
-                        value, dest
+                        value_category, value, dest
                     ]
                     (global_ctx_t& global, local_ctx_t& local, llvm::IRBuilder<>& builder, llvm::Value* const i)
                     {
                         auto const element_ptr = builder.CreateGEP(llvm_type, value, i);
                         auto const dest_element_ptr = builder.CreateGEP(llvm_type, dest, i);
-                        gen_store(global, local, builder, element_ptr, dest_element_ptr, element_type);
+                        gen_store(global, local, builder, value_category, element_ptr, dest_element_ptr, element_type);
                     });
             }
         });
@@ -647,7 +648,7 @@ llvm::Value* gen_func_call(
     value_category_t const value_category,
     llvm::Value* const dest)
 {
-    if (auto const result = try_gen_builtin(global, local, builder, app, dest))
+    if (auto const result = try_gen_builtin(global, local, builder, app, value_category, dest))
         return result;
     assert(
         std::ranges::all_of(

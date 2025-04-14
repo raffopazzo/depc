@@ -83,6 +83,7 @@ void gen_store(
     global_ctx_t&,
     local_ctx_t&,
     llvm::IRBuilder<>&,
+    value_category_t,
     llvm::Value* value,
     llvm::Value* dest,
     typecheck::expr_t const& type);

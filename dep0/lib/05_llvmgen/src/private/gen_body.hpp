@@ -93,11 +93,10 @@ struct inlined_result_t
  *      All generated blocks will be added to this LLVM function.
  *
  * @param inlined_result
- *      If not `nullptr` and if this body contains `return` statements,
- *      this function will emit appropriate IR instructions to
- *      `store/memcpy/memset` the resulting LLVM value at the runtime location
- *      pointed by this LLVM value, which must be of pointer type.
- *      Any run-time memory allocation will be performed on the stack.
+ *      If not empty and if this body contains `return` statements,
+ *      the returned value will be constructed in-place,
+ *      according to its value category, at the given runtime location.
+ *      If empty the returned value will be constructed with `result` value category.
  *
  * @return
  *      A snippet object containing the entry block of the generated IR code along with any open blocks.

@@ -111,7 +111,7 @@ llvm::Value* gen_val(
     llvm::Value* const dest)
 {
     auto const& type = std::get<typecheck::expr_t>(expr.properties.sort.get());
-    auto const store_and_return = [&] (llvm::Value* const value)
+    auto const maybe_store = [&] (llvm::Value* const value)
     {
         if (dest)
             gen_store(global, local, builder, value_category, value, dest, type);
@@ -191,13 +191,13 @@ llvm::Value* gen_val(
         },
         [&] (typecheck::expr_t::boolean_constant_t const& x) -> llvm::Value*
         {
-            return store_and_return(llvm::ConstantInt::getBool(global.llvm_ctx, x.value));
+            return maybe_store(llvm::ConstantInt::getBool(global.llvm_ctx, x.value));
         },
         [&] (typecheck::expr_t::numeric_constant_t const& x) -> llvm::Value*
         {
             auto const llvm_type = cast<llvm::IntegerType>(gen_type(global, type));
             assert(llvm_type);
-            return store_and_return(gen_val(llvm_type, x.value));
+            return maybe_store(gen_val(llvm_type, x.value));
         },
         [&] (typecheck::expr_t::string_literal_t const& x) -> llvm::Value*
         {
@@ -212,11 +212,11 @@ llvm::Value* gen_val(
                 val = builder.CreateGlobalStringPtr(s, "$_str_");
                 global.store_string_literal(escaped ? std::move(*escaped) : std::string(s), val);
             }
-            return store_and_return(val);
+            return maybe_store(val);
         },
         [&] (typecheck::expr_t::boolean_expr_t const& x) -> llvm::Value*
         {
-            return store_and_return(match(
+            return maybe_store(match(
                 x.value,
                 [&] (typecheck::expr_t::boolean_expr_t::not_t const& x) -> llvm::Value*
                 {
@@ -239,7 +239,7 @@ llvm::Value* gen_val(
         },
         [&] (typecheck::expr_t::relation_expr_t const& x) -> llvm::Value*
         {
-            return store_and_return(match(
+            return maybe_store(match(
                 x.value,
                 [&] <typename T> (T const& x) -> llvm::Value*
                 {
@@ -295,7 +295,7 @@ llvm::Value* gen_val(
         },
         [&] (typecheck::expr_t::arith_expr_t const& x) -> llvm::Value*
         {
-            return store_and_return(match(
+            return maybe_store(match(
                 x.value,
                 [&] <typename T> (T const& x) -> llvm::Value*
                 {
@@ -326,7 +326,7 @@ llvm::Value* gen_val(
         {
             auto const val = local[var];
             assert(val and "unknown variable");
-            return store_and_return(match(
+            return maybe_store(match(
                 *val,
                 [] (llvm::Value* const p) { return p; },
                 [] (llvm_func_t const& c) { return c.func; }));
@@ -335,7 +335,7 @@ llvm::Value* gen_val(
         {
             auto const val = global[g];
             assert(val and "unknown global");
-            return store_and_return(match(
+            return maybe_store(match(
                 *val,
                 [] (llvm_func_t const& c) { return c.func; },
                 [] (typecheck::type_def_t const&) -> llvm::Value*
@@ -353,7 +353,7 @@ llvm::Value* gen_val(
                     if (abs->body.stmts.empty())
                         // if body is empty, gen_body produces an open block, which breaks MergeBlockIntoPredecessor;
                         // but this is only possible if return type is unit_t, so just generate the unit value
-                        return store_and_return(gen_val_unit(global));
+                        return maybe_store(gen_val_unit(global));
                     auto const current_func = builder.GetInsertBlock()->getParent();
                     auto const gen_inlined_body = [&] (inlined_result_t const inlined_result)
                     {
@@ -399,7 +399,7 @@ llvm::Value* gen_val(
         {
             auto const proto = llvm_func_proto_t::from_abs(abs);
             assert(proto and "can only generate a value for a 1st order function type");
-            return store_and_return(gen_func(global, *proto, abs));
+            return maybe_store(gen_func(global, *proto, abs));
         },
         [&] (typecheck::expr_t::pi_t const&) -> llvm::Value*
         {
@@ -512,7 +512,7 @@ llvm::Value* gen_val(
                     auto const index_val = llvm::ConstantInt::get(int32, i);
                     auto const ptr = builder.CreateGEP(tuple_type, base, {zero, index_val});
                     auto const element_type = gen_type(global, sigma.args[i].type);
-                    return store_and_return(
+                    return maybe_store(
                         is_boxed(type) or is_pass_by_val(global, type)
                         ? builder.CreateLoad(element_type, ptr)
                         : ptr);
@@ -527,7 +527,7 @@ llvm::Value* gen_val(
                     auto const index = gen_temporary_val(global, local, builder, subscript.index.get());
                     auto const offset = stride_size ? builder.CreateMul(stride_size, index) : index;
                     auto const ptr = builder.CreateGEP(element_type, base, offset);
-                    return store_and_return(is_pass_by_ptr(global, type) ? ptr : builder.CreateLoad(element_type, ptr));
+                    return maybe_store(is_pass_by_ptr(global, type) ? ptr : builder.CreateLoad(element_type, ptr));
                 });
         },
         [&] (typecheck::expr_t::because_t const& x) -> llvm::Value*

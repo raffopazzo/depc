@@ -1,0 +1,16 @@
+/*
+ * Copyright Raffaele Rossi 2025.
+ *
+ * Distributed under the Boost Software License, Version 1.0.
+ * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
+ */
+
+func f1(u64_t n, array_t(i32_t, n) because true xs, 0 true_t(0 < n)) -> i32_t
+{
+    return xs[0];
+}
+
+func f2(u64_t n, array_t(array_t(i32_t, n) because true, n) xs, 0 true_t(1 < n)) -> i32_t
+{
+    return xs[1][1];
+}

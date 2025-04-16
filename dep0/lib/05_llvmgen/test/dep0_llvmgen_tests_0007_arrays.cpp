@@ -1,5 +1,5 @@
 /*
- * Copyright Raffaele Rossi 2023 - 2024.
+ * Copyright Raffaele Rossi 2023 - 2025.
  *
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
@@ -405,15 +405,15 @@ BOOST_AUTO_TEST_CASE(pass_010)
         auto const inst = get_instructions(f->getEntryBlock());
         BOOST_TEST_REQUIRE(inst.size() == 15ul);
         auto const alloca1 = inst[0];
-        auto const call1   = inst[1];
-        auto const gep1    = inst[2];
-        auto const load1   = inst[3];
-        auto const alloca2 = inst[4];
-        auto const call2   = inst[5];
-        auto const gep2    = inst[6];
-        auto const load2   = inst[7];
-        auto const add1    = inst[8];
-        auto const alloca3 = inst[9];
+        auto const alloca2 = inst[1];
+        auto const alloca3 = inst[2];
+        auto const call1   = inst[3];
+        auto const gep1    = inst[4];
+        auto const load1   = inst[5];
+        auto const call2   = inst[6];
+        auto const gep2    = inst[7];
+        auto const load2   = inst[8];
+        auto const add1    = inst[9];
         auto const call3   = inst[10];
         auto const gep3    = inst[11];
         auto const load3   = inst[12];
@@ -496,13 +496,13 @@ BOOST_AUTO_TEST_CASE(pass_011)
         auto const inst = get_instructions(f->getEntryBlock());
         BOOST_TEST_REQUIRE(inst.size() == 16ul);
         auto const alloca_xs  = inst[0];
-        auto const gep_xs_0   = inst[1];
-        auto const store_xs_0 = inst[2];
-        auto const gep_xs_1   = inst[3];
-        auto const store_xs_1 = inst[4];
-        auto const gep_xs_2   = inst[5];
-        auto const store_xs_2 = inst[6];
-        auto const alloca_fs  = inst[7];
+        auto const alloca_fs  = inst[1];
+        auto const gep_xs_0   = inst[2];
+        auto const store_xs_0 = inst[3];
+        auto const gep_xs_1   = inst[4];
+        auto const store_xs_1 = inst[5];
+        auto const gep_xs_2   = inst[6];
+        auto const store_xs_2 = inst[7];
         auto const gep_fs_0   = inst[8];
         auto const store_fs_0 = inst[9];
         auto const gep_fs_1   = inst[10];
@@ -611,8 +611,8 @@ BOOST_AUTO_TEST_CASE(pass_012)
         {
             auto const inst = get_instructions(*entry);
             BOOST_TEST_REQUIRE(inst.size() == 3ul);
-            auto const gep0      = inst[0];
-            auto const temp_bool = inst[1];
+            auto const temp_bool = inst[0];
+            auto const gep0      = inst[1];
             auto const br        = inst[2];
             BOOST_TEST(is_gep_of(gep0, fn_ptr, ret_arg, constant(0)));
             BOOST_TEST(is_alloca(temp_bool, is_i1, constant(1), align_of(1)));
@@ -808,7 +808,7 @@ BOOST_AUTO_TEST_CASE(pass_014)
             BOOST_TEST(
                 is_direct_call(
                     memcpy,
-                    exactly(pass_result.value()->getFunction(llvm_memcpy_name)),
+                    is_memcpy,
                     call_arg(exactly(dst), {llvm::Attribute::Alignment}, llvm::Align(4)),
                     call_arg(exactly(src), {llvm::Attribute::Alignment}, llvm::Align(4)),
                     call_arg(constant(12)),
@@ -852,7 +852,7 @@ BOOST_AUTO_TEST_CASE(pass_014)
             BOOST_TEST(
                 is_direct_call(
                     memcpy,
-                    exactly(pass_result.value()->getFunction(llvm_memcpy_name)),
+                    is_memcpy,
                     call_arg(exactly(dst), {llvm::Attribute::Alignment}, llvm::Align(4)),
                     call_arg(exactly(src), {llvm::Attribute::Alignment}, llvm::Align(4)),
                     call_arg(constant(12)),
@@ -871,7 +871,7 @@ BOOST_AUTO_TEST_CASE(pass_014)
             BOOST_TEST(
                 is_direct_call(
                     memcpy,
-                    exactly(pass_result.value()->getFunction(llvm_memcpy_name)),
+                    is_memcpy,
                     call_arg(exactly(dst), {llvm::Attribute::Alignment}, llvm::Align(4)),
                     call_arg(exactly(src), {llvm::Attribute::Alignment}, llvm::Align(4)),
                     call_arg(constant(12)),
@@ -925,7 +925,7 @@ BOOST_AUTO_TEST_CASE(pass_015)
             BOOST_TEST(
                 is_direct_call(
                     memcpy,
-                    exactly(pass_result.value()->getFunction(llvm_memcpy_name)),
+                    is_memcpy,
                     call_arg(exactly(dst), {llvm::Attribute::Alignment}, llvm::Align(4)),
                     call_arg(exactly(src), {llvm::Attribute::Alignment}, llvm::Align(4)),
                     call_arg(exactly(mul)),
@@ -946,7 +946,7 @@ BOOST_AUTO_TEST_CASE(pass_015)
             BOOST_TEST(
                 is_direct_call(
                     memcpy,
-                    exactly(pass_result.value()->getFunction(llvm_memcpy_name)),
+                    is_memcpy,
                     call_arg(exactly(dst), {llvm::Attribute::Alignment}, llvm::Align(4)),
                     call_arg(exactly(src), {llvm::Attribute::Alignment}, llvm::Align(4)),
                     call_arg(exactly(mul)),
@@ -1205,8 +1205,6 @@ BOOST_AUTO_TEST_CASE(pass_017)
 {
     apply_beta_delta_normalization = false;
     BOOST_TEST_REQUIRE(pass("0007_arrays/pass_017.depc"));
-    auto const memcpy_fn = pass_result.value()->getFunction(llvm_memcpy_name);
-    BOOST_TEST_REQUIRE(memcpy_fn);
     {
         auto const f = pass_result.value()->getFunction("f");
         BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(pointer_to(is_i32), "xs", nonnull)}, is_i32, sext));
@@ -1269,7 +1267,7 @@ BOOST_AUTO_TEST_CASE(pass_017)
         BOOST_TEST(
             is_direct_call(
                 memcpy_0,
-                exactly(memcpy_fn),
+                is_memcpy,
                 call_arg(exactly(dst_tmp_0), {llvm::Attribute::Alignment}, llvm::Align(4)),
                 call_arg(exactly(src_xs_1), {llvm::Attribute::Alignment}, llvm::Align(4)),
                 call_arg(constant(8)),
@@ -1277,7 +1275,7 @@ BOOST_AUTO_TEST_CASE(pass_017)
         BOOST_TEST(
             is_direct_call(
                 memcpy_1,
-                exactly(memcpy_fn),
+                is_memcpy,
                 call_arg(exactly(dst_tmp_1), {llvm::Attribute::Alignment}, llvm::Align(4)),
                 call_arg(exactly(src_xs_0), {llvm::Attribute::Alignment}, llvm::Align(4)),
                 call_arg(constant(8)),
@@ -1317,7 +1315,7 @@ BOOST_AUTO_TEST_CASE(pass_017)
         BOOST_TEST(
             is_direct_call(
                 memcpy_0,
-                exactly(memcpy_fn),
+                is_memcpy,
                 call_arg(exactly(dst_tmp_0), {llvm::Attribute::Alignment}, llvm::Align(4)),
                 call_arg(exactly(src_xs_1), {llvm::Attribute::Alignment}, llvm::Align(4)),
                 call_arg(constant(16)),
@@ -1325,7 +1323,7 @@ BOOST_AUTO_TEST_CASE(pass_017)
         BOOST_TEST(
             is_direct_call(
                 memcpy_1,
-                exactly(memcpy_fn),
+                is_memcpy,
                 call_arg(exactly(dst_tmp_1), {llvm::Attribute::Alignment}, llvm::Align(4)),
                 call_arg(exactly(src_xs_0), {llvm::Attribute::Alignment}, llvm::Align(4)),
                 call_arg(constant(16)),
@@ -1354,13 +1352,14 @@ BOOST_AUTO_TEST_CASE(pass_018)
         auto const fn_ptr = fnptr_type(std::tuple{pointer_to(is_i32)}, is_i32);
         auto const trace = exactly(pass_result.value()->getFunction("trace"));
         auto const anti_trace = exactly(pass_result.value()->getFunction("anti_trace"));
-        auto const tmp_f = [&]
+        auto const [tmp_f, alloca] = [&]
         {
             auto const inst = get_instructions(*entry);
-            BOOST_TEST_REQUIRE(inst.size() == 2ul);
+            BOOST_TEST_REQUIRE(inst.size() == 3ul);
             BOOST_TEST(is_alloca(inst[0], fn_ptr, constant(1), align_of(8)));
-            BOOST_TEST(is_branch_of(inst[1], exactly(f->getArg(0)), exactly(then0), exactly(else0)));
-            return inst[0];
+            BOOST_TEST(is_alloca(inst[1], is_i32, constant(4), align_of(4)));
+            BOOST_TEST(is_branch_of(inst[2], exactly(f->getArg(0)), exactly(then0), exactly(else0)));
+            return std::tuple{inst[0], inst[1]};
         }();
         {
             auto const inst = get_instructions(*then0);
@@ -1374,14 +1373,13 @@ BOOST_AUTO_TEST_CASE(pass_018)
             BOOST_TEST(is_store_of(inst[0], fn_ptr, anti_trace, exactly(tmp_f), align_of(8)));
             BOOST_TEST(is_unconditional_branch_to(inst[1], exactly(cont0)));
         }
-        auto const [load_f, alloca] = [&]
+        auto const load_f = [&]
         {
             auto const inst = get_instructions(*cont0);
-            BOOST_TEST_REQUIRE(inst.size() == 3ul);
+            BOOST_TEST_REQUIRE(inst.size() == 2ul);
             BOOST_TEST(is_load_of(inst[0], fn_ptr, exactly(tmp_f), align_of(8)));
-            BOOST_TEST(is_alloca(inst[1], is_i32, constant(4), align_of(4)));
-            BOOST_TEST(is_branch_of(inst[2], exactly(f->getArg(0)), exactly(then1), exactly(else2)));
-            return std::tuple{inst[0], inst[1]};
+            BOOST_TEST(is_branch_of(inst[1], exactly(f->getArg(0)), exactly(then1), exactly(else2)));
+            return inst[0];
         }();
         {
             auto const inst = get_instructions(*then1);

@@ -1,5 +1,5 @@
 /*
- * Copyright Raffaele Rossi 2023 - 2024.
+ * Copyright Raffaele Rossi 2023 - 2025.
  *
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
@@ -26,10 +26,8 @@ struct LLVMGenTestsFixture
     llvm::LLVMContext llvm_ctx;
     std::optional<dep0::unique_ref<llvm::Module>> pass_result;
     bool apply_beta_delta_normalization = false;
-
-    static constexpr std::string_view llvm_memcpy_name = "llvm.memcpy.p0i8.p0i8.i64";
-
     LLVMGenTestsFixture();
 
     boost::test_tools::predicate_result pass(std::filesystem::path);
+    llvm::Function const* get_function(std::string_view) const;
 };

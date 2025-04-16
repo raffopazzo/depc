@@ -1,5 +1,5 @@
 /*
- * Copyright Raffaele Rossi 2023 - 2024.
+ * Copyright Raffaele Rossi 2023 - 2025.
  *
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
@@ -24,6 +24,9 @@ namespace impl {
 template <Properties P> std::size_t size(body_t<P> const&);
 template <Properties P> std::size_t size(stmt_t<P> const&);
 template <Properties P> std::size_t size(typename expr_t<P>::app_t const&);
+template <Properties P> std::size_t size(
+    typename std::vector<func_arg_t<P>>::const_iterator begin,
+    typename std::vector<func_arg_t<P>>::const_iterator end);
 template <Properties P> std::size_t size(
     typename std::vector<func_arg_t<P>>::const_iterator begin,
     typename std::vector<func_arg_t<P>>::const_iterator end,
@@ -76,6 +79,19 @@ std::size_t size(typename expr_t<P>::app_t const& x)
         [] (std::size_t const acc, expr_t<P> const& arg)
         {
             return std::max(acc, size(arg));
+        });
+}
+
+template <Properties P>
+std::size_t size(
+    typename std::vector<func_arg_t<P>>::const_iterator const begin,
+    typename std::vector<func_arg_t<P>>::const_iterator const end)
+{
+    return std::accumulate(
+        begin, end, 0ul,
+        [] (std::size_t const acc, func_arg_t<P> const& arg)
+        {
+            return std::max(acc, size(arg.type));
         });
 }
 
@@ -151,6 +167,10 @@ std::size_t size(expr_t<P> const& x)
         {
             return 1ul + impl::size<P>(x.args.begin(), x.args.end(), x.ret_type.get(), nullptr);
         },
+        [] (expr_t<P>::sigma_t const& x)
+        {
+            return 1ul + impl::size<P>(x.args.begin(), x.args.end());
+        },
         [] (expr_t<P>::array_t const&)
         {
             return 0ul;
@@ -167,7 +187,7 @@ std::size_t size(expr_t<P> const& x)
         },
         [] (expr_t<P>::subscript_t const& x)
         {
-            return 1ul + std::max(size(x.array.get()), size(x.index.get()));
+            return 1ul + std::max(size(x.object.get()), size(x.index.get()));
         },
         [] (expr_t<P>::because_t const& x)
         {

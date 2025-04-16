@@ -1,5 +1,5 @@
 /*
- * Copyright Raffaele Rossi 2023 - 2024.
+ * Copyright Raffaele Rossi 2023 - 2025.
  *
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
@@ -138,6 +138,10 @@ bool occurs_in(typename expr_t<P>::var_t const& var, expr_t<P> const& x, occurre
         {
             return occurs_in<P>(var, x.args.begin(), x.args.end(), x.ret_type.get(), nullptr, style);
         },
+        [&] (expr_t<P>::sigma_t const& x)
+        {
+            return occurs_in<P>(var, x.args.begin(), x.args.end(), style);
+        },
         [] (expr_t<P>::array_t const&)
         {
             return false;
@@ -148,7 +152,7 @@ bool occurs_in(typename expr_t<P>::var_t const& var, expr_t<P> const& x, occurre
         },
         [&] (expr_t<P>::subscript_t const& x)
         {
-            return occurs_in(var, x.array.get(), style) or occurs_in(var, x.index.get(), style);
+            return occurs_in(var, x.object.get(), style) or occurs_in(var, x.index.get(), style);
         },
         [&] (expr_t<P>::because_t const& x)
         {

@@ -1,5 +1,5 @@
 /*
- * Copyright Raffaele Rossi 2023 - 2024.
+ * Copyright Raffaele Rossi 2023 - 2025.
  *
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
@@ -134,6 +134,10 @@ void replace(typename expr_t<P>::var_t const& from, typename expr_t<P>::var_t co
         {
             replace<P>(from, to, pi.args.begin(), pi.args.end(), pi.ret_type.get(), nullptr);
         },
+        [&] (typename expr_t<P>::sigma_t& sigma)
+        {
+            replace<P>(from, to, sigma.args.begin(), sigma.args.end());
+        },
         [] (typename expr_t<P>::array_t&)
         {
         },
@@ -144,7 +148,7 @@ void replace(typename expr_t<P>::var_t const& from, typename expr_t<P>::var_t co
         },
         [&] (typename expr_t<P>::subscript_t& subscript)
         {
-            replace(from, to, subscript.array.get());
+            replace(from, to, subscript.object.get());
             replace(from, to, subscript.index.get());
         },
         [&] (typename expr_t<P>::because_t& x)
@@ -169,9 +173,7 @@ void replace(
     typename expr_t<P>::var_t const& from,
     typename expr_t<P>::var_t const& to,
     typename std::vector<func_arg_t<P>>::iterator const begin,
-    typename std::vector<func_arg_t<P>>::iterator const end,
-    expr_t<P>& ret_type,
-    body_t<P>* body)
+    typename std::vector<func_arg_t<P>>::iterator const end)
 {
     for (auto& arg: std::ranges::subrange(begin, end))
     {
@@ -182,6 +184,18 @@ void replace(
         if (arg.var == from)
             arg.var = to;
     }
+}
+
+template <Properties P>
+void replace(
+    typename expr_t<P>::var_t const& from,
+    typename expr_t<P>::var_t const& to,
+    typename std::vector<func_arg_t<P>>::iterator const begin,
+    typename std::vector<func_arg_t<P>>::iterator const end,
+    expr_t<P>& ret_type,
+    body_t<P>* body)
+{
+    replace<P>(from, to, begin, end);
     impl::replace(from, to, ret_type);
     if (body)
         impl::replace(from, to, *body);

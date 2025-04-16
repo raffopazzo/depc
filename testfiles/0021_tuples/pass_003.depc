@@ -1,0 +1,25 @@
+/*
+ * Copyright Raffaele Rossi 2025.
+ *
+ * Distributed under the Boost Software License, Version 1.0.
+ * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
+ */
+func f1((array_t(i32_t, 2), array_t(i32_t, 2)) xs, bool_t which) -> array_t(i32_t, 2)
+{
+    if (which)
+        return xs[0];
+    else
+        return xs[1];
+}
+
+func f2((array_t(i32_t, 3), array_t(i32_t, 3)) x) -> i32_t
+{
+    return x[0][1] + x[1][0];
+}
+
+func f3() -> i32_t
+{
+    // here the caller is in control of the memory, so the two arrays can be stack allocated
+    // and the pointer stored in the tuple passed to f2
+    return f2({{1,2,3}, {4,5,6}});
+}

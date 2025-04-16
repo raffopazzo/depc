@@ -1,5 +1,5 @@
 /*
- * Copyright Raffaele Rossi 2023 - 2024.
+ * Copyright Raffaele Rossi 2023 - 2025.
  *
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
@@ -180,22 +180,12 @@ auto direct_call_of(F&& f, call_arg_t<Args>... args)
 
         boost::test_tools::predicate_result operator()(llvm::Instruction const& x) const
         {
-            return std::apply(
-                is_direct_call,
-                [&] <std::size_t... Is> (std::index_sequence<Is...>)
-                {
-                    return std::forward_as_tuple(x, f, std::get<Is>(args)...);
-                }(std::make_index_sequence<sizeof...(Args)>{}));
+            return std::apply(is_direct_call, std::tuple_cat(std::tie(x, f), args));
         }
 
         boost::test_tools::predicate_result operator()(llvm::Value const& x) const
         {
-            return std::apply(
-                is_direct_call,
-                [&] <std::size_t... Is> (std::index_sequence<Is...>)
-                {
-                    return std::forward_as_tuple(x, f, std::get<Is>(args)...);
-                }(std::make_index_sequence<sizeof...(Args)>{}));
+            return std::apply(is_direct_call, std::tuple_cat(std::tie(x, f), args));
         }
     };
     return predicate_t{std::forward<F>(f), {std::move(args)...}};
@@ -234,22 +224,12 @@ auto indirect_call_of(F&& f, call_arg_t<Args>... args)
 
         boost::test_tools::predicate_result operator()(llvm::Instruction const& x) const
         {
-            return std::apply(
-                is_indirect_call,
-                [&] <std::size_t... Is> (std::index_sequence<Is...>)
-                {
-                    return std::forward_as_tuple(x, f, std::get<Is>(args)...);
-                }(std::make_index_sequence<sizeof...(Args)>{}));
+            return std::apply(is_indirect_call, std::tuple_cat(std::tie(x, f), args));
         }
 
         boost::test_tools::predicate_result operator()(llvm::Value const& x) const
         {
-            return std::apply(
-                is_indirect_call,
-                [&] <std::size_t... Is> (std::index_sequence<Is...>)
-                {
-                    return std::forward_as_tuple(x, f, std::get<Is>(args)...);
-                }(std::make_index_sequence<sizeof...(Args)>{}));
+            return std::apply(is_indirect_call, std::tuple_cat(std::tie(x, f), args));
         }
     };
     return predicate_t{std::forward<F>(f), {std::move(args)...}};

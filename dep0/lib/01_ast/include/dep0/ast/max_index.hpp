@@ -1,12 +1,12 @@
 /*
- * Copyright Raffaele Rossi 2023 - 2024.
+ * Copyright Raffaele Rossi 2023 - 2025.
  *
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
  */
 /**
  * @file
- * @brief Single-function header declaring `dep0::ast::max_index()`.
+ * @brief Declares `dep0::ast::max_index()` and all its overloads.
  */
 #pragma once
 
@@ -31,6 +31,12 @@ std::size_t max_index(
     typename std::vector<func_arg_t<P>>::const_iterator end,
     expr_t<P> const& ret_type,
     body_t<P> const* body);
+
+/** @brief Overload to use for Sigma-Types. */
+template <Properties P>
+std::size_t max_index(
+    typename std::vector<func_arg_t<P>>::const_iterator begin,
+    typename std::vector<func_arg_t<P>>::const_iterator end);
 
 } // namespace dep0::ast
 

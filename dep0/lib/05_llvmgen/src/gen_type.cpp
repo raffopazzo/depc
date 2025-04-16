@@ -1,43 +1,63 @@
 /*
- * Copyright Raffaele Rossi 2023 - 2024.
+ * Copyright Raffaele Rossi 2023 - 2025.
  *
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
  */
 #include "private/gen_type.hpp"
 
-#include "private/gen_alloca.hpp"
 #include "private/gen_array.hpp"
 
+#include "dep0/fmap.hpp"
 #include "dep0/match.hpp"
 
+#include <algorithm>
 #include <vector>
 
 namespace dep0::llvmgen {
 
-llvm::FunctionType* gen_func_type(global_ctx_t& global, llvm_func_proto_t const& proto)
+llvm::FunctionType* gen_func_type(global_ctx_t const& global, llvm_func_proto_t const& proto)
 {
     bool constexpr is_var_arg = false;
     std::vector<llvm::Type*> arg_types; // might need to contain a return argument
     auto const ret_type =
         match(
-            needs_alloca(proto.ret_type()),
-            [&] (needs_alloca_result::no_t)
+            pass_by_ptr(global, proto.ret_type()),
+            [&] (pass_by_ptr_result::no_t)
             {
                 return gen_type(global, proto.ret_type());
             },
-            [&] (needs_alloca_result::array_t const& array)
+            [&] (pass_by_ptr_result::sigma_t const&)
+            {
+                arg_types.push_back(gen_type(global, proto.ret_type())->getPointerTo());
+                return llvm::Type::getVoidTy(global.llvm_ctx);
+            },
+            [&] (pass_by_ptr_result::array_t const& array)
             {
                 arg_types.push_back(gen_type(global, array.properties.element_type)->getPointerTo());
                 return llvm::Type::getVoidTy(global.llvm_ctx);
             });
     arg_types.reserve(arg_types.size() + proto.runtime_args().size());
     for (typecheck::func_arg_t const& arg: proto.runtime_args())
-        arg_types.push_back(gen_type(global, arg.type));
+        arg_types.push_back(
+            match(
+                pass_by_ptr(global, arg.type),
+                [&] (pass_by_ptr_result::no_t) -> llvm::Type*
+                {
+                    return gen_type(global, arg.type);
+                },
+                [&] (pass_by_ptr_result::sigma_t const&) -> llvm::Type*
+                {
+                    return gen_type(global, arg.type)->getPointerTo();
+                },
+                [&] (pass_by_ptr_result::array_t const& array) -> llvm::Type*
+                {
+                    return gen_type(global, array.properties.element_type)->getPointerTo();
+                }));
     return llvm::FunctionType::get(ret_type, std::move(arg_types), is_var_arg);
 }
 
-llvm::IntegerType* gen_type(global_ctx_t& global, ast::width_t const width)
+llvm::IntegerType* gen_type(global_ctx_t const& global, ast::width_t const width)
 {
     switch (width)
     {
@@ -49,10 +69,10 @@ llvm::IntegerType* gen_type(global_ctx_t& global, ast::width_t const width)
     }
 }
 
-llvm::Type* gen_type(global_ctx_t& global, typecheck::expr_t const& x)
+llvm::Type* gen_type(global_ctx_t const& global, typecheck::expr_t const& type)
 {
     return match(
-        x.value,
+        type.value,
         [] (typecheck::expr_t::typename_t const&) -> llvm::Type*
         {
             assert(false and "cannot generate a type for typename");
@@ -154,7 +174,7 @@ llvm::Type* gen_type(global_ctx_t& global, typecheck::expr_t const& x)
                 },
                 [&] (typecheck::expr_t::array_t const&) -> llvm::Type*
                 {
-                    auto const properties = get_array_properties(x);
+                    auto const properties = get_array_properties(type);
                     return gen_type(global, properties.element_type)->getPointerTo();
                 },
                 [] (auto const&) -> llvm::Type*
@@ -174,6 +194,11 @@ llvm::Type* gen_type(global_ctx_t& global, typecheck::expr_t const& x)
             assert(proto and "can only generate an llvm type for 1st order function types");
             return gen_func_type(global, *proto)->getPointerTo();
         },
+        [&] (typecheck::expr_t::sigma_t const& x) -> llvm::Type*
+        {
+            auto const& element_types = fmap(x.args, [&] (auto const& arg) { return gen_type(global, arg.type); });
+            return llvm::StructType::get(global.llvm_ctx, element_types);
+        },
         [] (typecheck::expr_t::array_t const&) -> llvm::Type*
         {
             assert(false and "cannot generate a type for an array_t expression");
@@ -192,6 +217,327 @@ llvm::Type* gen_type(global_ctx_t& global, typecheck::expr_t const& x)
         [&] (typecheck::expr_t::because_t const& x) -> llvm::Type*
         {
             return gen_type(global, x.value.get());
+        });
+}
+
+pass_by_ptr_result_t pass_by_ptr(global_ctx_t const& global, typecheck::expr_t const& type)
+{
+    using namespace pass_by_ptr_result;
+    return match(
+        type.value,
+        [] (typecheck::expr_t::typename_t const&) -> pass_by_ptr_result_t
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::true_t const&) -> pass_by_ptr_result_t
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::auto_t const&) -> pass_by_ptr_result_t
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::bool_t const&) -> pass_by_ptr_result_t
+        {
+            return no_t{};
+        },
+        [] (typecheck::expr_t::cstr_t const&) -> pass_by_ptr_result_t
+        {
+            // `gen_type()` returns a pointer to i8 but the pointer *is* the value!
+            return no_t{};
+        },
+        [] (typecheck::expr_t::unit_t const&) -> pass_by_ptr_result_t
+        {
+            return no_t{};
+        },
+        [] (typecheck::expr_t::i8_t const&) -> pass_by_ptr_result_t { return no_t{}; },
+        [] (typecheck::expr_t::i16_t const&) -> pass_by_ptr_result_t { return no_t{}; },
+        [] (typecheck::expr_t::i32_t const&) -> pass_by_ptr_result_t { return no_t{}; },
+        [] (typecheck::expr_t::i64_t const&) -> pass_by_ptr_result_t { return no_t{}; },
+        [] (typecheck::expr_t::u8_t const&) -> pass_by_ptr_result_t { return no_t{}; },
+        [] (typecheck::expr_t::u16_t const&) -> pass_by_ptr_result_t { return no_t{}; },
+        [] (typecheck::expr_t::u32_t const&) -> pass_by_ptr_result_t { return no_t{}; },
+        [] (typecheck::expr_t::u64_t const&) -> pass_by_ptr_result_t { return no_t{}; },
+        [] (typecheck::expr_t::boolean_constant_t const&) -> pass_by_ptr_result_t
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::numeric_constant_t const&) -> pass_by_ptr_result_t
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::string_literal_t const&) -> pass_by_ptr_result_t
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::boolean_expr_t const&) -> pass_by_ptr_result_t
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::relation_expr_t const&) -> pass_by_ptr_result_t
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::arith_expr_t const&) -> pass_by_ptr_result_t
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::var_t const&) -> pass_by_ptr_result_t
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [&] (typecheck::expr_t::global_t const& g) -> pass_by_ptr_result_t
+        {
+            auto const val = global[g];
+            assert(val and "unknown type");
+            return match(
+                *val,
+                [] (llvm_func_t const&) -> pass_by_ptr_result_t
+                {
+                    assert(false and "found a function but was expecting a type");
+                    __builtin_unreachable();
+                },
+                [] (typecheck::type_def_t const& t) -> pass_by_ptr_result_t
+                {
+                    return match(
+                        t.value,
+                        [] (typecheck::type_def_t::integer_t const& integer) -> pass_by_ptr_result_t
+                        {
+                            return no_t{};
+                        });
+                });
+        },
+        [&] (typecheck::expr_t::app_t const& app) -> pass_by_ptr_result_t
+        {
+            return match(
+                app.func.get().value,
+                [] (typecheck::expr_t::true_t const&) -> pass_by_ptr_result_t
+                {
+                    return no_t{};
+                },
+                [&] (typecheck::expr_t::array_t const&) -> pass_by_ptr_result_t
+                {
+                    return pass_by_ptr_result::array_t{get_array_properties(type)};
+                },
+                [] (auto const&) -> pass_by_ptr_result_t
+                {
+                    assert(false and "expression is not a type");
+                    __builtin_unreachable();
+                });
+        },
+        [] (typecheck::expr_t::abs_t const&) -> pass_by_ptr_result_t
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::pi_t const& x) -> pass_by_ptr_result_t
+        {
+            auto proto = llvm_func_proto_t::from_pi(x);
+            assert(proto and "can only pass 1st order function types");
+            // `gen_type()` returns a function pointer but the pointer *is* the value!
+            return no_t{};
+        },
+        [&] (typecheck::expr_t::sigma_t const& x) -> pass_by_ptr_result_t
+        {
+            return pass_by_ptr_result::sigma_t{x.args};
+        },
+        [] (typecheck::expr_t::array_t const&) -> pass_by_ptr_result_t
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::init_list_t const&) -> pass_by_ptr_result_t
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::subscript_t const&) -> pass_by_ptr_result_t
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [&] (typecheck::expr_t::because_t const& x) -> pass_by_ptr_result_t
+        {
+            return pass_by_ptr(global, x.value.get());
+        });
+}
+
+bool is_pass_by_ptr(global_ctx_t const& global, typecheck::expr_t const& x)
+{
+    return not std::holds_alternative<pass_by_ptr_result::no_t>(pass_by_ptr(global, x));
+}
+
+bool is_boxed(typecheck::expr_t const& type)
+{
+    // Currently only arrays are boxed, but most likely closures will be boxed too.
+    return is_array(type);
+}
+
+bool is_trivially_destructible(global_ctx_t const& global, typecheck::expr_t const& type)
+{
+    return match(
+        type.value,
+        [] (typecheck::expr_t::typename_t const&) -> bool
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::true_t const&) -> bool
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::auto_t const&) -> bool
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::bool_t const&)
+        {
+            return true;
+        },
+        [] (typecheck::expr_t::cstr_t const&)
+        {
+            return true;
+        },
+        [] (typecheck::expr_t::unit_t const&)
+        {
+            return true;
+        },
+        [] (typecheck::expr_t::i8_t const&) { return true; },
+        [] (typecheck::expr_t::i16_t const&) { return true; },
+        [] (typecheck::expr_t::i32_t const&) { return true; },
+        [] (typecheck::expr_t::i64_t const&) { return true; },
+        [] (typecheck::expr_t::u8_t const&) { return true; },
+        [] (typecheck::expr_t::u16_t const&) { return true; },
+        [] (typecheck::expr_t::u32_t const&) { return true; },
+        [] (typecheck::expr_t::u64_t const&) { return true; },
+        [] (typecheck::expr_t::boolean_constant_t const&) -> bool
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::numeric_constant_t const&) -> bool
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::string_literal_t const&) -> bool
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::boolean_expr_t const&) -> bool
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::relation_expr_t const&) -> bool
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::arith_expr_t const&) -> bool
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::var_t const&) -> bool
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [&] (typecheck::expr_t::global_t const& g)
+        {
+            auto const val = global[g];
+            assert(val and "unknown type");
+            return match(
+                *val,
+                [] (llvm_func_t const&) -> bool
+                {
+                    assert(false and "found a function but was expecting a type");
+                    __builtin_unreachable();
+                },
+                [] (typecheck::type_def_t const& t)
+                {
+                    return match(
+                        t.value,
+                        [] (typecheck::type_def_t::integer_t const& integer)
+                        {
+                            return true;
+                        });
+                });
+        },
+        [&] (typecheck::expr_t::app_t const& app)
+        {
+            return match(
+                app.func.get().value,
+                [] (typecheck::expr_t::true_t const&)
+                {
+                    return true;
+                },
+                [&] (typecheck::expr_t::array_t const&)
+                {
+                    // TODO currently only arrays are boxed and arrays of arrays are still arrays,
+                    // so for now it is sufficient to check that element_type is trivially destructible;
+                    // in other words, currently an array cannot contain a boxed type,
+                    // but when we add more boxed types (eg closures) we need to check that element_type is not boxed
+                    return is_trivially_destructible(global, get_array_properties(type).element_type);
+                },
+                [] (auto const&) -> bool
+                {
+                    assert(false and "expression is not a type");
+                    __builtin_unreachable();
+                });
+        },
+        [] (typecheck::expr_t::abs_t const&) -> bool
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::pi_t const& x)
+        {
+            // TODO this will change once we introduce closures
+            return true;
+        },
+        [&] (typecheck::expr_t::sigma_t const& x)
+        {
+            return std::ranges::all_of(
+                x.args,
+                [&] (typecheck::func_arg_t const& arg)
+                {
+                    return not is_boxed(arg.type) and is_trivially_destructible(global, arg.type);
+                });
+        },
+        [] (typecheck::expr_t::array_t const&) -> bool
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::init_list_t const&) -> bool
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::subscript_t const&) -> bool
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [&] (typecheck::expr_t::because_t const& x)
+        {
+            // this is a type expression, eg `i32_t because true`
+            return is_trivially_destructible(global, x.value.get());
         });
 }
 

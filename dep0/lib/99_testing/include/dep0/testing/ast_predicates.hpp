@@ -1,5 +1,5 @@
 /*
- * Copyright Raffaele Rossi 2023 - 2024.
+ * Copyright Raffaele Rossi 2023 - 2025.
  *
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
@@ -18,6 +18,7 @@
 #include "dep0/testing/ast_predicates/init_list.hpp"
 #include "dep0/testing/ast_predicates/pi.hpp"
 #include "dep0/testing/ast_predicates/relation_expr.hpp"
+#include "dep0/testing/ast_predicates/sigma.hpp"
 #include "dep0/testing/ast_predicates/stmt.hpp"
 #include "dep0/testing/ast_predicates/subscript.hpp"
 #include "dep0/testing/ast_predicates/true_t.hpp"

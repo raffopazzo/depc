@@ -1,5 +1,5 @@
 /*
- * Copyright Raffaele Rossi 2023 - 2024.
+ * Copyright Raffaele Rossi 2023 - 2025.
  *
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
@@ -33,13 +33,12 @@ search_depth_t::search_depth_t(search_depth_friend_t const&, std::size_t const v
 struct search_state_t
 {
     struct eq_t { bool operator()(expr_t const&, expr_t const&) const; };
-    struct hash_t { std::size_t operator()(expr_t const&) const; };
 
     /**
      * Caches the result of previous searches, in case we need to search again for a value of the same type.
      * The key is the target type and the value is the result of a previous search.
      */
-    using cache_t = std::unordered_map<expr_t, expr_t, hash_t, eq_t>;
+    using cache_t = std::unordered_map<expr_t, expr_t, std::hash<expr_t>, eq_t>;
     cache_t cache;
 
     std::chrono::steady_clock::time_point const deadline = std::chrono::steady_clock::now() + std::chrono::seconds(3);
@@ -93,11 +92,6 @@ bool search_state_t::eq_t::operator()(expr_t const& x, expr_t const& y) const
                     return false;
                 }),
             x.properties.sort.get(), y.properties.sort.get());
-}
-
-std::size_t search_state_t::hash_t::operator()(expr_t const& x) const
-{
-    return hash_code(x);
 }
 
 search_task_t::search_task_t(

@@ -1,5 +1,5 @@
 /*
- * Copyright Raffaele Rossi 2023 - 2024.
+ * Copyright Raffaele Rossi 2023 - 2025.
  *
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
@@ -84,7 +84,7 @@ BOOST_AUTO_TEST_CASE(pass_000)
             BOOST_TEST(
                 is_direct_call(
                     memcpy,
-                    exactly(pass_result.value()->getFunction(llvm_memcpy_name)),
+                    is_memcpy,
                     call_arg(exactly(dst), {llvm::Attribute::Alignment}, llvm::Align(4)),
                     call_arg(exactly(src), {llvm::Attribute::Alignment}, llvm::Align(4)),
                     call_arg(constant(8)),
@@ -105,7 +105,7 @@ BOOST_AUTO_TEST_CASE(pass_000)
             BOOST_TEST(
                 is_direct_call(
                     memcpy,
-                    exactly(pass_result.value()->getFunction(llvm_memcpy_name)),
+                    is_memcpy,
                     call_arg(exactly(dst), {llvm::Attribute::Alignment}, llvm::Align(4)),
                     call_arg(exactly(src), {llvm::Attribute::Alignment}, llvm::Align(4)),
                     call_arg(constant(8)),

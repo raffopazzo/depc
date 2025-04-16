@@ -1,5 +1,5 @@
 /*
- * Copyright Raffaele Rossi 2023 - 2024.
+ * Copyright Raffaele Rossi 2023 - 2025.
  *
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
@@ -60,7 +60,7 @@ void rewrite(
     expr_t const& to,
     ast::is_mutable_t const is_mutable,
     std::vector<func_arg_t> const& args,
-    expr_t const& ret_type,
+    expr_t const* ret_type, // pass nullptr for sigma-types
     body_t const* body,
     legal_expr_t const& old_properties,
     std::optional<expr_t>& result);
@@ -217,11 +217,15 @@ std::optional<expr_t> rewrite(expr_t const& from, expr_t const& to, expr_t const
             },
             [&] (expr_t::abs_t const& x)
             {
-                rewrite(from, to, x.is_mutable, x.args, x.ret_type.get(), &x.body, old.properties, result);
+                rewrite(from, to, x.is_mutable, x.args, &x.ret_type.get(), &x.body, old.properties, result);
             },
             [&] (expr_t::pi_t const& x)
             {
-                rewrite(from, to, x.is_mutable, x.args, x.ret_type.get(), nullptr, old.properties, result);
+                rewrite(from, to, x.is_mutable, x.args, &x.ret_type.get(), nullptr, old.properties, result);
+            },
+            [&] (expr_t::sigma_t const& x)
+            {
+                rewrite(from, to, ast::is_mutable_t::no, x.args, nullptr, nullptr, old.properties, result);
             },
             [&] (expr_t::array_t const&)
             {
@@ -233,7 +237,7 @@ std::optional<expr_t> rewrite(expr_t const& from, expr_t const& to, expr_t const
             },
             [&] (expr_t::subscript_t const& x)
             {
-                rewrite(from, to, x.array.get());
+                rewrite(from, to, x.object.get());
                 rewrite(from, to, x.index.get());
             },
             [&] (expr_t::because_t const& x)
@@ -261,7 +265,7 @@ void rewrite(
     expr_t const& to,
     ast::is_mutable_t const is_mutable,
     std::vector<func_arg_t> const& old_args,
-    expr_t const& old_ret_type,
+    expr_t const* old_ret_type,
     body_t const* old_body,
     legal_expr_t const& old_properties,
     std::optional<expr_t>& result)
@@ -288,8 +292,8 @@ void rewrite(
                 }
                 return new_arg;
             });
-    auto new_ret_type = stop ? std::nullopt : rewrite(from, to, old_ret_type);
-    if (old_body)
+    auto new_ret_type = stop or not old_ret_type ? std::nullopt : rewrite(from, to, *old_ret_type);
+    if (old_body) // implies old_ret_type
     {
         auto new_body = stop ? std::nullopt : rewrite(from, to, *old_body);
         if (new_ret_type or new_body or has_any_value(new_args))
@@ -298,8 +302,13 @@ void rewrite(
                 expr_t::abs_t{
                     is_mutable,
                     choose(std::move(new_args), old_args),
-                    choose(std::move(new_ret_type), old_ret_type),
+                    choose(std::move(new_ret_type), *old_ret_type),
                     choose(std::move(new_body), *old_body)});
+    }
+    else if (not old_ret_type) // means was a sigma-type
+    {
+        if (has_any_value(new_args))
+            result.emplace(old_properties, expr_t::sigma_t{choose(std::move(new_args), old_args)});
     }
     else if (new_ret_type or has_any_value(new_args))
         result.emplace(
@@ -307,7 +316,7 @@ void rewrite(
             expr_t::pi_t{
                 is_mutable,
                 choose(std::move(new_args), old_args),
-                choose(std::move(new_ret_type), old_ret_type)});
+                choose(std::move(new_ret_type), *old_ret_type)});
 }
 
 } // namespace impl

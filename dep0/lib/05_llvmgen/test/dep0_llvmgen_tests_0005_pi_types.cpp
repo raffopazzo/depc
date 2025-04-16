@@ -1,5 +1,5 @@
 /*
- * Copyright Raffaele Rossi 2023 - 2024.
+ * Copyright Raffaele Rossi 2023 - 2025.
  *
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
@@ -12,6 +12,7 @@
 
 using namespace dep0::llvmgen::testing;
 
+static auto const nonnull = std::vector{llvm::Attribute::NonNull};
 static auto const sext = std::vector{llvm::Attribute::SExt};
 static auto const zext = std::vector{llvm::Attribute::ZExt};
 
@@ -80,7 +81,7 @@ BOOST_AUTO_TEST_CASE(pass_000)
         BOOST_TEST_REQUIRE(
             is_function_of(
                 f,
-                std::tuple{arg_of(fnptr_type(std::tuple{is_i32}, is_i32), "apply")},
+                std::tuple{arg_of(fnptr_type(std::tuple{is_i32}, is_i32), "apply", nonnull)},
                 is_i32, sext));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
         BOOST_TEST(
@@ -208,7 +209,7 @@ BOOST_AUTO_TEST_CASE(pass_005)
         BOOST_TEST_REQUIRE(
             is_function_of(
                 f,
-                std::tuple{arg_of(fnptr_type(std::tuple{is_i32}, is_i32), "h")},
+                std::tuple{arg_of(fnptr_type(std::tuple{is_i32}, is_i32), "h", nonnull)},
                 is_i32, sext));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
         BOOST_TEST(
@@ -242,7 +243,7 @@ BOOST_AUTO_TEST_CASE(pass_006)
     }
     {
         auto const f = pass_result.value()->getFunction("g");
-        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(fnptr_type(std::tuple{}, is_i32), "f")}, is_i32, sext));
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(fnptr_type(std::tuple{}, is_i32), "f", nonnull)}, is_i32, sext));
         BOOST_TEST_REQUIRE(f->size() == 1ul);
         BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), indirect_call_of(exactly(f->getArg(0ul)))));
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright Raffaele Rossi 2023 - 2024.
+ * Copyright Raffaele Rossi 2023 - 2025.
  *
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
@@ -30,6 +30,18 @@ typename expr_t<P>::var_t rename(
     auto const new_idx = 1ul + std::max(var.idx, max_index(begin, end, ret_type, body));
     auto const new_var = typename expr_t<P>::var_t{var.name, new_idx};
     replace(var, new_var, begin, end, ret_type, body);
+    return new_var;
+}
+
+template <Properties P>
+typename expr_t<P>::var_t rename(
+    typename expr_t<P>::var_t const& var,
+    typename std::vector<func_arg_t<P>>::iterator const begin,
+    typename std::vector<func_arg_t<P>>::iterator const end)
+{
+    auto const new_idx = 1ul + std::max(var.idx, max_index<P>(begin, end));
+    auto const new_var = typename expr_t<P>::var_t{var.name, new_idx};
+    replace<P>(var, new_var, begin, end);
     return new_var;
 }
 

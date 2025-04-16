@@ -1,17 +1,16 @@
 /*
- * Copyright Raffaele Rossi 2023 - 2024.
+ * Copyright Raffaele Rossi 2023 - 2025.
  *
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
  */
 /**
  * @file
- * @brief Functions useful to generate the LLVM `alloca` instruction, when necessary.
+ * @brief Declares `gen_alloca()` and its auxiliary types.
  */
 #pragma once
 
 #include "private/context.hpp"
-#include "private/gen_array.hpp"
 
 #include "dep0/typecheck/ast.hpp"
 
@@ -23,49 +22,30 @@
 
 namespace dep0::llvmgen {
 
-/** @brief Contains the possible results returned by `needs_alloca()` */
-namespace needs_alloca_result
+/**
+ * @brief Type of allocator to use when allocating new memory, typically from `gen_alloca()`.
+ * @remarks For now only stack and heap (via malloc) are available but it might be
+ * possible to extend this one day to allow custom allocators.
+ */
+enum class allocator_t
 {
-    /** @brief The type passed to `needs_alloca()` does not require an allocation. */
-    struct no_t{};
-
-    /** @brief The type passed to `needs_alloca()` requires an allocation because it is an array. */
-    struct array_t
-    {
-        array_properties_view_t properties;
-    };
-}
-using needs_alloca_result_t =
-    std::variant<
-        needs_alloca_result::no_t,
-        needs_alloca_result::array_t>;
+    stack,
+    heap
+};
 
 /**
- * @brief Decides whether the given type expression requires an allocation or not.
- * @param type The type expression to check, which must have sort `typename_t`.
- */
-needs_alloca_result_t needs_alloca(typecheck::expr_t const& type);
-
-/**
- * @brief Checks whether the given type expression requires an allocation or not.
- * @param type The type expression to check, which must have sort `typename_t`.
- * @return True if allocation is required for the given type, false otherwise.
- */
-bool is_alloca_needed(typecheck::expr_t const& type);
-
-/**
- * @brief Generates an `alloca` instruction, but only if the input type requires an allocation.
+ * @brief Generates instructions to allocate 1 value of the given type, for example `array_t(i32_t, n)`.
  *
- * @param type
- *      A type expression that may or may not require an allocation;
- *      for example `array_t(i32_t, n)` does but `i32_t` on its own does not.
- *
- * @return The generated `alloca` instruction, or `nullptr` if allocation is not required for the given type.
+ * Memory is allocated either on the stack or on the heap according to the given allocator type.
+ * For stack allocations, an `alloca` instruction is generated at the current builder position.
+ * For heap allocations, a run-time call to `malloc()` is generated instead;
+ * it is the caller responsibility to generate a run-time call to `free()`.
  */
-llvm::Instruction* gen_alloca_if_needed(
+llvm::Value* gen_alloca(
     global_ctx_t&,
-    local_ctx_t const&,
+    local_ctx_t&,
     llvm::IRBuilder<>&,
+    allocator_t,
     typecheck::expr_t const& type);
 
 } // namespace dep0::llvmgen

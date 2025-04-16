@@ -1,5 +1,5 @@
 /*
- * Copyright Raffaele Rossi 2023 - 2024.
+ * Copyright Raffaele Rossi 2023 - 2025.
  *
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
@@ -38,6 +38,7 @@ static bool is_mutable(expr_t::var_t const&) { return false; }
 static bool is_mutable(expr_t::global_t const&) { return false; }
 static bool is_mutable(expr_t::abs_t const&);
 static bool is_mutable(expr_t::pi_t const&);
+static bool is_mutable(expr_t::sigma_t const&) { return false; }
 static bool is_mutable(expr_t::array_t const&) { return false; }
 static bool is_mutable(expr_t::init_list_t const&);
 static bool is_mutable(expr_t::subscript_t const&);
@@ -83,7 +84,7 @@ static bool is_mutable(expr_t::init_list_t const& x)
 
 static bool is_mutable(expr_t::subscript_t const& x)
 {
-    return is_mutable(x.array.get()) or is_mutable(x.index.get());
+    return is_mutable(x.object.get()) or is_mutable(x.index.get());
 }
 
 static bool is_mutable(expr_t::because_t const& x)

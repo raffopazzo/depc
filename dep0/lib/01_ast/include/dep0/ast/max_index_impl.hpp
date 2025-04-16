@@ -1,5 +1,5 @@
 /*
- * Copyright Raffaele Rossi 2023 - 2024.
+ * Copyright Raffaele Rossi 2023 - 2025.
  *
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
@@ -139,6 +139,10 @@ std::size_t max_index(expr_t<P> const& x)
         {
             return max_index<P>(x.args.begin(), x.args.end(), x.ret_type.get(), nullptr);
         },
+        [] (expr_t<P>::sigma_t const& x)
+        {
+            return max_index<P>(x.args.begin(), x.args.end());
+        },
         [] (expr_t<P>::array_t const&)
         {
             return 0ul;
@@ -155,7 +159,7 @@ std::size_t max_index(expr_t<P> const& x)
         },
         [] (expr_t<P>::subscript_t const& x)
         {
-            return std::max(max_index(x.array.get()), max_index(x.index.get()));
+            return std::max(max_index(x.object.get()), max_index(x.index.get()));
         },
         [] (expr_t<P>::because_t const& x)
         {
@@ -177,6 +181,13 @@ std::size_t max_index(typename expr_t<P>::app_t const& x)
 
 } // namespace impl
 
+namespace {
+inline constexpr auto max_accumulator = [] <Properties P> (std::size_t const acc, func_arg_t<P> const& arg)
+{
+    return std::max(acc, impl::max_index(arg));
+};
+}
+
 template <Properties P>
 std::size_t max_index(
     typename std::vector<func_arg_t<P>>::const_iterator const begin,
@@ -184,13 +195,16 @@ std::size_t max_index(
     expr_t<P> const& ret_type,
     body_t<P> const* body)
 {
-    return std::accumulate(
-        begin, end,
-        std::max(impl::max_index(ret_type), body ? impl::max_index(*body) : 0ul),
-        [] (std::size_t const acc, func_arg_t<P> const& arg)
-        {
-            return std::max(acc, impl::max_index(arg));
-        });
+    auto const initial_value = std::max(impl::max_index(ret_type), body ? impl::max_index(*body) : 0ul);
+    return std::accumulate(begin, end, initial_value, max_accumulator);
+}
+
+template <Properties P>
+std::size_t max_index(
+    typename std::vector<func_arg_t<P>>::const_iterator const begin,
+    typename std::vector<func_arg_t<P>>::const_iterator const end)
+{
+    return std::accumulate(begin, end, 0ul, max_accumulator);
 }
 
 } // namespace dep0::ast

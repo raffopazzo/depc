@@ -1,5 +1,5 @@
 /*
- * Copyright Raffaele Rossi 2023 - 2024.
+ * Copyright Raffaele Rossi 2023 - 2025.
  *
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
@@ -11,6 +11,7 @@
 #pragma once
 
 #include "private/context.hpp"
+#include "private/gen_val.hpp"
 
 #include "dep0/typecheck/ast.hpp"
 
@@ -20,6 +21,7 @@
 #include <llvm/IR/Value.h>
 
 #include <string_view>
+#include <optional>
 #include <vector>
 
 namespace dep0::llvmgen {
@@ -67,6 +69,19 @@ struct snippet_t
 };
 
 /**
+ * @brief If a function body is being inlined, this struct will contain the runtime location where
+ * the result value of the inlined function must be stored and its value category.
+ *
+ * For example, `if (inlined_function())` will store a `temporary` value at some runtime location,
+ * whilst `return inlined_function()` will store a `result` value at that location.
+ */
+struct inlined_result_t
+{
+    value_category_t value_category;
+    llvm::Value* dest;
+};
+
+/**
  * @brief Generate IR code for a body of DepC statements.
  * @remarks This function will use a fresh IR builder every time.
  * In other words, each nested invocation to generate a nested body will use a new IR builder.
@@ -78,10 +93,10 @@ struct snippet_t
  *      All generated blocks will be added to this LLVM function.
  *
  * @param inlined_result
- *      If not `nullptr` and if this body contains `return` statements,
- *      this function will emit appropriate IR instructions to
- *      `store/memcpy/memset` the resulting LLVM value at the runtime location
- *      pointed by this LLVM value, which must be of pointer type.
+ *      If not empty and if this body contains `return` statements,
+ *      the returned value will be constructed in-place,
+ *      according to its value category, at the given runtime location.
+ *      If empty the returned value will be constructed with `result` value category.
  *
  * @return
  *      A snippet object containing the entry block of the generated IR code along with any open blocks.
@@ -89,10 +104,10 @@ struct snippet_t
  */
 snippet_t gen_body(
     global_ctx_t&,
-    local_ctx_t const& ,
+    local_ctx_t const&,
     typecheck::body_t const&,
     std::string_view entry_block_name,
     llvm::Function* parent_function,
-    llvm::Value* inlined_result);
+    std::optional<inlined_result_t>);
 
 } // namespace dep0::llvmgen

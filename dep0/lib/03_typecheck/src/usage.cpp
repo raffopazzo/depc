@@ -1,5 +1,5 @@
 /*
- * Copyright Raffaele Rossi 2023 - 2024.
+ * Copyright Raffaele Rossi 2023 - 2025.
  *
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
@@ -178,6 +178,7 @@ expected<std::true_type> usage_t::try_add(ctx_t const& ctx, expr_t const& expr, 
             return dep0::error_t("adding usages of abs_t not yet implemented");
         },
         [&] (expr_t::pi_t const&) { return ok(); }, // types never really use anything
+        [&] (expr_t::sigma_t const&) { return ok(); }, // types never really use anything
         [&] (expr_t::array_t const&) { return ok(); },
         [&] (expr_t::init_list_t const& x)
         {
@@ -189,7 +190,7 @@ expected<std::true_type> usage_t::try_add(ctx_t const& ctx, expr_t const& expr, 
         },
         [&] (expr_t::subscript_t const& x)
         {
-            auto result = try_add(ctx, x.array.get(), usage_multiplier);
+            auto result = try_add(ctx, x.object.get(), usage_multiplier);
             if (result)
                 result = try_add(ctx, x.index.get(), usage_multiplier);
             return result;

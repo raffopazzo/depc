@@ -1,5 +1,5 @@
 /*
- * Copyright Raffaele Rossi 2023 - 2024.
+ * Copyright Raffaele Rossi 2023 - 2025.
  *
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
@@ -49,6 +49,7 @@ template <Properties P> bool needs_new_line(typename expr_t<P>::global_t const&)
 template <Properties P> bool needs_new_line(typename expr_t<P>::app_t const&);
 template <Properties P> bool needs_new_line(typename expr_t<P>::abs_t const&);
 template <Properties P> bool needs_new_line(typename expr_t<P>::pi_t const&);
+template <Properties P> bool needs_new_line(typename expr_t<P>::sigma_t const&);
 template <Properties P> bool needs_new_line(typename expr_t<P>::array_t const&) { return false; }
 template <Properties P> bool needs_new_line(typename expr_t<P>::init_list_t const&);
 template <Properties P> bool needs_new_line(typename expr_t<P>::subscript_t const&);
@@ -84,6 +85,7 @@ template <Properties P> bool needs_parenthesis(typename expr_t<P>::global_t cons
 template <Properties P> bool needs_parenthesis(typename expr_t<P>::app_t const&) { return false; }
 template <Properties P> bool needs_parenthesis(typename expr_t<P>::abs_t const&) { return false; }
 template <Properties P> bool needs_parenthesis(typename expr_t<P>::pi_t const&) { return false; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::sigma_t const&) { return false; }
 template <Properties P> bool needs_parenthesis(typename expr_t<P>::array_t const&) { return false; }
 template <Properties P> bool needs_parenthesis(typename expr_t<P>::init_list_t const&) { return false; }
 template <Properties P> bool needs_parenthesis(typename expr_t<P>::subscript_t const&) { return false; }
@@ -498,6 +500,28 @@ std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::pi_t const& x, 
 }
 
 template <Properties P>
+std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::sigma_t const& x, std::size_t const indent)
+{
+    bool const args_on_separate_lines =
+        std::ranges::any_of(x.args, [] (func_arg_t<P> const& arg) { return detail::needs_new_line(arg); });
+    os << '(';
+    if (args_on_separate_lines)
+        detail::new_line(os, indent + 1ul);
+    for (bool first = true; auto const& arg: x.args)
+    {
+        if (not std::exchange(first, false))
+        {
+            if (args_on_separate_lines)
+                detail::new_line(os << ',', indent + 1ul);
+            else
+                os << ", ";
+        }
+        pretty_print(os, arg, indent + 1ul);
+    }
+    return (args_on_separate_lines ? detail::new_line(os, indent) : os) << ')';
+}
+
+template <Properties P>
 std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::array_t const&, std::size_t)
 {
     return os << "array_t";
@@ -527,7 +551,7 @@ std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::init_list_t con
 template <Properties P>
 std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::subscript_t const& x, std::size_t const indent)
 {
-    pretty_print(os, x.array.get(), indent) << '[';
+    pretty_print(os, x.object.get(), indent) << '[';
     pretty_print(os, x.index.get(), indent) << ']';
     return os;
 }
@@ -659,6 +683,12 @@ bool needs_new_line(typename expr_t<P>::pi_t const& x)
 }
 
 template <Properties P>
+bool needs_new_line(typename expr_t<P>::sigma_t const& x)
+{
+    return std::any_of(x.args.begin(), x.args.end(), [] (func_arg_t<P> const& arg) { return needs_new_line(arg); });
+}
+
+template <Properties P>
 bool needs_new_line(typename expr_t<P>::init_list_t const& x)
 {
     return std::any_of(x.values.begin(), x.values.end(), [] (expr_t<P> const& y) { return needs_new_line(y); });
@@ -667,7 +697,7 @@ bool needs_new_line(typename expr_t<P>::init_list_t const& x)
 template <Properties P>
 bool needs_new_line(typename expr_t<P>::subscript_t const& x)
 {
-    return needs_new_line(x.array.get()) or needs_new_line(x.index.get());
+    return needs_new_line(x.object.get()) or needs_new_line(x.index.get());
 }
 
 template <Properties P>

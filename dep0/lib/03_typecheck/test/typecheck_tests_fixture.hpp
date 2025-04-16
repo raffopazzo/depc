@@ -1,5 +1,5 @@
 /*
- * Copyright Raffaele Rossi 2023 - 2024.
+ * Copyright Raffaele Rossi 2023 - 2025.
  *
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
@@ -39,6 +39,12 @@ struct TypecheckTestsFixture
     static constexpr auto pi_of(Args&&... args)
     {
         return dep0::testing::pi_of<dep0::typecheck::properties_t>(std::forward<Args>(args)...);
+    }
+
+    template <typename... Args>
+    static constexpr auto sigma_of(Args&&... args)
+    {
+        return dep0::testing::sigma_of<dep0::typecheck::properties_t>(std::forward<Args>(args)...);
     }
 
     template <typename... Args>

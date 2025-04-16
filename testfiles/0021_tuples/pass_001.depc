@@ -1,0 +1,30 @@
+/*
+ * Copyright Raffaele Rossi 2025.
+ *
+ * Distributed under the Boost Software License, Version 1.0.
+ * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
+ */
+func f0(()) -> i32_t
+{
+    return 0;
+}
+func f1((i32_t, u32_t) x) -> u32_t
+{
+    return x[1];
+}
+func f2((i32_t,) x) -> i32_t
+{
+    return x[0];
+}
+func f3((i32_t x, u32_t) x) -> i32_t
+{
+    return x[0];
+}
+func f4(array_t((i32_t, u32_t), 3) xs) -> u32_t
+{
+    return f1(xs[2]);
+}
+func f5((i32_t, (i16_t, i8_t)) x) -> i8_t
+{
+    return x[1][1];
+}

@@ -1,5 +1,5 @@
 /*
- * Copyright Raffaele Rossi 2023 - 2024.
+ * Copyright Raffaele Rossi 2023 - 2025.
  *
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
@@ -65,6 +65,10 @@ bool is_first_order_type(typecheck::expr_t const& type)
         },
         [] (typecheck::expr_t::abs_t const&) { return false; },
         [] (typecheck::expr_t::pi_t const& t) { return is_first_order_function_type(t.args, t.ret_type.get()); },
+        [] (typecheck::expr_t::sigma_t const& t)
+        {
+            return std::ranges::all_of(t.args, [] (auto const& arg) { return is_first_order_type(arg.type); });
+        },
         [] (typecheck::expr_t::array_t const&) { return false; }, // `array_t` on its own is a term, not a type
         [] (typecheck::expr_t::init_list_t const&) { return false; },
         [] (typecheck::expr_t::subscript_t const&) { return false; },

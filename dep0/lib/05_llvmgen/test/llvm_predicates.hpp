@@ -1,5 +1,5 @@
 /*
- * Copyright Raffaele Rossi 2023 - 2024.
+ * Copyright Raffaele Rossi 2023 - 2025.
  *
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
@@ -22,9 +22,11 @@
 #include "llvm_predicates/function_type.hpp"
 #include "llvm_predicates/gep.hpp"
 #include "llvm_predicates/global.hpp"
+#include "llvm_predicates/intrinsics.hpp"
 #include "llvm_predicates/load.hpp"
 #include "llvm_predicates/mul.hpp"
 #include "llvm_predicates/or.hpp"
+#include "llvm_predicates/phi.hpp"
 #include "llvm_predicates/return.hpp"
 #include "llvm_predicates/select.hpp"
 #include "llvm_predicates/store.hpp"
@@ -47,7 +49,9 @@ inline auto exactly(llvm::Value const* const p)
     return [p] (llvm::Value const& x) -> boost::test_tools::predicate_result
     {
         if (p != &x)
-            return dep0::testing::failure(p, " != ", &x);
+            return dep0::testing::failure(
+                p, '(', p->getName().str(), ") != ",
+                &x, '(', x.getName().str(), ')');
         else
             return true;
     };

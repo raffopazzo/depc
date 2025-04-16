@@ -1,0 +1,104 @@
+/*
+ * Copyright Raffaele Rossi 2025.
+ *
+ * Distributed under the Boost Software License, Version 1.0.
+ * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
+ */
+func f1((u64_t n, array_t(i32_t, n)) x) -> i32_t
+{
+    if (2 < x[0])
+        return x[1][2];
+    else
+       return 0;
+}
+
+func f2() -> (u64_t n, array_t(i32_t, n))
+{
+    // the caller allocates the return value of type `{i64, i32*}` on the stack
+    // but the array `{1,2,3}` is allocated on the heap
+   return {3, {1,2,3}};
+}
+
+func extract((u64_t n, array_t(i32_t, n)) x) -> array_t(i32_t, x[0])
+{
+    return x[1];
+}
+
+func f3() -> array_t(i32_t, 3)
+{
+    // here the array `{1,2,3}` is also allocated on the stack and memcpy'd into the caller's return value
+    return extract({3, {1,2,3}});
+}
+
+func f4() -> array_t((u64_t n, array_t(i32_t, n)), 3)
+{
+    // the caller passes a return value, which is just a pointer;
+    // the arrays inside each entry are all heap-allocated;
+    // their pointers are stored directly without memcpy
+    return {f2(), f2(), f2()};
+}
+
+func f5() -> i32_t
+{
+    // the memory allocated by f2() must be freed by the caller, before returning the result value
+    return f1(f2());
+}
+
+func f6() -> i32_t
+{
+    // the memory allocated by f2() must be freed by the caller, before entering the taken branch
+    if (f1(f2()) == 0)
+        return 1;
+    else
+        return 2;
+}
+
+func f7((u64_t n, array_t(i32_t, n)) x) -> array_t((u64_t n, array_t(i32_t, n)), 1)
+{
+    // simple memcpy of x is not sufficient here because the array has to be allocated on the heap
+    return {x};
+}
+
+func f8() -> array_t((u64_t n, array_t(i32_t, n)), 1)
+{
+    // the memory allocated by f2() must be freed before returning the result value
+    // but not the array allocated by f7() which is returned to the caller
+    return f7(f2());
+}
+
+func f9() -> i32_t
+{
+    // the array allocated by f7() inside f8() must now be freed before returning the result value
+    return f1(f8()[0]);
+}
+
+func one_or_two(bool_t which) -> u64_t
+{
+    if (which)
+        return 1;
+    else
+        return 2;
+}
+
+func copy(bool_t which, (u64_t n, array_t(i32_t, n)) x) -> array_t((u64_t n, array_t(i32_t, n)), one_or_two(which))
+{
+    if (which)
+        return {x};
+    else
+        return {x, x};
+}
+
+func lemma(bool_t which) -> true_t(0 < one_or_two(which))
+{
+    if (which)
+        return {};
+    else
+        return {};
+}
+
+func f10(bool_t which) mutable -> i32_t
+{
+    // the memory allocated by `f2()` must be freed before returning the result value and also
+    // the memory allocated by `copy()` must be freed by iterating (1 or 2 times) over the returned elements
+    return f1(copy(which, f2())[0] because lemma(which));
+}

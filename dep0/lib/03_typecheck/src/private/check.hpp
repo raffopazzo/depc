@@ -1,5 +1,5 @@
 /*
- * Copyright Raffaele Rossi 2023 - 2024.
+ * Copyright Raffaele Rossi 2023 - 2025.
  *
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
@@ -195,6 +195,21 @@ expected<expr_t> check_pi_type(
     ast::is_mutable_t is_mutable,
     std::vector<parser::func_arg_t> const& args,
     parser::expr_t const& ret_ty);
+
+/**
+ * @brief Checks whether the given Sigma-type is legal.
+ *
+ * @param loc
+ *      The location in the source file where the expression was found.
+ *      If type-checking fails, it will be copied in the error message.
+ *
+ * @return A legal Sigma-type or an error.
+ */
+expected<expr_t> check_sigma_type(
+    env_t const&,
+    ctx_t&,
+    source_loc_t const& loc,
+    parser::expr_t::sigma_t const&);
 
 /**
  * @brief If `expected_type` is nullptr, tries to type-assign the given arithmetic expression;

@@ -1,5 +1,5 @@
 /*
- * Copyright Raffaele Rossi 2023 - 2024.
+ * Copyright Raffaele Rossi 2023 - 2025.
  *
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
@@ -14,6 +14,7 @@
 #include "private/substitute.hpp"
 
 #include "dep0/typecheck/beta_delta_reduction.hpp"
+#include "dep0/typecheck/subscript_access.hpp"
 
 #include "dep0/ast/pretty_print.hpp"
 
@@ -286,6 +287,11 @@ type_assign(
             auto pi_ctx = ctx.extend();
             return check_pi_type(env, pi_ctx, loc, pi.is_mutable, pi.args, pi.ret_type.get());
         },
+        [&] (parser::expr_t::sigma_t const& sigma) -> expected<expr_t>
+        {
+            auto sigma_ctx = ctx.extend();
+            return check_sigma_type(env, sigma_ctx, loc, sigma);
+        },
         [] (parser::expr_t::array_t) -> expected<expr_t>
         {
             return derivation_rules::make_array();
@@ -304,52 +310,94 @@ type_assign(
             // It should still be possible to allow structured binding of a linear array to extract
             // all its elements at once, provided that the size of the array is known at compile-time.
             // Rust has similar limitations.
-            auto array =
+            // The exact same reasoning applies also if the object of the subscript operator is a tuple.
+            auto obj =
                 type_assign(
-                    env, ctx, subscript.array.get(), is_mutable_allowed,
+                    env, ctx, subscript.object.get(), is_mutable_allowed,
                     usage, usage_multiplier * ast::qty_t::many);
-            if (not array)
-                return std::move(array.error());
+            if (not obj)
+                return std::move(obj.error());
             return match(
-                array->properties.sort.get(),
+                obj->properties.sort.get(),
                 [&] (expr_t& t) -> expected<expr_t>
                 {
                     beta_delta_normalize(env, ctx, t);
-                    auto const app = get_if_app_of_array(t);
-                    if (not app)
-                    {
-                        std::ostringstream err;
-                        pretty_print(err << "cannot index into non-array expression of type `", t) << '`';
-                        return dep0::error_t(err.str(), loc);
-                    }
-                    auto index =
-                        check_expr(
-                            env, ctx,
-                            subscript.index.get(),
-                            derivation_rules::make_u64(),
-                            is_mutable_allowed, usage, usage_multiplier);
-                    if (not index)
-                        return std::move(index.error());
-                    beta_delta_normalize(env, ctx, *index);
-                    auto const proof_type =
-                        derivation_rules::make_true_t(
-                            derivation_rules::make_relation_expr(
-                                expr_t::relation_expr_t::lt_t{*index, app->args[1]}));
-                    if (search_proof(env, ctx, proof_type, ast::is_mutable_t::no, usage, ast::qty_t::zero))
-                    {
-                        // we're about to move from `array`, which holds the element type; so must take a copy
-                        auto element_type = app->args.at(0ul);
-                        return make_legal_expr(
-                            element_type,
-                            expr_t::subscript_t{std::move(*array), std::move(*index)});
-                    }
-                    else
-                    {
-                        std::ostringstream err;
-                        pretty_print(err << "cannot verify that array index `", *index) << '`';
-                        pretty_print(err << " is within bounds `", app->args.at(1ul)) << '`';
-                        return dep0::error_t(err.str(), loc);
-                    }
+                    return match(
+                        has_subscript_access(t),
+                        [&] (has_subscript_access_result::no_t) -> expected<expr_t>
+                        {
+                            std::ostringstream err;
+                            pretty_print(err << "subscript operator not applicable to expression of type `", t) << '`';
+                            return dep0::error_t(err.str(), loc);
+                        },
+                        [&] (has_subscript_access_result::sigma_t const& sigma) -> expected<expr_t>
+                        {
+                            auto idx =
+                                check_expr(
+                                    env, ctx,
+                                    subscript.index.get(),
+                                    derivation_rules::make_u64(),
+                                    is_mutable_allowed, usage, usage_multiplier);
+                            if (not idx)
+                                return std::move(idx.error());
+                            auto const constant = std::get_if<expr_t::numeric_constant_t>(&idx->value);
+                            if (not constant)
+                                return dep0::error_t(
+                                    "tuple object can only be accessed via numeric literal",
+                                    subscript.index.get().properties);
+                            auto const idx_value = constant->value.template convert_to<std::uint64_t>();
+                            if (idx_value >= sigma.args.size())
+                                return dep0::error_t("invalid tuple index", loc);
+                            // the element type may depend on values of previous arguments so need substitution
+                            // e.g. the *type* of `x[2]` may depend on the *value* of `x[1]`,
+                            // whose type may itself depend on the *value* of `x[0]`
+                            auto el_type = [&]
+                            {
+                                auto args = std::vector(sigma.args.begin(), sigma.args.begin() + idx_value + 1);
+                                for (auto const j: std::views::iota(0ul, idx_value))
+                                    if (args[j].var)
+                                        substitute(
+                                            *args[j].var,
+                                            derivation_rules::make_subscript(*obj, j, args[j].type),
+                                            args.begin() + j + 1,
+                                            args.end());
+                                return std::move(args[idx_value].type);
+                            }();
+                            return make_legal_expr(
+                                std::move(el_type),
+                                expr_t::subscript_t{std::move(*obj), std::move(*idx)});
+                        },
+                        [&] (has_subscript_access_result::array_t const& array) -> expected<expr_t>
+                        {
+                            auto idx =
+                                check_expr(
+                                    env, ctx,
+                                    subscript.index.get(),
+                                    derivation_rules::make_u64(),
+                                    is_mutable_allowed, usage, usage_multiplier);
+                            if (not idx)
+                                return std::move(idx.error());
+                            beta_delta_normalize(env, ctx, *idx);
+                            auto const proof_type =
+                                derivation_rules::make_true_t(
+                                    derivation_rules::make_relation_expr(
+                                        expr_t::relation_expr_t::lt_t{*idx, array.size}));
+                            if (search_proof(env, ctx, proof_type, ast::is_mutable_t::no, usage, ast::qty_t::zero))
+                            {
+                                // we're about to move from `obj`, which holds the element type; so must take a copy
+                                auto el_type = array.element_type;
+                                return make_legal_expr(
+                                    std::move(el_type),
+                                    expr_t::subscript_t{std::move(*obj), std::move(*idx)});
+                            }
+                            else
+                            {
+                                std::ostringstream err;
+                                pretty_print(err << "cannot verify that array index `", *idx) << '`';
+                                pretty_print(err << " is within bounds `", array.size) << '`';
+                                return dep0::error_t(err.str(), loc);
+                            }
+                        });
                 },
                 [&] (kind_t) -> expected<expr_t>
                 {

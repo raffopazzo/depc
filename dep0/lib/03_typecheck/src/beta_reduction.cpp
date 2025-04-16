@@ -1,5 +1,5 @@
 /*
- * Copyright Raffaele Rossi 2023 - 2024.
+ * Copyright Raffaele Rossi 2023 - 2025.
  *
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
@@ -56,6 +56,7 @@ static bool beta_normalize(expr_t::global_t&) { return false; }
 static bool beta_normalize(expr_t::app_t&);
 static bool beta_normalize(expr_t::abs_t&);
 static bool beta_normalize(expr_t::pi_t&);
+static bool beta_normalize(expr_t::sigma_t&);
 static bool beta_normalize(expr_t::array_t&) { return false; }
 static bool beta_normalize(expr_t::init_list_t&);
 static bool beta_normalize(expr_t::subscript_t&);
@@ -164,6 +165,14 @@ bool beta_normalize(expr_t::pi_t& pi)
     return changed;
 }
 
+bool beta_normalize(expr_t::sigma_t& sigma)
+{
+    bool changed = false;
+    for (auto& arg: sigma.args)
+        changed |= beta_normalize(arg.type);
+    return changed;
+}
+
 bool beta_normalize(expr_t::init_list_t& init_list)
 {
     bool changed = false;
@@ -174,7 +183,7 @@ bool beta_normalize(expr_t::init_list_t& init_list)
 
 bool beta_normalize(expr_t::subscript_t& subscript)
 {
-    return beta_normalize(subscript.array.get()) | beta_normalize(subscript.index.get());
+    return beta_normalize(subscript.object.get()) | beta_normalize(subscript.index.get());
 }
 
 bool beta_normalize(expr_t::because_t& x)

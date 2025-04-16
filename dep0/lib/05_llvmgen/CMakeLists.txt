@@ -1,5 +1,5 @@
 #
-# Copyright Raffaele Rossi 2023 - 2024.
+# Copyright Raffaele Rossi 2023 - 2025.
 #
 # Distributed under the Boost Software License, Version 1.0.
 # (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
@@ -18,6 +18,7 @@ add_library(dep0_llvmgen_lib
     src/private/gen_body.hpp
     src/private/gen_builtin.hpp
     src/private/gen_func.hpp
+    src/private/gen_loop.hpp
     src/private/gen_type.hpp
     src/private/gen_val.hpp
     src/private/llvm_func.hpp
@@ -32,6 +33,7 @@ add_library(dep0_llvmgen_lib
     src/gen_body.cpp
     src/gen_builtin.cpp
     src/gen_func.cpp
+    src/gen_loop.cpp
     src/gen_type.cpp
     src/gen_val.cpp
     src/llvm_func.cpp

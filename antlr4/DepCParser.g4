@@ -1,5 +1,5 @@
 /*
- * Copyright Raffaele Rossi 2023 - 2024.
+ * Copyright Raffaele Rossi 2023 - 2025.
  *
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
@@ -53,9 +53,10 @@ typeDef:
 funcArg: ({one_of("0", "1")}? qty=INT)? ('typename' | expr) name=ID?;
 
 // Types
-type: primitiveType | funcType | typeVar;
+type: primitiveType | funcType | tupleType | typeVar;
 primitiveType: 'bool_t' | 'cstr_t' | 'unit_t' | 'i8_t' | 'i16_t' | 'i32_t' | 'i64_t' | 'u8_t' | 'u16_t' | 'u32_t' | 'u64_t';
 funcType: '(' (funcArg (',' funcArg)*)? ')' 'mutable'? '->' ('typename' | retType=expr);
+tupleType: '(' ')' | '(' funcArg ',' ')' | '(' funcArg (',' funcArg)+ ')';
 typeVar: name=ID;
 
 // Statements

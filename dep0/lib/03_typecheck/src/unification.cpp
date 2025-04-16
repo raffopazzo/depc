@@ -1,5 +1,5 @@
 /*
- * Copyright Raffaele Rossi 2023 - 2024.
+ * Copyright Raffaele Rossi 2023 - 2025.
  *
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
@@ -118,6 +118,7 @@ bool unify(expr_t const& from, expr_t const& to, std::map<expr_t::var_t, expr_t>
             },
             [] (expr_t::abs_t const&, expr_t::abs_t const&) { return false; }, // TODO
             [] (expr_t::pi_t const&, expr_t::pi_t const&) { return false; }, // TODO
+            [] (expr_t::sigma_t const&, expr_t::sigma_t const&) { return false; }, // TODO
             [] (expr_t::array_t, expr_t::array_t) { return true; },
             [&] (expr_t::init_list_t const& x, expr_t::init_list_t const& y)
             {
@@ -130,7 +131,7 @@ bool unify(expr_t const& from, expr_t const& to, std::map<expr_t::var_t, expr_t>
             },
             [&] (expr_t::subscript_t const& x, expr_t::subscript_t const& y)
             {
-                return unify(x.array.get(), y.array.get(), result) and unify(x.index.get(), y.index.get(), result);
+                return unify(x.object.get(), y.object.get(), result) and unify(x.index.get(), y.index.get(), result);
             },
             [&] (expr_t::because_t const& x, expr_t::because_t const& y)
             {

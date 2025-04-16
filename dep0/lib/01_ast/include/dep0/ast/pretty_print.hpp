@@ -1,5 +1,5 @@
 /*
- * Copyright Raffaele Rossi 2023 - 2024.
+ * Copyright Raffaele Rossi 2023 - 2025.
  *
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
@@ -139,6 +139,9 @@ std::ostream& pretty_print(std::ostream&, typename expr_t<P>::abs_t const&, std:
 
 template <Properties P>
 std::ostream& pretty_print(std::ostream&, typename expr_t<P>::pi_t const&, std::size_t indent = 0ul);
+
+template <Properties P>
+std::ostream& pretty_print(std::ostream&, typename expr_t<P>::sigma_t const&, std::size_t indent = 0ul);
 
 template <Properties P>
 std::ostream& pretty_print(std::ostream&, typename expr_t<P>::array_t const&, std::size_t indent = 0ul);

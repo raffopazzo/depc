@@ -1,5 +1,5 @@
 /*
- * Copyright Raffaele Rossi 2023 - 2024.
+ * Copyright Raffaele Rossi 2023 - 2025.
  *
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
@@ -11,7 +11,7 @@ extern rand() -> i32_t;
 
 func f1() -> i32_t
 {
-    // false is a proof that bool_tean exists,
+    // false is a proof that boolean exists,
     // which is simply irrelevant in this case
     return 0 because (false because true);
 }

@@ -1,12 +1,12 @@
 /*
- * Copyright Raffaele Rossi 2023 - 2024.
+ * Copyright Raffaele Rossi 2023 - 2025.
  *
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
  */
 /**
  * @file
- * @brief Single-function header that declares @ref `dep0::ast::replace()`
+ * @brief Declares @ref `dep0::ast::replace()` and its overloads.
  */
 #pragma once
 
@@ -45,6 +45,14 @@ void replace(
     typename std::vector<func_arg_t<P>>::iterator end,
     expr_t<P>& ret_type,
     body_t<P>*);
+
+/** @brief Overload to use for Sigma-Types. */
+template <Properties P>
+void replace(
+    typename expr_t<P>::var_t const& from,
+    typename expr_t<P>::var_t const& to,
+    typename std::vector<func_arg_t<P>>::iterator begin,
+    typename std::vector<func_arg_t<P>>::iterator end);
 
 } // namespace dep0::ast
 

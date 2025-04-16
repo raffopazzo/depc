@@ -1,5 +1,5 @@
 #
-# Copyright Raffaele Rossi 2023 - 2024.
+# Copyright Raffaele Rossi 2023 - 2025.
 #
 # Distributed under the Boost Software License, Version 1.0.
 # (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
@@ -41,12 +41,16 @@ add_library(dep0_llvmgen_tests_fixture
     llvm_predicates/gep.cpp
     llvm_predicates/global.hpp
     llvm_predicates/global.cpp
+    llvm_predicates/intrinsics.hpp
+    llvm_predicates/intrinsics.cpp
     llvm_predicates/load.hpp
     llvm_predicates/load.cpp
     llvm_predicates/mul.hpp
     llvm_predicates/mul.cpp
     llvm_predicates/or.hpp
     llvm_predicates/or.cpp
+    llvm_predicates/phi.hpp
+    llvm_predicates/phi.cpp
     llvm_predicates/predicate.hpp
     llvm_predicates/predicate.cpp
     llvm_predicates/return.hpp
@@ -112,3 +116,4 @@ add_dep0_llvmgen_test(0017_minus_expr)
 add_dep0_llvmgen_test(0018_mult_expr)
 add_dep0_llvmgen_test(0019_div_expr)
 add_dep0_llvmgen_test(0020_builtins)
+add_dep0_llvmgen_test(0021_tuples)

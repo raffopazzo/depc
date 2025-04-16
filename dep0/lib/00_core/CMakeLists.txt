@@ -1,5 +1,5 @@
 #
-# Copyright Raffaele Rossi 2023 - 2024.
+# Copyright Raffaele Rossi 2023 - 2025.
 #
 # Distributed under the Boost Software License, Version 1.0.
 # (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
@@ -11,6 +11,7 @@ add_library(dep0_core_lib
     include/dep0/error.hpp
     include/dep0/fmap.hpp
     include/dep0/match.hpp
+    include/dep0/maybe_const_ref.hpp
     include/dep0/mmap.hpp
     include/dep0/scope_map.hpp
     include/dep0/source.hpp
@@ -23,6 +24,7 @@ add_library(dep0_core_lib
     src/error.cpp
     src/fmap.cpp
     src/match.cpp
+    src/maybe_const_ref.cpp
     src/mmap.cpp
     src/scope_map.cpp
     src/source.cpp

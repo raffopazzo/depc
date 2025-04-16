@@ -1,10 +1,12 @@
 /*
- * Copyright Raffaele Rossi 2023 - 2024.
+ * Copyright Raffaele Rossi 2023 - 2025.
  *
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
  */
 #include "private/c_types.hpp"
+
+#include "dep0/ast/get_if_array.hpp"
 
 #include "dep0/match.hpp"
 
@@ -12,9 +14,9 @@ namespace dep0::typecheck {
 
 dep0::expected<std::true_type> is_c_type(parser::expr_t const& x)
 {
-    auto const no = [&] () -> dep0::expected<std::true_type>
+    auto const no = [&] (std::vector<error_t> reasons = {}) -> dep0::expected<std::true_type>
     {
-        return dep0::error_t("not a valid C-type", x.properties);
+        return dep0::error_t("not a valid C-type", x.properties, std::move(reasons));
     };
     auto const yes = dep0::expected<std::true_type>{};
     return match(
@@ -43,11 +45,19 @@ dep0::expected<std::true_type> is_c_type(parser::expr_t const& x)
         [&] (parser::expr_t::global_t const&) { return no(); },
         [&] (parser::expr_t::app_t const&)
         {
-            auto const app = get_if_app_of_array(x);
-            return app and is_c_type(app->args[0]) ? yes : no();
+            auto const arr = get_if_array(x);
+            return arr and is_c_type(arr->element_type.get()) ? yes : no();
         },
         [&] (parser::expr_t::abs_t const&) { return no(); },
         [&] (parser::expr_t::pi_t const& pi) { return is_c_func_type(pi, x.properties); },
+        [&] (parser::expr_t::sigma_t const& sigma)
+        {
+            std::vector<error_t> reasons;
+            for (auto const& arg: sigma.args)
+                if (auto result = is_c_type(arg.type); not result)
+                    reasons.push_back(std::move(result.error()));
+            return reasons.empty() ? yes : no(std::move(reasons));
+        },
         [&] (parser::expr_t::array_t const&) { return no(); },
         [&] (parser::expr_t::init_list_t const&) { return no(); },
         [&] (parser::expr_t::subscript_t const&) { return no(); },

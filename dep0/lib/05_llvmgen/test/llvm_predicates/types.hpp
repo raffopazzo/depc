@@ -1,5 +1,5 @@
 /*
- * Copyright Raffaele Rossi 2023 - 2024.
+ * Copyright Raffaele Rossi 2023 - 2025.
  *
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
@@ -100,7 +100,7 @@ boost::test_tools::predicate_result is_struct(llvm::StructType const& s, Types&&
         if (result)
         {
             auto const i = next++;
-            if (auto const tmp = std::forward<Types>(types)(s.getElementType(i)); not tmp)
+            if (auto const tmp = std::forward<Types>(types)(*s.getElementType(i)); not tmp)
                 result = failure("literal struct element predidcate failed at index ", i, ": ", tmp.message());
         }
     }(), ...);
@@ -219,42 +219,22 @@ auto struct_of(Types&&... types)
 
         boost::test_tools::predicate_result operator()(llvm::StructType const& x) const
         {
-            return std::apply(
-                is_struct,
-                [&] <std::size_t... Is> (std::index_sequence<Is...>)
-                {
-                    return std::forward_as_tuple(x, std::get<Is>(types)...);
-                }(std::make_index_sequence<sizeof...(Types)>{}));
+            return std::apply(is_struct, std::tuple_cat(std::tie(x), types));
         }
 
         boost::test_tools::predicate_result operator()(llvm::StructType const* const p) const
         {
-            return std::apply(
-                is_struct,
-                [&] <std::size_t... Is> (std::index_sequence<Is...>)
-                {
-                    return std::forward_as_tuple(p, std::get<Is>(types)...);
-                }(std::make_index_sequence<sizeof...(Types)>{}));
+            return std::apply(is_struct, std::tuple_cat(std::make_tuple(p), types));
         }
 
         boost::test_tools::predicate_result operator()(llvm::Type const& x) const
         {
-            return std::apply(
-                is_struct,
-                [&] <std::size_t... Is> (std::index_sequence<Is...>)
-                {
-                    return std::forward_as_tuple(x, std::get<Is>(types)...);
-                }(std::make_index_sequence<sizeof...(Types)>{}));
+            return std::apply(is_struct, std::tuple_cat(std::tie(x), types));
         }
 
         boost::test_tools::predicate_result operator()(llvm::Type const* const p) const
         {
-            return std::apply(
-                is_struct,
-                [&] <std::size_t... Is> (std::index_sequence<Is...>)
-                {
-                    return std::forward_as_tuple(p, std::get<Is>(types)...);
-                }(std::make_index_sequence<sizeof...(Types)>{}));
+            return std::apply(is_struct, std::tuple_cat(std::make_tuple(p), types));
         }
     };
     return predicate_t{{std::move(types)...}};

@@ -1,5 +1,5 @@
 #
-# Copyright Raffaele Rossi 2023 - 2024.
+# Copyright Raffaele Rossi 2023 - 2025.
 #
 # Distributed under the Boost Software License, Version 1.0.
 # (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
@@ -11,6 +11,7 @@ add_library(dep0_ast_lib
     include/dep0/ast/ast.hpp
     include/dep0/ast/attribute.hpp
     include/dep0/ast/concepts.hpp
+    include/dep0/ast/get_if_array.hpp
     include/dep0/ast/hash_code.hpp
     include/dep0/ast/max_index.hpp
     include/dep0/ast/max_index_impl.hpp
@@ -32,6 +33,7 @@ add_library(dep0_ast_lib
     src/ast.cpp
     src/attribute.cpp
     src/concepts.cpp
+    src/get_if_array.cpp
     src/hash_code.cpp
     src/max_index.cpp
     src/mutable.cpp

@@ -1,5 +1,5 @@
 /*
- * Copyright Raffaele Rossi 2023 - 2024.
+ * Copyright Raffaele Rossi 2023 - 2025.
  *
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
@@ -35,6 +35,11 @@ expr_t derivation_rules::make_u8() { return make_legal_expr(make_typename(), exp
 expr_t derivation_rules::make_u16() { return make_legal_expr(make_typename(), expr_t::u16_t{}); }
 expr_t derivation_rules::make_u32() { return make_legal_expr(make_typename(), expr_t::u32_t{}); }
 expr_t derivation_rules::make_u64() { return make_legal_expr(make_typename(), expr_t::u64_t{}); }
+
+expr_t derivation_rules::make_u64(std::size_t const v)
+{
+    return make_legal_expr(make_u64(), expr_t::numeric_constant_t{v});
+}
 
 expr_t derivation_rules::make_true() { return make_legal_expr(make_bool(), expr_t::boolean_constant_t{true}); }
 expr_t derivation_rules::make_false() { return make_legal_expr(make_bool(), expr_t::boolean_constant_t{false}); }
@@ -79,6 +84,11 @@ expr_t derivation_rules::make_app(expr_t func, std::vector<expr_t> args)
     assert(pi_type);
     auto ret_type = pi_type->ret_type.get(); // make copy before moving func
     return make_legal_expr(std::move(ret_type), expr_t::app_t{std::move(func), std::move(args)});
+}
+
+expr_t derivation_rules::make_subscript(expr_t obj, std::size_t const idx, sort_t type)
+{
+    return make_legal_expr(std::move(type), expr_t::subscript_t{std::move(obj), derivation_rules::make_u64(idx)});
 }
 
 } // namespace dep0::typecheck

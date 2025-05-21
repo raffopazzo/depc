@@ -31,6 +31,7 @@
 #include "llvm_predicates/select.hpp"
 #include "llvm_predicates/store.hpp"
 #include "llvm_predicates/sub.hpp"
+#include "llvm_predicates/to_string.hpp"
 #include "llvm_predicates/types.hpp"
 #include "llvm_predicates/unreachable.hpp"
 #include "llvm_predicates/xor.hpp"
@@ -48,10 +49,27 @@ inline auto exactly(llvm::Value const* const p)
 {
     return [p] (llvm::Value const& x) -> boost::test_tools::predicate_result
     {
-        if (p != &x)
+        if (not p)
+            return dep0::testing::failure("value is null");
+        else if (p != &x)
             return dep0::testing::failure(
                 p, '(', p->getName().str(), ") != ",
                 &x, '(', x.getName().str(), ')');
+        else
+            return true;
+    };
+}
+
+inline auto exactly(llvm::Type const* const p)
+{
+    return [p] (llvm::Type const& x) -> boost::test_tools::predicate_result
+    {
+        if (not p)
+            return dep0::testing::failure("type is null");
+        else if (p != &x)
+            return dep0::testing::failure(
+                p, '(', to_string(*p), ") != ",
+                &x, '(', to_string(x), ')');
         else
             return true;
     };

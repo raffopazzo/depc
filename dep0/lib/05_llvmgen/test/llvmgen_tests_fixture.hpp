@@ -30,4 +30,5 @@ struct LLVMGenTestsFixture
 
     boost::test_tools::predicate_result pass(std::filesystem::path);
     llvm::Function const* get_function(std::string_view) const;
+    llvm::StructType const* get_struct(std::string_view) const;
 };

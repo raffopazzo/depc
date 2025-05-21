@@ -84,6 +84,12 @@ struct TypecheckTestsFixture
     }
 
     template <typename... Args>
+    static constexpr auto member_of(Args&&... args)
+    {
+        return dep0::testing::member_of<dep0::typecheck::properties_t>(std::forward<Args>(args)...);
+    }
+
+    template <typename... Args>
     static constexpr auto subscript_of(Args&&... args)
     {
         return dep0::testing::subscript_of<dep0::typecheck::properties_t>(std::forward<Args>(args)...);
@@ -183,6 +189,24 @@ struct TypecheckTestsFixture
     static auto is_arg(dep0::typecheck::func_arg_t const& arg, Args&&... args)
     {
         return dep0::testing::is_arg<dep0::typecheck::properties_t>(arg, std::forward<Args>(args)...);
+    }
+
+    template <typename... Args>
+    static auto is_integer_def(dep0::typecheck::module_t::entry_t const& entry, Args&&... args)
+    {
+        return dep0::testing::is_integer_def<dep0::typecheck::properties_t>(entry, std::forward<Args>(args)...);
+    }
+
+    template <typename... Args>
+    static auto is_struct_def(dep0::typecheck::module_t::entry_t const& entry, Args&&... args)
+    {
+        return dep0::testing::is_struct_def<dep0::typecheck::properties_t>(entry, std::forward<Args>(args)...);
+    }
+
+    template <dep0::testing::Predicate<dep0::typecheck::expr_t> F>
+    static auto struct_field(std::string_view const name, F&& f)
+    {
+        return dep0::testing::struct_field<dep0::typecheck::properties_t>(name, std::forward<F>(f));
     }
 
     template <dep0::testing::Predicate<dep0::typecheck::expr_t> F>

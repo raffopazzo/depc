@@ -7,9 +7,12 @@
 #include "dep0/llvmgen/gen.hpp"
 
 #include "private/context.hpp"
+#include "private/first_order_types.hpp"
 #include "private/gen_func.hpp"
+#include "private/gen_type.hpp"
 #include "private/proto.hpp"
 
+#include "dep0/fmap.hpp"
 #include "dep0/match.hpp"
 
 #include <llvm/IR/Verifier.h>
@@ -30,16 +33,36 @@ build_empty_module(
     return m;
 }
 
-static void gen_impl(llvm::Module& llvm_module, typecheck::module_t const& m) noexcept
+static expected<std::true_type> gen_impl(llvm::Module& llvm_module, typecheck::module_t const& m) noexcept
 {
     global_ctx_t global(llvm_module);
     for (auto const& x: m.entries)
+    {
+        if (auto const def = std::get_if<typecheck::type_def_t>(&x))
+            if (auto const s = std::get_if<typecheck::type_def_t::struct_t>(&def->value))
+                if (not std::ranges::all_of(s->fields, [] (auto const& f) { return is_first_order_type(f.type); }))
+                    return dep0::error_t(
+                        "cannot emit program with higher order struct types",
+                        def->properties.origin);
         match(
             x,
             [&] (typecheck::type_def_t const& def)
             {
                 auto const& name = match(def.value, [] (auto const& x) -> auto const& { return x.name; });
-                bool const inserted = global.try_emplace(typecheck::expr_t::global_t{std::nullopt, name}, def).second;
+                auto g = typecheck::expr_t::global_t{std::nullopt, name};
+                auto const ty =
+                    match(
+                        def.value,
+                        [&] (typecheck::type_def_t::integer_t const& x) -> llvm::Type*
+                        {
+                            return gen_type(global, x.width);
+                        },
+                        [&] (typecheck::type_def_t::struct_t const& s) -> llvm::Type*
+                        {
+                            auto const& f = fmap(s.fields, [&] (auto const& x) { return gen_type(global, x.type); });
+                            return llvm::StructType::create(global.llvm_ctx, f, s.name.view());
+                        });
+                bool const inserted = global.try_emplace(g, global_ctx_t::type_def_t{def, ty}).second;
                 assert(inserted);
             },
             [] (typecheck::axiom_t const&)
@@ -64,6 +87,8 @@ static void gen_impl(llvm::Module& llvm_module, typecheck::module_t const& m) no
                 if (auto proto = llvm_func_proto_t::from_abs(def.value))
                     gen_func(global, typecheck::expr_t::global_t{std::nullopt, def.name}, *proto, def.value);
             });
+    }
+    return {};
 }
 
 expected<unique_ref<llvm::Module>>
@@ -71,7 +96,8 @@ gen(llvm::LLVMContext& llvm_ctx, std::string_view const name, typecheck::module_
     llvm::TargetMachine& machine) noexcept
 {
     auto result = build_empty_module(llvm_ctx, name, machine);
-    gen_impl(*result, m);
+    if (auto ok = gen_impl(*result, m); not ok)
+        return std::move(ok.error());
     std::string err;
     llvm::raw_string_ostream ostream(err);
     if (llvm::verifyModule(*result, &ostream)) // yes true means false...
@@ -88,7 +114,8 @@ gen_unverified(
     llvm::TargetMachine& machine) noexcept
 {
     auto result = build_empty_module(llvm_ctx, name, machine);
-    gen_impl(*result, m);
+    if (auto ok = gen_impl(*result, m); not ok)
+        return std::move(ok.error());
     return std::move(result);
 }
 

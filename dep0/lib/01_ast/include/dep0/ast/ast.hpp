@@ -309,6 +309,13 @@ struct expr_t
         std::vector<expr_t> values;
     };
 
+    /** @brief Represents an expression of the form `object.field`, where `object` is a struct. */
+    struct member_t
+    {
+        rec_t object;
+        source_text field;
+    };
+
     /** @brief Represents an expression of the form `object[index]`, where `object` could be an array or tuple. */
     struct subscript_t
     {
@@ -348,7 +355,7 @@ struct expr_t
             boolean_constant_t, numeric_constant_t, string_literal_t,
             boolean_expr_t, relation_expr_t, arith_expr_t,
             var_t, global_t, app_t, abs_t, pi_t, sigma_t,
-            array_t, init_list_t, subscript_t, because_t
+            array_t, init_list_t, member_t, subscript_t, because_t
         >;
 
     properties_t properties;
@@ -440,9 +447,19 @@ struct type_def_t
         sign_t sign;
         width_t width;
     };
+    struct struct_t
+    {
+        struct field_t
+        {
+            expr_t<P> type;
+            typename expr_t<P>::var_t var;
+        };
+        source_text name;
+        std::vector<field_t> fields;
+    };
 
     using properties_t = typename P::type_def_properties_type;
-    using value_t = std::variant<integer_t>;
+    using value_t = std::variant<integer_t, struct_t>;
     properties_t properties;
     value_t value;
 };

@@ -43,16 +43,19 @@ externDecl: 'extern' name=ID funcType ';';
 funcSig: 'func' ('[[' attribute=ATTR ']]')? name=ID funcType;
 funcDecl: funcSig ';';
 funcDef: funcSig body;
-typeDef:
+typeDef: integerDef | structDef;
+integerDef:
     'typedef' name=ID '='
     {one_of("signed", "unsigned")}? sign=ID
     {one_of("8", "16", "32", "64")}? width=INT
     {one_of("bit")}? ID
     {one_of("integer")}? ID
     SEMI;
-funcArg: ({one_of("0", "1")}? qty=INT)? ('typename' | expr) name=ID?;
+structDef: 'struct' name=ID '{' (fieldDecl SEMI)* '}' SEMI;
+fieldDecl: fieldType=expr fieldName=ID;
 
 // Types
+funcArg: ({one_of("0", "1")}? qty=INT)? ('typename' | expr) name=ID?;
 type: primitiveType | funcType | tupleType | typeVar;
 primitiveType: 'bool_t' | 'cstr_t' | 'unit_t' | 'i8_t' | 'i16_t' | 'i32_t' | 'i64_t' | 'u8_t' | 'u16_t' | 'u32_t' | 'u64_t';
 funcType: '(' (funcArg (',' funcArg)*)? ')' 'mutable'? '->' ('typename' | retType=expr);
@@ -73,6 +76,7 @@ impossibleStmt: 'impossible' ('because' expr)?';';
 // Expressions
 expr:
       func=expr '(' (expr (',' expr)*)? ')' # funcCallExpr
+    | expr '.' field=ID # memberExpr
     | expr '[' expr ']' # subscriptExpr
     | value=expr 'because' reason=expr # becauseExpr
     | 'not' expr # notExpr

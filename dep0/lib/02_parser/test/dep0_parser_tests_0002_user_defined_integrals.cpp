@@ -26,31 +26,14 @@ BOOST_AUTO_TEST_CASE(pass_005)
     BOOST_TEST_REQUIRE(pass("0002_user_defined_integrals/pass_005.depc"));
     // 8 type defs + 12 func defs
     BOOST_TEST_REQUIRE(pass_result->entries.size() == 20ul);
-    auto const signed_8 = std::get_if<dep0::parser::type_def_t>(&pass_result->entries[0]);
-    auto const signed_16 = std::get_if<dep0::parser::type_def_t>(&pass_result->entries[1]);
-    auto const signed_32 = std::get_if<dep0::parser::type_def_t>(&pass_result->entries[2]);
-    auto const signed_64 = std::get_if<dep0::parser::type_def_t>(&pass_result->entries[3]);
-    auto const unsigned_8 = std::get_if<dep0::parser::type_def_t>(&pass_result->entries[4]);
-    auto const unsigned_16 = std::get_if<dep0::parser::type_def_t>(&pass_result->entries[5]);
-    auto const unsigned_32 = std::get_if<dep0::parser::type_def_t>(&pass_result->entries[6]);
-    auto const unsigned_64 = std::get_if<dep0::parser::type_def_t>(&pass_result->entries[7]);
-
-    BOOST_TEST_REQUIRE(signed_8);
-    BOOST_TEST_REQUIRE(signed_16);
-    BOOST_TEST_REQUIRE(signed_32);
-    BOOST_TEST_REQUIRE(signed_64);
-    BOOST_TEST_REQUIRE(unsigned_8);
-    BOOST_TEST_REQUIRE(unsigned_16);
-    BOOST_TEST_REQUIRE(unsigned_32);
-    BOOST_TEST_REQUIRE(unsigned_64);
-    BOOST_TEST(is_integer_def(*signed_8, "signed_8_t", signed_v, _8));
-    BOOST_TEST(is_integer_def(*signed_16, "signed_16_t", signed_v, _16));
-    BOOST_TEST(is_integer_def(*signed_32, "signed_32_t", signed_v, _32));
-    BOOST_TEST(is_integer_def(*signed_64, "signed_64_t", signed_v, _64));
-    BOOST_TEST(is_integer_def(*unsigned_8, "unsigned_8_t", unsigned_v, _8));
-    BOOST_TEST(is_integer_def(*unsigned_16, "unsigned_16_t", unsigned_v, _16));
-    BOOST_TEST(is_integer_def(*unsigned_32, "unsigned_32_t", unsigned_v, _32));
-    BOOST_TEST(is_integer_def(*unsigned_64, "unsigned_64_t", unsigned_v, _64));
+    BOOST_TEST(is_integer_def(pass_result->entries[0], "signed_8_t", signed_v, _8));
+    BOOST_TEST(is_integer_def(pass_result->entries[1], "signed_16_t", signed_v, _16));
+    BOOST_TEST(is_integer_def(pass_result->entries[2], "signed_32_t", signed_v, _32));
+    BOOST_TEST(is_integer_def(pass_result->entries[3], "signed_64_t", signed_v, _64));
+    BOOST_TEST(is_integer_def(pass_result->entries[4], "unsigned_8_t", unsigned_v, _8));
+    BOOST_TEST(is_integer_def(pass_result->entries[5], "unsigned_16_t", unsigned_v, _16));
+    BOOST_TEST(is_integer_def(pass_result->entries[6], "unsigned_32_t", unsigned_v, _32));
+    BOOST_TEST(is_integer_def(pass_result->entries[7], "unsigned_64_t", unsigned_v, _64));
     {
         auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[8]);
         BOOST_TEST_REQUIRE(f);

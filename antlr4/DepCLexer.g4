@@ -32,6 +32,7 @@ KW_MUTABLE: 'mutable';
 KW_NOT: 'not';
 KW_OR: 'or';
 KW_RETURN: 'return';
+KW_STRUCT: 'struct';
 KW_TRUE: 'true';
 KW_TRUE_T: 'true_t';
 KW_TYPEDEF: 'typedef';
@@ -45,6 +46,7 @@ KW_UNIT_T: 'unit_t';
 // Punctuation
 ARROW: '->';
 COMMA: ',';
+DOT: '.';
 DOUBLE_COLON: '::';
 ELLIPSIS: '...';
 EQ: '=';

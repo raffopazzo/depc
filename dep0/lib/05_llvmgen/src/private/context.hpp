@@ -13,6 +13,7 @@
 #include "private/llvm_func.hpp"
 
 #include "dep0/typecheck/ast.hpp"
+#include "dep0/typecheck/environment.hpp"
 
 #include "dep0/ast/hash_code.hpp"
 #include "dep0/scope_map.hpp"
@@ -40,12 +41,15 @@ namespace dep0::llvmgen {
  */
 struct global_ctx_t
 {
+    /** @brief Holds information about global typedefs together with their corresponding LLVM type. */
+    struct type_def_t
+    {
+        typecheck::type_def_t def;
+        llvm::Type* llvm_type; // nullptr if not a 1st order type
+    };
+
     /** @brief Global functions and type definitions, whose key is a `typecheck::expr_t::global_t`. */
-    using value_t =
-        std::variant<
-            llvm_func_t,
-            typecheck::type_def_t
-        >;
+    using value_t = std::variant<llvm_func_t, type_def_t>;
     using iterator = scope_map<typecheck::expr_t::global_t, value_t>::iterator;
 
     llvm::LLVMContext& llvm_ctx;
@@ -98,14 +102,28 @@ struct global_ctx_t
     template <typename... Args>
     std::pair<iterator, bool> try_emplace(typecheck::expr_t::global_t name, Args&&... args)
     {
-        return values.try_emplace(std::move(name), std::forward<Args>(args)...);
+        auto const rv = values.try_emplace(std::move(name), std::forward<Args>(args)...);
+        if (auto const p = std::get_if<type_def_t>(&rv.first->second); p and rv.second)
+        {
+            auto const inserted = type_defs_env.try_emplace(rv.first->first, p->def);
+            assert(inserted);
+        }
+        return rv;
     }
+
+    /**
+     * @brief Needed in order to invoke `typecheck::is_list_initializable()` so it can resolve global typedefs.
+     * @remarks This is not the full environment built during typechecking as it only contains the typedefs
+     * that were stored in this context via `try_emplace()`.
+     */
+    typecheck::env_t const& env() const { return type_defs_env; }
 
 private:
     struct eq_t { bool operator()(typecheck::expr_t const&, typecheck::expr_t const&) const; };
 
     std::size_t next_id = 0ul; /**< @brief Next unique ID returned from `get_next_id()`. */
     scope_map<typecheck::expr_t::global_t, value_t> values; /**< @brief Global functions, type definitions, etc. */
+    typecheck::env_t type_defs_env;
 
     /**
      * @brief LLVM global values associated to each unique string literal.

@@ -300,6 +300,48 @@ type_assign(
         {
             return dep0::error_t("initializer lists have no unique type", loc);
         },
+        [&] (parser::expr_t::member_t const& member) -> expected<expr_t>
+        {
+            auto obj = type_assign(env, ctx, member.object.get(), is_mutable_allowed, usage, usage_multiplier);
+            if (not obj)
+                return std::move(obj.error());
+            auto const by_name =
+                [&] (type_def_t::struct_t::field_t const& f)
+                {
+                    return f.var == expr_t::var_t{member.field};
+                };
+            if (auto const ty = std::get_if<expr_t>(&obj->properties.sort.get()))
+                if (auto const g = std::get_if<expr_t::global_t>(&ty->value))
+                    if (auto const type_def = std::get_if<type_def_t>(env[*g]))
+                        if (auto const s = std::get_if<type_def_t::struct_t>(&type_def->value))
+                            if (auto const it = std::ranges::find_if(s->fields, by_name); it != s->fields.end())
+                            {
+                                auto field_type = [&]
+                                {
+                                    auto fields = std::vector(s->fields.begin(), std::next(it));
+                                    for (auto const j: std::views::iota(0, std::distance(s->fields.begin(), it)))
+                                        substitute(
+                                            fields[j].var,
+                                            make_legal_expr(
+                                                fields[j].type,
+                                                expr_t::member_t{*obj, fields[j].var.name}),
+                                            fields.begin() + j + 1,
+                                            fields.end());
+                                    return std::move(fields.back().type);
+                                }();
+                                return make_legal_expr(field_type, expr_t::member_t{std::move(*obj), member.field});
+                            }
+                            else
+                            {
+                                std::ostringstream err;
+                                pretty_print<properties_t>(err << "struct `", *g)
+                                    << "` has no field named `" << member.field << '`';
+                                return dep0::error_t(err.str(), loc);
+                            }
+            std::ostringstream err;
+            pretty_print(err << "invalid member access on value of type `", obj->properties.sort.get()) << '`';
+            return dep0::error_t(err.str(), loc);
+        },
         [&] (parser::expr_t::subscript_t const& subscript) -> expected<expr_t>
         {
             // We don't know how to allow the use of the subscript operator on a linear array.

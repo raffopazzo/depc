@@ -59,6 +59,7 @@ static bool beta_normalize(expr_t::pi_t&);
 static bool beta_normalize(expr_t::sigma_t&);
 static bool beta_normalize(expr_t::array_t&) { return false; }
 static bool beta_normalize(expr_t::init_list_t&);
+static bool beta_normalize(expr_t::member_t&);
 static bool beta_normalize(expr_t::subscript_t&);
 static bool beta_normalize(expr_t::because_t&);
 
@@ -181,9 +182,14 @@ bool beta_normalize(expr_t::init_list_t& init_list)
     return changed;
 }
 
-bool beta_normalize(expr_t::subscript_t& subscript)
+bool beta_normalize(expr_t::member_t& x)
 {
-    return beta_normalize(subscript.object.get()) | beta_normalize(subscript.index.get());
+    return beta_normalize(x.object.get());
+}
+
+bool beta_normalize(expr_t::subscript_t& x)
+{
+    return beta_normalize(x.object.get()) | beta_normalize(x.index.get());
 }
 
 bool beta_normalize(expr_t::because_t& x)

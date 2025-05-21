@@ -11,6 +11,7 @@
 #pragma once
 
 #include "dep0/typecheck/ast.hpp"
+#include "dep0/typecheck/environment.hpp"
 
 #include "dep0/maybe_const_ref.hpp"
 
@@ -29,6 +30,18 @@ namespace is_list_initializable_result
 
     /** @brief The type passed to `is_list_initializable()` is `true_t(true)`, which can be initialized with `{}`. */
     struct true_t{};
+
+    /**
+     * @brief The type passed to `is_list_initializable()` is some `struct { t1 f1; ...; tN fN; };`.
+     *
+     * The struct can be initialized with `{value1, ..., valueN}` of appropriate types,
+     * which may depend on previous values.
+     */
+    struct struct_t
+    {
+        // Currently struct types can only be defined in the global environment, so mutable reference is not possible.
+        std::vector<type_def_t::struct_t::field_t> const& fields;
+    };
 
     /**
      * @brief The type passed to `is_list_initializable()` is a tuple `(t1, ..., tN)`.
@@ -76,6 +89,7 @@ using is_list_initializable_result_t =
         is_list_initializable_result::no_t,
         is_list_initializable_result::unit_t,
         is_list_initializable_result::true_t,
+        is_list_initializable_result::struct_t,
         is_list_initializable_result::sigma_t<Const>,
         is_list_initializable_result::array_t<Const>>;
 
@@ -83,7 +97,7 @@ using is_list_initializable_result_t =
  * @brief Decide whether the given type can be initialized with a (possibly empty) initializer list,
  * i.e. an expression of the form `{expr1, ..., exprN}`.
  */
-is_list_initializable_result_t<const_t::yes> is_list_initializable(expr_t const& type);
-is_list_initializable_result_t<const_t::no> is_list_initializable(expr_t& type);
+is_list_initializable_result_t<const_t::yes> is_list_initializable(env_t const&, expr_t const& type);
+is_list_initializable_result_t<const_t::no> is_list_initializable(env_t const&, expr_t& type);
 
 } // namespace dep0::typecheck

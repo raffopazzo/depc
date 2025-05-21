@@ -150,6 +150,9 @@ template <Properties P>
 std::ostream& pretty_print(std::ostream&, typename expr_t<P>::init_list_t const&, std::size_t indent = 0ul);
 
 template <Properties P>
+std::ostream& pretty_print(std::ostream&, typename expr_t<P>::member_t const&, std::size_t indent = 0ul);
+
+template <Properties P>
 std::ostream& pretty_print(std::ostream&, typename expr_t<P>::subscript_t const&, std::size_t indent = 0ul);
 
 template <Properties P>

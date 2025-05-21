@@ -45,4 +45,16 @@ typename expr_t<P>::var_t rename(
     return new_var;
 }
 
+template <Properties P>
+typename expr_t<P>::var_t rename(
+    typename expr_t<P>::var_t const& var,
+    typename std::vector<typename type_def_t<P>::struct_t::field_t>::iterator const begin,
+    typename std::vector<typename type_def_t<P>::struct_t::field_t>::iterator const end)
+{
+    auto const new_idx = 1ul + std::max(var.idx, max_index<P>(begin, end));
+    auto const new_var = typename expr_t<P>::var_t{var.name, new_idx};
+    replace<P>(var, new_var, begin, end);
+    return new_var;
+}
+
 } // namespace dep0::ast

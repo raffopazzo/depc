@@ -60,6 +60,7 @@ dep0::expected<std::true_type> is_c_type(parser::expr_t const& x)
         },
         [&] (parser::expr_t::array_t const&) { return no(); },
         [&] (parser::expr_t::init_list_t const&) { return no(); },
+        [&] (parser::expr_t::member_t const&) { return no(); },
         [&] (parser::expr_t::subscript_t const&) { return no(); },
         [&] (parser::expr_t::because_t const& x) { return is_c_type(x.value.get()); });
 }

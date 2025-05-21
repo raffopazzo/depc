@@ -185,6 +185,10 @@ std::size_t size(expr_t<P> const& x)
                     return std::max(acc, size(v));
                 });
         },
+        [] (expr_t<P>::member_t const& x)
+        {
+            return 1ul + size(x.object.get());
+        },
         [] (expr_t<P>::subscript_t const& x)
         {
             return 1ul + std::max(size(x.object.get()), size(x.index.get()));

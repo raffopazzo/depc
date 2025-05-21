@@ -249,6 +249,10 @@ std::size_t hash_code_impl(hash_code_state_t<P>& state, expr_t<P> const& x)
                     boost::hash_combine(result, hash_code_impl(state, v));
                 return result;
             },
+            [&] (expr_t<P>::member_t const& x)
+            {
+                return combine(hash_code_impl(state, x.object.get()), boost::hash_value(x.field.view()));
+            },
             [&] (expr_t<P>::subscript_t const& x)
             {
                 return combine(hash_code_impl(state, x.object.get()), hash_code_impl(state, x.index.get()));

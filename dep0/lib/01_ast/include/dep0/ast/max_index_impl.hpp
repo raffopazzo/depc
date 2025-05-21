@@ -157,6 +157,10 @@ std::size_t max_index(expr_t<P> const& x)
                     return std::max(acc, max_index(v));
                 });
         },
+        [] (expr_t<P>::member_t const& x)
+        {
+            return max_index(x.object.get());
+        },
         [] (expr_t<P>::subscript_t const& x)
         {
             return std::max(max_index(x.object.get()), max_index(x.index.get()));
@@ -205,6 +209,20 @@ std::size_t max_index(
     typename std::vector<func_arg_t<P>>::const_iterator const end)
 {
     return std::accumulate(begin, end, 0ul, max_accumulator);
+}
+
+template <Properties P>
+std::size_t max_index(
+    typename std::vector<typename type_def_t<P>::struct_t::field_t>::const_iterator const begin,
+    typename std::vector<typename type_def_t<P>::struct_t::field_t>::const_iterator const end)
+{
+    return std::accumulate(
+        begin, end,
+        0ul,
+        [] (std::size_t const acc, type_def_t<P>::struct_t::field_t const& field)
+        {
+            return std::max(acc, std::max(impl::max_index(field.type), field.var.idx));
+        });
 }
 
 } // namespace dep0::ast

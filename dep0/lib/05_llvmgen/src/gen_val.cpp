@@ -43,13 +43,14 @@ static bool is_signed_integral(global_ctx_t const& ctx, typecheck::expr_t const&
         [] (typecheck::expr_t::i64_t const&) { return true; },
         [&] (typecheck::expr_t::global_t const& g)
         {
-            if (auto const type_def = std::get_if<typecheck::type_def_t>(ctx[g]))
+            if (auto const type_def = std::get_if<global_ctx_t::type_def_t>(ctx[g]))
                 return match(
-                    type_def->value,
+                    type_def->def.value,
                     [] (typecheck::type_def_t::integer_t const& integer)
                     {
                         return integer.sign == ast::sign_t::signed_v;
-                    });
+                    },
+                    [] (typecheck::type_def_t::struct_t const&) { return false; });
             else
                 return false;
         },
@@ -257,11 +258,11 @@ llvm::Value* gen_val(
                             [] (typecheck::expr_t::u64_t const&) { return dep0::ast::sign_t::unsigned_v; },
                             [&global] (typecheck::expr_t::global_t const& g)
                             {
-                                auto const type_def = std::get_if<typecheck::type_def_t>(global[g]);
-                                assert(type_def and "unknown global or not a typedef");
-                                return match(
-                                    type_def->value,
-                                    [] (typecheck::type_def_t::integer_t const& integer) { return integer.sign; });
+                                auto const t = std::get_if<global_ctx_t::type_def_t>(global[g]);
+                                assert(t and "unknown global or not a typedef");
+                                auto const integer = std::get_if<typecheck::type_def_t::integer_t>(&t->def.value);
+                                assert(integer and "relation expr can only be applied to integer types");
+                                return integer->sign;
                             },
                             [] (auto const&) { return dep0::ast::sign_t::signed_v; });
                     auto const op =
@@ -338,7 +339,7 @@ llvm::Value* gen_val(
             return maybe_store(match(
                 *val,
                 [] (llvm_func_t const& c) { return c.func; },
-                [] (typecheck::type_def_t const&) -> llvm::Value*
+                [] (global_ctx_t::type_def_t const&) -> llvm::Value*
                 {
                     assert(false and "found a typedef but was expecting a value");
                     __builtin_unreachable();
@@ -419,7 +420,7 @@ llvm::Value* gen_val(
         [&] (typecheck::expr_t::init_list_t const& x) -> llvm::Value*
         {
             return match(
-                typecheck::is_list_initializable(type),
+                typecheck::is_list_initializable(global.env(), type),
                 [&] (typecheck::is_list_initializable_result::no_t) -> llvm::Value*
                 {
                     // We found an initializer list whose type is not trivially initializiable from a list.
@@ -438,6 +439,35 @@ llvm::Value* gen_val(
                 [&] (typecheck::is_list_initializable_result::true_t) -> llvm::Value*
                 {
                     return llvm::ConstantAggregateZero::get(gen_type(global, type));
+                },
+                [&] (typecheck::is_list_initializable_result::struct_t s) -> llvm::Value*
+                {
+                    auto const llvm_type = gen_type(global, type);
+                    auto const allocator = select_allocator(value_category);
+                    auto const dest2 = dest ? dest : gen_alloca(global, local, builder, allocator, type);
+                    auto const int32 = llvm::Type::getInt32Ty(global.llvm_ctx);
+                    auto const zero = llvm::ConstantInt::get(int32, 0);
+                    auto ctx = local.extend();
+                    for (auto const i: std::views::iota(0ul, x.values.size()))
+                    {
+                        auto const index = llvm::ConstantInt::get(int32, i);
+                        auto const element_ptr = builder.CreateGEP(llvm_type, dest2, {zero, index});
+                        if (is_boxed(s.fields[i].type))
+                        {
+                            auto const p = gen_alloca(global, ctx, builder, allocator, s.fields[i].type);
+                            gen_val(global, ctx, builder, x.values[i], value_category, p);
+                            builder.CreateStore(p, element_ptr);
+                            ctx.try_emplace(s.fields[i].var, p);
+                        }
+                        else
+                        {
+                            auto const val = gen_val(global, ctx, builder, x.values[i], value_category, element_ptr);
+                            ctx.try_emplace(s.fields[i].var, val);
+                        }
+                    }
+                    std::ranges::copy(ctx.destructors, std::back_inserter(local.destructors));
+                    ctx.destructors.clear();
+                    return dest2;
                 },
                 [&] (typecheck::is_list_initializable_result::sigma_const_t sigma) -> llvm::Value*
                 {
@@ -489,6 +519,29 @@ llvm::Value* gen_val(
                     }
                     return dest2;
                 });
+        },
+        [&] (typecheck::expr_t::member_t const& member) -> llvm::Value*
+        {
+            auto const& object_type = std::get<typecheck::expr_t>(member.object.get().properties.sort.get());
+            auto const& g = std::get<typecheck::expr_t::global_t>(object_type.value);
+            auto const type_def = std::get_if<global_ctx_t::type_def_t>(global[g]);
+            assert(type_def and "only global structs can have member access");
+            auto const& s = std::get<typecheck::type_def_t::struct_t>(type_def->def.value);
+            auto const it =
+                std::ranges::find_if(s.fields,
+                    [&] (auto const& f) { return f.var == typecheck::expr_t::var_t{member.field}; });
+            assert(it != s.fields.end());
+            auto const struct_type = gen_type(global, object_type);
+            auto const base = gen_temporary_val(global, local, builder, member.object.get());
+            auto const int32 = llvm::Type::getInt32Ty(global.llvm_ctx);
+            auto const zero = llvm::ConstantInt::get(int32, 0);
+            auto const index = llvm::ConstantInt::get(int32, std::distance(s.fields.begin(), it));
+            auto const ptr = builder.CreateGEP(struct_type, base, {zero, index});
+            auto const element_type = gen_type(global, it->type); // TODO this is wrong; needs substitutions!
+            return maybe_store(
+                is_boxed(type) or is_pass_by_val(global, type)
+                ? builder.CreateLoad(element_type, ptr)
+                : ptr);
         },
         [&] (typecheck::expr_t::subscript_t const& subscript) -> llvm::Value*
         {
@@ -552,6 +605,11 @@ void gen_store(
         [&] (pass_by_ptr_result::no_t)
         {
             builder.CreateStore(value, dest);
+        },
+        [&] (pass_by_ptr_result::struct_t const&)
+        {
+            // TODO
+            assert(false and "not yet implemented");
         },
         [&] (pass_by_ptr_result::sigma_t const& sigma)
         {

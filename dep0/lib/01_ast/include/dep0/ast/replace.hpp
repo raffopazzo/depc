@@ -25,11 +25,11 @@ namespace dep0::ast {
  * It means to **replace**, hence the name of this function, all
  * occurrences of a binding variable with a new "fresh" name in order to
  * obtain a new expression that is alpha-equivalent to the original one.
- * 
+ *
  * @warning for the purpose of alpha-conversion, it is the responsibility
  * of the caller to ensure that the new name is actually fresh.
  * If the new name is not fresh then accidental capture will occur.
- * 
+ *
  * @see
  *   - @ref alpha_equivalence
  *   - @ref dep0::ast::rename()
@@ -53,6 +53,14 @@ void replace(
     typename expr_t<P>::var_t const& to,
     typename std::vector<func_arg_t<P>>::iterator begin,
     typename std::vector<func_arg_t<P>>::iterator end);
+
+/** @brief Overload to use for struct definitions. */
+template <Properties P>
+void replace(
+    typename expr_t<P>::var_t const& from,
+    typename expr_t<P>::var_t const& to,
+    typename std::vector<typename type_def_t<P>::struct_t::field_t>::iterator begin,
+    typename std::vector<typename type_def_t<P>::struct_t::field_t>::iterator end);
 
 } // namespace dep0::ast
 

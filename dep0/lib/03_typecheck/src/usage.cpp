@@ -188,6 +188,10 @@ expected<std::true_type> usage_t::try_add(ctx_t const& ctx, expr_t const& expr, 
                     result = try_add(ctx, v, usage_multiplier);
             return result;
         },
+        [&] (expr_t::member_t const& x)
+        {
+            return try_add(ctx, x.object.get(), usage_multiplier);
+        },
         [&] (expr_t::subscript_t const& x)
         {
             auto result = try_add(ctx, x.object.get(), usage_multiplier);

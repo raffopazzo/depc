@@ -14,10 +14,10 @@
 
 namespace dep0::typecheck {
 
-static std::optional<expr_t> try_make_trivial_value(expr_t const& type)
+static std::optional<expr_t> try_make_trivial_value(env_t const& env, expr_t const& type)
 {
     return match(
-        is_list_initializable(type),
+        is_list_initializable(env, type),
         [&] (is_list_initializable_result::no_t) -> std::optional<expr_t>
         {
             return std::nullopt;
@@ -30,11 +30,16 @@ static std::optional<expr_t> try_make_trivial_value(expr_t const& type)
         {
             return make_legal_expr(type, expr_t::init_list_t{});
         },
+        [&] (is_list_initializable_result::struct_t) -> std::optional<expr_t>
+        {
+            // TODO
+            return std::nullopt;
+        },
         [&] (is_list_initializable_result::sigma_const_t const sigma) -> std::optional<expr_t>
         {
             std::vector<expr_t> values;
             for (auto const& arg: sigma.args)
-                if (auto val = try_make_trivial_value(arg.type))
+                if (auto val = try_make_trivial_value(env, arg.type))
                     values.push_back(std::move(*val));
                 else
                     return std::nullopt;
@@ -48,7 +53,7 @@ static std::optional<expr_t> try_make_trivial_value(expr_t const& type)
 
 void search_trivial_value(search_task_t& task)
 {
-    if (auto val = try_make_trivial_value(*task.target))
+    if (auto val = try_make_trivial_value(task.env, *task.target))
         task.set_result(std::move(*val));
 }
 

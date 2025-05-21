@@ -155,7 +155,7 @@ static llvm_func_t gen_destructor(global_ctx_t& global, typecheck::expr_t const&
             match(
                 *val,
                 [] (llvm_func_t const&) { },
-                [] (typecheck::type_def_t const&) { });
+                [] (global_ctx_t::type_def_t const&) { });
         },
         [&] (typecheck::expr_t::app_t const& app)
         {
@@ -210,6 +210,7 @@ static llvm_func_t gen_destructor(global_ctx_t& global, typecheck::expr_t const&
         },
         [] (typecheck::expr_t::array_t const&) { },
         [] (typecheck::expr_t::init_list_t const&) { },
+        [] (typecheck::expr_t::member_t const&) { },
         [] (typecheck::expr_t::subscript_t const&) { },
         [] (typecheck::expr_t::because_t const&)
         {

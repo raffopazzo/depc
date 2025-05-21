@@ -39,4 +39,11 @@ void substitute(
     std::vector<func_arg_t>::iterator begin,
     std::vector<func_arg_t>::iterator end);
 
+/** @brief Perform capture-avoiding substitution inside all fields of a struct. */
+void substitute(
+    expr_t::var_t const&,
+    expr_t const&,
+    std::vector<type_def_t::struct_t::field_t>::iterator begin,
+    std::vector<type_def_t::struct_t::field_t>::iterator end);
+
 } // namespace dep0::typecheck

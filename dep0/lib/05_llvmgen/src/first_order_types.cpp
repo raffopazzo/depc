@@ -71,6 +71,7 @@ bool is_first_order_type(typecheck::expr_t const& type)
         },
         [] (typecheck::expr_t::array_t const&) { return false; }, // `array_t` on its own is a term, not a type
         [] (typecheck::expr_t::init_list_t const&) { return false; },
+        [] (typecheck::expr_t::member_t const&) { return false; },
         [] (typecheck::expr_t::subscript_t const&) { return false; },
         [] (typecheck::expr_t::because_t const& x) { return is_first_order_type(x.value.get()); });
 }

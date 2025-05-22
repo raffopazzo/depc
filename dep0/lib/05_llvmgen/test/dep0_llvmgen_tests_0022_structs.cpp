@@ -434,4 +434,213 @@ BOOST_AUTO_TEST_CASE(pass_004)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_005)
+{
+    BOOST_TEST_REQUIRE(pass("0022_structs/pass_005.depc"));
+    auto const t = get_struct("t");
+    BOOST_TEST(is_struct(t, "t", is_i32, is_i64));
+    auto const f = get_function("f");
+    BOOST_TEST_REQUIRE(
+        is_function_of(
+            f,
+            std::tuple{
+                ret_ptr_to(exactly(t)),
+                arg_of(pointer_to(exactly(t)), "x", nonnull)},
+            is_void));
+    auto const inst = get_instructions(f->getEntryBlock());
+    BOOST_TEST_REQUIRE(inst.size() == 4ul);
+    BOOST_TEST(is_bitcast_of(inst[0], exactly(f->getArg(0)), pointer_to(exactly(t)), pointer_to(is_i8)));
+    BOOST_TEST(is_bitcast_of(inst[1], exactly(f->getArg(1)), pointer_to(exactly(t)), pointer_to(is_i8)));
+    auto const attrs = std::vector{llvm::Attribute::Alignment};
+    auto const align = llvm::Align(8);
+    BOOST_TEST(
+        is_direct_call(
+            inst[2],
+            is_memcpy,
+            call_arg(exactly(inst[0]), attrs, align),
+            call_arg(exactly(inst[1]), attrs, align),
+            call_arg(constant(16)),
+            call_arg(constant(false))));
+    BOOST_TEST(is_return_of_void(inst[3]));
+}
+
+BOOST_AUTO_TEST_CASE(pass_006)
+{
+    BOOST_TEST_REQUIRE(pass("0022_structs/pass_006.depc"));
+    auto const t = get_struct("t");
+    auto const tuple_type = struct_of(is_i64, pointer_to(is_i32));
+    BOOST_TEST(is_struct(t, "t", is_i64, pointer_to(tuple_type)));
+    auto const f = get_function("f");
+    BOOST_TEST_REQUIRE(
+        is_function_of(
+            f,
+            std::tuple{
+                ret_ptr_to(exactly(t)),
+                arg_of(pointer_to(exactly(t)), "x", nonnull)},
+            is_void));
+    auto const blks = get_blocks(*f);
+    BOOST_TEST_REQUIRE(blks.size() == 3ul);
+    auto const entry = blks[0];
+    auto const loop  = blks[1];
+    auto const next  = blks[2];
+    llvm::Value const* src;
+    llvm::Value const* dst;
+    llvm::Value const* n;
+    {
+        auto const inst = get_instructions(*entry);
+        BOOST_TEST_REQUIRE(inst.size() == 13ul);
+        auto const gep_x_0  = inst[0];
+        auto const gep_0_0  = inst[1];
+        auto const load_n   = inst[2];
+        auto const store_n  = inst[3];
+        auto const gep_x_1  = inst[4];
+        auto const gep_0_1  = inst[5];
+        auto const mallocsz = inst[6];
+        auto const malloc   = inst[7];
+        auto const bitcast  = inst[8];
+        auto const store_p  = inst[9];
+        auto const load_p   = inst[10];
+        auto const cmp      = inst[11];
+        auto const br       = inst[12];
+        BOOST_TEST(is_gep_of(gep_x_0, exactly(t), exactly(f->getArg(1)), constant(0), constant(0)));
+        BOOST_TEST(is_gep_of(gep_0_0, exactly(t), exactly(f->getArg(0)), constant(0), constant(0)));
+        BOOST_TEST(is_load_of(load_n, is_i64, exactly(gep_x_0), align_of(8)));
+        BOOST_TEST(is_store_of(store_n, is_i64, exactly(load_n), exactly(gep_0_0), align_of(8)));
+        BOOST_TEST(is_gep_of(gep_x_1, exactly(t), exactly(f->getArg(1)), constant(0), constant(1)));
+        BOOST_TEST(is_gep_of(gep_0_1, exactly(t), exactly(f->getArg(0)), constant(0), constant(1)));
+        BOOST_TEST(is_mul_of(mallocsz, exactly(load_n), constant(16)));
+        BOOST_TEST(is_direct_call(malloc, exactly(get_function("malloc")), call_arg(exactly(mallocsz))));
+        BOOST_TEST(is_bitcast_of(bitcast, exactly(malloc), pointer_to(is_i8), pointer_to(tuple_type)));
+        BOOST_TEST(is_store_of(store_p, pointer_to(tuple_type), exactly(bitcast), exactly(gep_0_1), align_of(8)));
+        BOOST_TEST(is_load_of(load_p, pointer_to(tuple_type), exactly(gep_x_1), align_of(8)));
+        BOOST_TEST(is_cmp(cmp, llvm::CmpInst::ICMP_ULT, constant(0), exactly(load_n)));
+        src = load_p;
+        dst = bitcast;
+        n = load_n;
+    }
+    {
+        auto const inst = get_instructions(*loop);
+        BOOST_TEST_REQUIRE(inst.size() == 21ul);
+        auto const phi       = inst[0];
+        auto const add       = inst[1];
+        auto const gep_x_i   = inst[2];
+        auto const gep_0_i   = inst[3];
+        auto const gep_x_i_k = inst[4];
+        auto const gep_0_i_k = inst[5];
+        auto const load_k    = inst[6];
+        auto const store_k   = inst[7];
+        auto const gep_x_i_v = inst[8];
+        auto const gep_0_i_v = inst[9];
+        auto const mallocsz  = inst[10];
+        auto const malloc    = inst[11];
+        auto const bitcast1  = inst[12];
+        auto const store_p   = inst[13];
+        auto const load_p    = inst[14];
+        auto const mul       = inst[15];
+        auto const bitcast2  = inst[16];
+        auto const bitcast3  = inst[17];
+        auto const memcpy    = inst[18];
+        auto const cmp       = inst[19];
+        auto const br        = inst[20];
+        BOOST_TEST(
+            is_phi_of(
+                phi, is_i64,
+                std::pair{constant(0), entry},
+                std::pair{exactly(add), loop}));
+        BOOST_TEST(is_add_of(add, exactly(phi), constant(1)));
+        BOOST_TEST(is_gep_of(gep_x_i, tuple_type, exactly(src), exactly(phi)));
+        BOOST_TEST(is_gep_of(gep_0_i, tuple_type, exactly(dst), exactly(phi)));
+        BOOST_TEST(is_gep_of(gep_x_i_k, tuple_type, exactly(gep_x_i), constant(0), constant(0)));
+        BOOST_TEST(is_gep_of(gep_0_i_k, tuple_type, exactly(gep_0_i), constant(0), constant(0)));
+        BOOST_TEST(is_load_of(load_k, is_i64, exactly(gep_x_i_k), align_of(8)));
+        BOOST_TEST(is_store_of(store_k, is_i64, exactly(load_k), exactly(gep_0_i_k) ,align_of(8)));
+        BOOST_TEST(is_gep_of(gep_x_i_v, tuple_type, exactly(gep_x_i), constant(0), constant(1)));
+        BOOST_TEST(is_gep_of(gep_0_i_v, tuple_type, exactly(gep_0_i), constant(0), constant(1)));
+        BOOST_TEST(is_mul_of(mallocsz, exactly(load_k), constant(4)));
+        BOOST_TEST(is_direct_call(malloc, exactly(get_function("malloc")), call_arg(exactly(mallocsz))));
+        BOOST_TEST(is_bitcast_of(bitcast1, exactly(malloc), pointer_to(is_i8), pointer_to(is_i32)));
+        BOOST_TEST(is_store_of(store_p, pointer_to(is_i32), exactly(bitcast1), exactly(gep_0_i_v), align_of(8)));
+        BOOST_TEST(is_load_of(load_p, pointer_to(is_i32), exactly(gep_x_i_v), align_of(8)));
+        BOOST_TEST(is_mul_of(mul, exactly(load_k), constant(4)));
+        BOOST_TEST(is_bitcast_of(bitcast2, exactly(bitcast1), pointer_to(is_i32), pointer_to(is_i8)));
+        BOOST_TEST(is_bitcast_of(bitcast3, exactly(load_p), pointer_to(is_i32), pointer_to(is_i8)));
+        auto const attrs = std::vector{llvm::Attribute::Alignment};
+        auto const align = llvm::Align(4);
+        BOOST_TEST(
+            is_direct_call(
+                memcpy,
+                is_memcpy,
+                call_arg(exactly(bitcast2), attrs, align),
+                call_arg(exactly(bitcast3), attrs, align),
+                call_arg(exactly(mul)),
+                call_arg(constant(false))));
+        BOOST_TEST(is_cmp(cmp, llvm::CmpInst::ICMP_ULT, exactly(add), exactly(n)));
+        BOOST_TEST(is_branch_of(br, exactly(cmp), exactly(loop), exactly(next)));
+    }
+    BOOST_TEST(is_block_of(*next, std::tuple{is_return_of_void}));
+}
+
+BOOST_AUTO_TEST_CASE(pass_007)
+{
+    BOOST_TEST_REQUIRE(pass("0022_structs/pass_007.depc"));
+    auto const t = get_struct("t");
+    auto const tuple_type = struct_of(is_i64, pointer_to(is_i32));
+    BOOST_TEST(is_struct(t, "t", tuple_type));
+    auto const f = get_function("f");
+    BOOST_TEST_REQUIRE(
+        is_function_of(
+            f,
+            std::tuple{
+                ret_ptr_to(exactly(t)),
+                arg_of(pointer_to(exactly(t)), "x", nonnull)},
+            is_void));
+    auto const inst = get_instructions(f->getEntryBlock());
+    BOOST_TEST_REQUIRE(inst.size() == 18ul);
+    auto const gep_x_0   = inst[0];
+    auto const gep_0_0   = inst[1];
+    auto const gep_x_0_k = inst[2];
+    auto const gep_0_0_k = inst[3];
+    auto const load_k    = inst[4];
+    auto const store_k   = inst[5];
+    auto const gep_x_0_v = inst[6];
+    auto const gep_0_0_v = inst[7];
+    auto const mallocsz  = inst[8];
+    auto const malloc    = inst[9];
+    auto const bitcast1  = inst[10];
+    auto const store_p   = inst[11];
+    auto const load_p    = inst[12];
+    auto const mul       = inst[13];
+    auto const bitcast2  = inst[14];
+    auto const bitcast3  = inst[15];
+    auto const memcpy    = inst[16];
+    auto const ret       = inst[17];
+    BOOST_TEST(is_gep_of(gep_x_0, exactly(t), exactly(f->getArg(1)), constant(0), constant(0)));
+    BOOST_TEST(is_gep_of(gep_0_0, exactly(t), exactly(f->getArg(0)), constant(0), constant(0)));
+    BOOST_TEST(is_gep_of(gep_x_0_k, tuple_type, exactly(gep_x_0), constant(0), constant(0)));
+    BOOST_TEST(is_gep_of(gep_0_0_k, tuple_type, exactly(gep_0_0), constant(0), constant(0)));
+    BOOST_TEST(is_load_of(load_k, is_i64, exactly(gep_x_0_k), align_of(8)));
+    BOOST_TEST(is_store_of(store_k, is_i64, exactly(load_k), exactly(gep_0_0_k) ,align_of(8)));
+    BOOST_TEST(is_gep_of(gep_x_0_v, tuple_type, exactly(gep_x_0), constant(0), constant(1)));
+    BOOST_TEST(is_gep_of(gep_0_0_v, tuple_type, exactly(gep_0_0), constant(0), constant(1)));
+    BOOST_TEST(is_mul_of(mallocsz, exactly(load_k), constant(4)));
+    BOOST_TEST(is_direct_call(malloc, exactly(get_function("malloc")), call_arg(exactly(mallocsz))));
+    BOOST_TEST(is_bitcast_of(bitcast1, exactly(malloc), pointer_to(is_i8), pointer_to(is_i32)));
+    BOOST_TEST(is_store_of(store_p, pointer_to(is_i32), exactly(bitcast1), exactly(gep_0_0_v), align_of(8)));
+    BOOST_TEST(is_load_of(load_p, pointer_to(is_i32), exactly(gep_x_0_v), align_of(8)));
+    BOOST_TEST(is_mul_of(mul, exactly(load_k), constant(4)));
+    BOOST_TEST(is_bitcast_of(bitcast2, exactly(bitcast1), pointer_to(is_i32), pointer_to(is_i8)));
+    BOOST_TEST(is_bitcast_of(bitcast3, exactly(load_p), pointer_to(is_i32), pointer_to(is_i8)));
+    auto const attrs = std::vector{llvm::Attribute::Alignment};
+    auto const align = llvm::Align(4);
+    BOOST_TEST(
+        is_direct_call(
+            memcpy,
+            is_memcpy,
+            call_arg(exactly(bitcast2), attrs, align),
+            call_arg(exactly(bitcast3), attrs, align),
+            call_arg(exactly(mul)),
+            call_arg(constant(false))));
+    BOOST_TEST(is_return_of_void(ret));
+}
+
 BOOST_AUTO_TEST_SUITE_END()

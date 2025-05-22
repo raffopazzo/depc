@@ -606,10 +606,54 @@ void gen_store(
         {
             builder.CreateStore(value, dest);
         },
-        [&] (pass_by_ptr_result::struct_t const&)
+        [&] (pass_by_ptr_result::struct_t const& s)
         {
-            // TODO
-            assert(false and "not yet implemented");
+            if (is_trivially_copyable(global, type))
+            {
+                auto const& data_layout = global.llvm_module.getDataLayout();
+                auto const pointed_type = gen_type(global, type);
+                auto const align = data_layout.getPrefTypeAlign(pointed_type);
+                auto const bytes = data_layout.getTypeAllocSize(pointed_type);
+                builder.CreateMemCpy(dest, align, value, align, builder.getInt64(bytes.getFixedSize()));
+            }
+            else
+            {
+                auto const gep =
+                    [&, llvm_type=gen_type(global, type), zero=builder.getInt32(0)]
+                    (llvm::Value* const p, std::size_t const i)
+                    {
+                        return builder.CreateGEP(llvm_type, p, {zero, builder.getInt32(i)});
+                    };
+                auto struct_ctx = local.extend();
+                for (auto const i: std::views::iota(0ul, s.fields.size()))
+                {
+                    auto const& element_type = s.fields[i].type;
+                    auto const element_ptr = gep(value, i);
+                    auto const dest_element_ptr = gep(dest, i);
+                    if (is_boxed(element_type))
+                    {
+                        auto const allocator = select_allocator(value_category);
+                        auto const alloca = gen_alloca(global, struct_ctx, builder, allocator, element_type);
+                        builder.CreateStore(alloca, dest_element_ptr);
+                        auto const element_value = builder.CreateLoad(gen_type(global, element_type), element_ptr);
+                        gen_store(global, struct_ctx, builder, value_category, element_value, alloca, element_type);
+                        struct_ctx.try_emplace(s.fields[i].var, alloca);
+                    }
+                    else if (is_pass_by_ptr(global, element_type))
+                    {
+                        gen_store(global, struct_ctx, builder, value_category, element_ptr, dest_element_ptr, element_type);
+                        struct_ctx.try_emplace(s.fields[i].var, dest_element_ptr);
+                    }
+                    else
+                    {
+                        auto const element_value = builder.CreateLoad(gen_type(global, element_type), element_ptr);
+                        builder.CreateStore(element_value, dest_element_ptr);
+                        struct_ctx.try_emplace(s.fields[i].var, element_value);
+                    }
+                }
+                std::ranges::copy(struct_ctx.destructors, std::back_inserter(local.destructors));
+                struct_ctx.destructors.clear();
+            }
         },
         [&] (pass_by_ptr_result::sigma_t const& sigma)
         {

@@ -75,4 +75,24 @@ inline auto exactly(llvm::Type const* const p)
     };
 }
 
+template <Predicate<llvm::Instruction>... F>
+boost::test_tools::predicate_result is_block_of(llvm::BasicBlock const& x, std::tuple<F...> f)
+{
+    auto constexpr N = sizeof...(F);
+    if (auto const n = x.size(); n != N)
+        return dep0::testing::failure("wrong number of instructions: ", n, " != ", N);
+    auto result = boost::test_tools::predicate_result(true);
+    auto it = x.begin();
+    [&] <std::size_t... I> (std::index_sequence<I...>)
+    {
+        ([&]
+        {
+            if (result)
+                if (auto const tmp = std::get<I>(f)(*it++); not tmp)
+                    result = dep0::testing::failure("inside instruction ", I, ": ", tmp.message());
+        }(), ...);
+    } (std::make_index_sequence<N>{});
+    return result;
+}
+
 } // namespace dep0::llvmgen::testing

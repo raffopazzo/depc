@@ -86,6 +86,26 @@ inline constexpr auto is_return_of = boost::hana::overload(
     }
 );
 
+template <Predicate<llvm::Value> F>
+auto return_of(F&& f)
+{
+    struct predicate_t
+    {
+        std::remove_cvref_t<F> f;
+
+        boost::test_tools::predicate_result operator()(llvm::Instruction const& x) const
+        {
+            return is_return_of(x, f);
+        }
+
+        boost::test_tools::predicate_result operator()(llvm::Value const& x) const
+        {
+            return is_return_of(x, f);
+        }
+    };
+    return predicate_t{std::forward<F>(f)};
+}
+
 inline constexpr auto is_return_of_void = boost::hana::overload(
     [] (llvm::Instruction const& x) { return impl::is_return_of_void(x); },
     [] (llvm::Instruction const* const p) { return impl::is_return_of_void(p); },

@@ -487,7 +487,7 @@ bool is_trivially_destructible(global_ctx_t const& global, typecheck::expr_t con
                     assert(false and "found a function but was expecting a type");
                     __builtin_unreachable();
                 },
-                [] (global_ctx_t::type_def_t const& t)
+                [&] (global_ctx_t::type_def_t const& t)
                 {
                     return match(
                         t.def.value,
@@ -495,10 +495,14 @@ bool is_trivially_destructible(global_ctx_t const& global, typecheck::expr_t con
                         {
                             return true;
                         },
-                        [] (typecheck::type_def_t::struct_t const&)
+                        [&] (typecheck::type_def_t::struct_t const& s)
                         {
-                            // TODO only if all fields are trivially destructible
-                            return true;
+                            return std::ranges::all_of(
+                                s.fields,
+                                [&] (typecheck::type_def_t::struct_t::field_t const& f)
+                                {
+                                    return not is_boxed(f.type) and is_trivially_destructible(global, f.type);
+                                });
                         });
                 });
         },

@@ -536,7 +536,7 @@ llvm::Value* gen_val(
             auto const zero = llvm::ConstantInt::get(int32, 0);
             auto const index = llvm::ConstantInt::get(int32, *i);
             auto const ptr = builder.CreateGEP(struct_type, base, {zero, index});
-            auto const element_type = gen_type(global, s.fields[*i].type); // TODO this is wrong; needs substitutions!
+            auto const element_type = gen_type(global, s.fields[*i].type);
             return maybe_store(
                 is_boxed(type) or is_pass_by_val(global, type)
                 ? builder.CreateLoad(element_type, ptr)

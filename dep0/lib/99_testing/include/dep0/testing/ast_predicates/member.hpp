@@ -33,7 +33,7 @@ is_member_of(ast::expr_t<P> const& expr, F_object&& f_object, std::string_view c
 template <ast::Properties P, Predicate<ast::expr_t<P>> F_object>
 constexpr auto member_of(F_object&& f_object, std::string_view const name)
 {
-    return [f_object=std::forward<F_object>(f_object), name] (ast::expr_t<P> const& x)
+    return [f_object=std::forward<F_object>(f_object), name=std::string(name)] (ast::expr_t<P> const& x)
     {
         return is_member_of(x, f_object, name);
     };

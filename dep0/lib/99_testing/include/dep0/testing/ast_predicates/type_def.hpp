@@ -115,7 +115,7 @@ is_struct_field(typename ast::type_def_t<P>::struct_t::field_t const& x, std::st
 template <ast::Properties P, Predicate<ast::expr_t<P>> F>
 auto struct_field(std::string_view const name, F&& f)
 {
-    return [name, f=std::forward<F>(f)] (typename ast::type_def_t<P>::struct_t::field_t const& x)
+    return [name=std::string(name), f=std::forward<F>(f)] (typename ast::type_def_t<P>::struct_t::field_t const& x)
     {
         return is_struct_field<P>(x, name, f);
     };

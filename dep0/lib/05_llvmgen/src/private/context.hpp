@@ -116,7 +116,7 @@ struct global_ctx_t
      * @remarks This is not the full environment built during typechecking as it only contains the typedefs
      * that were stored in this context via `try_emplace()`.
      */
-    typecheck::env_t const& env() const { return type_defs_env; }
+    typecheck::env_t const& implied_env() const { return type_defs_env; }
 
 private:
     struct eq_t { bool operator()(typecheck::expr_t const&, typecheck::expr_t const&) const; };

@@ -54,7 +54,7 @@ void replace(
     typename std::vector<func_arg_t<P>>::iterator begin,
     typename std::vector<func_arg_t<P>>::iterator end);
 
-/** @brief Overload to use for struct definitions. */
+/** @brief Overload to use on struct fields. */
 template <Properties P>
 void replace(
     typename expr_t<P>::var_t const& from,

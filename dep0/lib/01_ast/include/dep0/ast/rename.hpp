@@ -54,7 +54,7 @@ typename expr_t<P>::var_t rename(
     typename std::vector<func_arg_t<P>>::iterator begin,
     typename std::vector<func_arg_t<P>>::iterator end);
 
-/** @brief Overload to perform renaming inside a struct definition. */
+/** @brief Overload to perform renaming inside the fields of a struct. */
 template <Properties P>
 typename expr_t<P>::var_t rename(
     typename expr_t<P>::var_t const& var,

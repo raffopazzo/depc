@@ -421,7 +421,7 @@ llvm::Value* gen_val(
         [&] (typecheck::expr_t::init_list_t const& x) -> llvm::Value*
         {
             return match(
-                typecheck::is_list_initializable(global.env(), type),
+                typecheck::is_list_initializable(global.implied_env(), type),
                 [&] (typecheck::is_list_initializable_result::no_t) -> llvm::Value*
                 {
                     // We found an initializer list whose type is not trivially initializiable from a list.

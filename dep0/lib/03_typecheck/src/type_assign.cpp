@@ -16,6 +16,7 @@
 #include "dep0/typecheck/beta_delta_reduction.hpp"
 #include "dep0/typecheck/subscript_access.hpp"
 
+#include "dep0/ast/find_member_field.hpp"
 #include "dep0/ast/pretty_print.hpp"
 
 #include "dep0/match.hpp"
@@ -305,16 +306,12 @@ type_assign(
             auto obj = type_assign(env, ctx, member.object.get(), is_mutable_allowed, usage, usage_multiplier);
             if (not obj)
                 return std::move(obj.error());
-            auto const by_name =
-                [&] (type_def_t::struct_t::field_t const& f)
-                {
-                    return f.var == expr_t::var_t{member.field};
-                };
             if (auto const ty = std::get_if<expr_t>(&obj->properties.sort.get()))
                 if (auto const g = std::get_if<expr_t::global_t>(&ty->value))
                     if (auto const type_def = std::get_if<type_def_t>(env[*g]))
                         if (auto const s = std::get_if<type_def_t::struct_t>(&type_def->value))
-                            if (auto const it = std::ranges::find_if(s->fields, by_name); it != s->fields.end())
+                            if (auto const it = ast::find_member_field<properties_t>(member.field, *s);
+                                it != s->fields.end())
                             {
                                 auto field_type = [&]
                                 {

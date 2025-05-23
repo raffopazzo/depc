@@ -643,4 +643,13 @@ BOOST_AUTO_TEST_CASE(pass_007)
     BOOST_TEST(is_return_of_void(ret));
 }
 
+BOOST_AUTO_TEST_CASE(pass_008)
+{
+    apply_beta_delta_normalization = true;
+    BOOST_TEST_REQUIRE(pass("0022_structs/pass_008.depc"));
+    auto const f = get_function("g");
+    BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, sext));
+    BOOST_TEST(is_block_of(f->getEntryBlock(), std::tuple{return_of(constant(1))}));
+}
+
 BOOST_AUTO_TEST_SUITE_END()

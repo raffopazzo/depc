@@ -12,6 +12,7 @@
 #include "private/cpp_int_sub.hpp"
 #include "private/derivation_rules.hpp"
 
+#include "dep0/ast/find_member_field.hpp"
 #include "dep0/typecheck/builtin_call.hpp"
 #include "dep0/typecheck/is_mutable.hpp"
 
@@ -500,8 +501,18 @@ bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t& expr)
         },
         [&] (expr_t::member_t& member)
         {
-            // TODO this is similar to subscript except the index is implied by the name
-            return false;
+            bool changed = false;
+            if (auto const init_list = std::get_if<expr_t::init_list_t>(&member.object.get().value))
+                if (auto const type = std::get_if<expr_t>(&member.object.get().properties.sort.get()))
+                    if (auto const g = std::get_if<expr_t::global_t>(&type->value))
+                        if (auto const type_def = std::get_if<type_def_t>(env[*g]))
+                            if (auto const s = std::get_if<type_def_t::struct_t>(&type_def->value))
+                                if (auto const i = ast::find_member_index<properties_t>(member.field, *s))
+                                {
+                                    changed = true;
+                                    destructive_self_assign(expr.value, std::move(init_list->values[*i].value));
+                                }
+            return changed or impl::delta_unfold(env, ctx, member);
         },
         [&] (expr_t::subscript_t& subscript)
         {

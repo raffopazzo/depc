@@ -17,6 +17,7 @@
 #include "private/gen_type.hpp"
 #include "private/proto.hpp"
 
+#include "dep0/ast/find_member_field.hpp"
 #include "dep0/typecheck/list_initialization.hpp"
 #include "dep0/typecheck/subscript_access.hpp"
 
@@ -527,17 +528,15 @@ llvm::Value* gen_val(
             auto const type_def = std::get_if<global_ctx_t::type_def_t>(global[g]);
             assert(type_def and "only global structs can have member access");
             auto const& s = std::get<typecheck::type_def_t::struct_t>(type_def->def.value);
-            auto const it =
-                std::ranges::find_if(s.fields,
-                    [&] (auto const& f) { return f.var == typecheck::expr_t::var_t{member.field}; });
-            assert(it != s.fields.end());
+            auto const i = ast::find_member_index<typecheck::properties_t>(member.field, s);
+            assert(i.has_value());
             auto const struct_type = gen_type(global, object_type);
             auto const base = gen_temporary_val(global, local, builder, member.object.get());
             auto const int32 = llvm::Type::getInt32Ty(global.llvm_ctx);
             auto const zero = llvm::ConstantInt::get(int32, 0);
-            auto const index = llvm::ConstantInt::get(int32, std::distance(s.fields.begin(), it));
+            auto const index = llvm::ConstantInt::get(int32, *i);
             auto const ptr = builder.CreateGEP(struct_type, base, {zero, index});
-            auto const element_type = gen_type(global, it->type); // TODO this is wrong; needs substitutions!
+            auto const element_type = gen_type(global, s.fields[*i].type); // TODO this is wrong; needs substitutions!
             return maybe_store(
                 is_boxed(type) or is_pass_by_val(global, type)
                 ? builder.CreateLoad(element_type, ptr)

@@ -277,13 +277,13 @@ reduce(
                 },
                 [] (type_def_t::struct_t const&)
                 {
-                    assert(false and "unknown type for primitive delta-reduction of `a + b`");
+                    assert(false and "invalid type for primitive delta-reduction of `a + b`");
                     return cpp_int{};
                 });
         },
         [&] (auto const&)
         {
-            assert(false and "unknown type for primitive delta-reduction of `a + b`");
+            assert(false and "invalid type for primitive delta-reduction of `a + b`");
             return cpp_int{};
         });
 }
@@ -318,13 +318,13 @@ reduce(
                 },
                 [] (type_def_t::struct_t const&)
                 {
-                    assert(false and "unknown type for primitive delta-reduction of `a - b`");
+                    assert(false and "invalid type for primitive delta-reduction of `a - b`");
                     return cpp_int{};
                 });
         },
         [&] (auto const&)
         {
-            assert(false and "unknown type for primitive delta-reduction of `a - b`");
+            assert(false and "invalid type for primitive delta-reduction of `a - b`");
             return cpp_int{};
         });
 }
@@ -359,13 +359,13 @@ reduce(
                 },
                 [] (type_def_t::struct_t const&)
                 {
-                    assert(false and "unknown type for primitive delta-reduction of `a * b`");
+                    assert(false and "invalid type for primitive delta-reduction of `a * b`");
                     return cpp_int{};
                 });
         },
         [&] (auto const&)
         {
-            assert(false and "unknown type for primitive delta-reduction of `a * b`");
+            assert(false and "invalid type for primitive delta-reduction of `a * b`");
             return cpp_int{};
         });
 }
@@ -400,13 +400,13 @@ reduce(
                 },
                 [] (type_def_t::struct_t const&)
                 {
-                    assert(false and "unknown type for primitive delta-reduction of `a / b`");
+                    assert(false and "invalid type for primitive delta-reduction of `a / b`");
                     return cpp_int{};
                 });
         },
         [&] (auto const&)
         {
-            assert(false and "unknown type for primitive delta-reduction of `a / b`");
+            assert(false and "invalid type for primitive delta-reduction of `a / b`");
             return cpp_int{};
         });
 }

@@ -241,6 +241,7 @@ void substitute(
             // `field.var` is now a new binding type-variable;
             // any later fields refer to `field.var` not to the initial `var`;
             // so substitution must stop, including for the return type
+            // NB this cannot really happen because field names cannot repeat in a struct; but just in case
             return;
         }
         // We need to check if `field.var` appears in `y` and, if so, rename it.

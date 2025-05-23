@@ -95,6 +95,7 @@ BOOST_AUTO_TEST_CASE(pass_005) { BOOST_TEST(pass("0022_structs/pass_005.depc"));
 BOOST_AUTO_TEST_CASE(pass_006) { BOOST_TEST(pass("0022_structs/pass_006.depc")); }
 BOOST_AUTO_TEST_CASE(pass_007) { BOOST_TEST(pass("0022_structs/pass_007.depc")); }
 BOOST_AUTO_TEST_CASE(pass_008) { BOOST_TEST(pass("0022_structs/pass_008.depc")); }
+BOOST_AUTO_TEST_CASE(pass_009) { BOOST_TEST(pass("0022_structs/pass_009.depc")); }
 
 BOOST_AUTO_TEST_CASE(typecheck_error_000) { BOOST_TEST(fail("0022_structs/typecheck_error_000.depc")); }
 BOOST_AUTO_TEST_CASE(typecheck_error_001) { BOOST_TEST(fail("0022_structs/typecheck_error_001.depc")); }

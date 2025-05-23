@@ -30,10 +30,15 @@ static std::optional<expr_t> try_make_trivial_value(env_t const& env, expr_t con
         {
             return make_legal_expr(type, expr_t::init_list_t{});
         },
-        [&] (is_list_initializable_result::struct_t) -> std::optional<expr_t>
+        [&] (is_list_initializable_result::struct_t const& s) -> std::optional<expr_t>
         {
-            // TODO
-            return std::nullopt;
+            std::vector<expr_t> values;
+            for (auto const& f: s.fields)
+                if (auto val = try_make_trivial_value(env, f.type))
+                    values.push_back(std::move(*val));
+                else
+                    return std::nullopt;
+            return make_legal_expr(type, expr_t::init_list_t{std::move(values)});
         },
         [&] (is_list_initializable_result::sigma_const_t const sigma) -> std::optional<expr_t>
         {

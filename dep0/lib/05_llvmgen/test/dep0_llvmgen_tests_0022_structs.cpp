@@ -652,4 +652,6 @@ BOOST_AUTO_TEST_CASE(pass_008)
     BOOST_TEST(is_block_of(f->getEntryBlock(), std::tuple{return_of(constant(1))}));
 }
 
+BOOST_AUTO_TEST_CASE(pass_009) { BOOST_TEST(pass("0022_structs/pass_009.depc")); }
+
 BOOST_AUTO_TEST_SUITE_END()

@@ -141,11 +141,16 @@ std::ostream& pretty_print(std::ostream& os, type_def_t<P> const& type_def, std:
         },
         [&] (typename type_def_t<P>::struct_t const& x)
         {
+            if (x.fields.empty())
+            {
+                os << "struct " << x.name << " {};";
+                return;
+            }
             os << "struct " << x.name;
             detail::new_line(os, indent) << '{';
             for (auto const& f: x.fields)
             {
-                pretty_print(os << std::endl, f.type, indent + 1);
+                pretty_print(detail::new_line(os, indent + 1), f.type, indent + 2);
                 pretty_print<P>(os << ' ', f.var) << ';';
             }
             detail::new_line(os, indent) << '}' << ';';

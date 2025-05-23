@@ -653,5 +653,6 @@ BOOST_AUTO_TEST_CASE(pass_008)
 }
 
 BOOST_AUTO_TEST_CASE(pass_009) { BOOST_TEST(pass("0022_structs/pass_009.depc")); }
+BOOST_AUTO_TEST_CASE(pass_010) { BOOST_TEST(pass("0022_structs/pass_010.depc")); }
 
 BOOST_AUTO_TEST_SUITE_END()

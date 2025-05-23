@@ -46,6 +46,7 @@ static bool is_impossible(expr_t::pi_t const&);
 static bool is_impossible(expr_t::sigma_t const&);
 static bool is_impossible(expr_t::array_t const&) { return false; }
 static bool is_impossible(expr_t::init_list_t const&);
+static bool is_impossible(expr_t::member_t const&);
 static bool is_impossible(expr_t::subscript_t const&);
 static bool is_impossible(expr_t::because_t const&);
 
@@ -149,6 +150,11 @@ bool is_impossible(expr_t::sigma_t const& x)
 bool is_impossible(expr_t::init_list_t const& x)
 {
     return std::ranges::any_of(x.values, [] (expr_t const& x) { return is_impossible(x); });
+}
+
+bool is_impossible(expr_t::member_t const& x)
+{
+    return is_impossible(x.object.get());
 }
 
 bool is_impossible(expr_t::subscript_t const& x)

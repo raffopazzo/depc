@@ -129,6 +129,10 @@ bool unify(expr_t const& from, expr_t const& to, std::map<expr_t::var_t, expr_t>
                         return false;
                 return true;
             },
+            [&] (expr_t::member_t const& x, expr_t::member_t const& y)
+            {
+                return x.field == y.field and unify(x.object.get(), y.object.get(), result);
+            },
             [&] (expr_t::subscript_t const& x, expr_t::subscript_t const& y)
             {
                 return unify(x.object.get(), y.object.get(), result) and unify(x.index.get(), y.index.get(), result);

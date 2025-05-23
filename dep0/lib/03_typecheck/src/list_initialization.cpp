@@ -11,7 +11,7 @@
 namespace dep0::typecheck {
 
 template <const_t Const>
-is_list_initializable_result_t<Const> is_list_initializable_impl(maybe_const_ref<Const, expr_t> type)
+is_list_initializable_result_t<Const> is_list_initializable_impl(env_t const& env, maybe_const_ref<Const, expr_t> type)
 {
     using result_t = is_list_initializable_result_t<Const>;
     auto constexpr no = is_list_initializable_result::no_t{};
@@ -40,25 +40,32 @@ is_list_initializable_result_t<Const> is_list_initializable_impl(maybe_const_ref
                 },
                 [&] (auto const&) -> result_t { return no; });
         },
+        [&] (expr_t::global_t const& global) -> result_t
+        {
+            if (auto const type_def = std::get_if<type_def_t>(env[global]))
+                if (auto const s = std::get_if<type_def_t::struct_t>(&type_def->value))
+                    return is_list_initializable_result::struct_t{s->fields};
+            return no;
+        },
         [&] (maybe_const_ref<Const, expr_t::sigma_t> sigma) -> result_t
         {
             return is_list_initializable_result::sigma_t<Const>{sigma.args};
         },
         [&] (maybe_const_ref<Const, expr_t::because_t> because) -> result_t
         {
-            return is_list_initializable(because.value.get());
+            return is_list_initializable(env, because.value.get());
         },
         [&] (auto const&) -> result_t { return no; });
 }
 
-is_list_initializable_result_t<const_t::yes> is_list_initializable(expr_t const& type)
+is_list_initializable_result_t<const_t::yes> is_list_initializable(env_t const& env, expr_t const& type)
 {
-    return is_list_initializable_impl<const_t::yes>(type);
+    return is_list_initializable_impl<const_t::yes>(env, type);
 }
 
-is_list_initializable_result_t<const_t::no> is_list_initializable(expr_t& type)
+is_list_initializable_result_t<const_t::no> is_list_initializable(env_t const& env, expr_t& type)
 {
-    return is_list_initializable_impl<const_t::no>(type);
+    return is_list_initializable_impl<const_t::no>(env, type);
 }
 
 } // namespace dep0::typecheck

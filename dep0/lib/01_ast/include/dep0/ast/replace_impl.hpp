@@ -146,6 +146,10 @@ void replace(typename expr_t<P>::var_t const& from, typename expr_t<P>::var_t co
             for (auto& v: init_list.values)
                 replace(from, to, v);
         },
+        [&] (typename expr_t<P>::member_t& member)
+        {
+            replace(from, to, member.object.get());
+        },
         [&] (typename expr_t<P>::subscript_t& subscript)
         {
             replace(from, to, subscript.object.get());
@@ -199,6 +203,24 @@ void replace(
     impl::replace(from, to, ret_type);
     if (body)
         impl::replace(from, to, *body);
+}
+
+template <Properties P>
+void replace(
+    typename expr_t<P>::var_t const& from,
+    typename expr_t<P>::var_t const& to,
+    typename std::vector<typename type_def_t<P>::struct_t::field_t>::iterator const begin,
+    typename std::vector<typename type_def_t<P>::struct_t::field_t>::iterator const end)
+{
+    for (auto& field: std::ranges::subrange(begin, end))
+    {
+        impl::replace(from, to, field.type);
+        // Note: in theory it would suffice to replace only the free occurrences of `from`
+        // and we could stop if `from` introduces a new binding variable;
+        // but replacing everything is easier and it shouldn't harm.
+        if (field.var == from)
+            field.var = to;
+    }
 }
 
 } // namespace dep0::ast

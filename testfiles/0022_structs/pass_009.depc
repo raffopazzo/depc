@@ -1,0 +1,20 @@
+/*
+ * Copyright Raffaele Rossi 2025.
+ *
+ * Distributed under the Boost Software License, Version 1.0.
+ * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
+ */
+struct t
+{
+};
+
+struct u
+{
+    t x;
+    () y;
+};
+
+func f0(t) -> i32_t { return 0; }
+func g0() -> i32_t { return f0(auto); }
+func f1(u) -> i32_t { return 0; }
+func g1() -> i32_t { return f1(auto); }

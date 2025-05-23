@@ -52,6 +52,7 @@ template <Properties P> bool needs_new_line(typename expr_t<P>::pi_t const&);
 template <Properties P> bool needs_new_line(typename expr_t<P>::sigma_t const&);
 template <Properties P> bool needs_new_line(typename expr_t<P>::array_t const&) { return false; }
 template <Properties P> bool needs_new_line(typename expr_t<P>::init_list_t const&);
+template <Properties P> bool needs_new_line(typename expr_t<P>::member_t const&);
 template <Properties P> bool needs_new_line(typename expr_t<P>::subscript_t const&);
 template <Properties P> bool needs_new_line(typename expr_t<P>::because_t const&);
 
@@ -88,6 +89,7 @@ template <Properties P> bool needs_parenthesis(typename expr_t<P>::pi_t const&) 
 template <Properties P> bool needs_parenthesis(typename expr_t<P>::sigma_t const&) { return false; }
 template <Properties P> bool needs_parenthesis(typename expr_t<P>::array_t const&) { return false; }
 template <Properties P> bool needs_parenthesis(typename expr_t<P>::init_list_t const&) { return false; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::member_t const&) { return false; }
 template <Properties P> bool needs_parenthesis(typename expr_t<P>::subscript_t const&) { return false; }
 template <Properties P> bool needs_parenthesis(typename expr_t<P>::because_t const&) { return false; }
 
@@ -123,7 +125,7 @@ std::ostream& pretty_print(std::ostream& os, module_t<P> const& module, std::siz
 }
 
 template <Properties P>
-std::ostream& pretty_print(std::ostream& os, type_def_t<P> const& type_def, std::size_t)
+std::ostream& pretty_print(std::ostream& os, type_def_t<P> const& type_def, std::size_t const indent)
 {
     match(
         type_def.value,
@@ -136,6 +138,22 @@ std::ostream& pretty_print(std::ostream& os, type_def_t<P> const& type_def, std:
                 x.width == width_t::_16 ? "16" :
                 x.width == width_t::_32 ? "32" :
                 "64") << " bit integer;";
+        },
+        [&] (typename type_def_t<P>::struct_t const& x)
+        {
+            if (x.fields.empty())
+            {
+                os << "struct " << x.name << " {};";
+                return;
+            }
+            os << "struct " << x.name;
+            detail::new_line(os, indent) << '{';
+            for (auto const& f: x.fields)
+            {
+                pretty_print(detail::new_line(os, indent + 1), f.type, indent + 2);
+                pretty_print<P>(os << ' ', f.var) << ';';
+            }
+            detail::new_line(os, indent) << '}' << ';';
         });
     return os;
 }
@@ -549,6 +567,12 @@ std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::init_list_t con
 }
 
 template <Properties P>
+std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::member_t const& x, std::size_t const indent)
+{
+    return pretty_print(os, x.object.get(), indent) << '.' << x.field;
+}
+
+template <Properties P>
 std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::subscript_t const& x, std::size_t const indent)
 {
     pretty_print(os, x.object.get(), indent) << '[';
@@ -692,6 +716,12 @@ template <Properties P>
 bool needs_new_line(typename expr_t<P>::init_list_t const& x)
 {
     return std::any_of(x.values.begin(), x.values.end(), [] (expr_t<P> const& y) { return needs_new_line(y); });
+}
+
+template <Properties P>
+bool needs_new_line(typename expr_t<P>::member_t const& x)
+{
+    return needs_new_line(x.object.get());
 }
 
 template <Properties P>

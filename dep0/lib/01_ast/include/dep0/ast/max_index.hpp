@@ -38,6 +38,12 @@ std::size_t max_index(
     typename std::vector<func_arg_t<P>>::const_iterator begin,
     typename std::vector<func_arg_t<P>>::const_iterator end);
 
+/** @brief Overload to use for struct definitions. */
+template <Properties P>
+std::size_t max_index(
+    typename std::vector<typename type_def_t<P>::struct_t::field_t>::const_iterator begin,
+    typename std::vector<typename type_def_t<P>::struct_t::field_t>::const_iterator end);
+
 } // namespace dep0::ast
 
 #include "dep0/ast/max_index_impl.hpp"

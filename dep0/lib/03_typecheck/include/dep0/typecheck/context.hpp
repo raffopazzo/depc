@@ -23,10 +23,10 @@ namespace dep0::typecheck {
 
 /**
  * @brief A context contains terms currently bound to binding variables, i.e. the function scope.
- * 
+ *
  * In other words, a context contains local variable declarations,
  * which comprise of the name, the quantity and type of that variable.
- * 
+ *
  * Contexts can be extended by inner scopes thus allowing shadowing of variable names.
  *
  * @see `dep0::typecheck::env_t`

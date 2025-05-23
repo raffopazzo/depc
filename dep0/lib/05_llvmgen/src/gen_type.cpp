@@ -27,6 +27,11 @@ llvm::FunctionType* gen_func_type(global_ctx_t const& global, llvm_func_proto_t 
             {
                 return gen_type(global, proto.ret_type());
             },
+            [&] (pass_by_ptr_result::struct_t const&)
+            {
+                arg_types.push_back(gen_type(global, proto.ret_type())->getPointerTo());
+                return llvm::Type::getVoidTy(global.llvm_ctx);
+            },
             [&] (pass_by_ptr_result::sigma_t const&)
             {
                 arg_types.push_back(gen_type(global, proto.ret_type())->getPointerTo());
@@ -45,6 +50,10 @@ llvm::FunctionType* gen_func_type(global_ctx_t const& global, llvm_func_proto_t 
                 [&] (pass_by_ptr_result::no_t) -> llvm::Type*
                 {
                     return gen_type(global, arg.type);
+                },
+                [&] (pass_by_ptr_result::struct_t const&) -> llvm::Type*
+                {
+                    return gen_type(global, arg.type)->getPointerTo();
                 },
                 [&] (pass_by_ptr_result::sigma_t const&) -> llvm::Type*
                 {
@@ -154,14 +163,9 @@ llvm::Type* gen_type(global_ctx_t const& global, typecheck::expr_t const& type)
                     assert(false and "found a function but was expecting a type");
                     __builtin_unreachable();
                 },
-                [&] (typecheck::type_def_t const& t)
+                [&] (global_ctx_t::type_def_t const& t)
                 {
-                    return match(
-                        t.value,
-                        [&] (typecheck::type_def_t::integer_t const& integer) -> llvm::Type*
-                        {
-                            return gen_type(global, integer.width);
-                        });
+                    return t.llvm_type;
                 });
         },
         [&] (typecheck::expr_t::app_t const& app) -> llvm::Type*
@@ -207,6 +211,11 @@ llvm::Type* gen_type(global_ctx_t const& global, typecheck::expr_t const& type)
         [] (typecheck::expr_t::init_list_t const&) -> llvm::Type*
         {
             assert(false and "cannot generate a type for an initializer list");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::member_t const&) -> llvm::Type*
+        {
+            assert(false and "cannot generate a type for member expression");
             __builtin_unreachable();
         },
         [] (typecheck::expr_t::subscript_t const&) -> llvm::Type*
@@ -307,13 +316,18 @@ pass_by_ptr_result_t pass_by_ptr(global_ctx_t const& global, typecheck::expr_t c
                     assert(false and "found a function but was expecting a type");
                     __builtin_unreachable();
                 },
-                [] (typecheck::type_def_t const& t) -> pass_by_ptr_result_t
+                [] (global_ctx_t::type_def_t const& t) -> pass_by_ptr_result_t
                 {
                     return match(
-                        t.value,
+                        t.def.value,
                         [] (typecheck::type_def_t::integer_t const& integer) -> pass_by_ptr_result_t
                         {
                             return no_t{};
+                        },
+                        [] (typecheck::type_def_t::struct_t const& x) -> pass_by_ptr_result_t
+                        {
+                            // TODO should it be pass-by-value if empty struct? same would apply for tuples
+                            return pass_by_ptr_result::struct_t{x.fields};
                         });
                 });
         },
@@ -357,6 +371,11 @@ pass_by_ptr_result_t pass_by_ptr(global_ctx_t const& global, typecheck::expr_t c
             __builtin_unreachable();
         },
         [] (typecheck::expr_t::init_list_t const&) -> pass_by_ptr_result_t
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::member_t const&) -> pass_by_ptr_result_t
         {
             assert(false and "expression is not a type");
             __builtin_unreachable();
@@ -468,13 +487,22 @@ bool is_trivially_destructible(global_ctx_t const& global, typecheck::expr_t con
                     assert(false and "found a function but was expecting a type");
                     __builtin_unreachable();
                 },
-                [] (typecheck::type_def_t const& t)
+                [&] (global_ctx_t::type_def_t const& t)
                 {
                     return match(
-                        t.value,
+                        t.def.value,
                         [] (typecheck::type_def_t::integer_t const& integer)
                         {
                             return true;
+                        },
+                        [&] (typecheck::type_def_t::struct_t const& s)
+                        {
+                            return std::ranges::all_of(
+                                s.fields,
+                                [&] (typecheck::type_def_t::struct_t::field_t const& f)
+                                {
+                                    return not is_boxed(f.type) and is_trivially_destructible(global, f.type);
+                                });
                         });
                 });
         },
@@ -525,6 +553,11 @@ bool is_trivially_destructible(global_ctx_t const& global, typecheck::expr_t con
             __builtin_unreachable();
         },
         [] (typecheck::expr_t::init_list_t const&) -> bool
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::member_t const&) -> bool
         {
             assert(false and "expression is not a type");
             __builtin_unreachable();

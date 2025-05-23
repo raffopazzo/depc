@@ -96,6 +96,14 @@ struct parse_visitor_t : dep0::DepCParserVisitor
     virtual std::any visitTypeDef(DepCParser::TypeDefContext* ctx) override
     {
         assert(ctx);
+        return ctx->integerDef() ? visitIntegerDef(ctx->integerDef()) :
+            ctx->structDef() ? visitStructDef(ctx->structDef()) :
+            throw error_t("unexpected alternative when parsing TypeDefContext", get_loc(src, *ctx));
+    }
+
+    virtual std::any visitIntegerDef(DepCParser::IntegerDefContext* ctx) override
+    {
+        assert(ctx);
         auto const loc = get_loc(src, *ctx);
         auto const name = get_text(src, *ctx->name);
         auto const sign = get_text(src, *ctx->sign);
@@ -105,8 +113,27 @@ struct parse_visitor_t : dep0::DepCParserVisitor
             width == "8" ? ast::width_t::_8 :
             width == "16" ? ast::width_t::_16 :
             width == "32" ? ast::width_t::_32 :
-            ast::width_t::_64;
+            width == "64" ? ast::width_t::_64 :
+            throw error_t("unexpected bit width when parsing IntegerDefContext", loc);
         return type_def_t{loc, type_def_t::integer_t{name, s, w}};
+    }
+
+    virtual std::any visitStructDef(DepCParser::StructDefContext* ctx) override
+    {
+        assert(ctx);
+        auto const loc = get_loc(src, *ctx);
+        auto const name = get_text(src, *ctx->name);
+        return type_def_t{loc, type_def_t::struct_t{name, fmap(ctx->fieldDecl(),
+            [this] (auto* x)
+            {
+                return std::any_cast<type_def_t::struct_t::field_t>(visitFieldDecl(x));
+            })}};
+    }
+
+    virtual std::any visitFieldDecl(DepCParser::FieldDeclContext* ctx) override
+    {
+        assert(ctx);
+        return type_def_t::struct_t::field_t{visitExpr(ctx->fieldType), get_text(src, *ctx->fieldName)};
     }
 
     struct func_sig_t
@@ -453,6 +480,17 @@ struct parse_visitor_t : dep0::DepCParserVisitor
                 }}};
     }
 
+    virtual std::any visitMemberExpr(DepCParser::MemberExprContext* ctx) override
+    {
+        assert(ctx);
+        return expr_t{
+            get_loc(src, *ctx),
+            expr_t::member_t{
+                visitExpr(ctx->expr()),
+                get_text(src, *ctx->field)
+            }};
+    }
+
     virtual std::any visitSubscriptExpr(DepCParser::SubscriptExprContext* ctx) override
     {
         assert(ctx);
@@ -589,6 +627,8 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         // So for now use the same order as they are listed in `DepCParser.g4`, for readability.
         if (auto const p = dynamic_cast<DepCParser::FuncCallExprContext*>(ctx))
             return std::any_cast<expr_t>(visitFuncCallExpr(p));
+        if (auto const p = dynamic_cast<DepCParser::MemberExprContext*>(ctx))
+            return std::any_cast<expr_t>(visitMemberExpr(p));
         if (auto const p = dynamic_cast<DepCParser::SubscriptExprContext*>(ctx))
             return std::any_cast<expr_t>(visitSubscriptExpr(p));
         if (auto const p = dynamic_cast<DepCParser::BecauseExprContext*>(ctx))

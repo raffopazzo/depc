@@ -235,6 +235,10 @@ std::optional<expr_t> rewrite(expr_t const& from, expr_t const& to, expr_t const
                 for (auto& v: x.values)
                     rewrite(from, to, v);
             },
+            [&] (expr_t::member_t const& x)
+            {
+                rewrite(from, to, x.object.get());
+            },
             [&] (expr_t::subscript_t const& x)
             {
                 rewrite(from, to, x.object.get());

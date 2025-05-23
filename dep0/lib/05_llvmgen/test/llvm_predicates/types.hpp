@@ -85,11 +85,21 @@ boost::test_tools::predicate_result is_pointer_to(llvm::Type const* const p, F&&
 // struct
 
 template <Predicate<llvm::Type>... Types>
-boost::test_tools::predicate_result is_struct(llvm::StructType const& s, Types&&... types)
+boost::test_tools::predicate_result is_struct(llvm::StructType const& s, std::string_view const name, Types&&... types)
 {
     using namespace dep0::testing;
-    if (not s.isLiteral())
-        return failure("struct is not literal but has name ", s.getName().str());
+    if (name.empty())
+    {
+        if (not s.isLiteral())
+            return failure("struct is not literal but has name ", s.getName().str());
+    }
+    else
+    {
+        if (s.isLiteral())
+            return failure("struct is literal but should have name ", name);
+        if (auto const x = static_cast<std::string_view>(s.getName()); x != name)
+            return failure("struct name: ", x, " != ", name);
+    }
     auto constexpr N = sizeof...(Types);
     if (s.getNumElements() != N)
         return failure("literal struct has wrong number of elements: ", s.getNumElements(), " != ", N);
@@ -108,28 +118,29 @@ boost::test_tools::predicate_result is_struct(llvm::StructType const& s, Types&&
 }
 
 template <Predicate<llvm::Type>... Types>
-boost::test_tools::predicate_result is_struct(llvm::StructType const* const p, Types&&... types)
+boost::test_tools::predicate_result
+is_struct(llvm::StructType const* const p, std::string_view const name, Types&&... types)
 {
     if (not p)
         return dep0::testing::failure("struct is null");
-    return is_struct(*p, std::forward<Types>(types)...);
+    return is_struct(*p, name, std::forward<Types>(types)...);
 }
 
 template <Predicate<llvm::Type>... Types>
-boost::test_tools::predicate_result is_struct(llvm::Type const& t, Types&&... types)
+boost::test_tools::predicate_result is_struct(llvm::Type const& t, std::string_view const name, Types&&... types)
 {
     if (auto const p = dyn_cast<llvm::StructType>(&t))
-        return is_struct(*p, std::forward<Types>(types)...);
+        return is_struct(*p, name, std::forward<Types>(types)...);
     else
         return dep0::testing::failure("type is not a struct but ", to_string(t));
 }
 
 template <Predicate<llvm::Type>... Types>
-boost::test_tools::predicate_result is_struct(llvm::Type const* const p, Types&&... types)
+boost::test_tools::predicate_result is_struct(llvm::Type const* const p, std::string_view const name, Types&&... types)
 {
     if (not p)
         return dep0::testing::failure("type null");
-    return is_struct(*p, std::forward<Types>(types)...);
+    return is_struct(*p, name, std::forward<Types>(types)...);
 }
 
 boost::test_tools::predicate_result is_void(llvm::Type const&);
@@ -192,23 +203,70 @@ auto pointer_to(F&& f)
 }
 
 inline constexpr auto is_struct = boost::hana::overload(
+    [] <Predicate<llvm::Type>... F> (llvm::StructType const& x, std::string_view const name, F&&... f)
+    {
+        return impl::is_struct(x, name, std::forward<F>(f)...);
+    },
+    [] <Predicate<llvm::Type>... F> (llvm::StructType const* const p, std::string_view const name, F&&... f)
+    {
+        return impl::is_struct(p, name, std::forward<F>(f)...);
+    },
+    [] <Predicate<llvm::Type>... F> (llvm::Type const& x, std::string_view const name, F&&... f)
+    {
+        return impl::is_struct(x, name, std::forward<F>(f)...);
+    },
+    [] <Predicate<llvm::Type>... F> (llvm::Type const* const p, std::string_view const name, F&&... f)
+    {
+        return impl::is_struct(p, name, std::forward<F>(f)...);
+    },
     [] <Predicate<llvm::Type>... F> (llvm::StructType const& x, F&&... f)
     {
-        return impl::is_struct(x, std::forward<F>(f)...);
+        return impl::is_struct(x, "", std::forward<F>(f)...);
     },
     [] <Predicate<llvm::Type>... F> (llvm::StructType const* const p, F&&... f)
     {
-        return impl::is_struct(p, std::forward<F>(f)...);
+        return impl::is_struct(p, "", std::forward<F>(f)...);
     },
     [] <Predicate<llvm::Type>... F> (llvm::Type const& x, F&&... f)
     {
-        return impl::is_struct(x, std::forward<F>(f)...);
+        return impl::is_struct(x, "", std::forward<F>(f)...);
     },
     [] <Predicate<llvm::Type>... F> (llvm::Type const* const p, F&&... f)
     {
-        return impl::is_struct(p, std::forward<F>(f)...);
+        return impl::is_struct(p, "", std::forward<F>(f)...);
     }
 );
+
+template <Predicate<llvm::Type>... Types>
+auto struct_of(std::string_view const name, Types&&... types)
+{
+    struct predicate_t
+    {
+        std::string name;
+        std::tuple<std::remove_cvref_t<Types>...> types;
+
+        boost::test_tools::predicate_result operator()(llvm::StructType const& x) const
+        {
+            return std::apply(is_struct, std::tuple_cat(std::tie(x, name), types));
+        }
+
+        boost::test_tools::predicate_result operator()(llvm::StructType const* const p) const
+        {
+            return std::apply(is_struct, std::tuple_cat(std::make_tuple(p, name), types));
+        }
+
+        boost::test_tools::predicate_result operator()(llvm::Type const& x) const
+        {
+            return std::apply(is_struct, std::tuple_cat(std::tie(x, name), types));
+        }
+
+        boost::test_tools::predicate_result operator()(llvm::Type const* const p) const
+        {
+            return std::apply(is_struct, std::tuple_cat(std::make_tuple(p, name), types));
+        }
+    };
+    return predicate_t{{std::move(types)...}};
+}
 
 template <Predicate<llvm::Type>... Types>
 auto struct_of(Types&&... types)

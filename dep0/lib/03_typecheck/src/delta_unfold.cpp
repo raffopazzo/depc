@@ -12,6 +12,7 @@
 #include "private/cpp_int_sub.hpp"
 #include "private/derivation_rules.hpp"
 
+#include "dep0/ast/find_member_field.hpp"
 #include "dep0/typecheck/builtin_call.hpp"
 #include "dep0/typecheck/is_mutable.hpp"
 
@@ -66,6 +67,7 @@ static bool delta_unfold(env_t const&, ctx_t const&, expr_t::pi_t&);
 static bool delta_unfold(env_t const&, ctx_t const&, expr_t::sigma_t&);
 static bool delta_unfold(env_t const&, ctx_t const&, expr_t::array_t&) { return false; }
 static bool delta_unfold(env_t const&, ctx_t const&, expr_t::init_list_t&);
+static bool delta_unfold(env_t const&, ctx_t const&, expr_t::member_t&);
 static bool delta_unfold(env_t const&, ctx_t const&, expr_t::subscript_t&);
 static bool delta_unfold(env_t const&, ctx_t const&, expr_t::because_t&);
 
@@ -230,6 +232,11 @@ bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t::init_list_t& init_
     return false;
 }
 
+bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t::member_t& subscript)
+{
+    return delta_unfold(env, ctx, subscript.object.get());
+}
+
 bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t::subscript_t& subscript)
 {
     return delta_unfold(env, ctx, subscript.object.get()) or delta_unfold(env, ctx, subscript.index.get());
@@ -267,11 +274,16 @@ reduce(
                 [&] (type_def_t::integer_t const& integer)
                 {
                     return cpp_int_add(integer.sign, integer.width, a, b);
+                },
+                [] (type_def_t::struct_t const&)
+                {
+                    assert(false and "invalid type for primitive delta-reduction of `a + b`");
+                    return cpp_int{};
                 });
         },
         [&] (auto const&)
         {
-            assert(false and "unknown type for primitive delta-reduction of `a + b`");
+            assert(false and "invalid type for primitive delta-reduction of `a + b`");
             return cpp_int{};
         });
 }
@@ -303,11 +315,16 @@ reduce(
                 [&] (type_def_t::integer_t const& integer)
                 {
                     return cpp_int_sub(integer.sign, integer.width, a, b);
+                },
+                [] (type_def_t::struct_t const&)
+                {
+                    assert(false and "invalid type for primitive delta-reduction of `a - b`");
+                    return cpp_int{};
                 });
         },
         [&] (auto const&)
         {
-            assert(false and "unknown type for primitive delta-reduction of `a - b`");
+            assert(false and "invalid type for primitive delta-reduction of `a - b`");
             return cpp_int{};
         });
 }
@@ -339,11 +356,16 @@ reduce(
                 [&] (type_def_t::integer_t const& integer)
                 {
                     return cpp_int_mult(integer.sign, integer.width, a, b);
+                },
+                [] (type_def_t::struct_t const&)
+                {
+                    assert(false and "invalid type for primitive delta-reduction of `a * b`");
+                    return cpp_int{};
                 });
         },
         [&] (auto const&)
         {
-            assert(false and "unknown type for primitive delta-reduction of `a * b`");
+            assert(false and "invalid type for primitive delta-reduction of `a * b`");
             return cpp_int{};
         });
 }
@@ -375,11 +397,16 @@ reduce(
                 [&] (type_def_t::integer_t const& integer)
                 {
                     return cpp_int_div(integer.sign, integer.width, a, b);
+                },
+                [] (type_def_t::struct_t const&)
+                {
+                    assert(false and "invalid type for primitive delta-reduction of `a / b`");
+                    return cpp_int{};
                 });
         },
         [&] (auto const&)
         {
-            assert(false and "unknown type for primitive delta-reduction of `a / b`");
+            assert(false and "invalid type for primitive delta-reduction of `a / b`");
             return cpp_int{};
         });
 }
@@ -471,6 +498,21 @@ bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t& expr)
                     return false;
                 });
             return changed or impl::delta_unfold(env, ctx, x);
+        },
+        [&] (expr_t::member_t& member)
+        {
+            bool changed = false;
+            if (auto const init_list = std::get_if<expr_t::init_list_t>(&member.object.get().value))
+                if (auto const type = std::get_if<expr_t>(&member.object.get().properties.sort.get()))
+                    if (auto const g = std::get_if<expr_t::global_t>(&type->value))
+                        if (auto const type_def = std::get_if<type_def_t>(env[*g]))
+                            if (auto const s = std::get_if<type_def_t::struct_t>(&type_def->value))
+                                if (auto const i = ast::find_member_index<properties_t>(member.field, *s))
+                                {
+                                    changed = true;
+                                    destructive_self_assign(expr.value, std::move(init_list->values[*i].value));
+                                }
+            return changed or impl::delta_unfold(env, ctx, member);
         },
         [&] (expr_t::subscript_t& subscript)
         {

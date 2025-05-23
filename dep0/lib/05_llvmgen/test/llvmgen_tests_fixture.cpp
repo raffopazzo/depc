@@ -90,3 +90,12 @@ llvm::Function const* LLVMGenTestsFixture::get_function(std::string_view const n
 {
     return pass_result ? pass_result.value()->getFunction(name) : nullptr;
 }
+
+llvm::StructType const* LLVMGenTestsFixture::get_struct(std::string_view const name) const
+{
+    if (pass_result)
+        for (auto const s : pass_result.value()->getIdentifiedStructTypes())
+            if (static_cast<std::string_view>(s->getName()) == name)
+                return s;
+    return nullptr;
+}

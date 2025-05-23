@@ -155,7 +155,43 @@ static llvm_func_t gen_destructor(global_ctx_t& global, typecheck::expr_t const&
             match(
                 *val,
                 [] (llvm_func_t const&) { },
-                [] (typecheck::type_def_t const&) { });
+                [&] (global_ctx_t::type_def_t const& t)
+                {
+                    match(
+                        t.def.value,
+                        [] (typecheck::type_def_t::integer_t const&) { },
+                        [&] (typecheck::type_def_t::struct_t const& s)
+                        {
+                            auto const gep =
+                                [&, llvm_type = gen_type(global, type), zero = builder.getInt32(0)]
+                                (std::size_t const i)
+                                {
+                                    return builder.CreateGEP(llvm_type, value, {zero, builder.getInt32(i)});
+                                };
+                            auto struct_ctx = local.extend();
+                            for (auto const i: std::views::iota(0ul, s.fields.size()))
+                                struct_ctx.try_emplace(
+                                    s.fields[i].var,
+                                    is_boxed(s.fields[i].type) or is_pass_by_val(global, s.fields[i].type)
+                                    ? builder.CreateLoad(gen_type(global, s.fields[i].type), gep(i))
+                                    : gep(i));
+                            for (auto const i: std::views::reverse(std::views::iota(0ul, s.fields.size())))
+                            {
+                                auto const& ty = s.fields[i].type;
+                                if (is_boxed(ty))
+                                {
+                                    auto const element_ptr = builder.CreateLoad(gen_type(global, ty), gep(i));
+                                    if (not is_trivially_destructible(global, ty))
+                                        gen_destructor_call(global, struct_ctx, builder, element_ptr, ty);
+                                    auto const free = llvm::CallInst::CreateFree(element_ptr, builder.GetInsertBlock());
+                                    builder.GetInsertBlock()->getInstList().push_back(free);
+                                }
+                                else if (not is_trivially_destructible(global, ty))
+                                    gen_destructor_call(global, struct_ctx, builder, gep(i), ty);
+                            }
+                            assert(struct_ctx.destructors.empty() and "destructors must not allocate");
+                        });
+                });
         },
         [&] (typecheck::expr_t::app_t const& app)
         {
@@ -210,6 +246,7 @@ static llvm_func_t gen_destructor(global_ctx_t& global, typecheck::expr_t const&
         },
         [] (typecheck::expr_t::array_t const&) { },
         [] (typecheck::expr_t::init_list_t const&) { },
+        [] (typecheck::expr_t::member_t const&) { },
         [] (typecheck::expr_t::subscript_t const&) { },
         [] (typecheck::expr_t::because_t const&)
         {

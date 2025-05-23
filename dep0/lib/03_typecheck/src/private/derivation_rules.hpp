@@ -35,7 +35,7 @@ struct derivation_rules
 
     /**
      * @brief Constructs a `true_t(expr)` whose type is `typename`.
-     * 
+     *
      * @warning It is the caller's responsibility to ensure that the given expression has type `bool_t`.
      */
     static expr_t make_true_t(expr_t);
@@ -93,9 +93,9 @@ struct derivation_rules
 
     /**
      * @brief Constructs an `expr_t::app_t` from a function and its argument.
-     * 
+     *
      * The type of the returned expression is the return type of the function.
-     * 
+     *
      * @warning The type of the returned expression might depend on the arguments to which the function is applied.
      * It is the caller's responsibility to ensure that substitution of all arguments has been done correctly.
      */

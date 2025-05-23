@@ -41,6 +41,7 @@ static bool is_mutable(expr_t::pi_t const&);
 static bool is_mutable(expr_t::sigma_t const&) { return false; }
 static bool is_mutable(expr_t::array_t const&) { return false; }
 static bool is_mutable(expr_t::init_list_t const&);
+static bool is_mutable(expr_t::member_t const&);
 static bool is_mutable(expr_t::subscript_t const&);
 static bool is_mutable(expr_t::because_t const&);
 
@@ -80,6 +81,11 @@ static bool is_mutable(expr_t::pi_t const&)
 static bool is_mutable(expr_t::init_list_t const& x)
 {
     return std::ranges::any_of(x.values, [] (expr_t const& v) { return is_mutable(v); });
+}
+
+static bool is_mutable(expr_t::member_t const& x)
+{
+    return is_mutable(x.object.get());
 }
 
 static bool is_mutable(expr_t::subscript_t const& x)

@@ -241,6 +241,19 @@ struct alpha_equivalence_visitor
         return {};
     }
 
+    result_t operator()(typename expr_t<P>::member_t& x, typename expr_t<P>::member_t& y) const
+    {
+        auto eq = is_alpha_equivalent_impl(x.object.get(), y.object.get());
+        if (eq and x.field != y.field)
+        {
+            std::ostringstream err;
+            err << "member `" << x.field << "` is not alpha-equivalent to ";
+            err << "member `" << y.field << '`';
+            eq = dep0::error_t(err.str());
+        }
+        return eq;
+    }
+
     result_t operator()(typename expr_t<P>::subscript_t& x, typename expr_t<P>::subscript_t& y) const
     {
         auto eq = is_alpha_equivalent_impl(x.object.get(), y.object.get());

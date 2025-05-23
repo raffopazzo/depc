@@ -11,6 +11,7 @@ add_library(dep0_ast_lib
     include/dep0/ast/ast.hpp
     include/dep0/ast/attribute.hpp
     include/dep0/ast/concepts.hpp
+    include/dep0/ast/find_member_field.hpp
     include/dep0/ast/get_if_array.hpp
     include/dep0/ast/hash_code.hpp
     include/dep0/ast/max_index.hpp
@@ -33,6 +34,7 @@ add_library(dep0_ast_lib
     src/ast.cpp
     src/attribute.cpp
     src/concepts.cpp
+    src/find_member_field.cpp
     src/get_if_array.cpp
     src/hash_code.cpp
     src/max_index.cpp

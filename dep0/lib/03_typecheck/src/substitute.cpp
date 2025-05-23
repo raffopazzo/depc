@@ -138,6 +138,10 @@ void substitute(expr_t::var_t const& var, expr_t const& expr, expr_t& x)
             for (auto& v: x.values)
                 substitute(var, expr, v);
         },
+        [&] (expr_t::member_t& x)
+        {
+            substitute(var, expr, x.object.get());
+        },
         [&] (expr_t::subscript_t& x)
         {
             substitute(var, expr, x.object.get());
@@ -220,6 +224,36 @@ void substitute(
     impl::substitute(var, y, ret_type);
     if (body)
         impl::substitute(var, y, *body);
+}
+
+void substitute(
+    expr_t::var_t const& var,
+    expr_t const& y,
+    std::vector<type_def_t::struct_t::field_t>::iterator it,
+    std::vector<type_def_t::struct_t::field_t>::iterator const end)
+{
+    for (; it != end; ++it)
+    {
+        auto& field = *it;
+        impl::substitute(var, y, field.type);
+        if (field.var == var)
+        {
+            // `field.var` is now a new binding type-variable;
+            // any later fields refer to `field.var` not to the initial `var`;
+            // so substitution must stop, including for the return type
+            // NB this cannot really happen because field names cannot repeat in a struct; but just in case
+            return;
+        }
+        // We need to check if `field.var` appears in `y` and, if so, rename it.
+        // Technically it would suffice to check whether `field.var` appears free in `y`,
+        // but we prefer to check if it appears anywhere (i.e. also as binding variable)
+        // because it renames possibly confusing types like `(typename t) -> (typename t) -> t` to
+        // `(typename t:1) -> (typename t) -> t`, making it obvious to see which `t` is binding.
+        // Also note that we are modifying the elements of the very vector we are iterating on,
+        // but we are only modifying the values, not the vector; so iteration is safe.
+        if (ast::occurs_in(field.var, y, ast::occurrence_style::anywhere))
+            field.var = ast::rename<properties_t>(field.var, std::next(it), end);
+    }
 }
 
 } // namespace dep0::typecheck

@@ -47,14 +47,15 @@ llvm::Attribute::AttrKind get_sign_ext_attribute(global_ctx_t const& global, typ
                     assert(false and "found a function but was expecting a type");
                     __builtin_unreachable();
                 },
-                [&] (typecheck::type_def_t const& t)
+                [&] (global_ctx_t::type_def_t const& t)
                 {
                     return match(
-                        t.value,
+                        t.def.value,
                         [&] (typecheck::type_def_t::integer_t const& x)
                         {
                             return x.sign == ast::sign_t::signed_v ? llvm::Attribute::SExt : llvm::Attribute::ZExt;
-                        });
+                        },
+                        [] (typecheck::type_def_t::struct_t const&) { return llvm::Attribute::None; });
                 });
         },
         [] (typecheck::expr_t::app_t const&) { return llvm::Attribute::None; },
@@ -63,6 +64,7 @@ llvm::Attribute::AttrKind get_sign_ext_attribute(global_ctx_t const& global, typ
         [] (typecheck::expr_t::sigma_t const&) { return llvm::Attribute::None; },
         [] (typecheck::expr_t::array_t const&) { return llvm::Attribute::None; },
         [] (typecheck::expr_t::init_list_t const&) { return llvm::Attribute::None; },
+        [] (typecheck::expr_t::member_t const&) { return llvm::Attribute::None; },
         [] (typecheck::expr_t::subscript_t const&) { return llvm::Attribute::None; },
         [&] (typecheck::expr_t::because_t const& x) { return get_sign_ext_attribute(global, x.value.get()); });
 }

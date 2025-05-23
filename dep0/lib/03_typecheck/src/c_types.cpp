@@ -42,7 +42,7 @@ dep0::expected<std::true_type> is_c_type(parser::expr_t const& x)
         [&] (parser::expr_t::relation_expr_t const&) { return no(); },
         [&] (parser::expr_t::arith_expr_t const&) { return no(); },
         [&] (parser::expr_t::var_t const&) { return no(); },
-        [&] (parser::expr_t::global_t const&) { return no(); },
+        [&] (parser::expr_t::global_t const&) { return no(); }, // TODO might be yes for some struct and integer defs
         [&] (parser::expr_t::app_t const&)
         {
             auto const arr = get_if_array(x);
@@ -60,6 +60,7 @@ dep0::expected<std::true_type> is_c_type(parser::expr_t const& x)
         },
         [&] (parser::expr_t::array_t const&) { return no(); },
         [&] (parser::expr_t::init_list_t const&) { return no(); },
+        [&] (parser::expr_t::member_t const&) { return no(); },
         [&] (parser::expr_t::subscript_t const&) { return no(); },
         [&] (parser::expr_t::because_t const& x) { return is_c_type(x.value.get()); });
 }

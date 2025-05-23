@@ -56,9 +56,8 @@ static std::optional<std::pair<ast::sign_t, ast::width_t>> get_sign_and_width(en
             [&] (typecheck::expr_t::global_t const& g)
             {
                 if (auto const type_def = std::get_if<typecheck::type_def_t>(env[g]))
-                    result = match(
-                        type_def->value,
-                        [] (typecheck::type_def_t::integer_t const& x) { return std::pair{x.sign, x.width}; });
+                    if (auto const integer = std::get_if<typecheck::type_def_t::integer_t>(&type_def->value))
+                        result = std::pair{integer->sign, integer->width};
             },
             [] (auto const&) { });
     return result;
@@ -135,6 +134,35 @@ expected<type_def_t> check_type_def(env_t& env, parser::type_def_t const& type_d
             if (auto ok = env.try_emplace(expr_t::global_t{std::nullopt, x.name}, result); not ok)
                 return std::move(ok.error());
             return result;
+        },
+        [&] (parser::type_def_t::struct_t const& x) -> expected<type_def_t>
+        {
+            ctx_t ctx;
+            auto fields = fmap_or_error(
+                x.fields,
+                [&, next_index=0] (parser::type_def_t::struct_t::field_t const& field)
+                mutable -> expected<type_def_t::struct_t::field_t>
+                {
+                    auto const index = next_index++;
+                    auto const loc = field.type.properties;
+                    auto const var = expr_t::var_t{field.var.name};
+                    auto type = check_type(env, ctx, field.type);
+                    if (not type)
+                    {
+                        std::ostringstream err;
+                        pretty_print<properties_t>(err << "cannot typecheck struct field `", var) << '`';
+                        return error_t(err.str(), loc, {std::move(type.error())});
+                    }
+                    if (auto ok = ctx.try_emplace(var, loc, ctx_t::var_decl_t{ast::qty_t::many, *type}); not ok)
+                        return std::move(ok.error());
+                    return type_def_t::struct_t::field_t{std::move(*type), var};
+                });
+            if (not fields)
+                return std::move(fields.error());
+            auto const rv = make_legal_type_def(type_def.properties, type_def_t::struct_t{x.name, std::move(*fields)});
+            if (auto ok = env.try_emplace(expr_t::global_t{std::nullopt, x.name}, rv); not ok)
+                return std::move(ok.error());
+            return rv;
         });
 }
 
@@ -444,6 +472,12 @@ check_numeric_expr(
         {
             auto const def = env[global];
             assert(def and "unknown type variable despite typecheck succeeded for the expected type");
+            auto const mismatch = [&]
+            {
+                std::ostringstream err;
+                pretty_print<properties_t>(err << "type mismatch between numeric constant and `", global) << '`';
+                return error_t(err.str(), loc);
+            };
             return match(
                 *def,
                 [&] (type_def_t const& t) -> expected<expr_t>
@@ -455,32 +489,13 @@ check_numeric_expr(
                             return t.sign == ast::sign_t::signed_v
                                 ? check_int(t.name, cpp_int_min_signed(t.width), cpp_int_max_signed(t.width))
                                 : check_int(t.name, 0ul, cpp_int_max_unsigned(t.width));
-                        });
+                        },
+                        [&] (type_def_t::struct_t const& t) -> expected<expr_t> { return mismatch(); });
                 },
-                [&] (axiom_t const& axiom) -> expected<expr_t>
-                {
-                    std::ostringstream err;
-                    err << "type mismatch between numeric constant and `" << axiom.name << '`';
-                    return error_t(err.str(), loc);
-                },
-                [&] (extern_decl_t const& extern_decl) -> expected<expr_t>
-                {
-                    std::ostringstream err;
-                    err << "type mismatch between numeric constant and `" << extern_decl.name << '`';
-                    return error_t(err.str(), loc);
-                },
-                [&] (func_decl_t const& func_decl) -> expected<expr_t>
-                {
-                    std::ostringstream err;
-                    err << "type mismatch between numeric constant and `" << func_decl.name << '`';
-                    return error_t(err.str(), loc);
-                },
-                [&] (func_def_t const& func_def) -> expected<expr_t>
-                {
-                    std::ostringstream err;
-                    err << "type mismatch between numeric constant and `" << func_def.name << '`';
-                    return error_t(err.str(), loc);
-                });
+                [&] (axiom_t const& axiom) -> expected<expr_t> { return mismatch(); },
+                [&] (extern_decl_t const& extern_decl) -> expected<expr_t> { return mismatch(); },
+                [&] (func_decl_t const& func_decl) -> expected<expr_t> { return mismatch(); },
+                [&] (func_def_t const& func_def) -> expected<expr_t> { return mismatch(); });
         },
         [&] (auto const& x) -> expected<expr_t>
         {
@@ -556,13 +571,20 @@ check_expr(
         },
         [&] (parser::expr_t::init_list_t const& list) -> expected<expr_t>
         {
+            auto const wrong_element_size = [&] (std::size_t const n_expected, std::size_t const n) -> expected<expr_t>
+            {
+                std::ostringstream err;
+                pretty_print(err << "initializer list for `", expected_type) << '`';
+                err << " has " << n << " elements but was expecting " << n_expected;
+                return error_t(err.str(), loc);
+            };
             return match(
                 expected_type,
                 [&] (expr_t expected_type) -> expected<expr_t>
                 {
                     beta_delta_normalize(env, ctx, expected_type);
                     return match(
-                        is_list_initializable(expected_type),
+                        is_list_initializable(env, expected_type),
                         [&] (is_list_initializable_result::no_t) -> expected<expr_t>
                         {
                             std::ostringstream err;
@@ -589,16 +611,34 @@ check_expr(
                             }
                             return make_legal_expr(expected_type, expr_t::init_list_t{});
                         },
+                        [&] (is_list_initializable_result::struct_t const s) -> expected<expr_t>
+                        {
+                            if (s.fields.size() != list.values.size())
+                                return wrong_element_size(s.fields.size(), list.values.size());
+                            std::vector<expr_t> values;
+                            auto fields = s.fields;
+                            for (auto const i: std::views::iota(0ul, fields.size()))
+                            {
+                                auto v = check_expr(
+                                    env, ctx,
+                                    list.values[i],
+                                    fields[i].type,
+                                    is_mutable, usage, usage_multiplier);
+                                if (not v)
+                                    return v;
+                                substitute(
+                                    fields[i].var,
+                                    *v,
+                                    fields.begin() + i + 1,
+                                    fields.end());
+                                values.push_back(std::move(*v));
+                            }
+                            return make_legal_expr(expected_type, expr_t::init_list_t{std::move(values)});
+                        },
                         [&] (is_list_initializable_result::sigma_ref_t sigma) -> expected<expr_t>
                         {
                             if (sigma.args.size() != list.values.size())
-                            {
-                                std::ostringstream err;
-                                pretty_print(err << "initializer list for `", expected_type) << '`';
-                                err << " has " << list.values.size()
-                                    << " elements but was expecting " << sigma.args.size();
-                                return error_t(err.str(), loc);
-                            }
+                                return wrong_element_size(sigma.args.size(), list.values.size());
                             std::vector<expr_t> values;
                             auto& element_types = sigma.args;
                             for (auto const i: std::views::iota(0ul, sigma.args.size()))

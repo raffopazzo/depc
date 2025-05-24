@@ -23,7 +23,7 @@ namespace dep0::typecheck {
 
 /**
  * @brief Global symbols are stored in an environment.
- * 
+ *
  * For example:
  *   - type definitions
  *   - axioms
@@ -34,15 +34,21 @@ namespace dep0::typecheck {
  * These symbols can be introduced by:
  *   - the current moduble being compiled
  *   - or any other imported module.
- * 
+ *
  * @see `dep0::typecheck::ctx_t`
  */
 class env_t
 {
 public:
 
+    /**
+     * @brief Placeholder marking a global symbol as a forward declaration of a global struct.
+     * @remarks This is primarly used for recursive data structures, like trees.
+     */
+    struct fwd_decl_t {};
+
     /** @brief Value stored in the environment, whose key is the global symbol name. */
-    using value_type = std::variant<type_def_t, axiom_t, extern_decl_t, func_decl_t, func_def_t>;
+    using value_type = std::variant<fwd_decl_t, type_def_t, axiom_t, extern_decl_t, func_decl_t, func_def_t>;
 
     /** @brief Empty environment containing no definitions, not even from the prelude module. */
     env_t() = default;
@@ -64,7 +70,7 @@ public:
 
     /**
      * @brief Return the name of all globals visible from the current environment.
-     * 
+     *
      * That is, all globals in the current environment plus all globals from parent, grand-parent, etc.
      */
     std::set<expr_t::global_t> globals() const;
@@ -81,7 +87,7 @@ public:
      *
      * For each exported symbol `sym`, a new entry with the qualified identifier `module_name::sym`
      * will be added to the current environment.
-     * 
+     *
      * @warning The prelude module must be imported with an empty module name `""`.
      */
     dep0::expected<std::true_type> import(source_text module_name, module_t const&);

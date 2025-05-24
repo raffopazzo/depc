@@ -191,6 +191,7 @@ void search_app(search_task_t& task)
     {
         bool const viable = match(
             *task.env[name],
+            [] (env_t::fwd_decl_t) { return false; },
             [] (type_def_t const&) { return false; },
             [&] (axiom_t const& axiom)
             {
@@ -226,6 +227,7 @@ void search_app(search_task_t& task)
                 {
                     match(
                         *t.env[name],
+                        [] (env_t::fwd_decl_t) { },
                         [] (type_def_t const&) { },
                         [&] (auto const& f)
                         {

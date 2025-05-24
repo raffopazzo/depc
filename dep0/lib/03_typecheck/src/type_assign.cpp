@@ -133,7 +133,30 @@ type_assign(
             }
             return make_legal_expr(view->element_type.get(), expr_t::deref_t{std::move(*ref)});
         },
-        [] (parser::expr_t::scopeof_t const&) -> expected<expr_t> { return dep0::error_t("scopeof_t not yet implemented"); },
+        [&] (parser::expr_t::scopeof_t const& x) -> expected<expr_t>
+        {
+            auto const accept = [&] () -> expected<expr_t>
+            {
+                return make_legal_expr(derivation_rules::make_scope_t(), expr_t::scopeof_t(x.var));
+            };
+            auto const reject = [&] (std::string err) -> expected<expr_t> { return error_t(std::move(err), loc); };
+            if (auto lookup = context_lookup(ctx, expr_t::var_t{x.var}))
+            {
+                if (auto ok = usage.try_add(*lookup, usage_multiplier, loc); not ok)
+                    return ok.error();
+                return accept();
+            }
+            if (auto const p = env[expr_t::global_t{std::nullopt, x.var}])
+                return match(
+                    *p,
+                    [&] (env_t::incomplete_type_t) { return reject("a type definition has no scope"); },
+                    [&] (type_def_t const&) { return reject("a type definition has no scope"); },
+                    [&] (axiom_t const&) { return reject("an axiom has no scope"); },
+                    [&] (extern_decl_t const&) { return accept(); },
+                    [&] (func_decl_t const&) { return accept(); },
+                    [&] (func_def_t const&) { return accept(); });
+            return dep0::error_t("unknown variable", loc);
+        },
         [] (parser::expr_t::bool_t) -> expected<expr_t> { return derivation_rules::make_bool(); },
         [] (parser::expr_t::cstr_t) -> expected<expr_t> { return derivation_rules::make_cstr(); },
         [] (parser::expr_t::unit_t) -> expected<expr_t> { return derivation_rules::make_unit(); },

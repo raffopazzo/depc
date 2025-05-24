@@ -16,15 +16,25 @@
 
 namespace dep0::testing {
 
-inline constexpr auto is_scope =
-[] <ast::Properties P> (ast::expr_t<P> const& x)
--> boost::test_tools::predicate_result
+template <ast::Properties P, Predicate<ast::expr_t<P>> F>
+boost::test_tools::predicate_result is_deref(ast::expr_t<P> const& expr, F&& f)
 {
-    if (std::holds_alternative<typename ast::expr_t<P>::scope_t>(x.value))
-        return true;
-    else
-        return failure("expression is not scope_t but ", pretty_name(x.value));
-};
+    auto const deref = std::get_if<typename ast::expr_t<P>::deref_t>(&expr.value);
+    if (not deref)
+        return failure("expression is not deref_t but ", pretty_name(expr.value));
+    if (auto const result = std::forward<F>(f)(deref->ref.get()); not result)
+        return failure("inside dereferenced expression: ", result.message());
+    return true;
+}
+
+template <ast::Properties P, Predicate<ast::expr_t<P>> F>
+constexpr auto deref(F&& f)
+{
+    return [f=std::forward<F>(f)] (ast::expr_t<P> const& x)
+    {
+        return is_deref(x, f);
+    };
+}
 
 inline constexpr auto is_ref =
 [] <ast::Properties P> (ast::expr_t<P> const& x)
@@ -45,23 +55,32 @@ constexpr auto ref_of(F_type&& f_type, F_scope&& f_scope)
     };
 }
 
-template <ast::Properties P, Predicate<ast::expr_t<P>> F>
-boost::test_tools::predicate_result is_deref(ast::expr_t<P> const& expr, F&& f)
+inline constexpr auto is_scope =
+[] <ast::Properties P> (ast::expr_t<P> const& x)
+-> boost::test_tools::predicate_result
 {
-    auto const deref = std::get_if<typename ast::expr_t<P>::deref_t>(&expr.value);
-    if (not deref)
-        return failure("expression is not deref_t but ", pretty_name(expr.value));
-    if (auto const result = std::forward<F>(f)(deref->ref.get()); not result)
-        return failure("inside dereferenced expression: ", result.message());
+    if (std::holds_alternative<typename ast::expr_t<P>::scope_t>(x.value))
+        return true;
+    else
+        return failure("expression is not scope_t but ", pretty_name(x.value));
+};
+
+template <ast::Properties P>
+boost::test_tools::predicate_result is_scopeof(ast::expr_t<P> const& expr, std::string_view const var)
+{
+    auto const s = std::get_if<typename ast::expr_t<P>::scopeof_t>(&expr.value);
+    if (not s)
+        return failure("expression is not scopeof_t but ", pretty_name(expr.value));
+    if (s->var != var)
+        return failure("scopeof(", s->var, ") != scopeof(", var, ')');
     return true;
 }
 
-template <ast::Properties P, Predicate<ast::expr_t<P>> F>
-constexpr auto deref(F&& f)
+inline auto scopeof(std::string_view const var)
 {
-    return [f=std::forward<F>(f)] (ast::expr_t<P> const& x)
+    return [var=std::string(var)] <ast::Properties P> (ast::expr_t<P> const& x)
     {
-        return is_deref(x, f);
+        return is_scopeof(x, var);
     };
 }
 

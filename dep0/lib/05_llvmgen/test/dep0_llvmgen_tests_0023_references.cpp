@@ -137,4 +137,23 @@ BOOST_AUTO_TEST_CASE(pass_000)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_001)
+{
+    BOOST_TEST_REQUIRE(pass("0023_references/pass_001.depc"));
+    BOOST_TEST_REQUIRE(pass_result.value()->getFunction("puts"));
+    BOOST_TEST_REQUIRE(pass_result.value()->getFunction("f0"));
+    {
+        auto const f = get_function("f1");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(is_i32, "x", sext)}, struct_of()));
+        BOOST_TEST(is_block_of(f->getEntryBlock(), std::tuple{return_of(is_zeroinitializer)}));
+    }
+    for (auto const name: {"f2", "f3", "f4", "f5"})
+    {
+        BOOST_TEST_CONTEXT(name);
+        auto const f = get_function(name);
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, struct_of()));
+        BOOST_TEST(is_block_of(f->getEntryBlock(), std::tuple{return_of(is_zeroinitializer)}));
+    }
+}
+
 BOOST_AUTO_TEST_SUITE_END()

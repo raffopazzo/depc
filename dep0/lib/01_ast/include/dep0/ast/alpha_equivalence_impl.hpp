@@ -418,6 +418,10 @@ dep0::expected<std::true_type> is_alpha_equivalent_impl(
         }
         else if (x_arg.var.has_value() xor y_arg.var.has_value())
         {
+            auto const occurs_free = [] <typename... Args> (Args&&...args)
+            {
+                return occurs_in<P>(std::forward<Args>(args)..., occurrence_style::free);
+            };
             // One function argument is named but the other is anonymous.
             // The two functions might still be alpha-equivalent if the named argument
             // does not occur free inside the rest of the signature or in the body.
@@ -432,20 +436,20 @@ dep0::expected<std::true_type> is_alpha_equivalent_impl(
             {
                 if (x_ret_type)
                 {
-                    if (occurs_in(*x_arg.var, x_args.begin() + i + 1, x_args.end(), *x_ret_type, x_body, occurrence_style::free))
+                    if (occurs_free(*x_arg.var, x_args.begin() + i + 1, x_args.end(), *x_ret_type, x_body))
                         return occurs_somewhere();
                 }
-                else if (occurs_in<P>(*x_arg.var, x_args.begin() + i + 1, x_args.end(), occurrence_style::free))
+                else if (occurs_free(*x_arg.var, x_args.begin() + i + 1, x_args.end()))
                     return occurs_somewhere();
             }
             else
             {
                 if (y_ret_type)
                 {
-                    if (occurs_in(*y_arg.var, y_args.begin() + i + 1, y_args.end(), *y_ret_type, y_body, occurrence_style::free))
+                    if (occurs_free(*y_arg.var, y_args.begin() + i + 1, y_args.end(), *y_ret_type, y_body))
                         return occurs_somewhere();
                 }
-                else if (occurs_in<P>(*y_arg.var, y_args.begin() + i + 1, y_args.end(), occurrence_style::free))
+                else if (occurs_free(*y_arg.var, y_args.begin() + i + 1, y_args.end()))
                     return occurs_somewhere();
             }
         }

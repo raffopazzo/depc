@@ -17,7 +17,7 @@ namespace dep0::ast {
 /**
  * @brief Specifies whether `dep0::ast::occurs_in()` should check for
  * free occurrences or for any occurrences of a variable name.
- * 
+ *
  * A variable `x` occurs free if its value is not bound to a function argument named `x`.
  */
 enum class occurrence_style

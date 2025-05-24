@@ -18,6 +18,7 @@
 #include "dep0/testing/ast_predicates/init_list.hpp"
 #include "dep0/testing/ast_predicates/member.hpp"
 #include "dep0/testing/ast_predicates/pi.hpp"
+#include "dep0/testing/ast_predicates/references.hpp"
 #include "dep0/testing/ast_predicates/relation_expr.hpp"
 #include "dep0/testing/ast_predicates/sigma.hpp"
 #include "dep0/testing/ast_predicates/stmt.hpp"

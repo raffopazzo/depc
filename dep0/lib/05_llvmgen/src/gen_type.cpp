@@ -97,6 +97,30 @@ llvm::Type* gen_type(global_ctx_t const& global, typecheck::expr_t const& type)
             assert(false and "cannot generate a type for auto expression");
             __builtin_unreachable();
         },
+        [] (typecheck::expr_t::ref_t const&) -> llvm::Type*
+        {
+            assert(false and "cannot generate a type for ref_t expression");
+            __builtin_unreachable();
+        },
+        [&] (typecheck::expr_t::scope_t const&) -> llvm::Type*
+        {
+            return llvm::StructType::get(global.llvm_ctx);
+        },
+        [] (typecheck::expr_t::addressof_t const&) -> llvm::Type*
+        {
+            assert(false and "cannot generate a type for addressof_t expression");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::deref_t const&) -> llvm::Type*
+        {
+            assert(false and "cannot generate a type for deref_t expression");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::scopeof_t const&) -> llvm::Type*
+        {
+            assert(false and "cannot generate a type for scopeof_t expression");
+            __builtin_unreachable();
+        },
         [&] (typecheck::expr_t::bool_t const&) -> llvm::Type*
         {
             return llvm::Type::getInt1Ty(global.llvm_ctx);
@@ -176,6 +200,11 @@ llvm::Type* gen_type(global_ctx_t const& global, typecheck::expr_t const& type)
                 {
                     return llvm::StructType::get(global.llvm_ctx);
                 },
+                [&] (typecheck::expr_t::ref_t const&) -> llvm::Type*
+                {
+                    // TODO handle pass-by-ptr types
+                    return gen_type(global, app.args[0])->getPointerTo();
+                },
                 [&] (typecheck::expr_t::array_t const&) -> llvm::Type*
                 {
                     auto const properties = get_array_properties(type);
@@ -245,6 +274,30 @@ pass_by_ptr_result_t pass_by_ptr(global_ctx_t const& global, typecheck::expr_t c
             __builtin_unreachable();
         },
         [] (typecheck::expr_t::auto_t const&) -> pass_by_ptr_result_t
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::ref_t const&) -> pass_by_ptr_result_t
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::scope_t const&) -> pass_by_ptr_result_t
+        {
+            return no_t{};
+        },
+        [] (typecheck::expr_t::addressof_t const&) -> pass_by_ptr_result_t
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::deref_t const&) -> pass_by_ptr_result_t
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::scopeof_t const&) -> pass_by_ptr_result_t
         {
             assert(false and "expression is not a type");
             __builtin_unreachable();
@@ -339,6 +392,10 @@ pass_by_ptr_result_t pass_by_ptr(global_ctx_t const& global, typecheck::expr_t c
                 {
                     return no_t{};
                 },
+                [] (typecheck::expr_t::ref_t const&) -> pass_by_ptr_result_t
+                {
+                    return no_t{}; // the pointer *is* the value!
+                },
                 [&] (typecheck::expr_t::array_t const&) -> pass_by_ptr_result_t
                 {
                     return pass_by_ptr_result::array_t{get_array_properties(type)};
@@ -421,6 +478,11 @@ bool is_trivially_destructible(global_ctx_t const& global, typecheck::expr_t con
             assert(false and "expression is not a type");
             __builtin_unreachable();
         },
+        [] (typecheck::expr_t::ref_t const&) { return true; },
+        [] (typecheck::expr_t::scope_t const&) { return true; },
+        [] (typecheck::expr_t::addressof_t const&) { return true; },
+        [] (typecheck::expr_t::deref_t const&) { return true; },
+        [] (typecheck::expr_t::scopeof_t const&) { return true; },
         [] (typecheck::expr_t::bool_t const&)
         {
             return true;

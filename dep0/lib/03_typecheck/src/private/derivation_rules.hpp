@@ -40,6 +40,12 @@ struct derivation_rules
      */
     static expr_t make_true_t(expr_t);
 
+    /** @brief Constructs a `expr_t::ref_t` whose type is `(typename, %scope_t) -> typename`. */
+    static expr_t make_ref_t();
+
+    /** @brief Constructs a `expr_t::scope_t` whose type is `typename`. */
+    static expr_t make_scope_t();
+
     /** @brief Constructs the type `bool_t` whose type is `typename`. */
     static expr_t make_bool();
 

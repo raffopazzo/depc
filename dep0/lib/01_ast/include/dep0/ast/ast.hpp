@@ -81,6 +81,30 @@ struct expr_t
      */
     struct auto_t {};
 
+    /** @brief Represents the type constructor `%ref_t`, whose type is `(typename, %scope_t) -> typename`. */
+    struct ref_t {};
+
+    /** @brief Represents the primitive type `%scope_t` */
+    struct scope_t {};
+
+    /** @brief Represents the expression `&x`, currently only applicable to variable names. */
+    struct addressof_t
+    {
+        source_text var;
+    };
+
+    /** @brief Represents the expression '*expr'. */
+    struct deref_t
+    {
+        rec_t ref;
+    };
+
+    /** @brief Represents the expression `scopeof(x)`, currently only applicable to variable names. */
+    struct scopeof_t
+    {
+        source_text var;
+    };
+
     /** @brief Represents the primitive type `%bool_t`, whose values are `true` or `false`. */
     struct bool_t {};
 
@@ -351,6 +375,7 @@ struct expr_t
     using value_t =
         std::variant<
             typename_t, true_t, auto_t,
+            ref_t, scope_t, addressof_t, deref_t, scopeof_t,
             bool_t, cstr_t, unit_t, i8_t, i16_t, i32_t, i64_t, u8_t, u16_t, u32_t, u64_t,
             boolean_constant_t, numeric_constant_t, string_literal_t,
             boolean_expr_t, relation_expr_t, arith_expr_t,

@@ -162,6 +162,11 @@ std::size_t hash_code_impl(hash_code_state_t<P>& state, expr_t<P> const& x)
             [] (expr_t<P>::typename_t const&) { return 0ul; },
             [] (expr_t<P>::true_t const&) { return 0ul; },
             [] (expr_t<P>::auto_t const&) { return 0ul; },
+            [] (expr_t<P>::ref_t const&) { return 0ul; },
+            [] (expr_t<P>::scope_t const&) { return 0ul; },
+            [] (expr_t<P>::addressof_t const&) { return 0ul; }, // TODO change this if takes an expression
+            [&] (expr_t<P>::deref_t const& x) { return 1ul ^ hash_code_impl(state, x.ref.get()); }, // flip last bit
+            [] (expr_t<P>::scopeof_t const&) { return 0ul; }, // TODO change this if takes an expression
             [] (expr_t<P>::bool_t const&) { return 0ul; },
             [] (expr_t<P>::cstr_t const&) { return 0ul; },
             [] (expr_t<P>::unit_t const&) { return 0ul; },
@@ -184,7 +189,7 @@ std::size_t hash_code_impl(hash_code_state_t<P>& state, expr_t<P> const& x)
                         x.value,
                         [&] (expr_t<P>::boolean_expr_t::not_t const& x)
                         {
-                            return hash_code_impl(state, x.expr.get());
+                            return 1ul ^ hash_code_impl(state, x.expr.get()); // flip last bit
                         },
                         [&] (auto const& x)
                         {

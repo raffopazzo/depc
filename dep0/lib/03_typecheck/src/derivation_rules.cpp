@@ -24,6 +24,21 @@ expr_t derivation_rules::make_true_t(expr_t cond)
 {
     return make_app(make_true_t(), {std::move(cond)});
 }
+expr_t derivation_rules::make_ref_t()
+{
+    return make_legal_expr(
+        make_legal_expr(
+            kind_t{},
+            expr_t::pi_t{
+                ast::is_mutable_t::no,
+                std::vector{
+                    make_legal_func_arg(ast::qty_t::zero, make_typename()),
+                    make_legal_func_arg(ast::qty_t::zero, make_scope_t())
+                },
+                make_typename()}),
+        expr_t::ref_t{});
+}
+expr_t derivation_rules::make_scope_t() { return make_legal_expr(make_typename(), expr_t::scope_t{}); }
 expr_t derivation_rules::make_bool() { return make_legal_expr(make_typename(), expr_t::bool_t{}); }
 expr_t derivation_rules::make_cstr() { return make_legal_expr(make_typename(), expr_t::cstr_t{}); }
 expr_t derivation_rules::make_unit() { return make_legal_expr(make_typename(), expr_t::unit_t{}); }

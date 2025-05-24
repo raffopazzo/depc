@@ -18,6 +18,7 @@
 
 #include "dep0/ast/find_member_field.hpp"
 #include "dep0/ast/pretty_print.hpp"
+#include "dep0/ast/views.hpp"
 
 #include "dep0/match.hpp"
 
@@ -113,6 +114,26 @@ type_assign(
         {
             return dep0::error_t("auto expressions have no unique type", loc);
         },
+        [] (parser::expr_t::ref_t) -> expected<expr_t> { return derivation_rules::make_ref_t(); },
+        [] (parser::expr_t::scope_t) -> expected<expr_t> { return derivation_rules::make_scope_t(); },
+        [] (parser::expr_t::addressof_t const&) -> expected<expr_t> { return dep0::error_t("addressof_t not yet implemented"); },
+        [&] (parser::expr_t::deref_t const& x) -> expected<expr_t>
+        {
+            auto ref = type_assign(env, ctx, x.ref.get(), is_mutable_allowed, usage, usage_multiplier);
+            if (not ref)
+                return ref;
+            auto& ref_type = std::get<expr_t>(ref->properties.sort.get());
+            beta_delta_normalize(env, ctx, ref_type);
+            auto const view = ast::get_if_ref(ref_type);
+            if (not view)
+            {
+                std::ostringstream err;
+                pretty_print(err << "cannot dereference non-reference type `", ref_type) << '`';
+                return dep0::error_t(err.str(), loc);
+            }
+            return make_legal_expr(view->element_type.get(), expr_t::deref_t{std::move(*ref)});
+        },
+        [] (parser::expr_t::scopeof_t const&) -> expected<expr_t> { return dep0::error_t("scopeof_t not yet implemented"); },
         [] (parser::expr_t::bool_t) -> expected<expr_t> { return derivation_rules::make_bool(); },
         [] (parser::expr_t::cstr_t) -> expected<expr_t> { return derivation_rules::make_cstr(); },
         [] (parser::expr_t::unit_t) -> expected<expr_t> { return derivation_rules::make_unit(); },

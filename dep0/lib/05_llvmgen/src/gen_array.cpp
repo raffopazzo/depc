@@ -8,7 +8,7 @@
 
 #include "private/gen_val.hpp"
 
-#include "dep0/ast/get_if_array.hpp"
+#include "dep0/ast/views.hpp"
 
 #include <algorithm>
 #include <numeric>

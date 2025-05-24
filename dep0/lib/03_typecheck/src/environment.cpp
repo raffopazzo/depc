@@ -111,9 +111,9 @@ dep0::expected<std::true_type> env_t::try_emplace(expr_t::global_t global, value
             pretty_print<properties_t>(err << '`', global) << '`';
             auto const origin =
                 match(prev,
-                    [] (incomplete_type_t const& x) -> std::optional<source_loc_t> { return x.origin; },
-                    [] (auto const& x) -> std::optional<source_loc_t> { return x.properties.origin; });
-            err << ", previously introduced at " << origin->line << ':' << origin->col << " as `";
+                    [] (incomplete_type_t const& x) { return x.origin; },
+                    [] (auto const& x) { return x.properties.origin; });
+            err << ", previously introduced at " << origin.line << ':' << origin.col << " as `";
             match(
                 prev,
                 [&] (incomplete_type_t const&) { err << "<incomplete_type>"; },
@@ -124,8 +124,8 @@ dep0::expected<std::true_type> env_t::try_emplace(expr_t::global_t global, value
                 [&] (func_def_t const& x) { pretty_print(err, x.properties.sort.get()); });
             err << '`';
             auto const loc = match(v,
-                [] (incomplete_type_t const& x) -> std::optional<source_loc_t> { return x.origin; },
-                [] (auto const& x) -> std::optional<source_loc_t> { return x.properties.origin; });
+                [] (incomplete_type_t const& x) { return x.origin; },
+                [] (auto const& x) { return x.properties.origin; });
             return dep0::error_t(err.str(), loc);
         };
     return match(

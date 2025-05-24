@@ -78,6 +78,10 @@ type_assign(
             return dep0::error_t("global symbol not found", loc);
         return match(
             *def,
+            [&] (env_t::incomplete_type_t const&) -> expected<expr_t>
+            {
+                return make_legal_expr(derivation_rules::make_typename(), std::move(global));
+            },
             [&] (type_def_t const&) -> expected<expr_t>
             {
                 return make_legal_expr(derivation_rules::make_typename(), std::move(global));

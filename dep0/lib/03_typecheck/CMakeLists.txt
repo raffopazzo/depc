@@ -23,6 +23,7 @@ add_library(dep0_typecheck_lib
   src/private/beta_delta_equivalence.hpp
   src/private/beta_reduction.hpp
   src/private/check.hpp
+  src/private/complete_type.hpp
   src/private/cpp_int_add.hpp
   src/private/cpp_int_div.hpp
   src/private/cpp_int_limits.hpp
@@ -49,6 +50,7 @@ add_library(dep0_typecheck_lib
   src/builtin_call.cpp
   src/beta_reduction.cpp
   src/check.cpp
+  src/complete_type.cpp
   src/context.cpp
   src/cpp_int_add.cpp
   src/cpp_int_div.cpp

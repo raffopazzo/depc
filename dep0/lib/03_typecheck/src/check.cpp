@@ -8,6 +8,7 @@
 
 #include "private/beta_delta_equivalence.hpp"
 #include "private/check.hpp"
+#include "private/complete_type.hpp"
 #include "private/cpp_int_limits.hpp"
 #include "private/c_types.hpp"
 #include "private/derivation_rules.hpp"
@@ -71,7 +72,7 @@ static bool has_attribute(func_decl_t const& x, std::string_view const attribute
 expected<module_t> check(env_t const& base_env, parser::module_t const& x) noexcept
 {
     auto env = base_env.extend();
-    std::vector<expr_t::global_t> decls; // we must check that all function declarations have been defined
+    std::vector<std::pair<expr_t::global_t, source_loc_t>> decls; // helps checking that all functions are defined
     auto entries =
         fmap_or_error(
             x.entries,
@@ -87,7 +88,7 @@ expected<module_t> check(env_t const& base_env, parser::module_t const& x) noexc
                     {
                         auto const& result = check_func_decl(env, x);
                         if (result and not has_attribute(*result, "builtin"))
-                            decls.push_back(expr_t::global_t{std::nullopt, x.name});
+                            decls.emplace_back(expr_t::global_t{std::nullopt, x.name}, x.properties);
                         return result;
                     },
                     [&] (parser::func_def_t const& f) -> expected<entry_t> { return check_func_def(env, f); });
@@ -99,21 +100,16 @@ expected<module_t> check(env_t const& base_env, parser::module_t const& x) noexc
     auto const new_end =
         std::remove_if(
             decls.begin(), decls.end(),
-            [&] (expr_t::global_t const& name)
+            [&] (std::pair<expr_t::global_t, source_loc_t> const& x)
             {
-                auto const* const prev = env[name];
+                auto const* const prev = env[x.first];
                 return prev and std::holds_alternative<func_def_t>(*prev);
             });
     if (decls.begin() != new_end)
     {
         std::vector<dep0::error_t> reasons;
-        for (auto const& name: std::ranges::subrange(decls.begin(), new_end))
-        {
-            auto const* const p = env[name];
-            assert(p);
-            auto const loc = match(*p, [] (auto const& x) { return x.properties.origin; });
+        for (auto const loc: std::views::values(std::ranges::subrange(decls.begin(), new_end)))
             reasons.push_back(dep0::error_t("function has been declared but not defined", loc));
-        }
         return error_t("module is not valid", std::nullopt, std::move(reasons));
     }
     return make_legal_module(std::move(*entries));
@@ -138,6 +134,10 @@ expected<type_def_t> check_type_def(env_t& env, parser::type_def_t const& type_d
         [&] (parser::type_def_t::struct_t const& x) -> expected<type_def_t>
         {
             ctx_t ctx;
+            auto const global = expr_t::global_t{std::nullopt, x.name};
+            auto env2 = env.extend();
+            if (auto const ok = env2.try_emplace(global, env_t::incomplete_type_t{type_def.properties}); not ok)
+                return std::move(ok.error());
             auto fields = fmap_or_error(
                 x.fields,
                 [&, next_index=0] (parser::type_def_t::struct_t::field_t const& field)
@@ -146,12 +146,18 @@ expected<type_def_t> check_type_def(env_t& env, parser::type_def_t const& type_d
                     auto const index = next_index++;
                     auto const loc = field.type.properties;
                     auto const var = expr_t::var_t{field.var.name};
-                    auto type = check_type(env, ctx, field.type);
+                    auto type = check_type(env2, ctx, field.type);
                     if (not type)
                     {
                         std::ostringstream err;
                         pretty_print<properties_t>(err << "cannot typecheck struct field `", var) << '`';
                         return error_t(err.str(), loc, {std::move(type.error())});
+                    }
+                    if (auto ok = is_complete_type(env2, *type); not ok)
+                    {
+                        std::ostringstream err;
+                        pretty_print<properties_t>(err << "incomplete type for struct field `", var) << '`';
+                        return error_t(err.str(), loc, {std::move(ok.error())});
                     }
                     if (auto ok = ctx.try_emplace(var, loc, ctx_t::var_decl_t{ast::qty_t::many, *type}); not ok)
                         return std::move(ok.error());
@@ -160,7 +166,7 @@ expected<type_def_t> check_type_def(env_t& env, parser::type_def_t const& type_d
             if (not fields)
                 return std::move(fields.error());
             auto const rv = make_legal_type_def(type_def.properties, type_def_t::struct_t{x.name, std::move(*fields)});
-            if (auto ok = env.try_emplace(expr_t::global_t{std::nullopt, x.name}, rv); not ok)
+            if (auto ok = env.try_emplace(global, rv); not ok)
                 return std::move(ok.error());
             return rv;
         });
@@ -480,6 +486,7 @@ check_numeric_expr(
             };
             return match(
                 *def,
+                [&] (env_t::incomplete_type_t const&) -> expected<expr_t> { return mismatch(); },
                 [&] (type_def_t const& t) -> expected<expr_t>
                 {
                     return match(

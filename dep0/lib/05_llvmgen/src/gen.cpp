@@ -50,20 +50,21 @@ static expected<std::true_type> gen_impl(llvm::Module& llvm_module, typecheck::m
             {
                 auto const& name = match(def.value, [] (auto const& x) -> auto const& { return x.name; });
                 auto g = typecheck::expr_t::global_t{std::nullopt, name};
-                auto const ty =
-                    match(
-                        def.value,
-                        [&] (typecheck::type_def_t::integer_t const& x) -> llvm::Type*
-                        {
-                            return gen_type(global, x.width);
-                        },
-                        [&] (typecheck::type_def_t::struct_t const& s) -> llvm::Type*
-                        {
-                            auto const& f = fmap(s.fields, [&] (auto const& x) { return gen_type(global, x.type); });
-                            return llvm::StructType::create(global.llvm_ctx, f, s.name.view());
-                        });
-                bool const inserted = global.try_emplace(g, global_ctx_t::type_def_t{def, ty}).second;
-                assert(inserted);
+                match(
+                    def.value,
+                    [&] (typecheck::type_def_t::integer_t const& x)
+                    {
+                        auto const ty = gen_type(global, x.width);
+                        bool const inserted = global.try_emplace(g, global_ctx_t::type_def_t{def, ty}).second;
+                        assert(inserted);
+                    },
+                    [&] (typecheck::type_def_t::struct_t const& s)
+                    {
+                        auto const ty = llvm::StructType::create(global.llvm_ctx, s.name.view());
+                        bool const inserted = global.try_emplace(g, global_ctx_t::type_def_t{def, ty}).second;
+                        assert(inserted);
+                        ty->setBody(fmap(s.fields, [&] (auto const& x) { return gen_type(global, x.type); }));
+                    });
             },
             [] (typecheck::axiom_t const&)
             {

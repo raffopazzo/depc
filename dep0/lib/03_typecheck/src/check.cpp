@@ -8,6 +8,7 @@
 
 #include "private/beta_delta_equivalence.hpp"
 #include "private/check.hpp"
+#include "private/complete_type.hpp"
 #include "private/cpp_int_limits.hpp"
 #include "private/c_types.hpp"
 #include "private/derivation_rules.hpp"
@@ -35,54 +36,6 @@
 #include <sstream>
 
 namespace dep0::typecheck {
-
-static expected<std::true_type> is_complete_type(expr_t::global_t const& name, expr_t const& type)
-{
-    expected<std::true_type> result;
-    match(
-        type.value,
-        [] (expr_t::typename_t) { },
-        [] (expr_t::true_t) { },
-        [] (expr_t::auto_t) { },
-        [] (expr_t::bool_t) { },
-        [] (expr_t::cstr_t) { },
-        [] (expr_t::unit_t) { },
-        [] (expr_t::i8_t) { },
-        [] (expr_t::i16_t) { },
-        [] (expr_t::i32_t) { },
-        [] (expr_t::i64_t) { },
-        [] (expr_t::u8_t) { },
-        [] (expr_t::u16_t) { },
-        [] (expr_t::u32_t) { },
-        [] (expr_t::u64_t) { },
-        [] (expr_t::boolean_constant_t const&) { },
-        [] (expr_t::numeric_constant_t const&) { },
-        [] (expr_t::string_literal_t const&) { },
-        [] (expr_t::boolean_expr_t const&) { },
-        [] (expr_t::relation_expr_t const&) { },
-        [] (expr_t::arith_expr_t const&) { },
-        [] (expr_t::var_t const&) { },
-        [&] (expr_t::global_t const& g)
-        {
-            if (g == name)
-                result = dep0::error_t("incomplete type");
-        },
-        [] (expr_t::app_t const&) { },
-        [] (expr_t::abs_t const&) { },
-        [] (expr_t::pi_t const&) { },
-        [&] (expr_t::sigma_t const& sigma)
-        {
-            for (auto const& x: sigma.args)
-                if (not (result = is_complete_type(name, x.type)))
-                    break;
-        },
-        [] (expr_t::array_t) { },
-        [] (expr_t::init_list_t const&) { },
-        [] (expr_t::member_t const&) { },
-        [] (expr_t::subscript_t const&) { },
-        [&] (expr_t::because_t const& x) { result = is_complete_type(name, x.value.get()); });
-    return result;
-}
 
 /** If the given type is integral return both its sign and width. */
 static std::optional<std::pair<ast::sign_t, ast::width_t>> get_sign_and_width(env_t const& env, sort_t const& sort)
@@ -183,7 +136,7 @@ expected<type_def_t> check_type_def(env_t& env, parser::type_def_t const& type_d
             ctx_t ctx;
             auto const global = expr_t::global_t{std::nullopt, x.name};
             auto env2 = env.extend();
-            if (auto const ok = env2.try_emplace(global, env_t::fwd_decl_t{}); not ok)
+            if (auto const ok = env2.try_emplace(global, env_t::incomplete_type_t{type_def.properties}); not ok)
                 return std::move(ok.error());
             auto fields = fmap_or_error(
                 x.fields,
@@ -200,11 +153,11 @@ expected<type_def_t> check_type_def(env_t& env, parser::type_def_t const& type_d
                         pretty_print<properties_t>(err << "cannot typecheck struct field `", var) << '`';
                         return error_t(err.str(), loc, {std::move(type.error())});
                     }
-                    if (auto ok = is_complete_type(global, *type); not ok)
+                    if (auto ok = is_complete_type(env2, *type); not ok)
                     {
                         std::ostringstream err;
                         pretty_print<properties_t>(err << "incomplete type for struct field `", var) << '`';
-                        return error_t(err.str(), loc);
+                        return error_t(err.str(), loc, {std::move(ok.error())});
                     }
                     if (auto ok = ctx.try_emplace(var, loc, ctx_t::var_decl_t{ast::qty_t::many, *type}); not ok)
                         return std::move(ok.error());
@@ -533,7 +486,7 @@ check_numeric_expr(
             };
             return match(
                 *def,
-                [&] (env_t::fwd_decl_t) -> expected<expr_t> { return mismatch(); },
+                [&] (env_t::incomplete_type_t const&) -> expected<expr_t> { return mismatch(); },
                 [&] (type_def_t const& t) -> expected<expr_t>
                 {
                     return match(

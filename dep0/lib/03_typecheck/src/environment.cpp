@@ -102,7 +102,7 @@ dep0::expected<std::true_type> env_t::try_emplace(expr_t::global_t global, value
             std::ostringstream err;
             match(
                 v,
-                [&] (fwd_decl_t) { err << "cannot add forward declaration "; },
+                [&] (incomplete_type_t const&) { err << "cannot add incomplete type "; },
                 [&] (type_def_t const&) { err << "cannot add type definition "; },
                 [&] (axiom_t const&) { err << "cannot add axiom "; },
                 [&] (extern_decl_t const&) { err << "cannot add extern function declaration "; },
@@ -111,31 +111,28 @@ dep0::expected<std::true_type> env_t::try_emplace(expr_t::global_t global, value
             pretty_print<properties_t>(err << '`', global) << '`';
             auto const origin =
                 match(prev,
-                    [] (fwd_decl_t) -> std::optional<source_loc_t> { return std::nullopt; },
+                    [] (incomplete_type_t const& x) -> std::optional<source_loc_t> { return x.origin; },
                     [] (auto const& x) -> std::optional<source_loc_t> { return x.properties.origin; });
-            if (origin)
-            {
-                err << ", previously introduced at " << origin->line << ':' << origin->col << " as `";
-                match(
-                    prev,
-                    [&] (fwd_decl_t) { },
-                    [&] (type_def_t const& x) { pretty_print(err, x); },
-                    [&] (axiom_t const& x) { pretty_print(err, x); },
-                    [&] (extern_decl_t const& x) { pretty_print(err, x); },
-                    [&] (func_decl_t const& x) { pretty_print(err, x.properties.sort.get()); },
-                    [&] (func_def_t const& x) { pretty_print(err, x.properties.sort.get()); });
-                err << '`';
-            }
+            err << ", previously introduced at " << origin->line << ':' << origin->col << " as `";
+            match(
+                prev,
+                [&] (incomplete_type_t const&) { err << "<incomplete_type>"; },
+                [&] (type_def_t const& x) { pretty_print(err, x); },
+                [&] (axiom_t const& x) { pretty_print(err, x); },
+                [&] (extern_decl_t const& x) { pretty_print(err, x); },
+                [&] (func_decl_t const& x) { pretty_print(err, x.properties.sort.get()); },
+                [&] (func_def_t const& x) { pretty_print(err, x.properties.sort.get()); });
+            err << '`';
             auto const loc = match(v,
-                [] (fwd_decl_t) -> std::optional<source_loc_t> { return std::nullopt; },
+                [] (incomplete_type_t const& x) -> std::optional<source_loc_t> { return x.origin; },
                 [] (auto const& x) -> std::optional<source_loc_t> { return x.properties.origin; });
             return dep0::error_t(err.str(), loc);
         };
     return match(
         v,
-        [&] (fwd_decl_t) -> dep0::expected<std::true_type>
+        [&] (incomplete_type_t const&) -> dep0::expected<std::true_type>
         {
-            // a new type definition must have a new unique name
+            // a new type definition (currently just an incomplete type) must have a new unique name
             if (auto const* const prev = this->operator[](global))
                 return reject(*prev);
             else

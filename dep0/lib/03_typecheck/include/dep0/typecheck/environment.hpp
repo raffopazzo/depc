@@ -41,14 +41,11 @@ class env_t
 {
 public:
 
-    /**
-     * @brief Placeholder marking a global symbol as a forward declaration of a global struct.
-     * @remarks This is primarly used for recursive data structures, like trees.
-     */
-    struct fwd_decl_t {};
+    /** @brief Placeholder marking a global symbol as an incomplete type, used for typechecking recursive structs. */
+    struct incomplete_type_t { source_loc_t origin; };
 
     /** @brief Value stored in the environment, whose key is the global symbol name. */
-    using value_type = std::variant<fwd_decl_t, type_def_t, axiom_t, extern_decl_t, func_decl_t, func_def_t>;
+    using value_type = std::variant<incomplete_type_t, type_def_t, axiom_t, extern_decl_t, func_decl_t, func_def_t>;
 
     /** @brief Empty environment containing no definitions, not even from the prelude module. */
     env_t() = default;

@@ -655,4 +655,61 @@ BOOST_AUTO_TEST_CASE(pass_008)
 BOOST_AUTO_TEST_CASE(pass_009) { BOOST_TEST(pass("0022_structs/pass_009.depc")); }
 BOOST_AUTO_TEST_CASE(pass_010) { BOOST_TEST(pass("0022_structs/pass_010.depc")); }
 
+BOOST_AUTO_TEST_CASE(pass_011)
+{
+    BOOST_TEST_REQUIRE(pass("0022_structs/pass_011.depc"));
+    auto const t = get_struct("node_t");
+    BOOST_TEST(is_struct(t, "node_t", is_i64, pointer_to(exactly(t))));
+    {
+        auto const f = get_function("leaf");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{ret_ptr_to(exactly(t))}, is_void));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        auto const inst = get_instructions(f->getEntryBlock());
+        BOOST_TEST_REQUIRE(inst.size() == 7ul);
+        auto const gep_0    = inst[0];
+        auto const store_n  = inst[1];
+        auto const gep_1    = inst[2];
+        auto const malloc   = inst[3];
+        auto const bitcast  = inst[4];
+        auto const store_p  = inst[5];
+        auto const ret      = inst[6];
+        BOOST_TEST(is_gep_of(gep_0, exactly(t), exactly(f->getArg(0)), constant(0), constant(0)));
+        BOOST_TEST(is_store_of(store_n, is_i64, constant(0), exactly(gep_0), align_of(8)));
+        BOOST_TEST(is_gep_of(gep_1, exactly(t), exactly(f->getArg(0)), constant(0), constant(1)));
+        BOOST_TEST(is_direct_call(malloc, exactly(get_function("malloc")), call_arg(constant(0))));
+        BOOST_TEST(is_bitcast_of(bitcast, exactly(malloc), pointer_to(is_i8), pointer_to(exactly(t))));
+        BOOST_TEST(is_store_of(store_p, pointer_to(exactly(t)), exactly(bitcast), exactly(gep_1), align_of(8)));
+        BOOST_TEST(is_return_of_void(ret));
+    }
+    {
+        auto const f = get_function("tree");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{ret_ptr_to(exactly(t))}, is_void));
+        BOOST_TEST_REQUIRE(f->size() == 1ul);
+        auto const inst = get_instructions(f->getEntryBlock());
+        BOOST_TEST_REQUIRE(inst.size() == 11ul);
+        auto const gep_0    = inst[0];
+        auto const store_n  = inst[1];
+        auto const gep_1    = inst[2];
+        auto const malloc   = inst[3];
+        auto const bitcast  = inst[4];
+        auto const gep_p_0  = inst[5];
+        auto const leaf_1   = inst[6];
+        auto const gep_p_1  = inst[7];
+        auto const leaf_2   = inst[8];
+        auto const store_p  = inst[9];
+        auto const ret      = inst[10];
+        BOOST_TEST(is_gep_of(gep_0, exactly(t), exactly(f->getArg(0)), constant(0), constant(0)));
+        BOOST_TEST(is_store_of(store_n, is_i64, constant(2), exactly(gep_0), align_of(8)));
+        BOOST_TEST(is_gep_of(gep_1, exactly(t), exactly(f->getArg(0)), constant(0), constant(1)));
+        BOOST_TEST(is_direct_call(malloc, exactly(get_function("malloc")), call_arg(constant(32))));
+        BOOST_TEST(is_bitcast_of(bitcast, exactly(malloc), pointer_to(is_i8), pointer_to(exactly(t))));
+        BOOST_TEST(is_gep_of(gep_p_0, exactly(t), exactly(bitcast), constant(0)));
+        BOOST_TEST(is_direct_call(leaf_1, exactly(get_function("leaf")), call_arg(exactly(gep_p_0))));
+        BOOST_TEST(is_gep_of(gep_p_1, exactly(t), exactly(bitcast), constant(1)));
+        BOOST_TEST(is_direct_call(leaf_2, exactly(get_function("leaf")), call_arg(exactly(gep_p_1))));
+        BOOST_TEST(is_store_of(store_p, pointer_to(exactly(t)), exactly(bitcast), exactly(gep_1), align_of(8)));
+        BOOST_TEST(is_return_of_void(ret));
+    }
+}
+
 BOOST_AUTO_TEST_SUITE_END()

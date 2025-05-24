@@ -34,6 +34,11 @@ static bool beta_normalize(stmt_t::impossible_t&);
 static bool beta_normalize(expr_t::typename_t&) { return false; }
 static bool beta_normalize(expr_t::true_t&) { return false; }
 static bool beta_normalize(expr_t::auto_t&) { return false; }
+static bool beta_normalize(expr_t::ref_t&) { return false; }
+static bool beta_normalize(expr_t::scope_t&) { return false; }
+static bool beta_normalize(expr_t::addressof_t&) { return false; }
+static bool beta_normalize(expr_t::deref_t& x) { return beta_normalize(x.ref.get()); }
+static bool beta_normalize(expr_t::scopeof_t&) { return false; }
 static bool beta_normalize(expr_t::bool_t&) { return false; }
 static bool beta_normalize(expr_t::cstr_t&) { return false; }
 static bool beta_normalize(expr_t::unit_t&) { return false; }

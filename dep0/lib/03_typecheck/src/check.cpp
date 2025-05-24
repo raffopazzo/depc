@@ -153,6 +153,13 @@ expected<type_def_t> check_type_def(env_t& env, parser::type_def_t const& type_d
                         pretty_print<properties_t>(err << "cannot typecheck struct field `", var) << '`';
                         return error_t(err.str(), loc, {std::move(type.error())});
                     }
+                    if (auto const scope_type = derivation_rules::make_scope_t();
+                        is_beta_delta_equivalent(env, ctx, *type, scope_type))
+                    {
+                        std::ostringstream err;
+                        pretty_print(err << "struct cannot contain values of type `", scope_type) << '`';
+                        return error_t(err.str(), loc);
+                    }
                     if (auto ok = is_complete_type(env2, *type); not ok)
                     {
                         std::ostringstream err;
@@ -785,6 +792,13 @@ expected<expr_t> check_sigma_type(
                 else
                     err << "cannot typecheck tuple argument at index " << arg_index;
                 return error_t(err.str(), loc, {std::move(type.error())});
+            }
+            if (auto const scope_type = derivation_rules::make_scope_t();
+                is_beta_delta_equivalent(env, ctx, *type, scope_type))
+            {
+                std::ostringstream err;
+                pretty_print(err << "tuple cannot contain values of type `", scope_type) << '`';
+                return error_t(err.str(), arg_loc);
             }
             if (auto ok = ctx.try_emplace(var, arg_loc, ctx_t::var_decl_t{arg.qty, *type}); not ok)
                 return std::move(ok.error());

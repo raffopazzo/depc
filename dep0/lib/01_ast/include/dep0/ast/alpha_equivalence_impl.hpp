@@ -79,6 +79,14 @@ struct alpha_equivalence_visitor
     result_t operator()(typename expr_t<P>::typename_t, typename expr_t<P>::typename_t) const { return {}; }
     result_t operator()(typename expr_t<P>::true_t, typename expr_t<P>::true_t) const { return {}; }
     result_t operator()(typename expr_t<P>::auto_t, typename expr_t<P>::auto_t) const { return {}; }
+    result_t operator()(typename expr_t<P>::ref_t, typename expr_t<P>::ref_t) const { return {}; }
+    result_t operator()(typename expr_t<P>::scope_t, typename expr_t<P>::scope_t) const { return {}; }
+    result_t operator()(typename expr_t<P>::addressof_t, typename expr_t<P>::addressof_t) const { return {}; }
+    result_t operator()(typename expr_t<P>::deref_t& x, typename expr_t<P>::deref_t& y) const
+    {
+        return is_alpha_equivalent_impl(x.ref.get(), y.ref.get());
+    }
+    result_t operator()(typename expr_t<P>::scopeof_t, typename expr_t<P>::scopeof_t) const { return {}; }
     result_t operator()(typename expr_t<P>::bool_t, typename expr_t<P>::bool_t) const { return {}; }
     result_t operator()(typename expr_t<P>::cstr_t, typename expr_t<P>::cstr_t) const { return {}; }
     result_t operator()(typename expr_t<P>::unit_t, typename expr_t<P>::unit_t) const { return {}; }

@@ -136,6 +136,31 @@ llvm::Value* gen_val(
             assert(false and "cannot generate a value for auto expression");
             __builtin_unreachable();
         },
+        [] (typecheck::expr_t::ref_t const&) -> llvm::Value*
+        {
+            assert(false and "cannot generate a value for ref_t expression");
+            __builtin_unreachable();
+        },
+        [&] (typecheck::expr_t::scope_t const&) -> llvm::Value*
+        {
+            assert(false and "cannot generate a value for scope_t expression");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::addressof_t const&) -> llvm::Value*
+        {
+            assert(false and "gen_val(addressof_t) not yet implemented");
+            __builtin_unreachable();
+        },
+        [&] (typecheck::expr_t::deref_t const& x) -> llvm::Value*
+        {
+            auto const llvm_type = gen_type(global, type);
+            auto const base = gen_temporary_val(global, local, builder, x.ref.get());
+            return maybe_store(is_pass_by_val(global, type) ? builder.CreateLoad(llvm_type, base) : base);
+        },
+        [&] (typecheck::expr_t::scopeof_t const&) -> llvm::Value*
+        {
+            return gen_val_unit(global);
+        },
         [] (typecheck::expr_t::bool_t const&) -> llvm::Value*
         {
             assert(false and "cannot generate a value for bool_t");

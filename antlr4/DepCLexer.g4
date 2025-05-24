@@ -31,7 +31,10 @@ KW_IMPOSSIBLE: 'impossible';
 KW_MUTABLE: 'mutable';
 KW_NOT: 'not';
 KW_OR: 'or';
+KW_REF_T: 'ref_t';
 KW_RETURN: 'return';
+KW_SCOPEOF: 'scopeof';
+KW_SCOPE_T: 'scope_t';
 KW_STRUCT: 'struct';
 KW_TRUE: 'true';
 KW_TRUE_T: 'true_t';
@@ -44,6 +47,7 @@ KW_U8_T: 'u8_t';
 KW_UNIT_T: 'unit_t';
 
 // Punctuation
+AMPERSAND: '&';
 ARROW: '->';
 COMMA: ',';
 DOT: '.';

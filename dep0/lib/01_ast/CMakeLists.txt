@@ -12,7 +12,6 @@ add_library(dep0_ast_lib
     include/dep0/ast/attribute.hpp
     include/dep0/ast/concepts.hpp
     include/dep0/ast/find_member_field.hpp
-    include/dep0/ast/get_if_array.hpp
     include/dep0/ast/hash_code.hpp
     include/dep0/ast/max_index.hpp
     include/dep0/ast/max_index_impl.hpp
@@ -29,13 +28,13 @@ add_library(dep0_ast_lib
     include/dep0/ast/sign.hpp
     include/dep0/ast/size.hpp
     include/dep0/ast/size_impl.hpp
+    include/dep0/ast/views.hpp
     include/dep0/ast/width.hpp
     src/alpha_equivalence.cpp
     src/ast.cpp
     src/attribute.cpp
     src/concepts.cpp
     src/find_member_field.cpp
-    src/get_if_array.cpp
     src/hash_code.cpp
     src/max_index.cpp
     src/mutable.cpp
@@ -46,6 +45,7 @@ add_library(dep0_ast_lib
     src/replace.cpp
     src/sign.cpp
     src/size.cpp
+    src/views.cpp
     src/width.cpp
     )
 add_library(DepC::Dep0::Ast ALIAS dep0_ast_lib)

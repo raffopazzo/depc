@@ -6,7 +6,7 @@
  */
 #include "dep0/typecheck/subscript_access.hpp"
 
-#include "dep0/ast/get_if_array.hpp"
+#include "dep0/ast/views.hpp"
 
 #include "dep0/match.hpp"
 

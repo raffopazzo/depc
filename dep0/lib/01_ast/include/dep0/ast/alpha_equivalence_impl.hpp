@@ -423,15 +423,10 @@ dep0::expected<std::true_type> is_alpha_equivalent_impl(
             // does not occur free inside the rest of the signature or in the body.
             auto const occurs_somewhere = [&]
             {
-                auto err = not_alpha_equivalent(i);
-                err.reasons.push_back([&]
-                {
-                    std::ostringstream err;
-                    pretty_print<P>(err << '`', x_arg.var ? *x_arg.var : *y_arg.var) << '`';
-                    err << " occurs free somewhere";
-                    return dep0::error_t(err.str());
-                }());
-                return err;
+                std::ostringstream err;
+                pretty_print<P>(err << '`', x_arg.var ? *x_arg.var : *y_arg.var) << '`';
+                err << " occurs free somewhere";
+                return dep0::error_t(err.str());
             };
             if (x_arg.var)
             {

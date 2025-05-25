@@ -36,9 +36,21 @@ struct TypecheckTestsFixture
     }
 
     template <typename... Args>
+    static constexpr auto deref(Args&&... args)
+    {
+        return dep0::testing::deref<dep0::typecheck::properties_t>(std::forward<Args>(args)...);
+    }
+
+    template <typename... Args>
     static constexpr auto pi_of(Args&&... args)
     {
         return dep0::testing::pi_of<dep0::typecheck::properties_t>(std::forward<Args>(args)...);
+    }
+
+    template <typename... Args>
+    static constexpr auto ref_of(Args&&... args)
+    {
+        return dep0::testing::ref_of<dep0::typecheck::properties_t>(std::forward<Args>(args)...);
     }
 
     template <typename... Args>

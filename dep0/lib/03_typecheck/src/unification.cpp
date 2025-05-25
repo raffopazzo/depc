@@ -31,6 +31,14 @@ bool unify(expr_t const& from, expr_t const& to, std::map<expr_t::var_t, expr_t>
             [] (expr_t::typename_t, expr_t::typename_t) { return true; },
             [] (expr_t::true_t, expr_t::true_t) { return true; },
             [] (expr_t::auto_t, expr_t::auto_t) { return true; },
+            [] (expr_t::ref_t, expr_t::ref_t) { return true; },
+            [] (expr_t::scope_t, expr_t::scope_t) { return true; },
+            [] (expr_t::addressof_t const& x, expr_t::addressof_t const& y) { return x.var == y.var; },
+            [&] (expr_t::deref_t const& x, expr_t::deref_t const& y)
+            {
+                return unify(x.ref.get(), y.ref.get(), result);
+            },
+            [] (expr_t::scopeof_t const& x, expr_t::scopeof_t const& y) { return x.var == y.var; },
             [] (expr_t::bool_t, expr_t::bool_t) { return true; },
             [] (expr_t::cstr_t, expr_t::cstr_t) { return true; },
             [] (expr_t::unit_t, expr_t::unit_t) { return true; },

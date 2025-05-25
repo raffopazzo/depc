@@ -21,6 +21,11 @@ static bool is_impossible(expr_t const&);
 static bool is_impossible(expr_t::typename_t const&) { return false; }
 static bool is_impossible(expr_t::true_t const&) { return false; }
 static bool is_impossible(expr_t::auto_t const&) { return false; }
+static bool is_impossible(expr_t::ref_t const&) { return false; }
+static bool is_impossible(expr_t::scope_t const&) { return false; }
+static bool is_impossible(expr_t::addressof_t const&) { return false; }
+static bool is_impossible(expr_t::deref_t const& x) { return is_impossible(x.ref.get()); }
+static bool is_impossible(expr_t::scopeof_t const&) { return false; }
 static bool is_impossible(expr_t::bool_t const&) { return false; }
 static bool is_impossible(expr_t::cstr_t const&) { return false; }
 static bool is_impossible(expr_t::unit_t const&) { return false; }

@@ -137,6 +137,15 @@ std::optional<expr_t> rewrite(expr_t const& from, expr_t const& to, expr_t const
             [] (expr_t::typename_t) { },
             [] (expr_t::true_t) { },
             [] (expr_t::auto_t) { },
+            [] (expr_t::ref_t) { },
+            [] (expr_t::scope_t) { },
+            [] (expr_t::addressof_t) { },
+            [&] (expr_t::deref_t const& x)
+            {
+                if (auto new_expr = rewrite(from, to, x.ref.get()))
+                    result.emplace(old.properties, expr_t::deref_t{std::move(*new_expr)});
+            },
+            [] (expr_t::scopeof_t) { },
             [] (expr_t::bool_t) { },
             [] (expr_t::cstr_t) { },
             [] (expr_t::unit_t) { },

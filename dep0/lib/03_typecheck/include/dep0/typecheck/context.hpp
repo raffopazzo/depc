@@ -22,18 +22,23 @@
 namespace dep0::typecheck {
 
 /**
- * @brief A context contains terms currently bound to binding variables, i.e. the function scope.
+ * @brief Contains local variable declarations, with their quantity and type.
  *
- * In other words, a context contains local variable declarations,
- * which comprise of the name, the quantity and type of that variable.
+ * Contexts can be extended by inner contexts thus allowing shadowing of variable names.
  *
- * Contexts can be extended by inner scopes thus allowing shadowing of variable names.
+ * Also contexts come in two flavours: scoped and unscoped.
+ * Scoped contexts represent a region of memory from which addresses can be taken.
+ * Unscoped contexts only allow typechecking of reference types bound to parent scopes.
+ * When extending a context, the inner context can only be scoped if the parent was also scoped.
  *
  * @see `dep0::typecheck::env_t`
  */
 class ctx_t
 {
 public:
+
+    /** @brief Tag type passed to the constructor in order to explicitly create a scoped context. */
+    struct scoped_t{};
 
     /**
      * @brief Variable declarations need a type and a quantity, for example `0 typename t`.
@@ -50,10 +55,13 @@ public:
     struct value_type
     {
         std::optional<source_loc_t> origin; /**< Where in the source code the variable declaration was encountered. */
+        bool is_scoped; /**< Stores whether the originating context is scoped or not. */
         var_decl_t value;
     };
 
+    /** @brief The default context is unscoped, which reduces the risk of compiler bugs when typechecking references. */
     ctx_t() = default;
+    explicit ctx_t(scoped_t);
     ctx_t(ctx_t const&) = default;
     ctx_t& operator=(ctx_t const&) = default;
     ctx_t(ctx_t&&) = default;
@@ -65,8 +73,12 @@ public:
      * @brief Obtain a fresh context that inherits from the current one, which is referred to as the "parent".
      *
      * The new context will allow to rebind variable names already bound in the parent context, aka shadowing.
+     * The new context will be a scoped context if the parent was also scoped; otherwise will be unscoped.
      */
     ctx_t extend() const;
+
+    /** @brief Like `extend()` but the new context will be unscoped even if the parent was scoped. */
+    ctx_t extend_unscoped() const;
 
     /**
      * @brief Obtain a new context where all types have been rewritten according to the equality `from = to`.
@@ -105,22 +117,24 @@ public:
     dep0::expected<std::true_type> try_emplace(std::optional<expr_t::var_t>, std::optional<source_loc_t>, var_decl_t);
 
 private:
+    bool is_scoped = false;
     scope_map<expr_t::var_t, value_type> m_values;
 
     void add_unnamed(var_decl_t);
 
-    ctx_t(scope_map<expr_t::var_t, value_type>);
+    ctx_t(scope_map<expr_t::var_t, value_type>, bool is_scoped);
 };
 
 /** @brief Proof that a variable exists inside some context, returned from `context_lookup`. */
 class context_lookup_t
 {
-    context_lookup_t(ctx_t const&, expr_t::var_t, ctx_t::var_decl_t const&);
+    context_lookup_t(ctx_t const&, expr_t::var_t, ctx_t::value_type const&);
 
 public:
     ctx_t const& ctx; /**< @brief The context in which the variable was declared. */
     expr_t::var_t const var; /**< @brief The variable that was declared. */
     ctx_t::var_decl_t const& decl; /**< @brief The declaration bound to the given variable. */
+    bool const is_scoped; /**< @brief Whether the variable was also bound to a scope. */
 
     /**
      * @brief Checks whether the given variable is declared inside the given context and

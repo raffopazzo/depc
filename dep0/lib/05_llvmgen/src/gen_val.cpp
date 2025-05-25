@@ -18,6 +18,7 @@
 #include "private/proto.hpp"
 
 #include "dep0/ast/find_member_field.hpp"
+#include "dep0/ast/views.hpp"
 #include "dep0/typecheck/list_initialization.hpp"
 #include "dep0/typecheck/subscript_access.hpp"
 
@@ -135,6 +136,49 @@ llvm::Value* gen_val(
         {
             assert(false and "cannot generate a value for auto expression");
             __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::ref_t const&) -> llvm::Value*
+        {
+            assert(false and "cannot generate a value for ref_t expression");
+            __builtin_unreachable();
+        },
+        [&] (typecheck::expr_t::scope_t const&) -> llvm::Value*
+        {
+            assert(false and "cannot generate a value for scope_t expression");
+            __builtin_unreachable();
+        },
+        [&] (typecheck::expr_t::addressof_t const& x) -> llvm::Value*
+        {
+            auto const& var = typecheck::expr_t::var_t{x.var};
+            auto address = local.load_address(var);
+            if (not address)
+            {
+                auto const value = match(
+                    *local[var],
+                    [] (llvm::Value* const p) { return p; },
+                    [] (llvm_func_t const& c) { return c.func; });
+                auto const view = ast::get_if_ref(type);
+                assert(view and "type of addressof is not a reference");
+                if (is_pass_by_val(global, view->element_type))
+                {
+                    address = gen_alloca(global, local, builder, allocator_t::stack, view->element_type);
+                    gen_store(global, local, builder, value_category_t::temporary, value, address, view->element_type);
+                }
+                else
+                    address = value;
+                local.save_address(var, address);
+            }
+            return maybe_store(address);
+        },
+        [&] (typecheck::expr_t::deref_t const& x) -> llvm::Value*
+        {
+            auto const llvm_type = gen_type(global, type);
+            auto const base = gen_temporary_val(global, local, builder, x.ref.get());
+            return maybe_store(is_pass_by_val(global, type) ? builder.CreateLoad(llvm_type, base) : base);
+        },
+        [&] (typecheck::expr_t::scopeof_t const&) -> llvm::Value*
+        {
+            return gen_val_unit(global);
         },
         [] (typecheck::expr_t::bool_t const&) -> llvm::Value*
         {

@@ -75,6 +75,21 @@ template <Properties P>
 std::ostream& pretty_print(std::ostream&, typename expr_t<P>::auto_t const&, std::size_t indent = 0ul);
 
 template <Properties P>
+std::ostream& pretty_print(std::ostream&, typename expr_t<P>::ref_t const&, std::size_t indent = 0ul);
+
+template <Properties P>
+std::ostream& pretty_print(std::ostream&, typename expr_t<P>::scope_t const&, std::size_t indent = 0ul);
+
+template <Properties P>
+std::ostream& pretty_print(std::ostream&, typename expr_t<P>::addressof_t const&, std::size_t indent = 0ul);
+
+template <Properties P>
+std::ostream& pretty_print(std::ostream&, typename expr_t<P>::deref_t const&, std::size_t indent = 0ul);
+
+template <Properties P>
+std::ostream& pretty_print(std::ostream&, typename expr_t<P>::scopeof_t const&, std::size_t indent = 0ul);
+
+template <Properties P>
 std::ostream& pretty_print(std::ostream&, typename expr_t<P>::bool_t const&, std::size_t indent = 0ul);
 
 template <Properties P>

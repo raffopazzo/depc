@@ -172,8 +172,14 @@ struct local_ctx_t
     template <typename... Args>
     auto try_emplace(typecheck::expr_t::var_t name, Args&&... args)
     {
-        return values.try_emplace(std::move(name), std::forward<Args>(args)...);
+        return entries.try_emplace(std::move(name), value_t{std::forward<Args>(args)...});
     }
+
+    /** @brief Retrieve the address that was previously saved for the given variable, or `nullptr` if none saved yet. */
+    llvm::Value* load_address(typecheck::expr_t::var_t const&) const;
+
+    /** @brief Save the address where the value of the given variable is stored. */
+    void save_address(typecheck::expr_t::var_t const&, llvm::Value* address);
 
     /**
      * @brief Values that need to be destructed before leaving the scope associated to this object.
@@ -184,9 +190,14 @@ struct local_ctx_t
     std::vector<std::pair<llvm::Value*, typecheck::expr_t>> destructors;
 
 private:
-    scope_map<typecheck::expr_t::var_t, value_t> values;
+    struct entry_t
+    {
+        value_t value;
+        llvm::Value* address = nullptr;
+    };
+    scope_map<typecheck::expr_t::var_t, entry_t> entries;
 
-    explicit local_ctx_t(scope_map<typecheck::expr_t::var_t, value_t>);
+    explicit local_ctx_t(scope_map<typecheck::expr_t::var_t, entry_t>);
 };
 
 } // namespace dep0::llvmgen

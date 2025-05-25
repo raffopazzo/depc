@@ -93,23 +93,37 @@ void global_ctx_t::store_string_literal(std::string s, llvm::Value* const v)
     string_literals.emplace(std::move(s), v);
 }
 
-local_ctx_t::local_ctx_t(scope_map<typecheck::expr_t::var_t, value_t> values) :
-    values(std::move(values))
+local_ctx_t::local_ctx_t(scope_map<typecheck::expr_t::var_t, entry_t> entries) :
+    entries(std::move(entries))
 { }
 
 local_ctx_t local_ctx_t::extend() const
 {
-    return local_ctx_t(values.extend());
+    return local_ctx_t(entries.extend());
 }
 
 local_ctx_t::value_t* local_ctx_t::operator[](typecheck::expr_t::var_t const& k)
 {
-    return values[k];
+    auto const p = entries[k];
+    return p ? &p->value : nullptr;
 }
 
 local_ctx_t::value_t const* local_ctx_t::operator[](typecheck::expr_t::var_t const& k) const
 {
-    return values[k];
+    auto const p = entries[k];
+    return p ? &p->value : nullptr;
+}
+
+llvm::Value* local_ctx_t::load_address(typecheck::expr_t::var_t const& k) const
+{
+    auto const p = entries[k];
+    return p ? p->address : nullptr;
+}
+
+void local_ctx_t::save_address(typecheck::expr_t::var_t const& k, llvm::Value* const address)
+{
+    if (auto const p = entries[k])
+        p->address = address;
 }
 
 } // namespace dep0::llvmgen

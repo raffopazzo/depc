@@ -572,10 +572,8 @@ bool is_trivially_destructible(global_ctx_t const& global, typecheck::expr_t con
         {
             return match(
                 app.func.get().value,
-                [] (typecheck::expr_t::true_t const&)
-                {
-                    return true;
-                },
+                [] (typecheck::expr_t::true_t const&) { return true; },
+                [] (typecheck::expr_t::ref_t const&) { return true; },
                 [&] (typecheck::expr_t::array_t const&)
                 {
                     // TODO currently only arrays are boxed and arrays of arrays are still arrays,

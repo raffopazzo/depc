@@ -180,6 +180,51 @@ BOOST_AUTO_TEST_CASE(pass_002)
         BOOST_TEST(is_block_of(*b[1], std::tuple{return_of(exactly(f->getArg(1)))}));
         BOOST_TEST(is_block_of(*b[2], std::tuple{return_of(exactly(f->getArg(2)))}));
     }
+    {
+        auto const f = get_function("f2");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(is_i32, "a", sext)}, is_i32, sext));
+        auto const inst = get_instructions(f->getEntryBlock());
+        BOOST_TEST_REQUIRE(inst.size()  == 8ul);
+        auto const alloca   = inst[0];
+        auto const store    = inst[1];
+        auto const call1    = inst[2];
+        auto const load1    = inst[3];
+        auto const call2    = inst[4];
+        auto const load2    = inst[5];
+        auto const add      = inst[6];
+        auto const ret      = inst[7];
+        BOOST_TEST(is_alloca(alloca, is_i32, constant(1), align_of(4)));
+        BOOST_TEST(is_store_of(store, is_i32, exactly(f->getArg(0)), exactly(alloca), align_of(4)));
+        BOOST_TEST(is_direct_call(call1, exactly(get_function("f0")), call_arg(exactly(alloca))));
+        BOOST_TEST(is_load_of(load1, is_i32, exactly(call1), align_of(4)));
+        BOOST_TEST(is_direct_call(call2, exactly(get_function("f0")), call_arg(exactly(alloca))));
+        BOOST_TEST(is_load_of(load2, is_i32, exactly(call2), align_of(4)));
+        BOOST_TEST(is_add_of(add, exactly(load1), exactly(load2)));
+        BOOST_TEST(is_return_of(ret, exactly(add)));
+    }
+    auto const t = get_struct("t");
+    BOOST_TEST(is_struct(t, "t", is_i32));
+    {
+        auto const f = get_function("f3");
+        BOOST_TEST_REQUIRE(
+            is_function_of(f, std::tuple{arg_of(pointer_to(exactly(t)), "x", nonnull)}, pointer_to(exactly(t))));
+        BOOST_TEST(is_return_of(f->getEntryBlock().getTerminator(), exactly(f->getArg(0))));
+    }
+    {
+        auto const f = get_function("f4");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(pointer_to(exactly(t)), "a", nonnull)}, is_i32, sext));
+        BOOST_TEST(
+            is_return_of(
+                f->getEntryBlock().getTerminator(),
+                load_of(
+                    is_i32,
+                    gep_of(
+                        exactly(t),
+                        direct_call_of(exactly(get_function("f3")), call_arg(exactly(f->getArg(0)))),
+                        constant(0),
+                        constant(0)),
+                    align_of(4))));
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

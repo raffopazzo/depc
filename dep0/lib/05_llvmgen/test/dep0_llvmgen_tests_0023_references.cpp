@@ -156,4 +156,30 @@ BOOST_AUTO_TEST_CASE(pass_001)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_002)
+{
+    BOOST_TEST_REQUIRE(pass("0023_references/pass_002.depc"));
+    {
+        auto const f = get_function("f0");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(pointer_to(is_i32), "x", nonnull)}, pointer_to(is_i32)));
+        BOOST_TEST(is_block_of(f->getEntryBlock(), std::tuple{return_of(exactly(f->getArg(0)))}));
+    }
+    {
+        auto const f = get_function("f1");
+        BOOST_TEST_REQUIRE(
+            is_function_of(
+                f,
+                std::tuple{
+                    arg_of(is_i1, "which", zext),
+                    arg_of(pointer_to(is_i32), "x", nonnull),
+                    arg_of(pointer_to(is_i32), "y", nonnull)},
+                pointer_to(is_i32)));
+        auto const b = get_blocks(*f);
+        BOOST_TEST_REQUIRE(b.size() == 3ul);
+        BOOST_TEST(is_block_of(*b[0], std::tuple{branch_of(exactly(f->getArg(0)), exactly(b[1]), exactly(b[2]))}));
+        BOOST_TEST(is_block_of(*b[1], std::tuple{return_of(exactly(f->getArg(1)))}));
+        BOOST_TEST(is_block_of(*b[2], std::tuple{return_of(exactly(f->getArg(2)))}));
+    }
+}
+
 BOOST_AUTO_TEST_SUITE_END()

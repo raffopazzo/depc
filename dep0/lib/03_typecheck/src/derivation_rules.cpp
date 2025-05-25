@@ -24,6 +24,15 @@ expr_t derivation_rules::make_true_t(expr_t cond)
 {
     return make_app(make_true_t(), {std::move(cond)});
 }
+
+expr_t derivation_rules::make_addressof(expr_t type, expr_t::scopeof_t scope)
+{
+    auto const var = scope.var;
+    return make_legal_expr(
+        make_app(make_ref_t(), {std::move(type), make_legal_expr(make_scope_t(), std::move(scope))}),
+        expr_t::addressof_t{var});
+}
+
 expr_t derivation_rules::make_ref_t()
 {
     return make_legal_expr(

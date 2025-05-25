@@ -16,6 +16,25 @@
 
 namespace dep0::testing {
 
+template <ast::Properties P>
+boost::test_tools::predicate_result is_addressof(ast::expr_t<P> const& expr, std::string_view const var)
+{
+    auto const p = std::get_if<typename ast::expr_t<P>::addressof_t>(&expr.value);
+    if (not p)
+        return failure("expression is not addressof_t but ", pretty_name(expr.value));
+    if (p->var != var)
+        return failure('&', p->var, " != &", var);
+    return true;
+}
+
+inline auto addressof(std::string_view const var)
+{
+    return [var=std::string(var)] <ast::Properties P> (ast::expr_t<P> const& x)
+    {
+        return is_addressof(x, var);
+    };
+}
+
 template <ast::Properties P, Predicate<ast::expr_t<P>> F>
 boost::test_tools::predicate_result is_deref(ast::expr_t<P> const& expr, F&& f)
 {

@@ -27,10 +27,10 @@ struct derivation_rules
     template <typename T>
     static derivation_t<T> make_derivation();
 
-    /** @brief Constructs a `expr_t::typename_t` whose type is Kind. */
+    /** @brief Constructs the term `typename` whose type is Kind. */
     static expr_t make_typename();
 
-    /** @brief Constructs an `expr_t::true_t` whose type is `(0 bool_t) -> typename`. */
+    /** @brief Constructs the term `true_t` whose type is `(0 bool_t) -> typename`. */
     static expr_t make_true_t();
 
     /**
@@ -40,10 +40,13 @@ struct derivation_rules
      */
     static expr_t make_true_t(expr_t);
 
-    /** @brief Constructs a `expr_t::ref_t` whose type is `(typename, %scope_t) -> typename`. */
+    /** @brief Constructs the expression `&var` whose type is `ref_t(type, scopeof(var))`. */
+    static expr_t make_addressof(expr_t type, expr_t::scopeof_t);
+
+    /** @brief Constructs the term `ref_t` whose type is `(typename, scope_t) -> typename`. */
     static expr_t make_ref_t();
 
-    /** @brief Constructs a `expr_t::scope_t` whose type is `typename`. */
+    /** @brief Constructs the type `scope_t` whose type is `typename`. */
     static expr_t make_scope_t();
 
     /** @brief Constructs the type `bool_t` whose type is `typename`. */
@@ -94,7 +97,7 @@ struct derivation_rules
     /** @brief Constructs an `expr_t::relation_expr_t` containing the given value; it's type is `bool_t`. */
     static expr_t make_relation_expr(expr_t::relation_expr_t::value_t);
 
-    /** @brief Constructs an `expr_t::array_t` whose type is `(0 typename, 0 u64_t) -> typename`. */
+    /** @brief Constructs the term `array_t` whose type is `(0 typename, 0 u64_t) -> typename`. */
     static expr_t make_array();
 
     /**

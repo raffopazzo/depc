@@ -29,6 +29,102 @@
 
 namespace dep0::typecheck {
 
+static expected<expr_t>
+type_assign_global(
+    env_t const& env,
+    ctx_t const& ctx,
+    expr_t::global_t global,
+    source_loc_t const loc,
+    ast::qty_t const usage_multiplier)
+{
+    auto const def = env[global];
+    if (not def)
+        return dep0::error_t("global symbol not found", loc);
+    return match(
+        *def,
+        [&] (env_t::incomplete_type_t const&) -> expected<expr_t>
+        {
+            return make_legal_expr(derivation_rules::make_typename(), std::move(global));
+        },
+        [&] (type_def_t const&) -> expected<expr_t>
+        {
+            return make_legal_expr(derivation_rules::make_typename(), std::move(global));
+        },
+        [&] (axiom_t const& x) -> expected<expr_t>
+        {
+            if (usage_multiplier > ast::qty_t::zero)
+                return dep0::error_t("axiom cannot be used at run-time", loc);
+            return make_legal_expr(x.properties.sort.get(), std::move(global));
+        },
+        [&] (extern_decl_t const& x) -> expected<expr_t>
+        {
+            return make_legal_expr(x.properties.sort.get(), std::move(global));
+        },
+        [&] (func_decl_t const& x) -> expected<expr_t>
+        {
+            return make_legal_expr(x.properties.sort.get(), std::move(global));
+        },
+        [&] (func_def_t const& x) -> expected<expr_t>
+        {
+            return make_legal_expr(x.properties.sort.get(), std::move(global));
+        });
+}
+
+static expected<expr_t>
+type_assign_var(
+    env_t const& env,
+    ctx_t const& ctx,
+    source_text const name,
+    source_loc_t const loc,
+    usage_t& usage,
+    ast::qty_t const usage_multiplier)
+{
+    if (auto lookup = context_lookup(ctx, expr_t::var_t{name}))
+    {
+        if (auto ok = usage.try_add(*lookup, usage_multiplier, loc); not ok)
+            return ok.error();
+        return make_legal_expr(lookup->decl.type, lookup->var);
+    }
+    if (auto const global = expr_t::global_t{std::nullopt, name}; env[global])
+        return type_assign_global(env, ctx, global, loc, usage_multiplier);
+    else
+        return dep0::error_t("unknown variable", loc);
+}
+
+static expected<expr_t>
+type_assign_scopeof(
+    env_t const& env,
+    ctx_t const& ctx,
+    source_text const var,
+    source_loc_t const loc,
+    usage_t& usage,
+    ast::qty_t const usage_multiplier)
+{
+    auto const accept = [&] () -> expected<expr_t>
+    {
+        return make_legal_expr(derivation_rules::make_scope_t(), expr_t::scopeof_t(var));
+    };
+    auto const reject = [&] (std::string err) -> expected<expr_t> { return error_t(std::move(err), loc); };
+    if (auto lookup = context_lookup(ctx, expr_t::var_t{var}))
+    {
+        if (not lookup->is_scoped)
+            return reject("variable not bound to a scope");
+        if (auto ok = usage.try_add(*lookup, usage_multiplier, loc); not ok)
+            return ok.error();
+        return accept();
+    }
+    if (auto const p = env[expr_t::global_t{std::nullopt, var}])
+        return match(
+            *p,
+            [&] (env_t::incomplete_type_t) { return reject("a type definition has no scope"); },
+            [&] (type_def_t const&) { return reject("a type definition has no scope"); },
+            [&] (axiom_t const&) { return reject("an axiom has no scope"); },
+            [&] (extern_decl_t const&) { return accept(); },
+            [&] (func_decl_t const&) { return accept(); },
+            [&] (func_def_t const&) { return accept(); });
+    return dep0::error_t("unknown variable", loc);
+}
+
 std::pair<expected<expr_t>, expected<expr_t>>
 type_assign_pair(
     env_t const& env,
@@ -71,41 +167,6 @@ type_assign(
     ast::qty_t const usage_multiplier)
 {
     auto const loc = expr.properties;
-    // common code between var_t and global_t cases
-    auto const type_assign_global = [&] (expr_t::global_t global) -> expected<expr_t>
-    {
-        auto const def = env[global];
-        if (not def)
-            return dep0::error_t("global symbol not found", loc);
-        return match(
-            *def,
-            [&] (env_t::incomplete_type_t const&) -> expected<expr_t>
-            {
-                return make_legal_expr(derivation_rules::make_typename(), std::move(global));
-            },
-            [&] (type_def_t const&) -> expected<expr_t>
-            {
-                return make_legal_expr(derivation_rules::make_typename(), std::move(global));
-            },
-            [&] (axiom_t const& x) -> expected<expr_t>
-            {
-                if (usage_multiplier > ast::qty_t::zero)
-                    return dep0::error_t("axiom cannot be used at run-time", loc);
-                return make_legal_expr(x.properties.sort.get(), std::move(global));
-            },
-            [&] (extern_decl_t const& x) -> expected<expr_t>
-            {
-                return make_legal_expr(x.properties.sort.get(), std::move(global));
-            },
-            [&] (func_decl_t const& x) -> expected<expr_t>
-            {
-                return make_legal_expr(x.properties.sort.get(), std::move(global));
-            },
-            [&] (func_def_t const& x) -> expected<expr_t>
-            {
-                return make_legal_expr(x.properties.sort.get(), std::move(global));
-            });
-    };
     return match(
         expr.value,
         [] (parser::expr_t::typename_t) -> expected<expr_t> { return derivation_rules::make_typename(); },
@@ -116,7 +177,18 @@ type_assign(
         },
         [] (parser::expr_t::ref_t) -> expected<expr_t> { return derivation_rules::make_ref_t(); },
         [] (parser::expr_t::scope_t) -> expected<expr_t> { return derivation_rules::make_scope_t(); },
-        [] (parser::expr_t::addressof_t const&) -> expected<expr_t> { return dep0::error_t("addressof_t not yet implemented"); },
+        [&] (parser::expr_t::addressof_t const& x) -> expected<expr_t>
+        {
+            auto var = type_assign_var(env, ctx, x.var, loc, usage, usage_multiplier);
+            auto scope = type_assign_scopeof(env, ctx, x.var, loc, usage, usage_multiplier);
+            if (not var or not scope)
+                return dep0::error_t(
+                    "cannot take address of variable", loc,
+                    {std::move((var ? scope : var).error())});
+            return derivation_rules::make_addressof(
+                std::move(std::get<expr_t>(var->properties.sort.get())),
+                std::move(std::get<expr_t::scopeof_t>(scope->value)));
+        },
         [&] (parser::expr_t::deref_t const& x) -> expected<expr_t>
         {
             auto ref = type_assign(env, ctx, x.ref.get(), is_mutable_allowed, usage, usage_multiplier);
@@ -135,27 +207,7 @@ type_assign(
         },
         [&] (parser::expr_t::scopeof_t const& x) -> expected<expr_t>
         {
-            auto const accept = [&] () -> expected<expr_t>
-            {
-                return make_legal_expr(derivation_rules::make_scope_t(), expr_t::scopeof_t(x.var));
-            };
-            auto const reject = [&] (std::string err) -> expected<expr_t> { return error_t(std::move(err), loc); };
-            if (auto lookup = context_lookup(ctx, expr_t::var_t{x.var}))
-            {
-                if (auto ok = usage.try_add(*lookup, usage_multiplier, loc); not ok)
-                    return ok.error();
-                return accept();
-            }
-            if (auto const p = env[expr_t::global_t{std::nullopt, x.var}])
-                return match(
-                    *p,
-                    [&] (env_t::incomplete_type_t) { return reject("a type definition has no scope"); },
-                    [&] (type_def_t const&) { return reject("a type definition has no scope"); },
-                    [&] (axiom_t const&) { return reject("an axiom has no scope"); },
-                    [&] (extern_decl_t const&) { return accept(); },
-                    [&] (func_decl_t const&) { return accept(); },
-                    [&] (func_def_t const&) { return accept(); });
-            return dep0::error_t("unknown variable", loc);
+            return type_assign_scopeof(env, ctx, x.var, loc, usage, usage_multiplier);
         },
         [] (parser::expr_t::bool_t) -> expected<expr_t> { return derivation_rules::make_bool(); },
         [] (parser::expr_t::cstr_t) -> expected<expr_t> { return derivation_rules::make_cstr(); },
@@ -308,20 +360,11 @@ type_assign(
         },
         [&] (parser::expr_t::var_t const& x) -> expected<expr_t>
         {
-            if (auto lookup = context_lookup(ctx, expr_t::var_t{x.name}))
-            {
-                if (auto ok = usage.try_add(*lookup, usage_multiplier, loc); not ok)
-                    return ok.error();
-                return make_legal_expr(lookup->decl.type, lookup->var);
-            }
-            if (auto const global = expr_t::global_t{std::nullopt, x.name}; env[global])
-                return type_assign_global(global);
-            else
-                return dep0::error_t("unknown variable", loc);
+            return type_assign_var(env, ctx, x.name, loc, usage, usage_multiplier);
         },
-        [&] (parser::expr_t::global_t const& global) -> expected<expr_t>
+        [&] (parser::expr_t::global_t const& g) -> expected<expr_t>
         {
-            return type_assign_global(expr_t::global_t{global.module_name, global.name});
+            return type_assign_global(env, ctx, expr_t::global_t{g.module_name, g.name}, loc, usage_multiplier);
         },
         [&] (parser::expr_t::app_t const& x) -> expected<expr_t>
         {

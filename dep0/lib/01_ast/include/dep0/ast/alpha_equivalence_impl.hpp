@@ -92,7 +92,13 @@ struct alpha_equivalence_visitor
     {
         return is_alpha_equivalent_impl(x.ref.get(), y.ref.get());
     }
-    result_t operator()(typename expr_t<P>::scopeof_t, typename expr_t<P>::scopeof_t) const { return {}; }
+    result_t operator()(typename expr_t<P>::scopeof_t const& x, typename expr_t<P>::scopeof_t const& y) const
+    {
+        if (x.var == y.var)
+            return {};
+        else
+            return not_alpha_equivalent(x, y);
+    }
     result_t operator()(typename expr_t<P>::bool_t, typename expr_t<P>::bool_t) const { return {}; }
     result_t operator()(typename expr_t<P>::cstr_t, typename expr_t<P>::cstr_t) const { return {}; }
     result_t operator()(typename expr_t<P>::unit_t, typename expr_t<P>::unit_t) const { return {}; }

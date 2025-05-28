@@ -111,5 +111,6 @@ BOOST_AUTO_TEST_CASE(typecheck_error_007) { BOOST_TEST(fail("0023_references/typ
 BOOST_AUTO_TEST_CASE(typecheck_error_008) { BOOST_TEST(fail("0023_references/typecheck_error_008.depc")); }
 BOOST_AUTO_TEST_CASE(typecheck_error_009) { BOOST_TEST(fail("0023_references/typecheck_error_009.depc")); }
 BOOST_AUTO_TEST_CASE(typecheck_error_010) { BOOST_TEST(fail("0023_references/typecheck_error_010.depc")); }
+BOOST_AUTO_TEST_CASE(typecheck_error_011) { BOOST_TEST(fail("0023_references/typecheck_error_011.depc")); }
 
 BOOST_AUTO_TEST_SUITE_END()

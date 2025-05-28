@@ -81,7 +81,13 @@ struct alpha_equivalence_visitor
     result_t operator()(typename expr_t<P>::auto_t, typename expr_t<P>::auto_t) const { return {}; }
     result_t operator()(typename expr_t<P>::ref_t, typename expr_t<P>::ref_t) const { return {}; }
     result_t operator()(typename expr_t<P>::scope_t, typename expr_t<P>::scope_t) const { return {}; }
-    result_t operator()(typename expr_t<P>::addressof_t, typename expr_t<P>::addressof_t) const { return {}; }
+    result_t operator()(typename expr_t<P>::addressof_t const& x, typename expr_t<P>::addressof_t const& y) const
+    {
+        if (x.var == y.var)
+            return {};
+        else
+            return not_alpha_equivalent(x, y);
+    }
     result_t operator()(typename expr_t<P>::deref_t& x, typename expr_t<P>::deref_t& y) const
     {
         return is_alpha_equivalent_impl(x.ref.get(), y.ref.get());

@@ -74,11 +74,6 @@ std::size_t max_index(expr_t<P> const& x)
         [] (expr_t<P>::typename_t const&) { return 0ul; },
         [] (expr_t<P>::true_t const&) { return 0ul; },
         [] (expr_t<P>::auto_t const&) { return 0ul; },
-        [] (expr_t<P>::ref_t const&) { return 0ul; },
-        [] (expr_t<P>::scope_t const&) { return 0ul; },
-        [] (expr_t<P>::addressof_t const&) { return 0ul; }, // TODO change this if takes an expression
-        [] (expr_t<P>::deref_t const& x) { return max_index(x.ref.get()); },
-        [] (expr_t<P>::scopeof_t const&) { return 0ul; }, // TODO change this if takes an expression
         [] (expr_t<P>::bool_t const&) { return 0ul; },
         [] (expr_t<P>::cstr_t const&) { return 0ul; },
         [] (expr_t<P>::unit_t const&) { return 0ul; },
@@ -148,6 +143,11 @@ std::size_t max_index(expr_t<P> const& x)
         {
             return max_index<P>(x.args.begin(), x.args.end());
         },
+        [] (expr_t<P>::ref_t const&) { return 0ul; },
+        [] (expr_t<P>::scope_t const&) { return 0ul; },
+        [] (expr_t<P>::addressof_t const& x) { return x.var.idx; },
+        [] (expr_t<P>::deref_t const& x) { return max_index(x.ref.get()); },
+        [] (expr_t<P>::scopeof_t const& x) { return x.var.idx; },
         [] (expr_t<P>::array_t const&)
         {
             return 0ul;

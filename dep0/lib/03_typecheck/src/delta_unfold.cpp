@@ -42,11 +42,6 @@ static bool delta_unfold(env_t const&, ctx_t const&, stmt_t::impossible_t&);
 static bool delta_unfold(env_t const&, ctx_t const&, expr_t::typename_t&) { return false; }
 static bool delta_unfold(env_t const&, ctx_t const&, expr_t::true_t&) { return false; }
 static bool delta_unfold(env_t const&, ctx_t const&, expr_t::auto_t&) { return false; }
-static bool delta_unfold(env_t const&, ctx_t const&, expr_t::ref_t&) { return false; }
-static bool delta_unfold(env_t const&, ctx_t const&, expr_t::scope_t&) { return false; }
-static bool delta_unfold(env_t const&, ctx_t const&, expr_t::addressof_t&) { return false; }
-static bool delta_unfold(env_t const&, ctx_t const&, expr_t::deref_t&);
-static bool delta_unfold(env_t const&, ctx_t const&, expr_t::scopeof_t&) { return false; }
 static bool delta_unfold(env_t const&, ctx_t const&, expr_t::bool_t&) { return false; }
 static bool delta_unfold(env_t const&, ctx_t const&, expr_t::cstr_t&) { return false; }
 static bool delta_unfold(env_t const&, ctx_t const&, expr_t::unit_t&) { return false; }
@@ -70,6 +65,11 @@ static bool delta_unfold(env_t const&, ctx_t const&, expr_t::app_t&);
 static bool delta_unfold(env_t const&, ctx_t const&, expr_t::abs_t&);
 static bool delta_unfold(env_t const&, ctx_t const&, expr_t::pi_t&);
 static bool delta_unfold(env_t const&, ctx_t const&, expr_t::sigma_t&);
+static bool delta_unfold(env_t const&, ctx_t const&, expr_t::ref_t&) { return false; }
+static bool delta_unfold(env_t const&, ctx_t const&, expr_t::scope_t&) { return false; }
+static bool delta_unfold(env_t const&, ctx_t const&, expr_t::addressof_t&) { return false; }
+static bool delta_unfold(env_t const&, ctx_t const&, expr_t::deref_t&);
+static bool delta_unfold(env_t const&, ctx_t const&, expr_t::scopeof_t&) { return false; }
 static bool delta_unfold(env_t const&, ctx_t const&, expr_t::array_t&) { return false; }
 static bool delta_unfold(env_t const&, ctx_t const&, expr_t::init_list_t&);
 static bool delta_unfold(env_t const&, ctx_t const&, expr_t::member_t&);

@@ -66,11 +66,6 @@ void replace(typename expr_t<P>::var_t const& from, typename expr_t<P>::var_t co
         [] (typename expr_t<P>::typename_t const&) {},
         [] (typename expr_t<P>::true_t const&) {},
         [] (typename expr_t<P>::auto_t const&) {},
-        [] (typename expr_t<P>::ref_t const&) {},
-        [] (typename expr_t<P>::scope_t const&) {},
-        [] (typename expr_t<P>::addressof_t const&) {},
-        [&] (typename expr_t<P>::deref_t& x) { replace(from, to, x.ref.get()); },
-        [] (typename expr_t<P>::scopeof_t const&) {},
         [] (typename expr_t<P>::bool_t const&) {},
         [] (typename expr_t<P>::cstr_t const&) {},
         [] (typename expr_t<P>::unit_t const&) {},
@@ -143,6 +138,11 @@ void replace(typename expr_t<P>::var_t const& from, typename expr_t<P>::var_t co
         {
             replace<P>(from, to, sigma.args.begin(), sigma.args.end());
         },
+        [] (typename expr_t<P>::ref_t const&) {},
+        [] (typename expr_t<P>::scope_t const&) {},
+        [&] (typename expr_t<P>::addressof_t& x) { if (x.var == from) x.var = to; },
+        [&] (typename expr_t<P>::deref_t& x) { replace(from, to, x.ref.get()); },
+        [&] (typename expr_t<P>::scopeof_t& x) { if (x.var == from) x.var = to; },
         [] (typename expr_t<P>::array_t&)
         {
         },

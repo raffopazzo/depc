@@ -73,11 +73,6 @@ bool occurs_in(typename expr_t<P>::var_t const& var, expr_t<P> const& x, occurre
         [] (expr_t<P>::typename_t const&) { return false; },
         [] (expr_t<P>::true_t const&) { return false; },
         [] (expr_t<P>::auto_t const&) { return false; },
-        [] (expr_t<P>::ref_t const&) { return false; },
-        [] (expr_t<P>::scope_t const&) { return false; },
-        [] (expr_t<P>::addressof_t const&) { return false; }, // TODO change this if takes an expression
-        [&] (expr_t<P>::deref_t const& x) { return occurs_in(var, x.ref.get(), style); },
-        [] (expr_t<P>::scopeof_t const&) { return false; }, // TODO change this if takes an expression
         [] (expr_t<P>::bool_t const&) { return false; },
         [] (expr_t<P>::cstr_t const&) { return false; },
         [] (expr_t<P>::unit_t const&) { return false; },
@@ -147,6 +142,11 @@ bool occurs_in(typename expr_t<P>::var_t const& var, expr_t<P> const& x, occurre
         {
             return occurs_in<P>(var, x.args.begin(), x.args.end(), style);
         },
+        [] (expr_t<P>::ref_t const&) { return false; },
+        [] (expr_t<P>::scope_t const&) { return false; },
+        [&] (expr_t<P>::addressof_t const& x) { return x.var == var; },
+        [&] (expr_t<P>::deref_t const& x) { return occurs_in(var, x.ref.get(), style); },
+        [&] (expr_t<P>::scopeof_t const& x) { return x.var == var; },
         [] (expr_t<P>::array_t const&)
         {
             return false;

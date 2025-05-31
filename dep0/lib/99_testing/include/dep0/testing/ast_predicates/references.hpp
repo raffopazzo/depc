@@ -6,6 +6,8 @@
  */
 #pragma once
 
+#include "dep0/testing/ast_predicates/details/check_name.hpp"
+
 #include "dep0/testing/failure.hpp"
 #include "dep0/testing/predicate.hpp"
 #include "dep0/testing/pretty_name.hpp"
@@ -22,8 +24,8 @@ boost::test_tools::predicate_result is_addressof(ast::expr_t<P> const& expr, std
     auto const p = std::get_if<typename ast::expr_t<P>::addressof_t>(&expr.value);
     if (not p)
         return failure("expression is not addressof_t but ", pretty_name(expr.value));
-    if (p->var != var)
-        return failure('&', p->var, " != &", var);
+    if (auto const tmp = details::check_name<P>(p->var, var); not tmp)
+        return failure("inside addressof_t: ", tmp.message());
     return true;
 }
 
@@ -90,8 +92,8 @@ boost::test_tools::predicate_result is_scopeof(ast::expr_t<P> const& expr, std::
     auto const s = std::get_if<typename ast::expr_t<P>::scopeof_t>(&expr.value);
     if (not s)
         return failure("expression is not scopeof_t but ", pretty_name(expr.value));
-    if (s->var != var)
-        return failure("scopeof(", s->var, ") != scopeof(", var, ')');
+    if (auto const tmp = details::check_name<P>(s->var, var); not tmp)
+        return failure("inside scopeof: ", tmp.message());
     return true;
 }
 

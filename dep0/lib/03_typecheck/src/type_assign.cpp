@@ -95,17 +95,17 @@ static expected<expr_t>
 type_assign_scopeof(
     env_t const& env,
     ctx_t const& ctx,
-    source_text const var,
+    parser::expr_t::var_t const var,
     source_loc_t const loc,
     usage_t& usage,
     ast::qty_t const usage_multiplier)
 {
     auto const accept = [&] () -> expected<expr_t>
     {
-        return make_legal_expr(derivation_rules::make_scope_t(), expr_t::scopeof_t(var));
+        return make_legal_expr(derivation_rules::make_scope_t(), expr_t::scopeof_t(expr_t::var_t{var.name}));
     };
     auto const reject = [&] (std::string err) -> expected<expr_t> { return error_t(std::move(err), loc); };
-    if (auto lookup = context_lookup(ctx, expr_t::var_t{var}))
+    if (auto lookup = context_lookup(ctx, expr_t::var_t{var.name}))
     {
         if (not lookup->is_scoped)
             return reject("variable not bound to a scope");
@@ -113,7 +113,7 @@ type_assign_scopeof(
             return ok.error();
         return accept();
     }
-    if (auto const p = env[expr_t::global_t{std::nullopt, var}])
+    if (auto const p = env[expr_t::global_t{std::nullopt, var.name}])
         return match(
             *p,
             [&] (env_t::incomplete_type_t) { return reject("a type definition has no scope"); },
@@ -174,40 +174,6 @@ type_assign(
         [&] (parser::expr_t::auto_t) -> expected<expr_t>
         {
             return dep0::error_t("auto expressions have no unique type", loc);
-        },
-        [] (parser::expr_t::ref_t) -> expected<expr_t> { return derivation_rules::make_ref_t(); },
-        [] (parser::expr_t::scope_t) -> expected<expr_t> { return derivation_rules::make_scope_t(); },
-        [&] (parser::expr_t::addressof_t const& x) -> expected<expr_t>
-        {
-            auto var = type_assign_var(env, ctx, x.var, loc, usage, usage_multiplier);
-            auto scope = type_assign_scopeof(env, ctx, x.var, loc, usage, usage_multiplier);
-            if (not var or not scope)
-                return dep0::error_t(
-                    "cannot take address of variable", loc,
-                    {std::move((var ? scope : var).error())});
-            return derivation_rules::make_addressof(
-                std::move(std::get<expr_t>(var->properties.sort.get())),
-                std::move(std::get<expr_t::scopeof_t>(scope->value)));
-        },
-        [&] (parser::expr_t::deref_t const& x) -> expected<expr_t>
-        {
-            auto ref = type_assign(env, ctx, x.ref.get(), is_mutable_allowed, usage, usage_multiplier);
-            if (not ref)
-                return ref;
-            auto& ref_type = std::get<expr_t>(ref->properties.sort.get());
-            beta_delta_normalize(env, ctx, ref_type);
-            auto const view = ast::get_if_ref(ref_type);
-            if (not view)
-            {
-                std::ostringstream err;
-                pretty_print(err << "cannot dereference non-reference type `", ref_type) << '`';
-                return dep0::error_t(err.str(), loc);
-            }
-            return make_legal_expr(view->element_type.get(), expr_t::deref_t{std::move(*ref)});
-        },
-        [&] (parser::expr_t::scopeof_t const& x) -> expected<expr_t>
-        {
-            return type_assign_scopeof(env, ctx, x.var, loc, usage, usage_multiplier);
         },
         [] (parser::expr_t::bool_t) -> expected<expr_t> { return derivation_rules::make_bool(); },
         [] (parser::expr_t::cstr_t) -> expected<expr_t> { return derivation_rules::make_cstr(); },
@@ -383,6 +349,40 @@ type_assign(
         {
             auto sigma_ctx = ctx.extend();
             return check_sigma_type(env, sigma_ctx, loc, sigma);
+        },
+        [] (parser::expr_t::ref_t) -> expected<expr_t> { return derivation_rules::make_ref_t(); },
+        [] (parser::expr_t::scope_t) -> expected<expr_t> { return derivation_rules::make_scope_t(); },
+        [&] (parser::expr_t::addressof_t const& x) -> expected<expr_t>
+        {
+            auto var = type_assign_var(env, ctx, x.var.name, loc, usage, usage_multiplier);
+            auto scope = type_assign_scopeof(env, ctx, x.var, loc, usage, usage_multiplier);
+            if (not var or not scope)
+                return dep0::error_t(
+                    "cannot take address of variable", loc,
+                    {std::move((var ? scope : var).error())});
+            return derivation_rules::make_addressof(
+                std::move(std::get<expr_t>(var->properties.sort.get())),
+                std::move(std::get<expr_t::scopeof_t>(scope->value)));
+        },
+        [&] (parser::expr_t::deref_t const& x) -> expected<expr_t>
+        {
+            auto ref = type_assign(env, ctx, x.ref.get(), is_mutable_allowed, usage, usage_multiplier);
+            if (not ref)
+                return ref;
+            auto& ref_type = std::get<expr_t>(ref->properties.sort.get());
+            beta_delta_normalize(env, ctx, ref_type);
+            auto const view = ast::get_if_ref(ref_type);
+            if (not view)
+            {
+                std::ostringstream err;
+                pretty_print(err << "cannot dereference non-reference type `", ref_type) << '`';
+                return dep0::error_t(err.str(), loc);
+            }
+            return make_legal_expr(view->element_type.get(), expr_t::deref_t{std::move(*ref)});
+        },
+        [&] (parser::expr_t::scopeof_t const& x) -> expected<expr_t>
+        {
+            return type_assign_scopeof(env, ctx, x.var, loc, usage, usage_multiplier);
         },
         [] (parser::expr_t::array_t) -> expected<expr_t>
         {

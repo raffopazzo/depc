@@ -1,0 +1,24 @@
+/*
+ * Copyright Raffaele Rossi 2025.
+ *
+ * Distributed under the Boost Software License, Version 1.0.
+ * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
+ */
+func x() -> i32_t { return 0; }
+func y() -> i32_t { return 1; }
+func f(
+    0 scope_t x,
+    () -> i32_t y,
+    ref_t(() -> i32_t, scopeof(y)) p,
+    ref_t(() -> i32_t, x) q
+) -> i32_t
+{
+    return (*p)() + (*q)();
+}
+func g() -> i32_t
+{
+    // the scope of the first `&y` is static but the argument `p` inside `f()`
+    // has scope bound to the local argument `y`, which is not static;
+    // primarly this is testing that the variable name inside `scopef()` is renamed correctly
+    return f(scopeof(y), x, &y, &y);
+}

@@ -27,11 +27,6 @@ template <Properties P> bool needs_new_line(expr_t<P> const&);
 template <Properties P> bool needs_new_line(typename expr_t<P>::typename_t const&) { return false; }
 template <Properties P> bool needs_new_line(typename expr_t<P>::true_t const&) { return false; }
 template <Properties P> bool needs_new_line(typename expr_t<P>::auto_t const&) { return false; }
-template <Properties P> bool needs_new_line(typename expr_t<P>::ref_t const&) { return false; }
-template <Properties P> bool needs_new_line(typename expr_t<P>::scope_t const&) { return false; }
-template <Properties P> bool needs_new_line(typename expr_t<P>::addressof_t const&) { return false; }
-template <Properties P> bool needs_new_line(typename expr_t<P>::deref_t const&);
-template <Properties P> bool needs_new_line(typename expr_t<P>::scopeof_t const&) { return false; }
 template <Properties P> bool needs_new_line(typename expr_t<P>::bool_t const&) { return false; }
 template <Properties P> bool needs_new_line(typename expr_t<P>::cstr_t const&) { return false; }
 template <Properties P> bool needs_new_line(typename expr_t<P>::unit_t const&) { return false; }
@@ -55,6 +50,12 @@ template <Properties P> bool needs_new_line(typename expr_t<P>::app_t const&);
 template <Properties P> bool needs_new_line(typename expr_t<P>::abs_t const&);
 template <Properties P> bool needs_new_line(typename expr_t<P>::pi_t const&);
 template <Properties P> bool needs_new_line(typename expr_t<P>::sigma_t const&);
+template <Properties P> bool needs_new_line(typename expr_t<P>::ref_t const&) { return false; }
+template <Properties P> bool needs_new_line(typename expr_t<P>::scope_t const&) { return false; }
+template <Properties P> bool needs_new_line(typename expr_t<P>::addressof_t const&) { return false; }
+template <Properties P> bool needs_new_line(typename expr_t<P>::deref_t const& x)
+{ return needs_new_line(x.ref.get()); }
+template <Properties P> bool needs_new_line(typename expr_t<P>::scopeof_t const&) { return false; }
 template <Properties P> bool needs_new_line(typename expr_t<P>::array_t const&) { return false; }
 template <Properties P> bool needs_new_line(typename expr_t<P>::init_list_t const&);
 template <Properties P> bool needs_new_line(typename expr_t<P>::member_t const&);
@@ -69,12 +70,6 @@ template <Properties P> bool needs_parenthesis(expr_t<P> const&);
 template <Properties P> bool needs_parenthesis(typename expr_t<P>::typename_t const&) { return false; }
 template <Properties P> bool needs_parenthesis(typename expr_t<P>::true_t const&) { return false; }
 template <Properties P> bool needs_parenthesis(typename expr_t<P>::auto_t const&) { return false; }
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::ref_t const&) { return false; }
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::scope_t const&) { return false; }
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::addressof_t const&) { return false; }
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::deref_t const& x)
-{ return needs_parenthesis(x.ref.get()); }
-template <Properties P> bool needs_parenthesis(typename expr_t<P>::scopeof_t const&) { return false; }
 template <Properties P> bool needs_parenthesis(typename expr_t<P>::bool_t const&) { return false; }
 template <Properties P> bool needs_parenthesis(typename expr_t<P>::cstr_t const&) { return false; }
 template <Properties P> bool needs_parenthesis(typename expr_t<P>::unit_t const&) { return false; }
@@ -98,6 +93,12 @@ template <Properties P> bool needs_parenthesis(typename expr_t<P>::app_t const&)
 template <Properties P> bool needs_parenthesis(typename expr_t<P>::abs_t const&) { return false; }
 template <Properties P> bool needs_parenthesis(typename expr_t<P>::pi_t const&) { return false; }
 template <Properties P> bool needs_parenthesis(typename expr_t<P>::sigma_t const&) { return false; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::ref_t const&) { return false; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::scope_t const&) { return false; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::addressof_t const&) { return false; }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::deref_t const& x)
+{ return needs_parenthesis(x.ref.get()); }
+template <Properties P> bool needs_parenthesis(typename expr_t<P>::scopeof_t const&) { return false; }
 template <Properties P> bool needs_parenthesis(typename expr_t<P>::array_t const&) { return false; }
 template <Properties P> bool needs_parenthesis(typename expr_t<P>::init_list_t const&) { return false; }
 template <Properties P> bool needs_parenthesis(typename expr_t<P>::member_t const&) { return false; }
@@ -299,36 +300,6 @@ template <Properties P>
 std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::auto_t const&, std::size_t)
 {
     return os << "auto";
-}
-
-template <Properties P>
-std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::ref_t const&, std::size_t)
-{
-    return os << "ref_t";
-}
-
-template <Properties P>
-std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::scope_t const&, std::size_t)
-{
-    return os << "scope_t";
-}
-
-template <Properties P>
-std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::addressof_t const& x, std::size_t)
-{
-    return os << '&' << x.var;
-}
-
-template <Properties P>
-std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::deref_t const& x, std::size_t const indent)
-{
-    return pretty_print(os << '*', x.ref.get(), indent);
-}
-
-template <Properties P>
-std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::scopeof_t const& x, std::size_t)
-{
-    return os << "scopeof(" << x.var << ')';
 }
 
 template <Properties P>
@@ -581,6 +552,36 @@ std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::sigma_t const& 
 }
 
 template <Properties P>
+std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::ref_t const&, std::size_t)
+{
+    return os << "ref_t";
+}
+
+template <Properties P>
+std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::scope_t const&, std::size_t)
+{
+    return os << "scope_t";
+}
+
+template <Properties P>
+std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::addressof_t const& x, std::size_t)
+{
+    return pretty_print<P>(os << '&', x.var);
+}
+
+template <Properties P>
+std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::deref_t const& x, std::size_t const indent)
+{
+    return pretty_print(os << '*', x.ref.get(), indent);
+}
+
+template <Properties P>
+std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::scopeof_t const& x, std::size_t)
+{
+    return pretty_print<P>(os << "scopeof(", x.var) << ')';
+}
+
+template <Properties P>
 std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::array_t const&, std::size_t)
 {
     return os << "array_t";
@@ -686,12 +687,6 @@ template <Properties P>
 bool needs_new_line(expr_t<P> const& x)
 {
     return match(x.value, [&] (auto const& x) { return needs_new_line<P>(x); });
-}
-
-template <Properties P>
-bool needs_new_line(typename expr_t<P>::deref_t const& x)
-{
-    return needs_new_line(x.ref.get());
 }
 
 template <Properties P>

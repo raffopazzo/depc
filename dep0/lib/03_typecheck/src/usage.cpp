@@ -16,6 +16,19 @@
 
 namespace dep0::typecheck {
 
+static expected<std::true_type>
+try_add_var(usage_t& usage, ctx_t const& ctx, expr_t::var_t const& v, ast::qty_t const usage_multiplier)
+{
+    if (auto lookup = context_lookup(ctx, v))
+        return usage.try_add(*lookup, usage_multiplier);
+    else
+    {
+        std::ostringstream err;
+        pretty_print<properties_t>(err << "unknown variable `", v) << "` when adding usages";
+        return dep0::error_t(err.str());
+    }
+}
+
 usage_t::usage_t(scope_map<expr_t::var_t, ast::qty_t> count)
     : count(std::move(count))
 {
@@ -98,11 +111,6 @@ expected<std::true_type> usage_t::try_add(ctx_t const& ctx, expr_t const& expr, 
         [&] (expr_t::typename_t const&) { return ok(); },
         [&] (expr_t::true_t const&) { return ok(); },
         [&] (expr_t::auto_t const&) { return ok(); },
-        [&] (expr_t::ref_t const&) { return ok(); },
-        [&] (expr_t::scope_t const&) { return ok(); },
-        [&] (expr_t::addressof_t const&) { return ok(); },
-        [&] (expr_t::deref_t const& x) { return try_add(ctx, x.ref.get(), usage_multiplier); },
-        [&] (expr_t::scopeof_t const&) { return ok(); },
         [&] (expr_t::bool_t const&) { return ok(); },
         [&] (expr_t::cstr_t const&) { return ok(); },
         [&] (expr_t::unit_t const&) { return ok(); },
@@ -159,14 +167,7 @@ expected<std::true_type> usage_t::try_add(ctx_t const& ctx, expr_t const& expr, 
         },
         [&] (expr_t::var_t const& v) -> expected<std::true_type>
         {
-            if (auto lookup = context_lookup(ctx, v))
-                return try_add(*lookup, usage_multiplier);
-            else
-            {
-                std::ostringstream err;
-                pretty_print<properties_t>(err << "unknown variable `", v) << "` when adding usages";
-                return dep0::error_t(err.str());
-            }
+            return try_add_var(*this, ctx, v, usage_multiplier);
         },
         [&] (expr_t::global_t const&) { return ok(); },
         [&] (expr_t::app_t const& x)
@@ -184,6 +185,11 @@ expected<std::true_type> usage_t::try_add(ctx_t const& ctx, expr_t const& expr, 
         },
         [&] (expr_t::pi_t const&) { return ok(); }, // types never really use anything
         [&] (expr_t::sigma_t const&) { return ok(); }, // types never really use anything
+        [&] (expr_t::ref_t const&) { return ok(); },
+        [&] (expr_t::scope_t const&) { return ok(); },
+        [&] (expr_t::addressof_t const& x) { return try_add_var(*this, ctx, x.var, usage_multiplier); },
+        [&] (expr_t::deref_t const& x) { return try_add(ctx, x.ref.get(), usage_multiplier); },
+        [&] (expr_t::scopeof_t const& x) { return try_add_var(*this, ctx, x.var, usage_multiplier); },
         [&] (expr_t::array_t const&) { return ok(); },
         [&] (expr_t::init_list_t const& x)
         {

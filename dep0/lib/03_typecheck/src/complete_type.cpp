@@ -18,11 +18,6 @@ expected<std::true_type> is_complete_type(env_t const& env, expr_t const& type)
         [] (expr_t::typename_t) { },
         [] (expr_t::true_t) { },
         [] (expr_t::auto_t) { },
-        [] (expr_t::ref_t) { },
-        [] (expr_t::scope_t) { },
-        [] (expr_t::addressof_t) { },
-        [] (expr_t::deref_t) { },
-        [] (expr_t::scopeof_t) { },
         [] (expr_t::bool_t) { },
         [] (expr_t::cstr_t) { },
         [] (expr_t::unit_t) { },
@@ -59,6 +54,11 @@ expected<std::true_type> is_complete_type(env_t const& env, expr_t const& type)
                 if (not (result = is_complete_type(env, x.type)))
                     break;
         },
+        [] (expr_t::ref_t) { },
+        [] (expr_t::scope_t) { },
+        [] (expr_t::addressof_t) { },
+        [] (expr_t::deref_t) { },
+        [] (expr_t::scopeof_t) { },
         [] (expr_t::array_t) { },
         [] (expr_t::init_list_t const&) { },
         [] (expr_t::member_t const&) { },

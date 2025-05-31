@@ -24,11 +24,6 @@ dep0::expected<std::true_type> is_c_type(parser::expr_t const& x)
         [&] (parser::expr_t::typename_t) { return no(); },
         [&] (parser::expr_t::true_t) { return no(); },
         [&] (parser::expr_t::auto_t) { return no(); },
-        [&] (parser::expr_t::ref_t) { return no(); },
-        [&] (parser::expr_t::scope_t) { return no(); },
-        [&] (parser::expr_t::addressof_t) { return no(); },
-        [&] (parser::expr_t::deref_t const&) { return no(); },
-        [&] (parser::expr_t::scopeof_t) { return no(); },
         [&] (parser::expr_t::bool_t) { return yes; },
         [&] (parser::expr_t::cstr_t) { return yes; },
         [&] (parser::expr_t::unit_t) { return no(); },
@@ -64,6 +59,11 @@ dep0::expected<std::true_type> is_c_type(parser::expr_t const& x)
                     reasons.push_back(std::move(result.error()));
             return reasons.empty() ? yes : no(std::move(reasons));
         },
+        [&] (parser::expr_t::ref_t) { return no(); },
+        [&] (parser::expr_t::scope_t) { return no(); },
+        [&] (parser::expr_t::addressof_t) { return no(); },
+        [&] (parser::expr_t::deref_t const&) { return no(); },
+        [&] (parser::expr_t::scopeof_t) { return no(); },
         [&] (parser::expr_t::array_t const&) { return no(); },
         [&] (parser::expr_t::init_list_t const&) { return no(); },
         [&] (parser::expr_t::member_t const&) { return no(); },

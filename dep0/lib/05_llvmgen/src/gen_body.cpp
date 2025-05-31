@@ -130,11 +130,6 @@ static llvm_func_t gen_destructor(global_ctx_t& global, typecheck::expr_t const&
         [] (typecheck::expr_t::typename_t const&) { },
         [] (typecheck::expr_t::true_t const&) { },
         [] (typecheck::expr_t::auto_t const&) { },
-        [] (typecheck::expr_t::ref_t const&) { },
-        [] (typecheck::expr_t::scope_t const&) { },
-        [] (typecheck::expr_t::addressof_t const&) { },
-        [] (typecheck::expr_t::deref_t const&) { },
-        [] (typecheck::expr_t::scopeof_t const&) { },
         [] (typecheck::expr_t::bool_t const&) { },
         [] (typecheck::expr_t::cstr_t const&) { },
         [] (typecheck::expr_t::unit_t const&) { },
@@ -249,6 +244,11 @@ static llvm_func_t gen_destructor(global_ctx_t& global, typecheck::expr_t const&
             }
             assert(sigma_ctx.destructors.empty() and "destructors must not allocate");
         },
+        [] (typecheck::expr_t::ref_t const&) { },
+        [] (typecheck::expr_t::scope_t const&) { },
+        [] (typecheck::expr_t::addressof_t const&) { },
+        [] (typecheck::expr_t::deref_t const&) { },
+        [] (typecheck::expr_t::scopeof_t const&) { },
         [] (typecheck::expr_t::array_t const&) { },
         [] (typecheck::expr_t::init_list_t const&) { },
         [] (typecheck::expr_t::member_t const&) { },

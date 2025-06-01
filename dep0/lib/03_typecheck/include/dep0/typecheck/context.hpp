@@ -69,6 +69,8 @@ public:
 
     // const member functions
 
+    bool is_scoped() const { return m_is_scoped; }
+
     /**
      * @brief Obtain a fresh context that inherits from the current one, which is referred to as the "parent".
      *
@@ -117,7 +119,7 @@ public:
     dep0::expected<std::true_type> try_emplace(std::optional<expr_t::var_t>, std::optional<source_loc_t>, var_decl_t);
 
 private:
-    bool is_scoped = false;
+    bool m_is_scoped = false;
     scope_map<expr_t::var_t, value_type> m_values;
 
     void add_unnamed(var_decl_t);

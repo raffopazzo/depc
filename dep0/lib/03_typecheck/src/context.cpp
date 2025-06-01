@@ -25,17 +25,17 @@
 
 namespace dep0::typecheck {
 
-ctx_t::ctx_t(scoped_t) : is_scoped(true) { }
+ctx_t::ctx_t(scoped_t) : m_is_scoped(true) { }
 
 ctx_t::ctx_t(scope_map<expr_t::var_t, value_type> values, bool scoped) :
-    is_scoped(scoped), m_values(std::move(values))
+    m_is_scoped(scoped), m_values(std::move(values))
 { }
 
 // const member functions
 
 ctx_t ctx_t::extend() const
 {
-    return ctx_t(m_values.extend(), is_scoped);
+    return ctx_t(m_values.extend(), m_is_scoped);
 }
 
 ctx_t ctx_t::extend_unscoped() const
@@ -87,7 +87,7 @@ void ctx_t::add_unnamed(var_decl_t decl)
     // an unnamed variable can only be used via proof-search, so it better have zero quantity
     decl.qty = ast::qty_t::zero;
     do
-        if (m_values.try_emplace(expr_t::var_t{empty, next_id++}, std::nullopt, is_scoped, std::move(decl)).second)
+        if (m_values.try_emplace(expr_t::var_t{empty, next_id++}, std::nullopt, m_is_scoped, std::move(decl)).second)
             return; // should always be true but doesn't harm to try the next id
     while (true);
 }
@@ -100,7 +100,7 @@ ctx_t::try_emplace(std::optional<expr_t::var_t> name, std::optional<source_loc_t
         add_unnamed(std::move(decl));
         return std::true_type{};
     }
-    auto const [it, inserted] = m_values.try_emplace(std::move(*name), loc, is_scoped, std::move(decl));
+    auto const [it, inserted] = m_values.try_emplace(std::move(*name), loc, m_is_scoped, std::move(decl));
     if (inserted)
         return std::true_type{};
     else

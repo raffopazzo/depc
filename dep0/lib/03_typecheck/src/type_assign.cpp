@@ -95,35 +95,48 @@ static expected<expr_t>
 type_assign_scopeof(
     env_t const& env,
     ctx_t const& ctx,
-    parser::expr_t::var_t const var,
-    source_loc_t const loc,
+    parser::expr_t const& expr,
     usage_t& usage,
     ast::qty_t const usage_multiplier)
 {
+    auto const loc = expr.properties;
     auto const accept = [&] (expr_t expr) -> expected<expr_t>
     {
         return make_legal_expr(derivation_rules::make_scope_t(), expr_t::scopeof_t(std::move(expr)));
     };
     auto const reject = [&] (std::string err) -> expected<expr_t> { return error_t(std::move(err), loc); };
-    if (auto lookup = context_lookup(ctx, expr_t::var_t{var.name}))
+    if (auto const var = std::get_if<parser::expr_t::var_t>(&expr.value))
     {
-        if (not lookup->is_scoped)
-            return reject("variable not bound to a scope");
-        if (auto ok = usage.try_add(*lookup, usage_multiplier, loc); not ok)
-            return ok.error();
-        return accept(make_legal_expr(lookup->decl.type, lookup->var));
+        if (auto lookup = context_lookup(ctx, expr_t::var_t{var->name}))
+        {
+            if (not lookup->is_scoped)
+                return reject("variable not bound to a scope");
+            if (auto ok = usage.try_add(*lookup, usage_multiplier, loc); not ok)
+                return ok.error();
+            return accept(make_legal_expr(lookup->decl.type, lookup->var));
+        }
+        auto g = expr_t::global_t{std::nullopt, var->name};
+        if (auto const p = env[g])
+            return match(
+                *p,
+                [&] (env_t::incomplete_type_t) { return reject("a type definition has no scope"); },
+                [&] (type_def_t const&) { return reject("a type definition has no scope"); },
+                [&] (axiom_t const&) { return reject("an axiom has no scope"); },
+                [&] (extern_decl_t const& x) { return accept(make_legal_expr(x.properties.sort.get(), std::move(g))); },
+                [&] (func_decl_t const& x) { return accept(make_legal_expr(x.properties.sort.get(), std::move(g))); },
+                [&] (func_def_t const& x) { return accept(make_legal_expr(x.properties.sort.get(), std::move(g))); });
+        return dep0::error_t("unknown variable", loc);
     }
-    auto g = expr_t::global_t{std::nullopt, var.name};
-    if (auto const p = env[g])
-        return match(
-            *p,
-            [&] (env_t::incomplete_type_t) { return reject("a type definition has no scope"); },
-            [&] (type_def_t const&) { return reject("a type definition has no scope"); },
-            [&] (axiom_t const&) { return reject("an axiom has no scope"); },
-            [&] (extern_decl_t const& x) { return accept(make_legal_expr(x.properties.sort.get(), std::move(g))); },
-            [&] (func_decl_t const& x) { return accept(make_legal_expr(x.properties.sort.get(), std::move(g))); },
-            [&] (func_def_t const& x) { return accept(make_legal_expr(x.properties.sort.get(), std::move(g))); });
-    return dep0::error_t("unknown variable", loc);
+    else
+    {
+        // NOTE: mutable expression is allowed inside `scopeof()` because it's never really evaluated
+        auto ok = type_assign(env, ctx, expr, ast::is_mutable_t::yes, usage, usage_multiplier);
+        if (not ok)
+            return std::move(ok.error());
+        if (not ctx.is_scoped())
+            return reject("temporary expression is not bound to a scope");
+        return accept(std::move(*ok));
+    }
 }
 
 std::pair<expected<expr_t>, expected<expr_t>>
@@ -355,18 +368,11 @@ type_assign(
         [] (parser::expr_t::scope_t) -> expected<expr_t> { return derivation_rules::make_scope_t(); },
         [&] (parser::expr_t::addressof_t const& x) -> expected<expr_t>
         {
-            auto x_var = std::get_if<parser::expr_t::var_t>(&x.expr.get().value);
-            if (not x_var)
-                return dep0::error_t("can only take address of variables for now", loc);
-            auto var = type_assign_var(env, ctx, x_var->name, loc, usage, usage_multiplier);
-            auto scope = type_assign_scopeof(env, ctx, *x_var, loc, usage, usage_multiplier);
-            if (not var or not scope)
-                return dep0::error_t(
-                    "cannot take address of variable", loc,
-                    {std::move((var ? scope : var).error())});
-            return derivation_rules::make_addressof(
-                std::move(std::get<expr_t>(var->properties.sort.get())),
-                std::move(std::get<expr_t::scopeof_t>(scope->value)));
+            auto scope = type_assign_scopeof(env, ctx, x.expr.get(), usage, usage_multiplier);
+            if (not scope)
+                return dep0::error_t("cannot take address of expression", loc, {std::move(scope.error())});
+            auto t = std::get<expr_t>(std::get<expr_t::scopeof_t>(scope->value).expr.get().properties.sort.get());
+            return derivation_rules::make_addressof(std::move(t), std::move(std::get<expr_t::scopeof_t>(scope->value)));
         },
         [&] (parser::expr_t::deref_t const& x) -> expected<expr_t>
         {
@@ -386,10 +392,7 @@ type_assign(
         },
         [&] (parser::expr_t::scopeof_t const& x) -> expected<expr_t>
         {
-            auto x_var = std::get_if<parser::expr_t::var_t>(&x.expr.get().value);
-            if (not x_var)
-                return dep0::error_t("can only take scope of variables for now", loc);
-            return type_assign_scopeof(env, ctx, *x_var, loc, usage, usage_multiplier);
+            return type_assign_scopeof(env, ctx, x.expr.get(), usage, usage_multiplier);
         },
         [] (parser::expr_t::array_t) -> expected<expr_t>
         {

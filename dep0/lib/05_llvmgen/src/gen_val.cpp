@@ -426,25 +426,23 @@ llvm::Value* gen_val(
         },
         [&] (typecheck::expr_t::addressof_t const& x) -> llvm::Value*
         {
+            auto const view = ast::get_if_ref(type);
+            assert(view and "type of addressof is not a reference");
+            auto const& el_type = view->element_type;
             auto const var = std::get_if<typecheck::expr_t::var_t>(&x.expr.get().value);
-            assert(var and "can only take address of variables for now");
-            auto address = local.load_address(*var);
+            auto address = var ? local.load_address(*var) : nullptr;
             if (not address)
             {
-                auto const value = match(
-                    *local[*var],
-                    [] (llvm::Value* const p) { return p; },
-                    [] (llvm_func_t const& c) { return c.func; });
-                auto const view = ast::get_if_ref(type);
-                assert(view and "type of addressof is not a reference");
-                if (is_pass_by_val(global, view->element_type))
+                auto const value = gen_temporary_val(global, local, builder, x.expr.get());
+                if (is_pass_by_val(global, el_type))
                 {
-                    address = gen_alloca(global, local, builder, allocator_t::stack, view->element_type);
-                    gen_store(global, local, builder, value_category_t::temporary, value, address, view->element_type);
+                    address = gen_alloca(global, local, builder, allocator_t::stack, el_type);
+                    gen_store(global, local, builder, value_category_t::temporary, value, address, el_type);
                 }
                 else
                     address = value;
-                local.save_address(*var, address);
+                if (var)
+                    local.save_address(*var, address);
             }
             return maybe_store(address);
         },

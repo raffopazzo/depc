@@ -243,4 +243,25 @@ BOOST_AUTO_TEST_CASE(pass_003)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_004)
+{
+    BOOST_TEST_REQUIRE(pass("0023_references/pass_004.depc"));
+    {
+        auto const f = get_function("f2");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, sext)) ;
+        auto const inst = get_instructions(f->getEntryBlock());
+        BOOST_TEST_REQUIRE(inst.size() == 5ul);
+        auto const alloca = inst[0];
+        auto const call1  = inst[1];
+        auto const store  = inst[2];
+        auto const call2  = inst[3];
+        auto const ret    = inst[4];
+        BOOST_TEST(is_alloca(alloca, is_i32, constant(1), align_of(4)));
+        BOOST_TEST(is_direct_call(call1, exactly(get_function("f1"))));
+        BOOST_TEST(is_store_of(store, is_i32, exactly(call1), exactly(alloca), align_of(4)));
+        BOOST_TEST(is_direct_call(call2, exactly(get_function("f0")), call_arg(exactly(alloca))));
+        BOOST_TEST(is_return_of(ret, exactly(call2)));
+    }
+}
+
 BOOST_AUTO_TEST_SUITE_END()

@@ -100,6 +100,7 @@ BOOST_AUTO_TEST_CASE(pass_000)
 BOOST_AUTO_TEST_CASE(pass_001) { BOOST_TEST(pass("0023_references/pass_001.depc")); }
 BOOST_AUTO_TEST_CASE(pass_002) { BOOST_TEST(pass("0023_references/pass_002.depc")); }
 BOOST_AUTO_TEST_CASE(pass_003) { BOOST_TEST(pass("0023_references/pass_003.depc")); }
+BOOST_AUTO_TEST_CASE(pass_004) { BOOST_TEST(pass("0023_references/pass_004.depc")); }
 
 BOOST_AUTO_TEST_CASE(typecheck_error_000) { BOOST_TEST(fail("0023_references/typecheck_error_000.depc")); }
 BOOST_AUTO_TEST_CASE(typecheck_error_001) { BOOST_TEST(fail("0023_references/typecheck_error_001.depc")); }
@@ -115,5 +116,6 @@ BOOST_AUTO_TEST_CASE(typecheck_error_010) { BOOST_TEST(fail("0023_references/typ
 BOOST_AUTO_TEST_CASE(typecheck_error_011) { BOOST_TEST(fail("0023_references/typecheck_error_011.depc")); }
 BOOST_AUTO_TEST_CASE(typecheck_error_012) { BOOST_TEST(fail("0023_references/typecheck_error_012.depc")); }
 BOOST_AUTO_TEST_CASE(typecheck_error_013) { BOOST_TEST(fail("0023_references/typecheck_error_013.depc")); }
+BOOST_AUTO_TEST_CASE(typecheck_error_014) { BOOST_TEST(fail("0023_references/typecheck_error_014.depc")); }
 
 BOOST_AUTO_TEST_SUITE_END()

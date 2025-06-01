@@ -40,8 +40,8 @@ struct derivation_rules
      */
     static expr_t make_true_t(expr_t);
 
-    /** @brief Constructs the expression `&var` whose type is `ref_t(type, scopeof(var))`. */
-    static expr_t make_addressof(expr_t type, expr_t::scopeof_t);
+    /** @brief Constructs the expression `&x` whose type is `ref_t(element_type, scopeof(x))`. */
+    static expr_t make_addressof(expr_t element_type, expr_t::scopeof_t);
 
     /** @brief Constructs the term `ref_t` whose type is `(typename, scope_t) -> typename`. */
     static expr_t make_ref_t();

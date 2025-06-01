@@ -76,10 +76,10 @@ impossibleStmt: 'impossible' ('because' expr)?';';
 // Expressions
 expr:
       func=expr '(' (expr (',' expr)*)? ')' # funcCallExpr
-    | 'scopeof' '(' var=ID ')' # scopeExpr
+    | 'scopeof' '(' expr ')' # scopeExpr
     | expr ('.' | '->') field=ID # memberExpr
     | expr '[' expr ']' # subscriptExpr
-    | '&' var=ID # addressOfExpr
+    | '&' expr # addressOfExpr
     | '*' expr # derefExpr
     | value=expr 'because' reason=expr # becauseExpr
     | 'not' expr # notExpr

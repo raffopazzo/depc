@@ -297,19 +297,19 @@ struct expr_t
     /** @brief Represents the expression `&x`, currently only applicable to variable names. */
     struct addressof_t
     {
-        expr_t::var_t var;
+        rec_t expr;
     };
 
     /** @brief Represents the expression '*expr'. */
     struct deref_t
     {
-        rec_t ref;
+        rec_t expr;
     };
 
     /** @brief Represents the expression `scopeof(x)`, currently only applicable to variable names. */
     struct scopeof_t
     {
-        expr_t::var_t var;
+        rec_t expr;
     };
 
     /**

@@ -145,9 +145,9 @@ std::size_t max_index(expr_t<P> const& x)
         },
         [] (expr_t<P>::ref_t const&) { return 0ul; },
         [] (expr_t<P>::scope_t const&) { return 0ul; },
-        [] (expr_t<P>::addressof_t const& x) { return x.var.idx; },
-        [] (expr_t<P>::deref_t const& x) { return max_index(x.ref.get()); },
-        [] (expr_t<P>::scopeof_t const& x) { return x.var.idx; },
+        [] (expr_t<P>::addressof_t const& x) { return max_index(x.expr.get()); },
+        [] (expr_t<P>::deref_t const& x) { return max_index(x.expr.get()); },
+        [] (expr_t<P>::scopeof_t const& x) { return max_index(x.expr.get()); },
         [] (expr_t<P>::array_t const&)
         {
             return 0ul;

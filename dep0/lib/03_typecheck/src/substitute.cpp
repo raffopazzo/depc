@@ -132,9 +132,9 @@ void substitute(expr_t::var_t const& var, expr_t const& expr, expr_t& x)
         },
         [] (expr_t::ref_t const&) {},
         [] (expr_t::scope_t const&) {},
-        [] (expr_t::addressof_t const&) {}, // TODO here we cannot substitute var for an expression
-        [&] (expr_t::deref_t& x) { substitute(var, expr, x.ref.get()); },
-        [] (expr_t::scopeof_t const&) {}, // TODO here we cannot substitute var for an expression
+        [&] (expr_t::addressof_t& x) { substitute(var, expr, x.expr.get()); },
+        [&] (expr_t::deref_t& x) { substitute(var, expr, x.expr.get()); },
+        [&] (expr_t::scopeof_t& x) { substitute(var, expr, x.expr.get()); },
         [] (expr_t::array_t const&)
         {
         },

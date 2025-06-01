@@ -426,11 +426,13 @@ llvm::Value* gen_val(
         },
         [&] (typecheck::expr_t::addressof_t const& x) -> llvm::Value*
         {
-            auto address = local.load_address(x.var);
+            auto const var = std::get_if<typecheck::expr_t::var_t>(&x.expr.get().value);
+            assert(var and "can only take address of variables for now");
+            auto address = local.load_address(*var);
             if (not address)
             {
                 auto const value = match(
-                    *local[x.var],
+                    *local[*var],
                     [] (llvm::Value* const p) { return p; },
                     [] (llvm_func_t const& c) { return c.func; });
                 auto const view = ast::get_if_ref(type);
@@ -442,14 +444,14 @@ llvm::Value* gen_val(
                 }
                 else
                     address = value;
-                local.save_address(x.var, address);
+                local.save_address(*var, address);
             }
             return maybe_store(address);
         },
         [&] (typecheck::expr_t::deref_t const& x) -> llvm::Value*
         {
             auto const llvm_type = gen_type(global, type);
-            auto const base = gen_temporary_val(global, local, builder, x.ref.get());
+            auto const base = gen_temporary_val(global, local, builder, x.expr.get());
             return maybe_store(is_pass_by_val(global, type) ? builder.CreateLoad(llvm_type, base) : base);
         },
         [&] (typecheck::expr_t::scopeof_t const&) -> llvm::Value*

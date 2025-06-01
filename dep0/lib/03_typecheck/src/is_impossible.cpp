@@ -46,9 +46,9 @@ static bool is_impossible(expr_t::pi_t const&);
 static bool is_impossible(expr_t::sigma_t const&);
 static bool is_impossible(expr_t::ref_t const&) { return false; }
 static bool is_impossible(expr_t::scope_t const&) { return false; }
-static bool is_impossible(expr_t::addressof_t const&) { return false; }
-static bool is_impossible(expr_t::deref_t const& x) { return is_impossible(x.ref.get()); }
-static bool is_impossible(expr_t::scopeof_t const&) { return false; }
+static bool is_impossible(expr_t::addressof_t const& x) { return is_impossible(x.expr.get()); }
+static bool is_impossible(expr_t::deref_t const& x) { return is_impossible(x.expr.get()); }
+static bool is_impossible(expr_t::scopeof_t const& x) { return false; } // it is always possible to take a scope
 static bool is_impossible(expr_t::array_t const&) { return false; }
 static bool is_impossible(expr_t::init_list_t const&);
 static bool is_impossible(expr_t::member_t const&);

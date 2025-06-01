@@ -247,9 +247,9 @@ std::size_t hash_code_impl(hash_code_state_t<P>& state, expr_t<P> const& x)
             },
             [] (expr_t<P>::ref_t const&) { return 0ul; },
             [] (expr_t<P>::scope_t const&) { return 0ul; },
-            [&] (expr_t<P>::addressof_t const& x) { return 1ul ^ hash_code_impl(state, x.var); },
-            [&] (expr_t<P>::deref_t const& x) { return 1ul ^ hash_code_impl(state, x.ref.get()); },
-            [&] (expr_t<P>::scopeof_t const& x) { return 1ul ^ hash_code_impl(state, x.var); },
+            [&] (expr_t<P>::addressof_t const& x) { return 1ul ^ hash_code_impl(state, x.expr.get()); },
+            [&] (expr_t<P>::deref_t const& x) { return 1ul ^ hash_code_impl(state, x.expr.get()); },
+            [&] (expr_t<P>::scopeof_t const& x) { return 1ul ^ hash_code_impl(state, x.expr.get()); },
             [] (expr_t<P>::array_t const&)
             {
                 return 0ul;

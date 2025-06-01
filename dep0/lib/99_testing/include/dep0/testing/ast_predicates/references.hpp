@@ -7,6 +7,7 @@
 #pragma once
 
 #include "dep0/testing/ast_predicates/details/check_name.hpp"
+#include "dep0/testing/ast_predicates/var.hpp"
 
 #include "dep0/testing/failure.hpp"
 #include "dep0/testing/predicate.hpp"
@@ -24,7 +25,7 @@ boost::test_tools::predicate_result is_addressof(ast::expr_t<P> const& expr, std
     auto const p = std::get_if<typename ast::expr_t<P>::addressof_t>(&expr.value);
     if (not p)
         return failure("expression is not addressof_t but ", pretty_name(expr.value));
-    if (auto const tmp = details::check_name<P>(p->var, var); not tmp)
+    if (auto const tmp = is_var(p->expr.get(), var); not tmp)
         return failure("inside addressof_t: ", tmp.message());
     return true;
 }
@@ -43,7 +44,7 @@ boost::test_tools::predicate_result is_deref(ast::expr_t<P> const& expr, F&& f)
     auto const deref = std::get_if<typename ast::expr_t<P>::deref_t>(&expr.value);
     if (not deref)
         return failure("expression is not deref_t but ", pretty_name(expr.value));
-    if (auto const result = std::forward<F>(f)(deref->ref.get()); not result)
+    if (auto const result = std::forward<F>(f)(deref->expr.get()); not result)
         return failure("inside dereferenced expression: ", result.message());
     return true;
 }
@@ -92,7 +93,7 @@ boost::test_tools::predicate_result is_scopeof(ast::expr_t<P> const& expr, std::
     auto const s = std::get_if<typename ast::expr_t<P>::scopeof_t>(&expr.value);
     if (not s)
         return failure("expression is not scopeof_t but ", pretty_name(expr.value));
-    if (auto const tmp = details::check_name<P>(s->var, var); not tmp)
+    if (auto const tmp = is_var(s->expr.get(), var); not tmp)
         return failure("inside scopeof: ", tmp.message());
     return true;
 }

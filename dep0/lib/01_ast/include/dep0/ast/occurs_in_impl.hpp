@@ -144,9 +144,9 @@ bool occurs_in(typename expr_t<P>::var_t const& var, expr_t<P> const& x, occurre
         },
         [] (expr_t<P>::ref_t const&) { return false; },
         [] (expr_t<P>::scope_t const&) { return false; },
-        [&] (expr_t<P>::addressof_t const& x) { return x.var == var; },
-        [&] (expr_t<P>::deref_t const& x) { return occurs_in(var, x.ref.get(), style); },
-        [&] (expr_t<P>::scopeof_t const& x) { return x.var == var; },
+        [&] (expr_t<P>::addressof_t const& x) { return occurs_in(var, x.expr.get(), style); },
+        [&] (expr_t<P>::deref_t const& x) { return occurs_in(var, x.expr.get(), style); },
+        [&] (expr_t<P>::scopeof_t const& x) { return occurs_in(var, x.expr.get(), style); },
         [] (expr_t<P>::array_t const&)
         {
             return false;

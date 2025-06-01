@@ -59,9 +59,9 @@ static bool beta_normalize(expr_t::pi_t&);
 static bool beta_normalize(expr_t::sigma_t&);
 static bool beta_normalize(expr_t::ref_t&) { return false; }
 static bool beta_normalize(expr_t::scope_t&) { return false; }
-static bool beta_normalize(expr_t::addressof_t&) { return false; }
-static bool beta_normalize(expr_t::deref_t& x) { return beta_normalize(x.ref.get()); }
-static bool beta_normalize(expr_t::scopeof_t&) { return false; }
+static bool beta_normalize(expr_t::addressof_t& x) { return beta_normalize(x.expr.get()); }
+static bool beta_normalize(expr_t::deref_t& x) { return beta_normalize(x.expr.get()); }
+static bool beta_normalize(expr_t::scopeof_t& x) { return beta_normalize(x.expr.get()); }
 static bool beta_normalize(expr_t::array_t&) { return false; }
 static bool beta_normalize(expr_t::init_list_t&);
 static bool beta_normalize(expr_t::member_t&);

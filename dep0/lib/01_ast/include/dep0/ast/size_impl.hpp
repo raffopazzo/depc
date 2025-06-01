@@ -173,9 +173,9 @@ std::size_t size(expr_t<P> const& x)
         },
         [] (expr_t<P>::ref_t const&) { return 0ul; },
         [] (expr_t<P>::scope_t const&) { return 0ul; },
-        [] (expr_t<P>::addressof_t const&) { return 0ul; },
-        [&] (expr_t<P>::deref_t const& x) { return 1ul + size(x.ref.get()); },
-        [] (expr_t<P>::scopeof_t const&) { return 0ul; },
+        [] (expr_t<P>::addressof_t const& x) { return 1ul + size(x.expr.get()); },
+        [] (expr_t<P>::deref_t const& x) { return 1ul + size(x.expr.get()); },
+        [] (expr_t<P>::scopeof_t const& x) { return 1ul + size(x.expr.get()); },
         [] (expr_t<P>::array_t const&)
         {
             return 0ul;

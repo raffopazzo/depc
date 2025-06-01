@@ -227,4 +227,20 @@ BOOST_AUTO_TEST_CASE(pass_002)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_003)
+{
+    apply_beta_delta_normalization = true;
+    BOOST_TEST_REQUIRE(pass("0023_references/pass_003.depc"));
+    {
+        auto const f = get_function("f1");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(is_i32, "x", sext)}, is_i32, sext));
+        BOOST_TEST(is_block_of(f->getEntryBlock(), std::tuple{return_of(exactly(f->getArg(0)))}));
+    }
+    {
+        auto const f = get_function("f2");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, sext));
+        BOOST_TEST(is_block_of(f->getEntryBlock(), std::tuple{return_of(constant(0))}));
+    }
+}
+
 BOOST_AUTO_TEST_SUITE_END()

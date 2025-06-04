@@ -519,6 +519,16 @@ bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t& expr)
                 });
             return changed or impl::delta_unfold(env, ctx, x);
         },
+        [&] (expr_t::addressof_t& x)
+        {
+            bool changed = false;
+            if (auto const deref = std::get_if<expr_t::deref_t>(&x.expr.get().value))
+            {
+                changed = true;
+                destructive_self_assign(expr.value, std::move(deref->expr.get().value));
+            }
+            return changed or impl::delta_unfold(env, ctx, x);
+        },
         [&] (expr_t::deref_t& x)
         {
             bool changed = false;

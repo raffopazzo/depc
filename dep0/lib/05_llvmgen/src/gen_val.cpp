@@ -426,6 +426,8 @@ llvm::Value* gen_val(
         },
         [&] (typecheck::expr_t::addressof_t const& x) -> llvm::Value*
         {
+            if (auto const deref = std::get_if<typecheck::expr_t::deref_t>(&x.expr.get().value))
+                return gen_val(global, local, builder, deref->expr.get(), value_category, dest);
             auto const view = ast::get_if_ref(type);
             assert(view and "type of addressof is not a reference");
             auto const& el_type = view->element_type;

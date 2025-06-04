@@ -30,6 +30,7 @@ template <Properties P>
 struct ref_view_t
 {
     std::reference_wrapper<expr_t<P> const> element_type;
+    std::reference_wrapper<expr_t<P> const> scope;
 };
 
 /**
@@ -66,7 +67,7 @@ std::optional<ref_view_t<P>> get_if_ref(expr_t<P> const& x)
     if (auto const app = std::get_if<typename expr_t<P>::app_t>(&x.value))
         if (std::holds_alternative<typename expr_t<P>::ref_t>(app->func.get().value))
             if (app->args.size() == 2ul)
-                result.emplace(std::cref(app->args[0]));
+                result.emplace(std::cref(app->args[0]), std::cref(app->args[1]));
     return result;
 }
 

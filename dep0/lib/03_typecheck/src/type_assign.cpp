@@ -9,6 +9,7 @@
 #include "private/beta_delta_equivalence.hpp"
 #include "private/check.hpp"
 #include "private/derivation_rules.hpp"
+#include "private/place_expression.hpp"
 #include "private/proof_search.hpp"
 #include "private/returns_from_all_branches.hpp"
 #include "private/substitute.hpp"
@@ -368,11 +369,36 @@ type_assign(
         [] (parser::expr_t::scope_t) -> expected<expr_t> { return derivation_rules::make_scope_t(); },
         [&] (parser::expr_t::addressof_t const& x) -> expected<expr_t>
         {
-            auto scope = type_assign_scopeof(env, ctx, x.expr.get(), usage, usage_multiplier);
-            if (not scope)
-                return dep0::error_t("cannot take address of expression", loc, {std::move(scope.error())});
-            auto t = std::get<expr_t>(std::get<expr_t::scopeof_t>(scope->value).expr.get().properties.sort.get());
-            return derivation_rules::make_addressof(std::move(t), std::move(std::get<expr_t::scopeof_t>(scope->value)));
+            auto expr = type_assign(env, ctx, x.expr.get(), is_mutable_allowed, usage, usage_multiplier);
+            if (not expr)
+                return expr;
+            return match(
+                is_place_expression(*expr),
+                [&] <typename T> (T const&) -> expected<expr_t>
+                requires (
+                    std::is_same_v<T, is_place_expression_result::no_t> or
+                    std::is_same_v<T, is_place_expression_result::var_t>)
+                {
+                    auto scope = type_assign_scopeof(env, ctx, x.expr.get(), usage, usage_multiplier);
+                    if (not scope)
+                        return dep0::error_t("cannot take address of expression", loc, {std::move(scope.error())});
+                    auto element_type =
+                        std::get<expr_t>(
+                            std::get<expr_t::scopeof_t>(
+                                scope->value).expr.get().properties.sort.get());
+                    return derivation_rules::make_addressof(
+                        std::move(element_type),
+                        std::move(std::get<expr_t::scopeof_t>(scope->value)));
+                },
+                [&] (is_place_expression_result::deref_t const& deref) -> expected<expr_t>
+                {
+                    auto ref_type = deref.expr.properties.sort.get(); // take a copy before moving `expr
+                    return make_legal_expr(std::move(ref_type), expr_t::addressof_t{std::move(*expr)});
+                },
+                [&] (auto const&) -> expected<expr_t>
+                {
+                    return dep0::error_t("place expression not yet handled", loc);
+                });
         },
         [&] (parser::expr_t::deref_t const& x) -> expected<expr_t>
         {

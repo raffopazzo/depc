@@ -264,4 +264,14 @@ BOOST_AUTO_TEST_CASE(pass_004)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_005)
+{
+    BOOST_TEST_REQUIRE(pass("0023_references/pass_005.depc"));
+    {
+        auto const f = get_function("f");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(pointer_to(is_i32), "p", nonnull)}, pointer_to(is_i32)));
+        BOOST_TEST(is_block_of(f->getEntryBlock(), std::tuple{return_of(exactly(f->getArg(0)))}));
+    }
+}
+
 BOOST_AUTO_TEST_SUITE_END()

@@ -9,7 +9,6 @@
 #include "private/beta_delta_equivalence.hpp"
 #include "private/check.hpp"
 #include "private/derivation_rules.hpp"
-#include "private/place_expression.hpp"
 #include "private/proof_search.hpp"
 #include "private/returns_from_all_branches.hpp"
 #include "private/substitute.hpp"
@@ -18,7 +17,9 @@
 #include "dep0/typecheck/subscript_access.hpp"
 
 #include "dep0/ast/find_member_field.hpp"
+#include "dep0/ast/place_expression.hpp"
 #include "dep0/ast/pretty_print.hpp"
+#include "dep0/ast/unwrap_because.hpp"
 #include "dep0/ast/views.hpp"
 
 #include "dep0/match.hpp"
@@ -373,12 +374,13 @@ type_assign(
             if (not expr)
                 return expr;
             return match(
-                is_place_expression(*expr),
-                [&] <typename T> (T const&) -> expected<expr_t>
+                ast::is_place_expression(x.expr.get()),
+                [&] <typename T> (T) -> expected<expr_t>
                 requires (
-                    std::is_same_v<T, is_place_expression_result::no_t> or
-                    std::is_same_v<T, is_place_expression_result::var_t>)
+                    std::is_same_v<T, ast::value_expression_t> or
+                    std::is_same_v<T, std::reference_wrapper<parser::expr_t::var_t const>>)
                 {
+                    // TODO this could be `&(x because reason)`
                     auto scope = type_assign_scopeof(env, ctx, x.expr.get(), usage, usage_multiplier);
                     if (not scope)
                         return dep0::error_t("cannot take address of expression", loc, {std::move(scope.error())});
@@ -391,15 +393,15 @@ type_assign(
                         std::move(std::get<expr_t::scopeof_t>(scope->value)),
                         std::move(*expr));
                 },
-                [&] (is_place_expression_result::deref_t const& deref) -> expected<expr_t>
+                [&] (std::reference_wrapper<parser::expr_t::deref_t const>) -> expected<expr_t>
                 {
-                    auto ref_type = deref.expr.properties.sort.get(); // take a copy before moving `expr
+                    auto const& deref = std::get<expr_t::deref_t>(ast::unwrap_because(*expr).value);
+                    auto ref_type = deref.expr.get().properties.sort.get(); // take a copy before moving `expr
                     return make_legal_expr(std::move(ref_type), expr_t::addressof_t{std::move(*expr)});
                 },
-                [&] (is_place_expression_result::member_t const&) -> expected<expr_t>
+                [&] (std::reference_wrapper<parser::expr_t::member_t const> const member) -> expected<expr_t>
                 {
-                    auto const& member = std::get<parser::expr_t::member_t>(x.expr.get().value);
-                    auto scope = type_assign_scopeof(env, ctx, member.object.get(), usage, usage_multiplier);
+                    auto scope = type_assign_scopeof(env, ctx, member.get().object.get(), usage, usage_multiplier);
                     if (not scope)
                         return dep0::error_t("cannot take address of expression", loc, {std::move(scope.error())});
                     auto element_type = std::get<expr_t>(expr->properties.sort.get());

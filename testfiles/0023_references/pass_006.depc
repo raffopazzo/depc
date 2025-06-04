@@ -25,6 +25,11 @@ func f1(t v) -> i32_t
     return f0(scopeof(v), &v.x, &v.y);
 }
 
+func f2(t v) -> i32_t
+{
+    return f0(scopeof(v), &(v.x because true), (&v.y) because true);
+}
+
 func g0(0 scope_t a, ref_t(array_t(i32_t, 3), a) p, ref_t(array_t(i32_t, 3), a) q) -> array_t(i32_t, 3)
 {
     if ((*p)[0] == 0)

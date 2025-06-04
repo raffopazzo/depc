@@ -18,6 +18,7 @@
 #include "private/proto.hpp"
 
 #include "dep0/ast/find_member_field.hpp"
+#include "dep0/ast/place_expression.hpp"
 #include "dep0/ast/views.hpp"
 #include "dep0/typecheck/list_initialization.hpp"
 #include "dep0/typecheck/subscript_access.hpp"
@@ -450,33 +451,39 @@ llvm::Value* gen_val(
         },
         [&] (typecheck::expr_t::addressof_t const& x) -> llvm::Value*
         {
-            if (auto const deref = std::get_if<typecheck::expr_t::deref_t>(&x.expr.get().value))
-                return gen_val(global, local, builder, deref->expr.get(), value_category, dest);
-            if (auto const member = std::get_if<typecheck::expr_t::member_t>(&x.expr.get().value))
-            {
-                auto const ptr = gen_field_address(global, local, builder, *member).first;
-                return maybe_store(ptr);
-            }
-
-            auto const view = ast::get_if_ref(type);
-            assert(view and "type of addressof is not a reference");
-            auto const& el_type = view->element_type;
-            auto const var = std::get_if<typecheck::expr_t::var_t>(&x.expr.get().value);
-            auto address = var ? local.load_address(*var) : nullptr;
-            if (not address)
-            {
-                auto const value = gen_temporary_val(global, local, builder, x.expr.get());
-                if (is_pass_by_val(global, el_type))
+            return match(
+                ast::is_place_expression(x.expr.get()),
+                [&] (std::reference_wrapper<typecheck::expr_t::deref_t const> const deref)
                 {
-                    address = gen_alloca(global, local, builder, allocator_t::stack, el_type);
-                    gen_store(global, local, builder, value_category_t::temporary, value, address, el_type);
-                }
-                else
-                    address = value;
-                if (var)
-                    local.save_address(*var, address);
-            }
-            return maybe_store(address);
+                    return gen_val(global, local, builder, deref.get().expr.get(), value_category, dest);
+                },
+                [&] (std::reference_wrapper<typecheck::expr_t::member_t const> const member)
+                {
+                    auto const ptr = gen_field_address(global, local, builder, member.get()).first;
+                    return maybe_store(ptr);
+                },
+                [&] (auto)
+                {
+                    auto const view = ast::get_if_ref(type);
+                    assert(view and "type of addressof is not a reference");
+                    auto const& el_type = view->element_type;
+                    auto const var = std::get_if<typecheck::expr_t::var_t>(&x.expr.get().value);
+                    auto address = var ? local.load_address(*var) : nullptr;
+                    if (not address)
+                    {
+                        auto const value = gen_temporary_val(global, local, builder, x.expr.get());
+                        if (is_pass_by_val(global, el_type))
+                        {
+                            address = gen_alloca(global, local, builder, allocator_t::stack, el_type);
+                            gen_store(global, local, builder, value_category_t::temporary, value, address, el_type);
+                        }
+                        else
+                            address = value;
+                        if (var)
+                            local.save_address(*var, address);
+                    }
+                    return maybe_store(address);
+                });
         },
         [&] (typecheck::expr_t::deref_t const& x) -> llvm::Value*
         {

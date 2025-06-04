@@ -4,12 +4,4 @@
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
  */
-func f0(0 scope_t a, ref_t(i32_t, a) p) -> ref_t(i32_t, a)
-{
-    return &*p;
-}
-
-func f1(0 scope_t a, ref_t(i32_t, a) p) -> ref_t(i32_t, a)
-{
-    return &(*p because true);
-}
+#include "dep0/ast/place_expression.hpp"

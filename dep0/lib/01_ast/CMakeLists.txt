@@ -18,6 +18,7 @@ add_library(dep0_ast_lib
     include/dep0/ast/mutable.hpp
     include/dep0/ast/occurs_in.hpp
     include/dep0/ast/occurs_in_impl.hpp
+    include/dep0/ast/place_expression.hpp
     include/dep0/ast/pretty_print.hpp
     include/dep0/ast/pretty_print_impl.hpp
     include/dep0/ast/qty.hpp
@@ -28,6 +29,7 @@ add_library(dep0_ast_lib
     include/dep0/ast/sign.hpp
     include/dep0/ast/size.hpp
     include/dep0/ast/size_impl.hpp
+    include/dep0/ast/unwrap_because.hpp
     include/dep0/ast/views.hpp
     include/dep0/ast/width.hpp
     src/alpha_equivalence.cpp
@@ -39,12 +41,14 @@ add_library(dep0_ast_lib
     src/max_index.cpp
     src/mutable.cpp
     src/occurs_in.cpp
+    src/place_expression.cpp
     src/pretty_print.cpp
     src/qty.cpp
     src/rename.cpp
     src/replace.cpp
     src/sign.cpp
     src/size.cpp
+    src/unwrap_because.cpp
     src/views.cpp
     src/width.cpp
     )

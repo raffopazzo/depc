@@ -105,6 +105,30 @@ llvm::Value* gen_val(llvm::IntegerType* const type, boost::multiprecision::cpp_i
     return llvm::ConstantInt::get(type, x.str(), 10);
 }
 
+static std::pair<llvm::Value*, llvm::Type*>
+gen_field_address(
+    global_ctx_t& global,
+    local_ctx_t& local,
+    llvm::IRBuilder<>& builder,
+    typecheck::expr_t::member_t const& member)
+{
+    auto const& object_type = std::get<typecheck::expr_t>(member.object.get().properties.sort.get());
+    auto const& g = std::get<typecheck::expr_t::global_t>(object_type.value);
+    auto const type_def = std::get_if<global_ctx_t::type_def_t>(global[g]);
+    assert(type_def and "only global structs can have member access");
+    auto const& s = std::get<typecheck::type_def_t::struct_t>(type_def->def.value);
+    auto const i = ast::find_member_index<typecheck::properties_t>(member.field, s);
+    assert(i.has_value());
+    auto const struct_type = gen_type(global, object_type);
+    auto const base = gen_temporary_val(global, local, builder, member.object.get());
+    auto const int32 = llvm::Type::getInt32Ty(global.llvm_ctx);
+    auto const zero = llvm::ConstantInt::get(int32, 0);
+    auto const index = llvm::ConstantInt::get(int32, *i);
+    auto const ptr = builder.CreateGEP(struct_type, base, {zero, index});
+    auto const element_type = gen_type(global, s.fields[*i].type);
+    return {ptr, element_type};
+}
+
 llvm::Value* gen_val(
     global_ctx_t& global,
     local_ctx_t& local,
@@ -428,6 +452,12 @@ llvm::Value* gen_val(
         {
             if (auto const deref = std::get_if<typecheck::expr_t::deref_t>(&x.expr.get().value))
                 return gen_val(global, local, builder, deref->expr.get(), value_category, dest);
+            if (auto const member = std::get_if<typecheck::expr_t::member_t>(&x.expr.get().value))
+            {
+                auto const ptr = gen_field_address(global, local, builder, *member).first;
+                return maybe_store(ptr);
+            }
+
             auto const view = ast::get_if_ref(type);
             assert(view and "type of addressof is not a reference");
             auto const& el_type = view->element_type;
@@ -452,7 +482,10 @@ llvm::Value* gen_val(
         {
             auto const llvm_type = gen_type(global, type);
             auto const base = gen_temporary_val(global, local, builder, x.expr.get());
-            return maybe_store(is_pass_by_val(global, type) ? builder.CreateLoad(llvm_type, base) : base);
+            return maybe_store(
+                is_boxed(type) or is_pass_by_val(global, type)
+                ? builder.CreateLoad(llvm_type, base)
+                : base);
         },
         [&] (typecheck::expr_t::scopeof_t const&) -> llvm::Value*
         {
@@ -568,20 +601,7 @@ llvm::Value* gen_val(
         },
         [&] (typecheck::expr_t::member_t const& member) -> llvm::Value*
         {
-            auto const& object_type = std::get<typecheck::expr_t>(member.object.get().properties.sort.get());
-            auto const& g = std::get<typecheck::expr_t::global_t>(object_type.value);
-            auto const type_def = std::get_if<global_ctx_t::type_def_t>(global[g]);
-            assert(type_def and "only global structs can have member access");
-            auto const& s = std::get<typecheck::type_def_t::struct_t>(type_def->def.value);
-            auto const i = ast::find_member_index<typecheck::properties_t>(member.field, s);
-            assert(i.has_value());
-            auto const struct_type = gen_type(global, object_type);
-            auto const base = gen_temporary_val(global, local, builder, member.object.get());
-            auto const int32 = llvm::Type::getInt32Ty(global.llvm_ctx);
-            auto const zero = llvm::ConstantInt::get(int32, 0);
-            auto const index = llvm::ConstantInt::get(int32, *i);
-            auto const ptr = builder.CreateGEP(struct_type, base, {zero, index});
-            auto const element_type = gen_type(global, s.fields[*i].type);
+            auto const [ptr, element_type] = gen_field_address(global, local, builder, member);
             return maybe_store(
                 is_boxed(type) or is_pass_by_val(global, type)
                 ? builder.CreateLoad(element_type, ptr)

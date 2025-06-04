@@ -274,4 +274,139 @@ BOOST_AUTO_TEST_CASE(pass_005)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_006)
+{
+    BOOST_TEST_REQUIRE(pass("0023_references/pass_006.depc"));
+    auto const t = get_struct("t");
+    BOOST_TEST(is_struct(t, "t", is_i32, is_i32, pointer_to(is_i32), pointer_to(is_i32)));
+    {
+        auto const f = get_function("f0");
+        BOOST_TEST_REQUIRE(
+            is_function_of(
+                f,
+                std::tuple{
+                    arg_of(pointer_to(is_i32), "p", nonnull),
+                    arg_of(pointer_to(is_i32), "q", nonnull)},
+            is_i32, sext));
+        auto const blks = get_blocks(*f);
+        BOOST_TEST_REQUIRE(blks.size() == 3ul);
+        BOOST_TEST(
+            is_branch_of(
+                blks[0]->getTerminator(),
+                cmp_eq(load_of(is_i32, exactly(f->getArg(0)), align_of(4)), constant(0)),
+                exactly(blks[1]),
+                exactly(blks[2])));
+        BOOST_TEST(is_return_of(blks[1]->getTerminator(), load_of(is_i32, exactly(f->getArg(1)), align_of(4))));
+        BOOST_TEST(is_return_of(blks[2]->getTerminator(), load_of(is_i32, exactly(f->getArg(0)), align_of(4))));
+    }
+    {
+        auto const f = get_function("f1");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(pointer_to(exactly(t)), "v", nonnull)}, is_i32, sext));
+        BOOST_TEST(
+            is_return_of(
+                f->getEntryBlock().getTerminator(),
+                direct_call_of(
+                    exactly(get_function("f0")),
+                    call_arg(
+                        gep_of(
+                            exactly(t),
+                            exactly(f->getArg(0)),
+                            constant(0),
+                            constant(0))),
+                    call_arg(
+                        gep_of(
+                            exactly(t),
+                            exactly(f->getArg(0)),
+                            constant(0),
+                            constant(1))))));
+    }
+    {
+        auto const f = get_function("g0");
+        BOOST_TEST_REQUIRE(
+            is_function_of(
+                f,
+                std::tuple{
+                    ret_ptr_to(is_i32),
+                    arg_of(pointer_to(pointer_to(is_i32)), "p", nonnull),
+                    arg_of(pointer_to(pointer_to(is_i32)), "q", nonnull)},
+                is_void));
+        auto const blks = get_blocks(*f);
+        BOOST_TEST_REQUIRE(blks.size() == 3ul);
+        BOOST_TEST(
+            is_branch_of(
+                blks[0]->getTerminator(),
+                cmp_eq(
+                    load_of(
+                        is_i32,
+                        gep_of(is_i32, load_of(pointer_to(is_i32), exactly(f->getArg(1)), align_of(8)), constant(0)),
+                        align_of(4)),
+                    constant(0)),
+                exactly(blks[1]),
+                exactly(blks[2])));
+        {
+            auto const inst = get_instructions(*blks[1]);
+            BOOST_TEST_REQUIRE(inst.size() == 5ul);
+            auto const load = inst[0];
+            auto const dst  = inst[1];
+            auto const src  = inst[2];
+            auto const cpy  = inst[3];
+            auto const ret  = inst[4];
+            BOOST_TEST(is_load_of(load, pointer_to(is_i32), exactly(f->getArg(2)), align_of(8)));
+            BOOST_TEST(is_bitcast_of(dst, exactly(f->getArg(0)), pointer_to(is_i32), pointer_to(is_i8)));
+            BOOST_TEST(is_bitcast_of(src, exactly(load), pointer_to(is_i32), pointer_to(is_i8)));
+            auto const attrs = std::vector{llvm::Attribute::Alignment};
+            auto const align = llvm::Align(4);
+            BOOST_TEST(
+                is_direct_call(
+                    cpy,
+                    is_memcpy,
+                    call_arg(exactly(dst), attrs, align),
+                    call_arg(exactly(src), attrs, align),
+                    call_arg(constant(12)),
+                    call_arg(constant(false))));
+            BOOST_TEST(is_return_of_void(ret));
+        }
+        {
+            auto const inst = get_instructions(*blks[2]);
+            BOOST_TEST_REQUIRE(inst.size() == 5ul);
+            auto const load = inst[0];
+            auto const dst  = inst[1];
+            auto const src  = inst[2];
+            auto const cpy  = inst[3];
+            auto const ret  = inst[4];
+            BOOST_TEST(is_load_of(load, pointer_to(is_i32), exactly(f->getArg(1)), align_of(8)));
+            BOOST_TEST(is_bitcast_of(dst, exactly(f->getArg(0)), pointer_to(is_i32), pointer_to(is_i8)));
+            BOOST_TEST(is_bitcast_of(src, exactly(load), pointer_to(is_i32), pointer_to(is_i8)));
+            auto const attrs = std::vector{llvm::Attribute::Alignment};
+            auto const align = llvm::Align(4);
+            BOOST_TEST(
+                is_direct_call(
+                    cpy,
+                    is_memcpy,
+                    call_arg(exactly(dst), attrs, align),
+                    call_arg(exactly(src), attrs, align),
+                    call_arg(constant(12)),
+                    call_arg(constant(false))));
+            BOOST_TEST(is_return_of_void(ret));
+        }
+    }
+    {
+        auto const f = get_function("g1");
+        BOOST_TEST_REQUIRE(
+            is_function_of(f, std::tuple{ret_ptr_to(is_i32), arg_of(pointer_to(exactly(t)), "v", nonnull)}, is_void));
+        auto const inst = get_instructions(f->getEntryBlock());
+        BOOST_TEST_REQUIRE(inst.size() == 4ul);
+        BOOST_TEST(is_gep_of(inst[0], exactly(t), exactly(f->getArg(1)), constant(0), constant(2)));
+        BOOST_TEST(is_gep_of(inst[1], exactly(t), exactly(f->getArg(1)), constant(0), constant(3)));
+        BOOST_TEST(
+            is_direct_call(
+                inst[2],
+                exactly(get_function("g0")),
+                call_arg(exactly(f->getArg(0))),
+                call_arg(exactly(inst[0])),
+                call_arg(exactly(inst[1]))));
+        BOOST_TEST(is_return_of_void(inst[3]));
+    }
+}
+
 BOOST_AUTO_TEST_SUITE_END()

@@ -388,12 +388,25 @@ type_assign(
                                 scope->value).expr.get().properties.sort.get());
                     return derivation_rules::make_addressof(
                         std::move(element_type),
-                        std::move(std::get<expr_t::scopeof_t>(scope->value)));
+                        std::move(std::get<expr_t::scopeof_t>(scope->value)),
+                        std::move(*expr));
                 },
                 [&] (is_place_expression_result::deref_t const& deref) -> expected<expr_t>
                 {
                     auto ref_type = deref.expr.properties.sort.get(); // take a copy before moving `expr
                     return make_legal_expr(std::move(ref_type), expr_t::addressof_t{std::move(*expr)});
+                },
+                [&] (is_place_expression_result::member_t const&) -> expected<expr_t>
+                {
+                    auto const& member = std::get<parser::expr_t::member_t>(x.expr.get().value);
+                    auto scope = type_assign_scopeof(env, ctx, member.object.get(), usage, usage_multiplier);
+                    if (not scope)
+                        return dep0::error_t("cannot take address of expression", loc, {std::move(scope.error())});
+                    auto element_type = std::get<expr_t>(expr->properties.sort.get());
+                    return derivation_rules::make_addressof(
+                        std::move(element_type),
+                        std::move(std::get<expr_t::scopeof_t>(scope->value)),
+                        std::move(*expr));
                 },
                 [&] (auto const&) -> expected<expr_t>
                 {

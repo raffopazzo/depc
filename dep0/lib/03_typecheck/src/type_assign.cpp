@@ -380,7 +380,6 @@ type_assign(
                     std::is_same_v<T, ast::value_expression_t> or
                     std::is_same_v<T, std::reference_wrapper<parser::expr_t::var_t const>>)
                 {
-                    // TODO this could be `&(x because reason)`
                     auto scope = type_assign_scopeof(env, ctx, x.expr.get(), usage, usage_multiplier);
                     if (not scope)
                         return dep0::error_t("cannot take address of expression", loc, {std::move(scope.error())});

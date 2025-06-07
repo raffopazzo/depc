@@ -458,4 +458,48 @@ BOOST_AUTO_TEST_CASE(pass_007)
     }
 }
 
+BOOST_AUTO_TEST_CASE(pass_008)
+{
+    BOOST_TEST_REQUIRE(pass("0023_references/pass_008.depc"));
+    {
+        auto const f = get_function("f1");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(pointer_to(is_i32), "v", nonnull)}, is_i32, sext));
+        auto const inst = get_instructions(f->getEntryBlock());
+        BOOST_TEST_REQUIRE(inst.size() == 4ul);
+        auto const gep1 = inst[0];
+        auto const gep2 = inst[1];
+        auto const call = inst[2];
+        auto const ret  = inst[3];
+        BOOST_TEST(is_gep_of(gep1, is_i32, exactly(f->getArg(0)), constant(0)));
+        BOOST_TEST(is_gep_of(gep2, is_i32, exactly(f->getArg(0)), constant(1)));
+        BOOST_TEST(
+            is_direct_call(
+                call,
+                exactly(get_function("f0")),
+                call_arg(exactly(gep1)),
+                call_arg(exactly(gep2))));
+        BOOST_TEST(is_return_of(ret, exactly(call)));
+    }
+    {
+        auto const tuple_type = struct_of(is_i32, is_i32);
+        auto const f = get_function("f2");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(pointer_to(tuple_type), "v", nonnull)}, is_i32, sext));
+        auto const inst = get_instructions(f->getEntryBlock());
+        BOOST_TEST_REQUIRE(inst.size() == 4ul);
+        auto const gep1 = inst[0];
+        auto const gep2 = inst[1];
+        auto const call = inst[2];
+        auto const ret  = inst[3];
+        BOOST_TEST(is_gep_of(gep1, tuple_type, exactly(f->getArg(0)), constant(0), constant(0)));
+        BOOST_TEST(is_gep_of(gep2, tuple_type, exactly(f->getArg(0)), constant(0), constant(1)));
+        BOOST_TEST(
+            is_direct_call(
+                call,
+                exactly(get_function("f0")),
+                call_arg(exactly(gep1)),
+                call_arg(exactly(gep2))));
+        BOOST_TEST(is_return_of(ret, exactly(call)));
+    }
+}
+
 BOOST_AUTO_TEST_SUITE_END()

@@ -106,6 +106,39 @@ llvm::Value* gen_val(llvm::IntegerType* const type, boost::multiprecision::cpp_i
     return llvm::ConstantInt::get(type, x.str(), 10);
 }
 
+static llvm::Value* get_tuple_element_address(
+    global_ctx_t& global,
+    local_ctx_t& local,
+    llvm::IRBuilder<>& builder,
+    typecheck::expr_t::subscript_t const& subscript,
+    llvm::Type* const tuple_type)
+{
+    auto const base = gen_temporary_val(global, local, builder, subscript.object.get());
+    auto const index_const = std::get_if<typecheck::expr_t::numeric_constant_t>(&subscript.index.get().value);
+    assert(index_const and "subscript operand on tuples must be a numeric literal");
+    auto const int32 = llvm::Type::getInt32Ty(global.llvm_ctx);
+    auto const zero = llvm::ConstantInt::get(int32, 0);
+    auto const i = index_const->value.convert_to<std::int32_t>();
+    auto const index_val = llvm::ConstantInt::get(int32, i);
+    return builder.CreateGEP(tuple_type, base, {zero, index_val});
+}
+
+static llvm::Value* get_array_element_address(
+    global_ctx_t& global,
+    local_ctx_t& local,
+    llvm::IRBuilder<>& builder,
+    typecheck::expr_t::subscript_t const& subscript)
+{
+    auto const& array = subscript.object.get();
+    auto const properties = get_array_properties(std::get<typecheck::expr_t>(array.properties.sort.get()));
+    auto const stride_size = gen_stride_size_if_needed(global, local, builder, properties);
+    auto const element_type = gen_type(global, properties.element_type);
+    auto const base = gen_temporary_val(global, local, builder, array);
+    auto const index_val = gen_temporary_val(global, local, builder, subscript.index.get());
+    auto const offset = stride_size ? builder.CreateMul(stride_size, index_val) : index_val;
+    return builder.CreateGEP(element_type, base, offset);
+}
+
 static std::pair<llvm::Value*, llvm::Type*>
 gen_field_address(
     global_ctx_t& global,
@@ -482,6 +515,29 @@ llvm::Value* gen_val(
                     auto const ptr = gen_field_address(global, local, builder, member.get()).first;
                     return maybe_store(ptr);
                 },
+                [&] (std::reference_wrapper<typecheck::expr_t::subscript_t const> const x) -> llvm::Value*
+                {
+                    auto const& subscript = x.get();
+                    auto const& object_type = std::get<typecheck::expr_t>(subscript.object.get().properties.sort.get());
+                    return match(
+                        typecheck::has_subscript_access(object_type),
+                        [] (typecheck::has_subscript_access_result::no_t) -> llvm::Value*
+                        {
+                            assert(false and "unexpected subscript expression; typechecking must be broken");
+                            __builtin_unreachable();
+                        },
+                        [&] (typecheck::has_subscript_access_result::sigma_t const& sigma) -> llvm::Value*
+                        {
+                            auto const tuple_type = gen_type(global, object_type);
+                            auto const ptr = get_tuple_element_address(global, local, builder, subscript, tuple_type);
+                            return maybe_store(ptr);
+                        },
+                        [&] (typecheck::has_subscript_access_result::array_t const&) -> llvm::Value*
+                        {
+                            auto const ptr = get_array_element_address(global, local, builder, subscript);
+                            return maybe_store(ptr);
+                        });
+                },
                 [&] (auto)
                 {
                     auto const view = ast::get_if_ref(type);
@@ -641,14 +697,9 @@ llvm::Value* gen_val(
                 [&] (typecheck::has_subscript_access_result::sigma_t const& sigma) -> llvm::Value*
                 {
                     auto const tuple_type = gen_type(global, object_type);
-                    auto const base = gen_temporary_val(global, local, builder, subscript.object.get());
+                    auto const ptr = get_tuple_element_address(global, local, builder, subscript, tuple_type);
                     auto const index = std::get_if<typecheck::expr_t::numeric_constant_t>(&subscript.index.get().value);
-                    assert(index and "subscript operand on tuples must be a numeric literal");
-                    auto const int32 = llvm::Type::getInt32Ty(global.llvm_ctx);
-                    auto const zero = llvm::ConstantInt::get(int32, 0);
                     auto const i = index->value.convert_to<std::int32_t>();
-                    auto const index_val = llvm::ConstantInt::get(int32, i);
-                    auto const ptr = builder.CreateGEP(tuple_type, base, {zero, index_val});
                     auto const element_type = gen_type(global, sigma.args[i].type);
                     return maybe_store(
                         is_boxed(type) or is_pass_by_val(global, type)
@@ -657,14 +708,9 @@ llvm::Value* gen_val(
                 },
                 [&] (typecheck::has_subscript_access_result::array_t const&) -> llvm::Value*
                 {
-                    auto const& array = subscript.object.get();
-                    auto const properties = get_array_properties(std::get<typecheck::expr_t>(array.properties.sort.get()));
-                    auto const stride_size = gen_stride_size_if_needed(global, local, builder, properties);
+                    auto const ptr = get_array_element_address(global, local, builder, subscript);
+                    auto const properties = get_array_properties(std::get<typecheck::expr_t>(subscript.object.get().properties.sort.get()));
                     auto const element_type = gen_type(global, properties.element_type);
-                    auto const base = gen_temporary_val(global, local, builder, array);
-                    auto const index = gen_temporary_val(global, local, builder, subscript.index.get());
-                    auto const offset = stride_size ? builder.CreateMul(stride_size, index) : index;
-                    auto const ptr = builder.CreateGEP(element_type, base, offset);
                     return maybe_store(is_pass_by_ptr(global, type) ? ptr : builder.CreateLoad(element_type, ptr));
                 });
         },

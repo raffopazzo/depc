@@ -398,9 +398,12 @@ type_assign(
                     auto ref_type = deref.expr.get().properties.sort.get(); // take a copy before moving `expr
                     return make_legal_expr(std::move(ref_type), expr_t::addressof_t{std::move(*expr)});
                 },
-                [&] (std::reference_wrapper<parser::expr_t::member_t const> const member) -> expected<expr_t>
+                [&] <typename T> (T x) -> expected<expr_t>
+                requires (
+                    std::is_same_v<T, std::reference_wrapper<parser::expr_t::member_t const>> or
+                    std::is_same_v<T, std::reference_wrapper<parser::expr_t::subscript_t const>>)
                 {
-                    auto scope = type_assign_scopeof(env, ctx, member.get().object.get(), usage, usage_multiplier);
+                    auto scope = type_assign_scopeof(env, ctx, x.get().object.get(), usage, usage_multiplier);
                     if (not scope)
                         return dep0::error_t("cannot take address of expression", loc, {std::move(scope.error())});
                     auto element_type = std::get<expr_t>(expr->properties.sort.get());

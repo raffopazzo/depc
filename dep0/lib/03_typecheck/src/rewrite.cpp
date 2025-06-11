@@ -242,7 +242,7 @@ std::optional<expr_t> rewrite(expr_t const& from, expr_t const& to, expr_t const
             [&] (expr_t::scopeof_t const& x)
             {
                 if (auto new_expr = rewrite(from, to, x.expr.get()))
-                    result.emplace(old.properties, expr_t::scopeof_t{std::move(*new_expr)});
+                    result.emplace(old.properties, expr_t::scopeof_t(std::move(*new_expr), x.scope_id));
             },
             [&] (expr_t::array_t const&)
             {

@@ -26,11 +26,13 @@
 #include "dep0/match.hpp"
 
 #include <llvm/IR/Constants.h>
+#include <llvm/IR/Instructions.h>
 #include <llvm/Transforms/Utils/BasicBlockUtils.h>
 
 #include <boost/hana.hpp>
 
 #include <algorithm>
+#include <cassert>
 #include <ranges>
 
 namespace dep0::llvmgen {
@@ -89,6 +91,24 @@ static std::string escape(std::string_view const in)
             return c;
         }());
     return out;
+}
+
+static llvm::Constant* gen_string_literal(
+    global_ctx_t& global,
+    llvm::IRBuilder<>& builder,
+    typecheck::expr_t::string_literal_t const& x)
+{
+    auto val = global.get_string_literal(x);
+    if (not val)
+    {
+        std::optional<std::string> escaped;
+        auto const& raw = x.value.view();
+        if (needs_escaping(raw))
+            escaped.emplace(escape(raw));
+        val = builder.CreateGlobalStringPtr(escaped ? *escaped : raw, "$_str_");
+        global.store_string_literal(x, val);
+    }
+    return val;
 }
 
 static allocator_t select_allocator(value_category_t const value_category)
@@ -262,18 +282,7 @@ llvm::Value* gen_val(
         },
         [&] (typecheck::expr_t::string_literal_t const& x) -> llvm::Value*
         {
-            std::optional<std::string> escaped;
-            auto const& raw = x.value.view();
-            if (needs_escaping(raw))
-                escaped.emplace(escape(raw));
-            auto const& s = escaped ? *escaped : raw;
-            auto val = global.get_string_literal(s);
-            if (not val)
-            {
-                val = builder.CreateGlobalStringPtr(s, "$_str_");
-                global.store_string_literal(escaped ? std::move(*escaped) : std::string(s), val);
-            }
-            return maybe_store(val);
+            return maybe_store(gen_string_literal(global, builder, x));
         },
         [&] (typecheck::expr_t::boolean_expr_t const& x) -> llvm::Value*
         {
@@ -543,16 +552,70 @@ llvm::Value* gen_val(
                     auto const view = ast::get_if_ref(type);
                     assert(view and "type of addressof is not a reference");
                     auto const& el_type = view->element_type;
-                    // TODO if immutable could consider cache the address
-                    auto const value = gen_temporary_val(global, local, builder, x.expr.get());
-                    if (is_pass_by_val(global, el_type))
+                    if (auto const g = std::get_if<typecheck::expr_t::global_t>(&x.expr.get().value))
                     {
-                        auto const address = gen_alloca(global, local, builder, allocator_t::stack, el_type);
-                        gen_store(global, local, builder, value_category_t::temporary, value, address, el_type);
+                        auto address = global.load_address(*g);
+                        if (not address)
+                        {
+                            auto const val = global[*g];
+                            assert(val and "global variable not found");
+                            address = match(
+                                *val,
+                                [&] (llvm_func_t const f) -> llvm::Value*
+                                {
+                                    auto const global_func = llvm::dyn_cast<llvm::Function>(f.func);
+                                    assert(global_func and "expected a global function");
+                                    auto const val =
+                                        new llvm::GlobalVariable(
+                                            global.llvm_module,
+                                            gen_type(global, el_type),
+                                            true, // isConstant
+                                            llvm::GlobalValue::PrivateLinkage,
+                                            global_func,
+                                            std::string("$_ref_") + std::string(g->name.view()));
+                                    global.save_address(*g, val);
+                                    return val;
+                                },
+                                [] (global_ctx_t::type_def_t const&) -> llvm::Value*
+                                {
+                                    assert(false and "found a typedef but was expecting a value");
+                                    __builtin_unreachable();
+                                });
+                            global.save_address(*g, address);
+                        }
+                        return maybe_store(address);
+                    }
+                    else  if (auto const s = std::get_if<typecheck::expr_t::string_literal_t>(&x.expr.get().value))
+                    {
+                        auto address = global.load_address(*s);
+                        if (not address)
+                        {
+                            address =
+                                new llvm::GlobalVariable(
+                                    global.llvm_module,
+                                    gen_type(global, el_type),
+                                    true, // isConstant
+                                    llvm::GlobalValue::PrivateLinkage,
+                                    gen_string_literal(global, builder, *s),
+                                    std::string("$_strref_"));
+                            global.save_address(*s, address);
+                        }
                         return maybe_store(address);
                     }
                     else
-                        return maybe_store(value);
+                    {
+                        // TODO if immutable could consider cache the address
+                        auto const value = gen_temporary_val(global, local, builder, x.expr.get());
+                        if (is_pass_by_val(global, el_type))
+                        {
+                            auto const address = gen_alloca(global, local, builder, allocator_t::stack, el_type);
+                            gen_store(global, local, builder, value_category_t::temporary, value, address, el_type);
+                            return maybe_store(address);
+                        }
+                        else
+                            return maybe_store(value);
+
+                    }
                 });
         },
         [&] (typecheck::expr_t::deref_t const& x) -> llvm::Value*

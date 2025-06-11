@@ -483,7 +483,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
     virtual std::any visitScopeExpr(DepCParser::ScopeExprContext* ctx) override
     {
         assert(ctx);
-        return expr_t{get_loc(src, *ctx), expr_t::scopeof_t{visitExpr(ctx->expr())}};
+        return expr_t{get_loc(src, *ctx), expr_t::scopeof_t(visitExpr(ctx->expr()), 0ul)};
     }
 
     virtual std::any visitMemberExpr(DepCParser::MemberExprContext* ctx) override

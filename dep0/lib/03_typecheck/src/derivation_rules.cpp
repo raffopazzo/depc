@@ -115,4 +115,3 @@ expr_t derivation_rules::make_subscript(expr_t obj, std::size_t const idx, sort_
 }
 
 } // namespace dep0::typecheck
-

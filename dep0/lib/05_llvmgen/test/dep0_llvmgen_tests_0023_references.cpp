@@ -500,6 +500,79 @@ BOOST_AUTO_TEST_CASE(pass_008)
                 call_arg(exactly(gep2))));
         BOOST_TEST(is_return_of(ret, exactly(call)));
     }
+    {
+        auto const tuple_type = struct_of(is_i64, pointer_to(is_i32));
+        auto const f = get_function("f3");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{arg_of(pointer_to(tuple_type), "v", nonnull)}, is_i32, sext));
+        BOOST_TEST(
+            is_return_of(
+                f->getEntryBlock().getTerminator(),
+                direct_call_of(
+                    exactly(get_function("f0")),
+                    call_arg(
+                        gep_of(
+                            is_i32,
+                            load_of(
+                                pointer_to(is_i32),
+                                gep_of(tuple_type, exactly(f->getArg(0)), constant(0), constant(1)),
+                                align_of(8)),
+                            constant(0))),
+                    call_arg(
+                        gep_of(
+                            is_i32,
+                            load_of(
+                                pointer_to(is_i32),
+                                gep_of(tuple_type, exactly(f->getArg(0)), constant(0), constant(1)),
+                                align_of(8)),
+                            constant(1))))));
+    }
+}
+
+BOOST_AUTO_TEST_CASE(pass_009)
+{
+    BOOST_TEST_REQUIRE(pass("0023_references/pass_009.depc"));
+    {
+        auto const f = get_function("zero");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, sext));
+        BOOST_TEST(is_block_of(f->getEntryBlock(), std::tuple{return_of(constant(0))}));
+    }
+    {
+        auto const f = get_function("g");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, sext));
+        BOOST_TEST(is_block_of(f->getEntryBlock(), std::tuple{return_of(constant(0))}));
+    }
+    {
+        auto const f = get_function("f0");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, pointer_to(fnptr_type(std::tuple{}, is_i32))));
+        BOOST_TEST(
+            is_block_of(
+                f->getEntryBlock(),
+                std::tuple{return_of(exactly(pass_result.value()->getGlobalVariable("$_ref_g", true)))}));
+    }
+    {
+        auto const f = get_function("f1");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, pointer_to(fnptr_type(std::tuple{}, is_i32))));
+        BOOST_TEST(
+            is_block_of(
+                f->getEntryBlock(),
+                std::tuple{return_of(exactly(pass_result.value()->getGlobalVariable("$_ref_g", true)))}));
+    }
+    {
+        auto const f = get_function("f2");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, pointer_to(pointer_to(is_i8))));
+        BOOST_TEST(
+            is_block_of(
+                f->getEntryBlock(),
+                std::tuple{return_of(exactly(pass_result.value()->getGlobalVariable("$_strref_", true)))}));
+    }
+    {
+        auto const f = get_function("f3");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, pointer_to(pointer_to(is_i8))));
+        BOOST_TEST(
+            is_block_of(
+                f->getEntryBlock(),
+                std::tuple{return_of(exactly(pass_result.value()->getGlobalVariable("$_strref_.2", true)))}));
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()

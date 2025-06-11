@@ -7,5 +7,5 @@
 func zero() -> i32_t { return 0; }
 func f(i32_t x) -> ref_t(i32_t, scopeof(zero))
 {
-    return &x; // typecheck error: scopeof(x) is not alpha-equivalent to scopeof(zero)
+    return &x; // typecheck error: scopeof(x) is smaller than scopeof(zero)
 }

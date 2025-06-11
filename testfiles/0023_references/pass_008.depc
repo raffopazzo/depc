@@ -22,3 +22,7 @@ func f0(0 scope_t a, ref_t(i32_t, a) p, ref_t(i32_t, a) q) -> i32_t
 
 func f1(array_t(i32_t, 2) v) -> i32_t { return f0(scopeof(v), &v[0], &v[1]); }
 func f2((i32_t, i32_t) v) -> i32_t { return f0(scopeof(v), &v[0], &v[1]); }
+func f3((u64_t n, array_t(i32_t, n)) v, 0 true_t(1 < v[0])) -> i32_t
+{
+    return f0(scopeof(v), &v[1][0], &v[1][1]) because ::lt_trans_u64(0, 1, v[0], auto, auto);
+}

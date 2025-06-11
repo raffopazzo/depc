@@ -16,6 +16,7 @@
 #include "dep0/error.hpp"
 #include "dep0/scope_map.hpp"
 
+#include <optional>
 #include <ostream>
 #include <set>
 
@@ -55,7 +56,7 @@ public:
     struct value_type
     {
         std::optional<source_loc_t> origin; /**< Where in the source code the variable declaration was encountered. */
-        bool is_scoped; /**< Stores whether the originating context is scoped or not. */
+        std::optional<std::size_t> scope_id; /**< Scope ID of the originating context or empty if unscoped. */
         var_decl_t value;
     };
 
@@ -69,7 +70,7 @@ public:
 
     // const member functions
 
-    bool is_scoped() const { return m_is_scoped; }
+    std::optional<std::size_t> scope() const { return m_scope_id; }
 
     /**
      * @brief Obtain a fresh context that inherits from the current one, which is referred to as the "parent".
@@ -119,12 +120,12 @@ public:
     dep0::expected<std::true_type> try_emplace(std::optional<expr_t::var_t>, std::optional<source_loc_t>, var_decl_t);
 
 private:
-    bool m_is_scoped = false;
+    std::optional<std::size_t> m_scope_id;
     scope_map<expr_t::var_t, value_type> m_values;
 
     void add_unnamed(var_decl_t);
 
-    ctx_t(scope_map<expr_t::var_t, value_type>, bool is_scoped);
+    ctx_t(scope_map<expr_t::var_t, value_type>, std::optional<std::size_t> new_scope_id);
 };
 
 /** @brief Proof that a variable exists inside some context, returned from `context_lookup`. */
@@ -136,7 +137,7 @@ public:
     ctx_t const& ctx; /**< @brief The context in which the variable was declared. */
     expr_t::var_t const var; /**< @brief The variable that was declared. */
     ctx_t::var_decl_t const& decl; /**< @brief The declaration bound to the given variable. */
-    bool const is_scoped; /**< @brief Whether the variable was also bound to a scope. */
+    std::optional<std::size_t> const scope_id; /**< @brief Scope ID of the originating context or empty if unscoped. */
 
     /**
      * @brief Checks whether the given variable is declared inside the given context and

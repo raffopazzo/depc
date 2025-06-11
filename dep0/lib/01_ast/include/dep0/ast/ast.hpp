@@ -149,6 +149,13 @@ struct expr_t
     struct string_literal_t
     {
         source_text value;
+
+        bool operator!=(string_literal_t const& other) const { return value != other.value; }
+        bool operator==(string_literal_t const& other) const { return value == other.value; }
+        bool operator<(string_literal_t const& other) const { return value < other.value; }
+        bool operator>(string_literal_t const& other) const { return other.value < value; }
+        bool operator<=(string_literal_t const& other) const { return value < other.value or value == other.value; }
+        bool operator>=(string_literal_t const& other) const { return not (value < other.value); }
     };
 
     /** @brief Represents a boolean expression, for example `x and not y or is_even(k)`. */
@@ -306,10 +313,20 @@ struct expr_t
         rec_t expr;
     };
 
-    /** @brief Represents the expression `scopeof(x)`, currently only applicable to variable names. */
+    /**
+     * @brief Represents the expression `scopeof(expr)`.
+     * @remarks `scope_id` is only relevant during type-checking and it is set to 0 during parsing.
+     */
     struct scopeof_t
     {
         rec_t expr;
+        std::size_t scope_id;
+
+        /**
+         * @brief Prevent construction via aggregate initialization,
+         * thus ensuring that `scope_id` is always set to a valid value.
+         */
+        scopeof_t(rec_t expr, std::size_t const scope_id) : expr(std::move(expr)), scope_id(scope_id) {}
     };
 
     /**

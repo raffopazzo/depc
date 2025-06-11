@@ -9,6 +9,7 @@
 #include "private/beta_delta_equivalence.hpp"
 #include "private/check.hpp"
 #include "private/derivation_rules.hpp"
+#include "private/max_scope.hpp"
 #include "private/proof_search.hpp"
 #include "private/returns_from_all_branches.hpp"
 #include "private/substitute.hpp"
@@ -102,31 +103,36 @@ type_assign_scopeof(
     ast::qty_t const usage_multiplier)
 {
     auto const loc = expr.properties;
-    auto const accept = [&] (expr_t expr) -> expected<expr_t>
+    auto const accept = [&] (expr_t expr, std::size_t const scope_id) -> expected<expr_t>
     {
-        return make_legal_expr(derivation_rules::make_scope_t(), expr_t::scopeof_t(std::move(expr)));
+        return make_legal_expr(derivation_rules::make_scope_t(), expr_t::scopeof_t(std::move(expr), scope_id));
     };
     auto const reject = [&] (std::string err) -> expected<expr_t> { return error_t(std::move(err), loc); };
     if (auto const var = std::get_if<parser::expr_t::var_t>(&expr.value))
     {
         if (auto lookup = context_lookup(ctx, expr_t::var_t{var->name}))
         {
-            if (not lookup->is_scoped)
+            if (not lookup->scope_id)
                 return reject("variable not bound to a scope");
             if (auto ok = usage.try_add(*lookup, usage_multiplier, loc); not ok)
                 return ok.error();
-            return accept(make_legal_expr(lookup->decl.type, lookup->var));
+            return accept(make_legal_expr(lookup->decl.type, lookup->var), *lookup->scope_id);
         }
         auto g = expr_t::global_t{std::nullopt, var->name};
+        auto const accept_global = [&] (sort_t sort)
+        {
+            std::size_t constexpr global_scope_id = 0ul;
+            return accept(make_legal_expr(std::move(sort), std::move(g)), global_scope_id);
+        };
         if (auto const p = env[g])
             return match(
                 *p,
                 [&] (env_t::incomplete_type_t) { return reject("a type definition has no scope"); },
                 [&] (type_def_t const&) { return reject("a type definition has no scope"); },
                 [&] (axiom_t const&) { return reject("an axiom has no scope"); },
-                [&] (extern_decl_t const& x) { return accept(make_legal_expr(x.properties.sort.get(), std::move(g))); },
-                [&] (func_decl_t const& x) { return accept(make_legal_expr(x.properties.sort.get(), std::move(g))); },
-                [&] (func_def_t const& x) { return accept(make_legal_expr(x.properties.sort.get(), std::move(g))); });
+                [&] (extern_decl_t const& x) { return accept_global(x.properties.sort.get()); },
+                [&] (func_decl_t const& x) { return accept_global(x.properties.sort.get()); },
+                [&] (func_def_t const& x) { return accept_global(x.properties.sort.get()); });
         return dep0::error_t("unknown variable", loc);
     }
     else
@@ -135,9 +141,12 @@ type_assign_scopeof(
         auto ok = type_assign(env, ctx, expr, ast::is_mutable_t::yes, usage, usage_multiplier);
         if (not ok)
             return std::move(ok.error());
-        if (not ctx.is_scoped())
-            return reject("temporary expression is not bound to a scope");
-        return accept(std::move(*ok));
+
+        auto scope = max_scope(ctx, *ok);
+        if (not scope)
+            return std::move(scope.error());
+
+        return accept(std::move(*ok), *scope);
     }
 }
 

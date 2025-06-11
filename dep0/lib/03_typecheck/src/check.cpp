@@ -20,6 +20,7 @@
 #include "dep0/typecheck/beta_delta_reduction.hpp"
 #include "dep0/typecheck/list_initialization.hpp"
 
+#include "dep0/ast/views.hpp"
 #include "dep0/ast/pretty_print.hpp"
 
 #include "dep0/fmap.hpp"
@@ -34,6 +35,7 @@
 #include <numeric>
 #include <ranges>
 #include <sstream>
+#include <utility>
 
 namespace dep0::typecheck {
 
@@ -582,6 +584,50 @@ check_expr(
         [&] (parser::expr_t::arith_expr_t const& x) -> expected<expr_t>
         {
             return check_or_assign(env, ctx, x, loc, &expected_type, is_mutable, usage, usage_multiplier);
+        },
+        [&] (parser::expr_t::addressof_t const&) -> expected<expr_t>
+        {
+            return match(
+                expected_type,
+                [&] (expr_t const& expected_type) -> expected<expr_t>
+                {
+                    auto expr = type_assign(env, ctx, x, is_mutable, usage, usage_multiplier);
+                    if (not expr)
+                        return std::move(expr.error());
+                    // TODO beta_delta_normalize(env, ctx, expected_type);
+                    auto const expected_ref = ast::get_if_ref(expected_type);
+                    assert(expected_ref and "TODO add a test");
+                    // if (not expected_ref)
+                    //     return error_t("type mismatch between addressof and non-reference type", loc);
+                    auto const expr_ref = ast::get_if_ref(std::get<expr_t>(expr->properties.sort.get()));
+                    assert(expr_ref and "type-assignment of addressof_t must return an expression of type ref_t");
+                    auto eq = is_beta_delta_equivalent(
+                        env, ctx, expected_ref->element_type.get(), expr_ref->element_type.get());
+                    assert(eq and "TODO add a test");
+                    if (is_beta_delta_equivalent(env, ctx, expected_type, expr->properties.sort.get()))
+                        return expr;
+
+                    if (auto const expected_scope = std::get_if<expr_t::scopeof_t>(&expected_ref->scope.get().value))
+                        if (auto const expr_scope = std::get_if<expr_t::scopeof_t>(&expr_ref->scope.get().value))
+                            if (expr_scope->scope_id <= expected_scope->scope_id) // larger scopes have smaller id
+                                return expr; // TODO should I take the scope of expected here?
+                            else
+                            {
+                                std::ostringstream err;
+                                pretty_print<properties_t>(err << '`', *expected_scope) << '`';
+                                err << " (" << expected_scope->scope_id << ')';
+                                pretty_print<properties_t>(err << " outlives `", *expr_scope) << '`';
+                                err << " (" << expr_scope->scope_id << ')';
+                                return type_error(expr->properties.sort.get(), dep0::error_t(err.str()));
+                            }
+                    return type_error(expr->properties.sort.get(), dep0::error_t("scopes are not comparable"));
+                },
+                [&] (kind_t) -> expected<expr_t>
+                {
+                    std::ostringstream err;
+                    pretty_print(err << "type mismatch between addressof operator and `", kind_t{}) << '`';
+                    return error_t(err.str(), loc);
+                });
         },
         [&] (parser::expr_t::init_list_t const& list) -> expected<expr_t>
         {

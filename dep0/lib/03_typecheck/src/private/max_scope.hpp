@@ -21,6 +21,6 @@ namespace dep0::typecheck {
  * @brief Return the highest scope ID that appears in all subexpressions of the given expression
  * with respect to the given context.
  */
-expected<std::size_t> max_scope(ctx_t const& ctx, expr_t const& expr);
+expected<std::size_t> max_scope(ctx_t const&, expr_t const&);
 
 } // namespace dep0::typecheck

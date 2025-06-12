@@ -23,9 +23,9 @@ static expected<std::size_t> max_scope_combine(expected<std::size_t>, expected<s
 static expected<std::size_t> max_scope_args(ctx_t const&, std::vector<func_arg_t> const&);
 static expected<std::size_t> max_scope_app(ctx_t const&, expr_t::app_t const&);
 
-static expected<std::size_t> max_scope_body(ctx_t const& ctx, body_t const& body);
-static expected<std::size_t> max_scope_stmt(ctx_t const& ctx, stmt_t const& stmt);
-static expected<std::size_t> max_scope_expr(ctx_t const& ctx, expr_t const& expr);
+static expected<std::size_t> max_scope_body(ctx_t const&, body_t const&);
+static expected<std::size_t> max_scope_stmt(ctx_t const&, stmt_t const&);
+static expected<std::size_t> max_scope_expr(ctx_t const&, expr_t const&);
 
 template <typename T, typename F>
 expected<std::size_t> max_scope_vector(ctx_t const& ctx, std::vector<T> const& xs, F&& proj)
@@ -190,7 +190,7 @@ expected<std::size_t> max_scope_expr(ctx_t const& ctx, expr_t const& expr)
             else
             {
                 std::ostringstream err;
-                ast::pretty_print<properties_t>(err << '`', var) << "` not found";
+                ast::pretty_print<properties_t>(err << "unknown variable `", var) << '`';
                 return error_t{err.str()};
             }
         },

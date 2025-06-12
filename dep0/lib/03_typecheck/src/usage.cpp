@@ -16,19 +16,6 @@
 
 namespace dep0::typecheck {
 
-static expected<std::true_type>
-try_add_var(usage_t& usage, ctx_t const& ctx, expr_t::var_t const& v, ast::qty_t const usage_multiplier)
-{
-    if (auto lookup = context_lookup(ctx, v))
-        return usage.try_add(*lookup, usage_multiplier);
-    else
-    {
-        std::ostringstream err;
-        pretty_print<properties_t>(err << "unknown variable `", v) << "` when adding usages";
-        return dep0::error_t(err.str());
-    }
-}
-
 usage_t::usage_t(scope_map<expr_t::var_t, ast::qty_t> count)
     : count(std::move(count))
 {
@@ -167,7 +154,14 @@ expected<std::true_type> usage_t::try_add(ctx_t const& ctx, expr_t const& expr, 
         },
         [&] (expr_t::var_t const& v) -> expected<std::true_type>
         {
-            return try_add_var(*this, ctx, v, usage_multiplier);
+            if (auto lookup = context_lookup(ctx, v))
+                return try_add(*lookup, usage_multiplier);
+            else
+            {
+                std::ostringstream err;
+                pretty_print<properties_t>(err << "unknown variable `", v) << "` when adding usages";
+                return dep0::error_t(err.str());
+            }
         },
         [&] (expr_t::global_t const&) { return ok(); },
         [&] (expr_t::app_t const& x)

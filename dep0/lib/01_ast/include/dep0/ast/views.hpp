@@ -26,7 +26,7 @@ struct array_view_t
     std::reference_wrapper<expr_t<P> const> size;
 };
 
-/** @brief The return type of `get_if_ref` holding a reference to the element type. */
+/** @brief The return type of `get_if_ref` holding a reference to scope and element type. */
 template <Properties P>
 struct ref_view_t
 {

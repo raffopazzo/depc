@@ -6,7 +6,7 @@
  */
 /**
  * @file
- * @brief Single-function header file containing the declaration of `max_scope()`.
+ * @brief Single-function header declaring `dep0::typecheck::max_scope()`.
  */
 #pragma once
 

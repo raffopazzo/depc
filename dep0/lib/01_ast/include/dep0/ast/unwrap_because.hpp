@@ -16,7 +16,7 @@ namespace dep0::ast {
 
 /**
  * @brief If the given expression has the form `value because reason` return a reference to the value,
- * repeatedly until a non-because expression is found.
+ * recursively until a non-because expression is found.
  */
 template <Properties P>
 expr_t<P> const& unwrap_because(expr_t<P> const& expr)

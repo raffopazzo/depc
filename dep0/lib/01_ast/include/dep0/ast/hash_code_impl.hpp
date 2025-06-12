@@ -73,6 +73,7 @@ public:
 template <Properties P> std::size_t hash_code_impl(hash_code_state_t<P>&, body_t<P> const&);
 template <Properties P> std::size_t hash_code_impl(hash_code_state_t<P>&, stmt_t<P> const&);
 template <Properties P> std::size_t hash_code_impl(hash_code_state_t<P>&, typename expr_t<P>::app_t const&);
+template <Properties P> std::size_t hash_code_impl(hash_code_state_t<P>&, typename expr_t<P>::var_t const&);
 template <Properties P> std::size_t hash_code_impl(
     hash_code_state_t<P>&,
     typename std::vector<func_arg_t<P>>::const_iterator begin,
@@ -130,6 +131,15 @@ std::size_t hash_code_impl(hash_code_state_t<P>& state, typename expr_t<P>::app_
 }
 
 template <Properties P>
+std::size_t hash_code_impl(hash_code_state_t<P>& state, typename expr_t<P>::var_t const& x)
+{
+    if (auto const id = state.find(x))
+        return *id;
+    else
+        return combine(x.idx, boost::hash_value(x.name.view()));
+}
+
+template <Properties P>
 std::size_t hash_code_impl(
     hash_code_state_t<P>& state,
     typename std::vector<func_arg_t<P>>::const_iterator const begin,
@@ -184,7 +194,7 @@ std::size_t hash_code_impl(hash_code_state_t<P>& state, expr_t<P> const& x)
                         x.value,
                         [&] (expr_t<P>::boolean_expr_t::not_t const& x)
                         {
-                            return hash_code_impl(state, x.expr.get());
+                            return 1ul ^ hash_code_impl(state, x.expr.get());
                         },
                         [&] (auto const& x)
                         {
@@ -215,10 +225,7 @@ std::size_t hash_code_impl(hash_code_state_t<P>& state, expr_t<P> const& x)
             },
             [&] (expr_t<P>::var_t const& x)
             {
-                if (auto const id = state.find(x))
-                    return *id;
-                else
-                    return combine(x.idx, boost::hash_value(x.name.view()));
+                return hash_code_impl(state, x);
             },
             [] (expr_t<P>::global_t const& x) { return boost::hash_value(x.name.view()); },
             [&] (expr_t<P>::app_t const& x) { return hash_code_impl<P>(state, x); },
@@ -238,6 +245,11 @@ std::size_t hash_code_impl(hash_code_state_t<P>& state, expr_t<P> const& x)
             {
                 return hash_code_impl<P>(state, x.args.begin(), x.args.end(), nullptr, nullptr);
             },
+            [] (expr_t<P>::ref_t const&) { return 0ul; },
+            [] (expr_t<P>::scope_t const&) { return 0ul; },
+            [&] (expr_t<P>::addressof_t const& x) { return 1ul ^ hash_code_impl(state, x.expr.get()); },
+            [&] (expr_t<P>::deref_t const& x) { return 1ul ^ hash_code_impl(state, x.expr.get()); },
+            [&] (expr_t<P>::scopeof_t const& x) { return 1ul ^ hash_code_impl(state, x.expr.get()); },
             [] (expr_t<P>::array_t const&)
             {
                 return 0ul;

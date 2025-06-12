@@ -1,0 +1,28 @@
+/*
+ * Copyright Raffaele Rossi 2025.
+ *
+ * Distributed under the Boost Software License, Version 1.0.
+ * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
+ */
+func f0(0 scope_t a, ref_t(i32_t, a) x) -> ref_t(i32_t, a) { return x; }
+func f1(0 scope_t a, bool_t which, ref_t(i32_t, a) x, ref_t(i32_t, a) y) -> ref_t(i32_t, a)
+{
+    if (which)
+        return x;
+    else
+        return y;
+}
+func f2(i32_t a) -> i32_t
+{
+    return *f0(scopeof(a), &a) + *f0(scopeof(a), &a);
+}
+struct t
+{
+    i32_t x;
+};
+func f3(0 scope_t a, ref_t(t, a) x) -> ref_t(t, a) { return x; }
+func f4(t a) -> i32_t { return f3(scopeof(a), &a)->x; }
+func f5(bool_t which, i32_t a, i32_t b) -> i32_t
+{
+    return *f1(scopeof(a), which, &a, &b) + *f1(scopeof(b), which, &a, &b);
+}

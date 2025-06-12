@@ -25,15 +25,22 @@
 
 namespace dep0::typecheck {
 
-ctx_t::ctx_t(scope_map<expr_t::var_t, value_type> values) :
-    m_values(std::move(values))
+ctx_t::ctx_t(scoped_t) : m_scope_id(0) { }
+
+ctx_t::ctx_t(scope_map<expr_t::var_t, value_type> values, std::optional<std::size_t> const scope_id) :
+    m_scope_id(scope_id), m_values(std::move(values))
 { }
 
 // const member functions
 
 ctx_t ctx_t::extend() const
 {
-    return ctx_t(m_values.extend());
+    return ctx_t(m_values.extend(), m_scope_id ? std::optional{*m_scope_id + 1ul} : std::nullopt);
+}
+
+ctx_t ctx_t::extend_unscoped() const
+{
+    return ctx_t(m_values.extend(), std::nullopt);
 }
 
 ctx_t ctx_t::rewrite(expr_t const& from, expr_t const& to) const
@@ -80,7 +87,7 @@ void ctx_t::add_unnamed(var_decl_t decl)
     // an unnamed variable can only be used via proof-search, so it better have zero quantity
     decl.qty = ast::qty_t::zero;
     do
-        if (m_values.try_emplace(expr_t::var_t{empty, next_id++}, std::nullopt, std::move(decl)).second)
+        if (m_values.try_emplace(expr_t::var_t{empty, next_id++}, std::nullopt, m_scope_id, std::move(decl)).second)
             return; // should always be true but doesn't harm to try the next id
     while (true);
 }
@@ -93,7 +100,7 @@ ctx_t::try_emplace(std::optional<expr_t::var_t> name, std::optional<source_loc_t
         add_unnamed(std::move(decl));
         return std::true_type{};
     }
-    auto const [it, inserted] = m_values.try_emplace(std::move(*name), loc, std::move(decl));
+    auto const [it, inserted] = m_values.try_emplace(std::move(*name), loc, m_scope_id, std::move(decl));
     if (inserted)
         return std::true_type{};
     else
@@ -108,13 +115,13 @@ ctx_t::try_emplace(std::optional<expr_t::var_t> name, std::optional<source_loc_t
     }
 }
 
-context_lookup_t::context_lookup_t(ctx_t const& ctx, expr_t::var_t var, ctx_t::var_decl_t const& decl) :
-    ctx(ctx), var(std::move(var)), decl(decl) { }
+context_lookup_t::context_lookup_t(ctx_t const& ctx, expr_t::var_t var, ctx_t::value_type const& val) :
+    ctx(ctx), var(std::move(var)), decl(val.value), scope_id(val.scope_id) { }
 
 std::optional<context_lookup_t> context_lookup(ctx_t const& ctx, expr_t::var_t const& var)
 {
     if (auto const val = ctx[var])
-        return context_lookup_t(ctx, var, val->value);
+        return context_lookup_t(ctx, var, *val);
     else
         return std::nullopt;
 }

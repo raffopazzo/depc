@@ -86,14 +86,26 @@ struct global_ctx_t
      * @details Return `nullptr` if no global value exists yet.
      * @see @ref `store_string_literal()`.
      */
-    llvm::Value* get_string_literal(std::string_view) const;
+    llvm::Constant* get_string_literal(typecheck::expr_t::string_literal_t const&) const;
 
     /**
      * @brief Store an LLVM global value holding the given string literal
      * @remarks If one already exists, it will be overwritten.
      * @see @ref `get_string_literal()`.
      */
-    void store_string_literal(std::string, llvm::Value*);
+    void store_string_literal(typecheck::expr_t::string_literal_t const&, llvm::Constant*);
+
+    /** @brief Retrieve the address previously saved for the given global, or `nullptr` if none saved yet. */
+    llvm::Value* load_address(typecheck::expr_t::global_t const&) const;
+
+    /** @brief Retrieve the address previously saved for the given string literal, or `nullptr` if none saved yet. */
+    llvm::Value* load_address(typecheck::expr_t::string_literal_t const&) const;
+
+    /** @brief Save the address where the given global is stored. */
+    void save_address(typecheck::expr_t::global_t const&, llvm::Value* address);
+
+    /** @brief Save the address where the given string literal is stored. */
+    void save_address(typecheck::expr_t::string_literal_t const&, llvm::Value* address);
 
     /**
      * @brief Store a new `value_t` for the given global symbol.
@@ -125,11 +137,14 @@ private:
     scope_map<typecheck::expr_t::global_t, value_t> values; /**< @brief Global functions, type definitions, etc. */
     typecheck::env_t type_defs_env;
 
+    std::map<typecheck::expr_t::global_t, llvm::Value*> global_addresses;
+    std::map<typecheck::expr_t::string_literal_t, llvm::Value*> string_literal_addresses;
+
     /**
      * @brief LLVM global values associated to each unique string literal.
      * @note The comparator `std::less<>` allows look-up by `std::string_view`.
      */
-    std::map<std::string, llvm::Value*, std::less<>> string_literals;
+    std::map<typecheck::expr_t::string_literal_t, llvm::Constant*> string_literals;
 
     /** @brief Stores the destructor to invoke for a non-array type. */
     std::unordered_map<typecheck::expr_t, llvm_func_t, std::hash<typecheck::expr_t>, eq_t> non_array_destructors;
@@ -172,8 +187,14 @@ struct local_ctx_t
     template <typename... Args>
     auto try_emplace(typecheck::expr_t::var_t name, Args&&... args)
     {
-        return values.try_emplace(std::move(name), std::forward<Args>(args)...);
+        return entries.try_emplace(std::move(name), value_t{std::forward<Args>(args)...});
     }
+
+    /** @brief Retrieve the address that was previously saved for the given variable, or `nullptr` if none saved yet. */
+    llvm::Value* load_address(typecheck::expr_t::var_t const&) const;
+
+    /** @brief Save the address where the value of the given variable is stored. */
+    void save_address(typecheck::expr_t::var_t const&, llvm::Value* address);
 
     /**
      * @brief Values that need to be destructed before leaving the scope associated to this object.
@@ -184,9 +205,14 @@ struct local_ctx_t
     std::vector<std::pair<llvm::Value*, typecheck::expr_t>> destructors;
 
 private:
-    scope_map<typecheck::expr_t::var_t, value_t> values;
+    struct entry_t
+    {
+        value_t value;
+        llvm::Value* address = nullptr;
+    };
+    scope_map<typecheck::expr_t::var_t, entry_t> entries;
 
-    explicit local_ctx_t(scope_map<typecheck::expr_t::var_t, value_t>);
+    explicit local_ctx_t(scope_map<typecheck::expr_t::var_t, entry_t>);
 };
 
 } // namespace dep0::llvmgen

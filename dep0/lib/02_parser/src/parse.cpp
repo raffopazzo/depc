@@ -480,13 +480,21 @@ struct parse_visitor_t : dep0::DepCParserVisitor
                 }}};
     }
 
+    virtual std::any visitScopeExpr(DepCParser::ScopeExprContext* ctx) override
+    {
+        assert(ctx);
+        return expr_t{get_loc(src, *ctx), expr_t::scopeof_t(visitExpr(ctx->expr()), 0ul)};
+    }
+
     virtual std::any visitMemberExpr(DepCParser::MemberExprContext* ctx) override
     {
         assert(ctx);
         return expr_t{
             get_loc(src, *ctx),
             expr_t::member_t{
-                visitExpr(ctx->expr()),
+                ctx->ARROW()
+                    ? expr_t{get_loc(src, *ctx), expr_t::deref_t{visitExpr(ctx->expr())}}
+                    : visitExpr(ctx->expr()),
                 get_text(src, *ctx->field)
             }};
     }
@@ -511,6 +519,19 @@ struct parse_visitor_t : dep0::DepCParserVisitor
                 visitExpr(ctx->value),
                 visitExpr(ctx->reason)
             }};
+    }
+
+    virtual std::any visitAddressOfExpr(DepCParser::AddressOfExprContext* ctx) override
+    {
+        assert(ctx);
+        return expr_t{get_loc(src, *ctx), expr_t::addressof_t{visitExpr(ctx->expr())}};
+    }
+
+    virtual std::any visitDerefExpr(DepCParser::DerefExprContext* ctx) override
+    {
+        assert(ctx);
+        assert(ctx);
+        return expr_t{get_loc(src, *ctx), expr_t::deref_t{visitExpr(ctx->expr())}};
     }
 
     virtual std::any visitGlobalExpr(DepCParser::GlobalExprContext* ctx) override
@@ -538,10 +559,14 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         auto const loc = get_loc(src, *ctx);
         if (ctx->KW_ARRAY())
             return expr_t{loc, expr_t::array_t{}};
-        if (ctx->KW_TRUE_T())
-            return expr_t{loc, expr_t::true_t{}};
         if (ctx->KW_AUTO())
             return expr_t{loc, expr_t::auto_t{}};
+        if (ctx->KW_REF_T())
+            return expr_t{loc, expr_t::ref_t{}};
+        if (ctx->KW_SCOPE_T())
+            return expr_t{loc, expr_t::scope_t{}};
+        if (ctx->KW_TRUE_T())
+            return expr_t{loc, expr_t::true_t{}};
         throw error_t("unexpected alternative when parsing KwExprContext", loc);
     }
 
@@ -627,12 +652,18 @@ struct parse_visitor_t : dep0::DepCParserVisitor
         // So for now use the same order as they are listed in `DepCParser.g4`, for readability.
         if (auto const p = dynamic_cast<DepCParser::FuncCallExprContext*>(ctx))
             return std::any_cast<expr_t>(visitFuncCallExpr(p));
+        if (auto const p = dynamic_cast<DepCParser::ScopeExprContext*>(ctx))
+            return std::any_cast<expr_t>(visitScopeExpr(p));
         if (auto const p = dynamic_cast<DepCParser::MemberExprContext*>(ctx))
             return std::any_cast<expr_t>(visitMemberExpr(p));
         if (auto const p = dynamic_cast<DepCParser::SubscriptExprContext*>(ctx))
             return std::any_cast<expr_t>(visitSubscriptExpr(p));
         if (auto const p = dynamic_cast<DepCParser::BecauseExprContext*>(ctx))
             return std::any_cast<expr_t>(visitBecauseExpr(p));
+        if (auto const p = dynamic_cast<DepCParser::AddressOfExprContext*>(ctx))
+            return std::any_cast<expr_t>(visitAddressOfExpr(p));
+        if (auto const p = dynamic_cast<DepCParser::DerefExprContext*>(ctx))
+            return std::any_cast<expr_t>(visitDerefExpr(p));
         if (auto const p = dynamic_cast<DepCParser::NotExprContext*>(ctx))
             return std::any_cast<expr_t>(visitNotExpr(p));
         if (auto const p = dynamic_cast<DepCParser::MultOrDivExprContext*>(ctx))

@@ -6,7 +6,7 @@
  */
 #include "private/c_types.hpp"
 
-#include "dep0/ast/get_if_array.hpp"
+#include "dep0/ast/views.hpp"
 
 #include "dep0/match.hpp"
 
@@ -45,6 +45,7 @@ dep0::expected<std::true_type> is_c_type(parser::expr_t const& x)
         [&] (parser::expr_t::global_t const&) { return no(); }, // TODO might be yes for some struct and integer defs
         [&] (parser::expr_t::app_t const&)
         {
+            // TODO yes for `ref_t(t, a)` but requires skipping over erased arguments first (`a` in this case)
             auto const arr = get_if_array(x);
             return arr and is_c_type(arr->element_type.get()) ? yes : no();
         },
@@ -58,6 +59,11 @@ dep0::expected<std::true_type> is_c_type(parser::expr_t const& x)
                     reasons.push_back(std::move(result.error()));
             return reasons.empty() ? yes : no(std::move(reasons));
         },
+        [&] (parser::expr_t::ref_t) { return no(); },
+        [&] (parser::expr_t::scope_t) { return no(); },
+        [&] (parser::expr_t::addressof_t const&) { return no(); },
+        [&] (parser::expr_t::deref_t const&) { return no(); },
+        [&] (parser::expr_t::scopeof_t const&) { return no(); },
         [&] (parser::expr_t::array_t const&) { return no(); },
         [&] (parser::expr_t::init_list_t const&) { return no(); },
         [&] (parser::expr_t::member_t const&) { return no(); },

@@ -76,8 +76,11 @@ impossibleStmt: 'impossible' ('because' expr)?';';
 // Expressions
 expr:
       func=expr '(' (expr (',' expr)*)? ')' # funcCallExpr
-    | expr '.' field=ID # memberExpr
+    | 'scopeof' '(' expr ')' # scopeExpr
+    | expr ('.' | '->') field=ID # memberExpr
     | expr '[' expr ']' # subscriptExpr
+    | '&' expr # addressOfExpr
+    | '*' expr # derefExpr
     | value=expr 'because' reason=expr # becauseExpr
     | 'not' expr # notExpr
     | lhs=expr op=('*' | '/') rhs=expr # multOrDivExpr
@@ -89,7 +92,7 @@ expr:
     | value=STR # stringLiteral
     | sign=('+' | '-')? value=INT # numericConstant
     | value=('true'|'false') # booleanConstant
-    | ('array_t' | 'true_t' | 'auto') # kwExpr
+    | ('array_t' | 'auto' | 'ref_t' | 'scope_t' | 'true_t') # kwExpr
     | module_name=ID? '::' symbol_name=ID # globalExpr
     | var=ID # varExpr
     | type # typeExpr // in an expression `f(x)` x should be parsed as `var` so this rule must come after `var`

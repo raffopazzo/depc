@@ -54,6 +54,10 @@ bool is_first_order_type(typecheck::expr_t const& type)
                     // `true_t(expr)` is a unit-like type whose only value is `{}`
                     return true;
                 },
+                [&] (typecheck::expr_t::ref_t const&)
+                {
+                    return is_first_order_type(x.args[0ul]);
+                },
                 [&] (typecheck::expr_t::array_t const&)
                 {
                     // `array_t(type, size)` is a 1st order type if `type` is of 1st order,
@@ -69,6 +73,11 @@ bool is_first_order_type(typecheck::expr_t const& type)
         {
             return std::ranges::all_of(t.args, [] (auto const& arg) { return is_first_order_type(arg.type); });
         },
+        [] (typecheck::expr_t::ref_t const&) { return false; }, // `ref_t` on its own is a term, not a type
+        [] (typecheck::expr_t::scope_t const&) { return true; },
+        [] (typecheck::expr_t::addressof_t const&) { return false; },
+        [] (typecheck::expr_t::deref_t const&) { return false; },
+        [] (typecheck::expr_t::scopeof_t const&) { return false; },
         [] (typecheck::expr_t::array_t const&) { return false; }, // `array_t` on its own is a term, not a type
         [] (typecheck::expr_t::init_list_t const&) { return false; },
         [] (typecheck::expr_t::member_t const&) { return false; },

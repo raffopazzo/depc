@@ -39,6 +39,11 @@ static bool is_mutable(expr_t::global_t const&) { return false; }
 static bool is_mutable(expr_t::abs_t const&);
 static bool is_mutable(expr_t::pi_t const&);
 static bool is_mutable(expr_t::sigma_t const&) { return false; }
+static bool is_mutable(expr_t::ref_t const&) { return false; }
+static bool is_mutable(expr_t::scope_t const&) { return false; }
+static bool is_mutable(expr_t::addressof_t const& x) { return is_mutable(x.expr.get()); }
+static bool is_mutable(expr_t::deref_t const& x) { return is_mutable(x.expr.get()); }
+static bool is_mutable(expr_t::scopeof_t const& x) { return false; } // `scopeof()` is never mutable
 static bool is_mutable(expr_t::array_t const&) { return false; }
 static bool is_mutable(expr_t::init_list_t const&);
 static bool is_mutable(expr_t::member_t const&);

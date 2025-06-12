@@ -615,9 +615,7 @@ check_expr(
                             {
                                 std::ostringstream err;
                                 pretty_print<properties_t>(err << '`', *expected_scope) << '`';
-                                err << " (" << expected_scope->scope_id << ')';
                                 pretty_print<properties_t>(err << " outlives `", *expr_scope) << '`';
-                                err << " (" << expr_scope->scope_id << ')';
                                 return type_error(expr->properties.sort.get(), dep0::error_t(err.str()));
                             }
                     return type_error(expr->properties.sort.get(), dep0::error_t("scopes are not comparable"));

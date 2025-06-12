@@ -177,7 +177,7 @@ BOOST_AUTO_TEST_CASE(pass_001)
 BOOST_AUTO_TEST_CASE(pass_002)
 {
     BOOST_TEST_REQUIRE(pass("0023_references/pass_002.depc"));
-    BOOST_TEST_REQUIRE(pass_result->entries.size() == 6ul);
+    BOOST_TEST_REQUIRE(pass_result->entries.size() == 7ul);
     {
         auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[0]);
         BOOST_TEST_REQUIRE(f);
@@ -246,6 +246,23 @@ BOOST_AUTO_TEST_CASE(pass_002)
             is_return_of(
                 f->value.body.stmts[0ul],
                 member_of(deref(app_of(var("f3"), scopeof("a"), addressof("a"))), "x")));
+    }
+    {
+        auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[6]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "f5");
+        BOOST_TEST_REQUIRE(f->value.args.size() == 3ul);
+        BOOST_TEST(is_arg(f->value.args[0], is_bool, "which"));
+        BOOST_TEST(is_arg(f->value.args[1], is_i32, "a"));
+        BOOST_TEST(is_arg(f->value.args[2], is_i32, "b"));
+        BOOST_TEST(is_i32(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(
+            is_return_of(
+                f->value.body.stmts[0ul],
+                plus(
+                    deref(app_of(var("f1"), scopeof("a"), var("which"), addressof("a"), addressof("b"))),
+                    deref(app_of(var("f1"), scopeof("b"), var("which"), addressof("a"), addressof("b"))))));
     }
 }
 

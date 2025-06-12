@@ -225,6 +225,52 @@ BOOST_AUTO_TEST_CASE(pass_002)
                         constant(0)),
                     align_of(4))));
     }
+    {
+        auto const f = get_function("f5");
+        BOOST_TEST_REQUIRE(
+            is_function_of(
+                f,
+                std::tuple{
+                    arg_of(is_i1, "which", zext),
+                    arg_of(is_i32, "a", sext),
+                    arg_of(is_i32, "b", sext)
+                },
+                is_i32, sext));
+        auto const inst = get_instructions(f->getEntryBlock());
+        BOOST_TEST(inst.size() == 10ul);
+        auto const alloca0 = inst[0];
+        auto const alloca1 = inst[1];
+        auto const store0  = inst[2];
+        auto const store1  = inst[3];
+        auto const call0   = inst[4];
+        auto const load0   = inst[5];
+        auto const call1   = inst[6];
+        auto const load1   = inst[7];
+        auto const add     = inst[8];
+        auto const ret     = inst[9];
+        BOOST_TEST(is_alloca(alloca0, is_i32, constant(1), align_of(4)));
+        BOOST_TEST(is_alloca(alloca1, is_i32, constant(1), align_of(4)));
+        BOOST_TEST(is_store_of(store0, is_i32, exactly(f->getArg(1)), exactly(alloca0), align_of(4)));
+        BOOST_TEST(is_store_of(store1, is_i32, exactly(f->getArg(2)), exactly(alloca1), align_of(4)));
+        BOOST_TEST(
+            is_direct_call(
+                call0,
+                exactly(get_function("f1")),
+                call_arg(exactly(f->getArg(0)), zext),
+                call_arg(exactly(alloca0)),
+                call_arg(exactly(alloca1))));
+        BOOST_TEST(is_load_of(load0, is_i32, exactly(call0), align_of(4)));
+        BOOST_TEST(
+            is_direct_call(
+                call1,
+                exactly(get_function("f1")),
+                call_arg(exactly(f->getArg(0)), zext),
+                call_arg(exactly(alloca0)),
+                call_arg(exactly(alloca1))));
+        BOOST_TEST(is_load_of(load1, is_i32, exactly(call1), align_of(4)));
+        BOOST_TEST(is_add_of(add, exactly(load0), exactly(load1)));
+        BOOST_TEST(is_return_of(ret, exactly(add)));
+    }
 }
 
 BOOST_AUTO_TEST_CASE(pass_003)

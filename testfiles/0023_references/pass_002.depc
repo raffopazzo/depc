@@ -22,3 +22,7 @@ struct t
 };
 func f3(0 scope_t a, ref_t(t, a) x) -> ref_t(t, a) { return x; }
 func f4(t a) -> i32_t { return f3(scopeof(a), &a)->x; }
+func f5(bool_t which, i32_t a, i32_t b) -> i32_t
+{
+    return *f1(scopeof(a), which, &a, &b) + *f1(scopeof(b), which, &a, &b);
+}

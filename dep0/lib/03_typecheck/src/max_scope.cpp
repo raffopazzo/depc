@@ -122,7 +122,13 @@ expected<std::size_t> max_scope_expr(ctx_t const& ctx, expr_t const& expr)
         expr.value,
         [] (expr_t::typename_t const&) -> expected<std::size_t> { return std::size_t{0ul}; },
         [] (expr_t::true_t const&) -> expected<std::size_t> { return std::size_t{0ul}; },
-        [] (expr_t::auto_t const&) -> expected<std::size_t> { return std::size_t{0ul}; },
+        [&] (expr_t::auto_t const&) -> expected<std::size_t>
+        {
+            if (ctx.scope())
+                return *ctx.scope();
+            else
+                return error_t("auto-expression cannot be bound to an unscoped context");
+        },
         [] (expr_t::bool_t const&) -> expected<std::size_t> { return std::size_t{0ul}; },
         [] (expr_t::cstr_t const&) -> expected<std::size_t> { return std::size_t{0ul}; },
         [] (expr_t::unit_t const&) -> expected<std::size_t> { return std::size_t{0ul}; },

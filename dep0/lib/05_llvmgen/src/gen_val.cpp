@@ -616,7 +616,7 @@ llvm::Value* gen_val(
                     }
                     else
                     {
-                        // TODO if immutable could consider cache the address
+                        // TODO if immutable could consider caching the address
                         auto const value = gen_temporary_val(global, local, builder, x.expr.get());
                         if  (is_boxed(el_type))
                         {

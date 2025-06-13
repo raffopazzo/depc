@@ -420,10 +420,6 @@ type_assign(
                         std::move(element_type),
                         std::move(std::get<expr_t::scopeof_t>(scope->value)),
                         std::move(*expr));
-                },
-                [&] (auto const&) -> expected<expr_t>
-                {
-                    return dep0::error_t("place expression not yet handled", loc);
                 });
         },
         [&] (parser::expr_t::deref_t const& x) -> expected<expr_t>

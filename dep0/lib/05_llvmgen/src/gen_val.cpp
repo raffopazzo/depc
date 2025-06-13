@@ -126,7 +126,7 @@ llvm::Value* gen_val(llvm::IntegerType* const type, boost::multiprecision::cpp_i
     return llvm::ConstantInt::get(type, x.str(), 10);
 }
 
-static llvm::Value* get_tuple_element_address(
+static llvm::Value* gen_tuple_element_address(
     global_ctx_t& global,
     local_ctx_t& local,
     llvm::IRBuilder<>& builder,
@@ -143,7 +143,7 @@ static llvm::Value* get_tuple_element_address(
     return builder.CreateGEP(tuple_type, base, {zero, index_val});
 }
 
-static llvm::Value* get_array_element_address(
+static llvm::Value* gen_array_element_address(
     global_ctx_t& global,
     local_ctx_t& local,
     llvm::IRBuilder<>& builder,
@@ -550,12 +550,12 @@ llvm::Value* gen_val(
                         [&] (typecheck::has_subscript_access_result::sigma_t const& sigma) -> llvm::Value*
                         {
                             auto const tuple_type = gen_type(global, object_type);
-                            auto const ptr = get_tuple_element_address(global, local, builder, subscript, tuple_type);
+                            auto const ptr = gen_tuple_element_address(global, local, builder, subscript, tuple_type);
                             return maybe_store(ptr);
                         },
                         [&] (typecheck::has_subscript_access_result::array_t const&) -> llvm::Value*
                         {
-                            auto const ptr = get_array_element_address(global, local, builder, subscript);
+                            auto const ptr = gen_array_element_address(global, local, builder, subscript);
                             return maybe_store(ptr);
                         });
                 },
@@ -777,7 +777,7 @@ llvm::Value* gen_val(
                 [&] (typecheck::has_subscript_access_result::sigma_t const& sigma) -> llvm::Value*
                 {
                     auto const tuple_type = gen_type(global, object_type);
-                    auto const ptr = get_tuple_element_address(global, local, builder, subscript, tuple_type);
+                    auto const ptr = gen_tuple_element_address(global, local, builder, subscript, tuple_type);
                     auto const index = std::get_if<typecheck::expr_t::numeric_constant_t>(&subscript.index.get().value);
                     auto const i = index->value.convert_to<std::int32_t>();
                     auto const element_type = gen_type(global, sigma.args[i].type);
@@ -788,7 +788,7 @@ llvm::Value* gen_val(
                 },
                 [&] (typecheck::has_subscript_access_result::array_t const&) -> llvm::Value*
                 {
-                    auto const ptr = get_array_element_address(global, local, builder, subscript);
+                    auto const ptr = gen_array_element_address(global, local, builder, subscript);
                     auto const properties = get_array_properties(std::get<typecheck::expr_t>(subscript.object.get().properties.sort.get()));
                     auto const element_type = gen_type(global, properties.element_type);
                     return maybe_store(is_pass_by_ptr(global, type) ? ptr : builder.CreateLoad(element_type, ptr));

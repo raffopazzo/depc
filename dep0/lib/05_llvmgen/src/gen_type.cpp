@@ -178,7 +178,6 @@ llvm::Type* gen_type(global_ctx_t const& global, typecheck::expr_t const& type)
                 },
                 [&] (typecheck::expr_t::ref_t const&) -> llvm::Type*
                 {
-                    // TODO handle pass-by-ptr types
                     return gen_type(global, app.args[0])->getPointerTo();
                 },
                 [&] (typecheck::expr_t::array_t const&) -> llvm::Type*

@@ -503,14 +503,26 @@ llvm::Value* gen_val(
                     auto address = local.load_address(var);
                     if (not address)
                     {
-                        auto const value = gen_temporary_val(global, local, builder, x.expr.get());
-                        if (is_pass_by_val(global, el_type))
+                        if (is_boxed(el_type))
                         {
-                            address = gen_alloca(global, local, builder, allocator_t::stack, el_type);
-                            gen_store(global, local, builder, value_category_t::temporary, value, address, el_type);
+                            // currently only arrays are boxed, so a variable must refer to an llvm::Value;
+                            // in particular, it cannot refer to an llvm_func_t
+                            auto const val = std::get_if<llvm::Value*>(local[var.get()]);
+                            assert(val and "variable not found or not an llvm value");
+                            address = builder.CreateAlloca(gen_type(global, el_type));
+                            builder.CreateStore(*val, address);
                         }
                         else
-                            address = value;
+                        {
+                            auto const value = gen_temporary_val(global, local, builder, x.expr.get());
+                            if (is_pass_by_val(global, el_type))
+                            {
+                                address = gen_alloca(global, local, builder, allocator_t::stack, el_type);
+                                gen_store(global, local, builder, value_category_t::temporary, value, address, el_type);
+                            }
+                            else
+                                address = value;
+                        }
                         local.save_address(var, address);
                     }
                     return maybe_store(address);
@@ -606,6 +618,12 @@ llvm::Value* gen_val(
                     {
                         // TODO if immutable could consider cache the address
                         auto const value = gen_temporary_val(global, local, builder, x.expr.get());
+                        if  (is_boxed(el_type))
+                        {
+                            auto const address = builder.CreateAlloca(gen_type(global, el_type));
+                            builder.CreateStore(value, address);
+                            return maybe_store(address);
+                        }
                         if (is_pass_by_val(global, el_type))
                         {
                             auto const address = gen_alloca(global, local, builder, allocator_t::stack, el_type);
@@ -614,7 +632,6 @@ llvm::Value* gen_val(
                         }
                         else
                             return maybe_store(value);
-
                     }
                 });
         },

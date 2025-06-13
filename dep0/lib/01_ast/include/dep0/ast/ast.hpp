@@ -301,7 +301,7 @@ struct expr_t
     /** @brief Represents the primitive type `%scope_t` */
     struct scope_t {};
 
-    /** @brief Represents the expression `&expr`, whose type is `ref_t(t, scopeof(expr))` where `t` is the type of `expr`. */
+    /** @brief Represents the expression `&expr`, whose type is `ref_t(t, scopeof(expr))` where `expr` has type `t`. */
     struct addressof_t
     {
         rec_t expr;

@@ -54,6 +54,7 @@ struct global_ctx_t
 
     llvm::LLVMContext& llvm_ctx;
     llvm::Module& llvm_module;
+    typecheck::env_t const& env;
 
     /**
      * @brief Obtain a unique ID, useful for example to generate a unique name for anonymous function.
@@ -63,9 +64,10 @@ struct global_ctx_t
 
     /**
      * @brief Construct a new global context that will be used to generate LLVM IR for the given module.
+     * @param env The environment used during type-checking of the module.
      * @warning You must use one global context per LLVM module.
      */
-    explicit global_ctx_t(llvm::Module&);
+    global_ctx_t(typecheck::env_t const& env, llvm::Module&);
 
     global_ctx_t(global_ctx_t const&) = delete;
     global_ctx_t(global_ctx_t&&) = delete;
@@ -114,28 +116,14 @@ struct global_ctx_t
     template <typename... Args>
     std::pair<iterator, bool> try_emplace(typecheck::expr_t::global_t name, Args&&... args)
     {
-        auto const rv = values.try_emplace(std::move(name), std::forward<Args>(args)...);
-        if (auto const p = std::get_if<type_def_t>(&rv.first->second); p and rv.second)
-        {
-            auto const inserted = type_defs_env.try_emplace(rv.first->first, p->def);
-            assert(inserted);
-        }
-        return rv;
+        return values.try_emplace(std::move(name), std::forward<Args>(args)...);
     }
-
-    /**
-     * @brief Needed in order to invoke `typecheck::is_list_initializable()` so it can resolve global typedefs.
-     * @remarks This is not the full environment built during typechecking as it only contains the typedefs
-     * that were stored in this context via `try_emplace()`.
-     */
-    typecheck::env_t const& implied_env() const { return type_defs_env; }
 
 private:
     struct eq_t { bool operator()(typecheck::expr_t const&, typecheck::expr_t const&) const; };
 
     std::size_t next_id = 0ul; /**< @brief Next unique ID returned from `get_next_id()`. */
     scope_map<typecheck::expr_t::global_t, value_t> values; /**< @brief Global functions, type definitions, etc. */
-    typecheck::env_t type_defs_env;
 
     std::map<typecheck::expr_t::global_t, llvm::Value*> global_addresses;
     std::map<typecheck::expr_t::string_literal_t, llvm::Value*> string_literal_addresses;

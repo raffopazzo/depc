@@ -620,6 +620,7 @@ BOOST_AUTO_TEST_CASE(pass_009)
                 std::tuple{return_of(exactly(pass_result.value()->getGlobalVariable("$_strref_.2", true)))}));
     }
 }
+
 BOOST_AUTO_TEST_CASE(pass_010)
 {
     BOOST_TEST_REQUIRE(pass("0023_references/pass_010.depc"));
@@ -680,6 +681,22 @@ BOOST_AUTO_TEST_CASE(pass_010)
         BOOST_TEST(is_store_of(store, pointer_to(is_i32), exactly(alloca_v), exactly(alloca_p), align_of(8)));
         BOOST_TEST(is_direct_call(call2, exactly(get_function("g")), call_arg(exactly(alloca_p))));
         BOOST_TEST(is_return_of(ret, exactly(call2)));
+    }
+}
+
+BOOST_AUTO_TEST_CASE(pass_011)
+{
+    BOOST_TEST_REQUIRE(pass("0023_references/pass_011.depc"));
+    BOOST_TEST(get_function("::double_neg_intro"));
+    BOOST_TEST(get_function("g"));
+    {
+        auto const f = get_function("f");
+        BOOST_TEST_REQUIRE(is_function_of(f, std::tuple{}, is_i32, sext));
+        auto const ref = pass_result.value()->getGlobalVariable("$_ref_::double_neg_intro", true);
+        auto const inst = get_instructions(f->getEntryBlock());
+        BOOST_TEST_REQUIRE(inst.size() == 2ul);
+        BOOST_TEST(is_direct_call(inst[0], exactly(get_function("g")), call_arg(exactly(ref))));
+        BOOST_TEST(is_return_of(inst[1], exactly(inst[0])));
     }
 }
 

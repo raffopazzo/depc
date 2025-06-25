@@ -35,7 +35,7 @@ build_empty_module(
 
 static expected<std::true_type> gen_impl(llvm::Module& llvm_module, typecheck::module_t const& m) noexcept
 {
-    global_ctx_t global(llvm_module);
+    global_ctx_t global(m.properties.env.get(), llvm_module);
     for (auto const& x: m.entries)
     {
         if (auto const def = std::get_if<typecheck::type_def_t>(&x))

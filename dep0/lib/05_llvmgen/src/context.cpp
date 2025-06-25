@@ -35,9 +35,10 @@ bool global_ctx_t::eq_t::operator()(typecheck::expr_t const& x, typecheck::expr_
             x.properties.sort.get(), y.properties.sort.get());
 }
 
-global_ctx_t::global_ctx_t(llvm::Module& m) :
+global_ctx_t::global_ctx_t(typecheck::env_t const& env, llvm::Module& m) :
     llvm_ctx(m.getContext()),
-    llvm_module(m)
+    llvm_module(m),
+    env(env)
 { }
 
 std::size_t global_ctx_t::get_next_id() { return next_id++; }

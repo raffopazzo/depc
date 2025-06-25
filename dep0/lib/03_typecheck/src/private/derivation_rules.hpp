@@ -12,6 +12,7 @@
 
 #include "dep0/typecheck/ast.hpp"
 #include "dep0/typecheck/derivation.hpp"
+#include "dep0/typecheck/environment.hpp"
 
 namespace dep0::typecheck {
 
@@ -120,9 +121,9 @@ struct derivation_rules
 };
 
 template <typename... Args>
-module_t make_legal_module(Args&&... args)
+module_t make_legal_module(env_t env, Args&&... args)
 {
-    return module_t{derivation_rules::make_derivation<module_t>(), std::forward<Args>(args)...};
+    return module_t{derivation_rules::make_derivation<module_t>(), std::move(env), std::forward<Args>(args)...};
 }
 
 template <typename... Args>

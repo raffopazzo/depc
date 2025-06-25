@@ -563,10 +563,10 @@ dep0::expected<module_t> build_prelude_module()
     auto const parse_result = parser::parse(source_text::from_literal(prelude_text));
     if (not parse_result)
         return dep0::error_t("error parsing prelude module", {std::move(parse_result.error())});
-    auto const check_result = check(env_t{}, *parse_result);
+    auto check_result = check(env_t{}, *parse_result);
     if (not check_result)
         return dep0::error_t("error type-checking prelude module", {std::move(check_result.error())});
-    return *check_result;
+    return std::move(check_result);
 }
 
 } // namespace dep0::typecheck

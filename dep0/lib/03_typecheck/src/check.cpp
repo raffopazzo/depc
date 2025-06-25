@@ -114,7 +114,7 @@ expected<module_t> check(env_t const& base_env, parser::module_t const& x) noexc
             reasons.push_back(dep0::error_t("function has been declared but not defined", loc));
         return error_t("module is not valid", std::nullopt, std::move(reasons));
     }
-    return make_legal_module(std::move(*entries));
+    return make_legal_module(std::move(env), std::move(*entries));
 }
 
 // implementation of private functions

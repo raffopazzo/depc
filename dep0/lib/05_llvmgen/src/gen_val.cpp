@@ -34,6 +34,7 @@
 #include <algorithm>
 #include <cassert>
 #include <ranges>
+#include <sstream>
 
 namespace dep0::llvmgen {
 
@@ -403,16 +404,36 @@ llvm::Value* gen_val(
         },
         [&] (typecheck::expr_t::global_t const& g) -> llvm::Value*
         {
-            auto const val = global[g];
-            assert(val and "unknown global");
-            return maybe_store(match(
-                *val,
-                [] (llvm_func_t const& c) { return c.func; },
-                [] (global_ctx_t::type_def_t const&) -> llvm::Value*
+            if (auto const val = global[g])
+                return maybe_store(match(
+                    *val,
+                    [] (llvm_func_t const& c) { return c.func; },
+                    [] (global_ctx_t::type_def_t const&) -> llvm::Value*
+                    {
+                        assert(false and "found a typedef but was expecting a value");
+                        __builtin_unreachable();
+                    }));
+            // the global must refer to a function in another module
+            auto const decl = global.env[g];
+            assert(decl and "unknown global");
+            return match(
+                *decl,
+                [&] (typecheck::func_decl_t const& decl) -> llvm::Value*
                 {
-                    assert(false and "found a typedef but was expecting a value");
-                    __builtin_unreachable();
-                }));
+                    auto proto = llvm_func_proto_t::from_pi(decl.signature);
+                    assert(proto and "cannot only generate declaration for first order functions");
+                    return gen_func_decl(global, g, *proto).func;
+                },
+                [&] (typecheck::func_def_t const& def) -> llvm::Value*
+                {
+                    auto proto = llvm_func_proto_t::from_abs(def.value);
+                    assert(proto and "cannot only generate declaration for first order functions");
+                    return gen_func_decl(global, g, *proto).func;
+                },
+                [] (typecheck::env_t::incomplete_type_t const&) -> llvm::Value* { return nullptr; },
+                [] (typecheck::type_def_t const&) -> llvm::Value* { return nullptr; },
+                [] (typecheck::axiom_t const&) -> llvm::Value* { return nullptr; },
+                [] (typecheck::extern_decl_t const&) -> llvm::Value* { return nullptr; });
         },
         [&] (typecheck::expr_t::app_t const& x) -> llvm::Value*
         {
@@ -559,40 +580,35 @@ llvm::Value* gen_val(
                             return maybe_store(ptr);
                         });
                 },
-                [&] (auto)
+                [&] (ast::value_expression_t)
                 {
                     auto const view = ast::get_if_ref(type);
                     assert(view and "type of addressof is not a reference");
                     auto const& el_type = view->element_type;
+                    // TODO globals (and potentially string literals) could be handled as place expressions, like vars.
+                    // But is it really nacessary? Does not seem important for typechecking...
                     if (auto const g = std::get_if<typecheck::expr_t::global_t>(&x.expr.get().value))
                     {
                         auto address = global.load_address(*g);
                         if (not address)
                         {
-                            auto const val = global[*g];
+                            auto const val = gen_temporary_val(global, local, builder, x.expr.get());
                             assert(val and "global variable not found");
-                            address = match(
-                                *val,
-                                [&] (llvm_func_t const f) -> llvm::Value*
-                                {
-                                    auto const global_func = llvm::dyn_cast<llvm::Function>(f.func);
-                                    assert(global_func and "expected a global function");
-                                    auto const val =
-                                        new llvm::GlobalVariable(
-                                            global.llvm_module,
-                                            gen_type(global, el_type),
-                                            true, // isConstant
-                                            llvm::GlobalValue::PrivateLinkage,
-                                            global_func,
-                                            std::string("$_ref_") + std::string(g->name.view()));
-                                    global.save_address(*g, val);
-                                    return val;
-                                },
-                                [] (global_ctx_t::type_def_t const&) -> llvm::Value*
-                                {
-                                    assert(false and "found a typedef but was expecting a value");
-                                    __builtin_unreachable();
-                                });
+                            auto const global_func = llvm::dyn_cast<llvm::Function>(val);
+                            assert(global_func and "expected a global function");
+                            std::ostringstream symbol_name;
+                            symbol_name << "$_ref_";
+                            if (g->module_name)
+                                symbol_name << *g->module_name << "::";
+                            symbol_name << g->name.view();
+                            address =
+                                new llvm::GlobalVariable(
+                                    global.llvm_module,
+                                    gen_type(global, el_type),
+                                    true, // isConstant
+                                    llvm::GlobalValue::PrivateLinkage,
+                                    global_func,
+                                    symbol_name.str());
                             global.save_address(*g, address);
                         }
                         return maybe_store(address);
@@ -656,7 +672,7 @@ llvm::Value* gen_val(
         [&] (typecheck::expr_t::init_list_t const& x) -> llvm::Value*
         {
             return match(
-                typecheck::is_list_initializable(global.implied_env(), type),
+                typecheck::is_list_initializable(global.env, type),
                 [&] (typecheck::is_list_initializable_result::no_t) -> llvm::Value*
                 {
                     // We found an initializer list whose type is not trivially initializiable from a list.

@@ -296,26 +296,6 @@ BOOST_AUTO_TEST_CASE(typecheck_error_001)
 {
     BOOST_TEST_REQUIRE(pass("0023_references/typecheck_error_001.depc"));
     BOOST_TEST_REQUIRE(pass_result->entries.size() == 1ul);
-    auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[0]);
-    BOOST_TEST(f->name == "f");
-    BOOST_TEST_REQUIRE(f->value.args.size() == 1ul);
-    BOOST_TEST(is_arg(f->value.args[0], sigma_of(std::tuple{arg_of(is_scope), arg_of(is_i32)}), "x"));
-    BOOST_TEST(is_i32(f->value.ret_type.get()));
-    BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
-    BOOST_TEST(is_return_of(f->value.body.stmts[0], subscript_of(var("x"), constant(1))));
-}
-
-BOOST_AUTO_TEST_CASE(typecheck_error_002)
-{
-    BOOST_TEST_REQUIRE(pass("0023_references/typecheck_error_002.depc"));
-    BOOST_TEST_REQUIRE(pass_result->entries.size() == 1ul);
-    BOOST_TEST(is_struct_def(pass_result->entries[0], "t", struct_field("a", is_scope)));
-}
-
-BOOST_AUTO_TEST_CASE(typecheck_error_003)
-{
-    BOOST_TEST_REQUIRE(pass("0023_references/typecheck_error_003.depc"));
-    BOOST_TEST_REQUIRE(pass_result->entries.size() == 1ul);
     {
         auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[0]);
         BOOST_TEST_REQUIRE(f);
@@ -328,9 +308,9 @@ BOOST_AUTO_TEST_CASE(typecheck_error_003)
     }
 }
 
-BOOST_AUTO_TEST_CASE(typecheck_error_004)
+BOOST_AUTO_TEST_CASE(typecheck_error_002)
 {
-    BOOST_TEST_REQUIRE(pass("0023_references/typecheck_error_004.depc"));
+    BOOST_TEST_REQUIRE(pass("0023_references/typecheck_error_002.depc"));
     BOOST_TEST_REQUIRE(pass_result->entries.size() == 2ul);
     BOOST_TEST(is_struct_def(pass_result->entries[0], "t"));
     {
@@ -344,9 +324,9 @@ BOOST_AUTO_TEST_CASE(typecheck_error_004)
     }
 }
 
-BOOST_AUTO_TEST_CASE(typecheck_error_005)
+BOOST_AUTO_TEST_CASE(typecheck_error_003)
 {
-    BOOST_TEST_REQUIRE(pass("0023_references/typecheck_error_005.depc"));
+    BOOST_TEST_REQUIRE(pass("0023_references/typecheck_error_003.depc"));
     BOOST_TEST_REQUIRE(pass_result->entries.size() == 2ul);
     {
         auto const f = std::get_if<dep0::parser::axiom_t>(&pass_result->entries[0]);
@@ -364,9 +344,9 @@ BOOST_AUTO_TEST_CASE(typecheck_error_005)
     }
 }
 
-BOOST_AUTO_TEST_CASE(typecheck_error_006)
+BOOST_AUTO_TEST_CASE(typecheck_error_004)
 {
-    BOOST_TEST_REQUIRE(pass("0023_references/typecheck_error_006.depc"));
+    BOOST_TEST_REQUIRE(pass("0023_references/typecheck_error_004.depc"));
     BOOST_TEST_REQUIRE(pass_result->entries.size() == 2ul);
     BOOST_TEST(is_integer_def(pass_result->entries[0], "t", dep0::ast::sign_t::unsigned_v, dep0::ast::width_t::_8));
     {
@@ -380,9 +360,9 @@ BOOST_AUTO_TEST_CASE(typecheck_error_006)
     }
 }
 
-BOOST_AUTO_TEST_CASE(typecheck_error_007)
+BOOST_AUTO_TEST_CASE(typecheck_error_005)
 {
-    BOOST_TEST_REQUIRE(pass("0023_references/typecheck_error_007.depc"));
+    BOOST_TEST_REQUIRE(pass("0023_references/typecheck_error_005.depc"));
     BOOST_TEST_REQUIRE(pass_result->entries.size() == 1ul);
     {
         auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[0]);
@@ -396,9 +376,9 @@ BOOST_AUTO_TEST_CASE(typecheck_error_007)
     }
 }
 
-BOOST_AUTO_TEST_CASE(typecheck_error_008)
+BOOST_AUTO_TEST_CASE(typecheck_error_006)
 {
-    BOOST_TEST_REQUIRE(pass("0023_references/typecheck_error_008.depc"));
+    BOOST_TEST_REQUIRE(pass("0023_references/typecheck_error_006.depc"));
     BOOST_TEST_REQUIRE(pass_result->entries.size() == 2ul);
     {
         auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[0]);
@@ -423,9 +403,9 @@ BOOST_AUTO_TEST_CASE(typecheck_error_008)
     }
 }
 
-BOOST_AUTO_TEST_CASE(typecheck_error_009)
+BOOST_AUTO_TEST_CASE(typecheck_error_007)
 {
-    BOOST_TEST_REQUIRE(pass("0023_references/typecheck_error_009.depc"));
+    BOOST_TEST_REQUIRE(pass("0023_references/typecheck_error_007.depc"));
     BOOST_TEST_REQUIRE(pass_result->entries.size() == 1ul);
     {
         auto const f = std::get_if<dep0::parser::axiom_t>(&pass_result->entries[0]);
@@ -437,9 +417,9 @@ BOOST_AUTO_TEST_CASE(typecheck_error_009)
     }
 }
 
-BOOST_AUTO_TEST_CASE(typecheck_error_010)
+BOOST_AUTO_TEST_CASE(typecheck_error_008)
 {
-    BOOST_TEST_REQUIRE(pass("0023_references/typecheck_error_010.depc"));
+    BOOST_TEST_REQUIRE(pass("0023_references/typecheck_error_008.depc"));
     BOOST_TEST_REQUIRE(pass_result->entries.size() == 1ul);
     {
         auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[0]);
@@ -453,8 +433,8 @@ BOOST_AUTO_TEST_CASE(typecheck_error_010)
     }
 }
 
+BOOST_AUTO_TEST_CASE(typecheck_error_009) { BOOST_TEST_REQUIRE(pass("0023_references/typecheck_error_009.depc")); }
+BOOST_AUTO_TEST_CASE(typecheck_error_010) { BOOST_TEST_REQUIRE(pass("0023_references/typecheck_error_010.depc")); }
 BOOST_AUTO_TEST_CASE(typecheck_error_011) { BOOST_TEST_REQUIRE(pass("0023_references/typecheck_error_011.depc")); }
-BOOST_AUTO_TEST_CASE(typecheck_error_012) { BOOST_TEST_REQUIRE(pass("0023_references/typecheck_error_012.depc")); }
-BOOST_AUTO_TEST_CASE(typecheck_error_013) { BOOST_TEST_REQUIRE(pass("0023_references/typecheck_error_013.depc")); }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -4,4 +4,8 @@
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
  */
-axiom f(i32_t x) -> ref_t(i32_t, scopeof(x)); // error: cannot return scope of local argument
+func f(0 bool_t x, 0 true_t(*&x)) -> bool_t { return true; }
+func g(0 bool_t x, 0 bool_t y, true_t(*&y) p) -> bool_t
+{
+    return f(x, p); // typecheck error: &y is not alpha equivalent to &x
+}

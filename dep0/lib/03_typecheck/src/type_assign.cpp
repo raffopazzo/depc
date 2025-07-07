@@ -95,12 +95,7 @@ type_assign_var(
 }
 
 static expected<expr_t>
-type_assign_scopeof(
-    env_t const& env,
-    ctx_t const& ctx,
-    parser::expr_t const& expr,
-    usage_t& usage,
-    ast::qty_t const usage_multiplier)
+type_assign_scopeof(env_t const& env, ctx_t const& ctx, parser::expr_t const& expr)
 {
     auto const loc = expr.properties;
     auto const accept = [&] (expr_t expr, std::size_t const scope_id) -> expected<expr_t>
@@ -114,8 +109,6 @@ type_assign_scopeof(
         {
             if (not lookup->scope_id)
                 return reject("variable not bound to a scope");
-            if (auto ok = usage.try_add(*lookup, usage_multiplier, loc); not ok)
-                return ok.error();
             return accept(make_legal_expr(lookup->decl.type, lookup->var), *lookup->scope_id);
         }
         auto g = expr_t::global_t{std::nullopt, var->name};
@@ -138,7 +131,8 @@ type_assign_scopeof(
     else
     {
         // NOTE: mutable expression is allowed inside `scopeof()` because it's never really evaluated
-        auto ok = type_assign(env, ctx, expr, ast::is_mutable_t::yes, usage, usage_multiplier);
+        usage_t usage; // multiplier is zero so nothing is ever really used and can use a temporary object
+        auto ok = type_assign(env, ctx, expr, ast::is_mutable_t::yes, usage, ast::qty_t::zero);
         if (not ok)
             return std::move(ok.error());
 
@@ -389,7 +383,7 @@ type_assign(
                     std::is_same_v<T, ast::value_expression_t> or
                     std::is_same_v<T, std::reference_wrapper<parser::expr_t::var_t const>>)
                 {
-                    auto scope = type_assign_scopeof(env, ctx, x.expr.get(), usage, usage_multiplier);
+                    auto scope = type_assign_scopeof(env, ctx, x.expr.get());
                     if (not scope)
                         return dep0::error_t("cannot take address of expression", loc, {std::move(scope.error())});
                     auto element_type =
@@ -412,7 +406,7 @@ type_assign(
                     std::is_same_v<T, std::reference_wrapper<parser::expr_t::member_t const>> or
                     std::is_same_v<T, std::reference_wrapper<parser::expr_t::subscript_t const>>)
                 {
-                    auto scope = type_assign_scopeof(env, ctx, x.get().object.get(), usage, usage_multiplier);
+                    auto scope = type_assign_scopeof(env, ctx, x.get().object.get());
                     if (not scope)
                         return dep0::error_t("cannot take address of expression", loc, {std::move(scope.error())});
                     auto element_type = std::get<expr_t>(expr->properties.sort.get());
@@ -440,7 +434,9 @@ type_assign(
         },
         [&] (parser::expr_t::scopeof_t const& x) -> expected<expr_t>
         {
-            return type_assign_scopeof(env, ctx, x.expr.get(), usage, usage_multiplier);
+            if (usage_multiplier != ast::qty_t::zero)
+                return dep0::error_t("cannot use `scopeof` at runtime", loc);
+            return type_assign_scopeof(env, ctx, x.expr.get());
         },
         [] (parser::expr_t::array_t) -> expected<expr_t>
         {

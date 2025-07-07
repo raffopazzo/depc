@@ -177,7 +177,7 @@ expected<type_def_t> check_type_def(env_t& env, parser::type_def_t const& type_d
 expected<axiom_t> check_axiom(env_t& env, parser::axiom_t const& axiom)
 {
     assert(axiom.signature.is_mutable == ast::is_mutable_t::no and "invalid axiom from parser");
-    ctx_t ctx; // TODO should be scoped; add a test
+    ctx_t ctx(ctx_t::scoped_t{});
     auto pi_type =
         check_pi_type(
             env, ctx, axiom.properties,
@@ -194,7 +194,7 @@ expected<axiom_t> check_axiom(env_t& env, parser::axiom_t const& axiom)
 
 expected<extern_decl_t> check_extern_decl(env_t& env, parser::extern_decl_t const& decl)
 {
-    ctx_t ctx; // TODO should be scoped; add a test
+    ctx_t ctx(ctx_t::scoped_t{});
     if (auto ok = is_c_func_type(decl.signature, decl.properties); not ok)
         return std::move(ok.error());
     auto pi_type =
@@ -213,7 +213,7 @@ expected<extern_decl_t> check_extern_decl(env_t& env, parser::extern_decl_t cons
 
 expected<func_decl_t> check_func_decl(env_t& env, parser::func_decl_t const& decl)
 {
-    ctx_t ctx; // TODO should be scoped; add a test
+    ctx_t ctx(ctx_t::scoped_t{});
     auto pi_type =
         check_pi_type(
             env, ctx, decl.properties,

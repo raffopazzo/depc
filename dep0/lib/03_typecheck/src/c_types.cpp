@@ -45,9 +45,11 @@ dep0::expected<std::true_type> is_c_type(parser::expr_t const& x)
         [&] (parser::expr_t::global_t const&) { return no(); }, // TODO might be yes for some struct and integer defs
         [&] (parser::expr_t::app_t const&)
         {
-            // TODO yes for `ref_t(t, a)` but requires skipping over erased arguments first (`a` in this case)
-            auto const arr = get_if_array(x);
-            return arr and is_c_type(arr->element_type.get()) ? yes : no();
+            if (auto const arr = get_if_array(x))
+                return is_c_type(arr->element_type.get());
+            if (auto const ref = get_if_ref(x))
+                return is_c_type(ref->element_type.get());
+            return no();
         },
         [&] (parser::expr_t::abs_t const&) { return no(); },
         [&] (parser::expr_t::pi_t const& pi) { return is_c_func_type(pi, x.properties); },

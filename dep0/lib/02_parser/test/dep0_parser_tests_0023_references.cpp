@@ -277,6 +277,9 @@ BOOST_AUTO_TEST_CASE(pass_008) { BOOST_TEST(pass("0023_references/pass_008.depc"
 BOOST_AUTO_TEST_CASE(pass_009) { BOOST_TEST(pass("0023_references/pass_009.depc")); }
 BOOST_AUTO_TEST_CASE(pass_010) { BOOST_TEST(pass("0023_references/pass_010.depc")); }
 BOOST_AUTO_TEST_CASE(pass_011) { BOOST_TEST(pass("0023_references/pass_011.depc")); }
+BOOST_AUTO_TEST_CASE(pass_012) { BOOST_TEST(pass("0023_references/pass_012.depc")); }
+BOOST_AUTO_TEST_CASE(pass_013) { BOOST_TEST(pass("0023_references/pass_013.depc")); }
+BOOST_AUTO_TEST_CASE(pass_014) { BOOST_TEST(pass("0023_references/pass_014.depc")); }
 
 BOOST_AUTO_TEST_CASE(typecheck_error_000)
 {

@@ -586,7 +586,7 @@ llvm::Value* gen_val(
                     assert(view and "type of addressof is not a reference");
                     auto const& el_type = view->element_type;
                     // TODO globals (and potentially string literals) could be handled as place expressions, like vars.
-                    // But is it really nacessary? Does not seem important for typechecking...
+                    // But is it really nacessary? Does not even seem important for typechecking...
                     if (auto const g = std::get_if<typecheck::expr_t::global_t>(&x.expr.get().value))
                     {
                         auto address = global.load_address(*g);

@@ -589,7 +589,7 @@ check_expr(
                         return std::move(expr.error());
                     auto const expr_ref = ast::get_if_ref(std::get<expr_t>(expr->properties.sort.get()));
                     assert(expr_ref and "type-assignment of addressof_t must return an expression of type ref_t");
-                    // TODO beta_delta_normalize(env, ctx, expected_type);
+                    // TODO might need to call `beta_delta_normalize(env, ctx, expected_type)` but cannot find a test
                     auto const expected_ref = ast::get_if_ref(expected_type);
                     if (not expected_ref)
                     {

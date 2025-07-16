@@ -587,6 +587,8 @@ check_expr(
                     auto expr = type_assign(env, ctx, x, is_mutable, usage, usage_multiplier);
                     if (not expr)
                         return std::move(expr.error());
+                    auto const expr_ref = ast::get_if_ref(std::get<expr_t>(expr->properties.sort.get()));
+                    assert(expr_ref and "type-assignment of addressof_t must return an expression of type ref_t");
                     // TODO beta_delta_normalize(env, ctx, expected_type);
                     auto const expected_ref = ast::get_if_ref(expected_type);
                     if (not expected_ref)
@@ -596,18 +598,24 @@ check_expr(
                         pretty_print(err << '`', expected_type) << '`';
                         return error_t(err.str(), loc);
                     }
-                    auto const expr_ref = ast::get_if_ref(std::get<expr_t>(expr->properties.sort.get()));
-                    assert(expr_ref and "type-assignment of addressof_t must return an expression of type ref_t");
-                    auto eq = is_beta_delta_equivalent(
-                        env, ctx, expected_ref->element_type.get(), expr_ref->element_type.get());
-                    assert(eq and "TODO add a test");
                     if (is_beta_delta_equivalent(env, ctx, expected_type, expr->properties.sort.get()))
                         return expr;
-
+                    // At this point the type assigned to the expression does not match the expected type.
+                    // It could be for two reasons: either the element types do not match or the scopes do not match.
+                    if (
+                        auto eq = is_beta_delta_equivalent(
+                            env, ctx, expr_ref->element_type.get(), expected_ref->element_type.get());
+                        not eq
+                    )
+                    {
+                        return type_error(
+                            expr->properties.sort.get(),
+                            dep0::error_t("referenced types do not match", {std::move(eq.error())}));
+                    }
                     if (auto const expected_scope = std::get_if<expr_t::scopeof_t>(&expected_ref->scope.get().value))
                         if (auto const expr_scope = std::get_if<expr_t::scopeof_t>(&expr_ref->scope.get().value))
                             if (expr_scope->scope_id <= expected_scope->scope_id) // larger scopes have smaller id
-                                return expr; // TODO should I take the scope of expected here?
+                                return expr;
                             else
                             {
                                 std::ostringstream err;

@@ -179,6 +179,11 @@ expected<std::true_type> usage_t::try_add(ctx_t const& ctx, expr_t const& expr, 
         },
         [&] (expr_t::pi_t const&) { return ok(); }, // types never really use anything
         [&] (expr_t::sigma_t const&) { return ok(); }, // types never really use anything
+        [&] (expr_t::ref_t const&) { return ok(); },
+        [&] (expr_t::scope_t const&) { return ok(); },
+        [&] (expr_t::addressof_t const& x) { return try_add(ctx, x.expr.get(), usage_multiplier); },
+        [&] (expr_t::deref_t const& x) { return try_add(ctx, x.expr.get(), usage_multiplier); },
+        [&] (expr_t::scopeof_t const& x) { return try_add(ctx, x.expr.get(), usage_multiplier); },
         [&] (expr_t::array_t const&) { return ok(); },
         [&] (expr_t::init_list_t const& x)
         {

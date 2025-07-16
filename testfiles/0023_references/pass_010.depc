@@ -1,0 +1,20 @@
+/*
+ * Copyright Raffaele Rossi 2025.
+ *
+ * Distributed under the Boost Software License, Version 1.0.
+ * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
+ */
+func zero() -> array_t(i32_t, 3) { return {0, 0, 0}; }
+func g(0 scope_t a, ref_t(array_t(i32_t, 3), a) p) -> i32_t { return (*p)[0]; }
+func f1(array_t(i32_t, 3) x) -> i32_t
+{
+    return g(scopeof(x), &x);
+}
+func f2((i64_t, array_t(i32_t, 3)) x) -> i32_t
+{
+    return g(scopeof(x), &x[1]);
+}
+func f3() -> i32_t
+{
+    return g(scopeof(zero()), &zero());
+}

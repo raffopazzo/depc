@@ -54,6 +54,7 @@ struct global_ctx_t
 
     llvm::LLVMContext& llvm_ctx;
     llvm::Module& llvm_module;
+    typecheck::env_t const& env;
 
     /**
      * @brief Obtain a unique ID, useful for example to generate a unique name for anonymous function.
@@ -63,9 +64,10 @@ struct global_ctx_t
 
     /**
      * @brief Construct a new global context that will be used to generate LLVM IR for the given module.
+     * @param env The environment used during type-checking of the module.
      * @warning You must use one global context per LLVM module.
      */
-    explicit global_ctx_t(llvm::Module&);
+    global_ctx_t(typecheck::env_t const& env, llvm::Module&);
 
     global_ctx_t(global_ctx_t const&) = delete;
     global_ctx_t(global_ctx_t&&) = delete;
@@ -86,14 +88,26 @@ struct global_ctx_t
      * @details Return `nullptr` if no global value exists yet.
      * @see @ref `store_string_literal()`.
      */
-    llvm::Value* get_string_literal(std::string_view) const;
+    llvm::Constant* get_string_literal(typecheck::expr_t::string_literal_t const&) const;
 
     /**
      * @brief Store an LLVM global value holding the given string literal
      * @remarks If one already exists, it will be overwritten.
      * @see @ref `get_string_literal()`.
      */
-    void store_string_literal(std::string, llvm::Value*);
+    void store_string_literal(typecheck::expr_t::string_literal_t const&, llvm::Constant*);
+
+    /** @brief Retrieve the address previously saved for the given global, or `nullptr` if none saved yet. */
+    llvm::Value* load_address(typecheck::expr_t::global_t const&) const;
+
+    /** @brief Retrieve the address previously saved for the given string literal, or `nullptr` if none saved yet. */
+    llvm::Value* load_address(typecheck::expr_t::string_literal_t const&) const;
+
+    /** @brief Save the address where the given global is stored. */
+    void save_address(typecheck::expr_t::global_t const&, llvm::Value* address);
+
+    /** @brief Save the address where the given string literal is stored. */
+    void save_address(typecheck::expr_t::string_literal_t const&, llvm::Value* address);
 
     /**
      * @brief Store a new `value_t` for the given global symbol.
@@ -102,34 +116,23 @@ struct global_ctx_t
     template <typename... Args>
     std::pair<iterator, bool> try_emplace(typecheck::expr_t::global_t name, Args&&... args)
     {
-        auto const rv = values.try_emplace(std::move(name), std::forward<Args>(args)...);
-        if (auto const p = std::get_if<type_def_t>(&rv.first->second); p and rv.second)
-        {
-            auto const inserted = type_defs_env.try_emplace(rv.first->first, p->def);
-            assert(inserted);
-        }
-        return rv;
+        return values.try_emplace(std::move(name), std::forward<Args>(args)...);
     }
-
-    /**
-     * @brief Needed in order to invoke `typecheck::is_list_initializable()` so it can resolve global typedefs.
-     * @remarks This is not the full environment built during typechecking as it only contains the typedefs
-     * that were stored in this context via `try_emplace()`.
-     */
-    typecheck::env_t const& implied_env() const { return type_defs_env; }
 
 private:
     struct eq_t { bool operator()(typecheck::expr_t const&, typecheck::expr_t const&) const; };
 
     std::size_t next_id = 0ul; /**< @brief Next unique ID returned from `get_next_id()`. */
     scope_map<typecheck::expr_t::global_t, value_t> values; /**< @brief Global functions, type definitions, etc. */
-    typecheck::env_t type_defs_env;
+
+    std::map<typecheck::expr_t::global_t, llvm::Value*> global_addresses;
+    std::map<typecheck::expr_t::string_literal_t, llvm::Value*> string_literal_addresses;
 
     /**
      * @brief LLVM global values associated to each unique string literal.
      * @note The comparator `std::less<>` allows look-up by `std::string_view`.
      */
-    std::map<std::string, llvm::Value*, std::less<>> string_literals;
+    std::map<typecheck::expr_t::string_literal_t, llvm::Constant*> string_literals;
 
     /** @brief Stores the destructor to invoke for a non-array type. */
     std::unordered_map<typecheck::expr_t, llvm_func_t, std::hash<typecheck::expr_t>, eq_t> non_array_destructors;
@@ -172,8 +175,14 @@ struct local_ctx_t
     template <typename... Args>
     auto try_emplace(typecheck::expr_t::var_t name, Args&&... args)
     {
-        return values.try_emplace(std::move(name), std::forward<Args>(args)...);
+        return entries.try_emplace(std::move(name), value_t{std::forward<Args>(args)...});
     }
+
+    /** @brief Retrieve the address that was previously saved for the given variable, or `nullptr` if none saved yet. */
+    llvm::Value* load_address(typecheck::expr_t::var_t const&) const;
+
+    /** @brief Save the address where the value of the given variable is stored. */
+    void save_address(typecheck::expr_t::var_t const&, llvm::Value* address);
 
     /**
      * @brief Values that need to be destructed before leaving the scope associated to this object.
@@ -184,9 +193,14 @@ struct local_ctx_t
     std::vector<std::pair<llvm::Value*, typecheck::expr_t>> destructors;
 
 private:
-    scope_map<typecheck::expr_t::var_t, value_t> values;
+    struct entry_t
+    {
+        value_t value;
+        llvm::Value* address = nullptr;
+    };
+    scope_map<typecheck::expr_t::var_t, entry_t> entries;
 
-    explicit local_ctx_t(scope_map<typecheck::expr_t::var_t, value_t>);
+    explicit local_ctx_t(scope_map<typecheck::expr_t::var_t, entry_t>);
 };
 
 } // namespace dep0::llvmgen

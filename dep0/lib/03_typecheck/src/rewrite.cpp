@@ -227,6 +227,24 @@ std::optional<expr_t> rewrite(expr_t const& from, expr_t const& to, expr_t const
             {
                 rewrite(from, to, ast::is_mutable_t::no, x.args, nullptr, nullptr, old.properties, result);
             },
+            [] (expr_t::ref_t) { },
+            [] (expr_t::scope_t) { },
+            [&] (expr_t::addressof_t const& x)
+            {
+                if (auto new_expr = rewrite(from, to, x.expr.get()))
+                    result.emplace(old.properties, expr_t::addressof_t{std::move(*new_expr)});
+            },
+            [&] (expr_t::deref_t const& x)
+            {
+                if (auto new_expr = rewrite(from, to, x.expr.get()))
+                    result.emplace(old.properties, expr_t::deref_t{std::move(*new_expr)});
+            },
+            [&] (expr_t::scopeof_t const& x)
+            {
+                if (auto new_expr = rewrite(from, to, x.expr.get()))
+                    // TODO could consider using `max_scope(new_expr)` but we'd need access to the context
+                    result.emplace(old.properties, expr_t::scopeof_t(std::move(*new_expr), x.scope_id));
+            },
             [&] (expr_t::array_t const&)
             {
             },

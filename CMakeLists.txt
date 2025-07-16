@@ -11,6 +11,7 @@ project(
     DESCRIPTION "Like C and C++ but with Dependent Types"
     LANGUAGES CXX
 )
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 enable_testing()
 

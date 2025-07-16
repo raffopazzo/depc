@@ -221,6 +221,21 @@ struct alpha_equivalence_visitor
             ast::is_mutable_t::no, y.args, nullptr, nullptr);
     }
 
+    result_t operator()(typename expr_t<P>::ref_t, typename expr_t<P>::ref_t) const { return {}; }
+    result_t operator()(typename expr_t<P>::scope_t, typename expr_t<P>::scope_t) const { return {}; }
+    result_t operator()(typename expr_t<P>::addressof_t& x, typename expr_t<P>::addressof_t& y) const
+    {
+        return is_alpha_equivalent_impl(x.expr.get(), y.expr.get());
+    }
+    result_t operator()(typename expr_t<P>::deref_t& x, typename expr_t<P>::deref_t& y) const
+    {
+        return is_alpha_equivalent_impl(x.expr.get(), y.expr.get());
+    }
+    result_t operator()(typename expr_t<P>::scopeof_t& x, typename expr_t<P>::scopeof_t& y) const
+    {
+        return is_alpha_equivalent_impl(x.expr.get(), y.expr.get());
+    }
+
     result_t operator()(typename expr_t<P>::array_t&, typename expr_t<P>::array_t&) const
     {
         return std::true_type{};

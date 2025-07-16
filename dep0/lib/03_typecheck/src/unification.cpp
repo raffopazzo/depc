@@ -119,6 +119,20 @@ bool unify(expr_t const& from, expr_t const& to, std::map<expr_t::var_t, expr_t>
             [] (expr_t::abs_t const&, expr_t::abs_t const&) { return false; }, // TODO
             [] (expr_t::pi_t const&, expr_t::pi_t const&) { return false; }, // TODO
             [] (expr_t::sigma_t const&, expr_t::sigma_t const&) { return false; }, // TODO
+            [] (expr_t::ref_t, expr_t::ref_t) { return true; },
+            [] (expr_t::scope_t, expr_t::scope_t) { return true; },
+            [&] (expr_t::addressof_t const& x, expr_t::addressof_t const& y)
+            {
+                return unify(x.expr.get(), y.expr.get(), result);
+            },
+            [&] (expr_t::deref_t const& x, expr_t::deref_t const& y)
+            {
+                return unify(x.expr.get(), y.expr.get(), result);
+            },
+            [&] (expr_t::scopeof_t const& x, expr_t::scopeof_t const& y)
+            {
+                return unify(x.expr.get(), y.expr.get(), result);
+            },
             [] (expr_t::array_t, expr_t::array_t) { return true; },
             [&] (expr_t::init_list_t const& x, expr_t::init_list_t const& y)
             {

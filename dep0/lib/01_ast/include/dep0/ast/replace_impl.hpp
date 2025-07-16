@@ -138,6 +138,11 @@ void replace(typename expr_t<P>::var_t const& from, typename expr_t<P>::var_t co
         {
             replace<P>(from, to, sigma.args.begin(), sigma.args.end());
         },
+        [] (typename expr_t<P>::ref_t const&) {},
+        [] (typename expr_t<P>::scope_t const&) {},
+        [&] (typename expr_t<P>::addressof_t& x) { replace(from, to, x.expr.get()); },
+        [&] (typename expr_t<P>::deref_t& x) { replace(from, to, x.expr.get()); },
+        [&] (typename expr_t<P>::scopeof_t& x) { replace(from, to, x.expr.get()); },
         [] (typename expr_t<P>::array_t&)
         {
         },

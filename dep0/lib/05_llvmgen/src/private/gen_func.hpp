@@ -24,7 +24,7 @@ namespace dep0::llvmgen {
  * @brief Generate an extern function declaration of the given prototype.
  * @param name The name to assign to the extern function declaration.
  */
-void gen_extern_decl(
+llvm_func_t gen_extern_decl(
     global_ctx_t&,
     typecheck::expr_t::global_t const& name,
     llvm_func_proto_t const&);
@@ -33,7 +33,7 @@ void gen_extern_decl(
  * @brief Generate an LLVM function declaration of the given prototype.
  * @param name The name to assign to the LLVM function that will be generated.
  */
-void gen_func_decl(
+llvm_func_t gen_func_decl(
     global_ctx_t&,
     typecheck::expr_t::global_t const& name,
     llvm_func_proto_t const&);

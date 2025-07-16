@@ -54,7 +54,12 @@ expected<std::true_type> is_complete_type(env_t const& env, expr_t const& type)
                 if (not (result = is_complete_type(env, x.type)))
                     break;
         },
-        [] (expr_t::array_t) { },
+        [] (expr_t::ref_t const&) { },
+        [] (expr_t::scope_t const&) { },
+        [] (expr_t::addressof_t const&) { },
+        [] (expr_t::deref_t const&) { },
+        [] (expr_t::scopeof_t const&) { },
+        [] (expr_t::array_t const&) { },
         [] (expr_t::init_list_t const&) { },
         [] (expr_t::member_t const&) { },
         [] (expr_t::subscript_t const&) { },

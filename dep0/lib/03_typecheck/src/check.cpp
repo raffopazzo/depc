@@ -20,6 +20,7 @@
 #include "dep0/typecheck/beta_delta_reduction.hpp"
 #include "dep0/typecheck/list_initialization.hpp"
 
+#include "dep0/ast/views.hpp"
 #include "dep0/ast/pretty_print.hpp"
 
 #include "dep0/fmap.hpp"
@@ -34,6 +35,7 @@
 #include <numeric>
 #include <ranges>
 #include <sstream>
+#include <utility>
 
 namespace dep0::typecheck {
 
@@ -112,7 +114,7 @@ expected<module_t> check(env_t const& base_env, parser::module_t const& x) noexc
             reasons.push_back(dep0::error_t("function has been declared but not defined", loc));
         return error_t("module is not valid", std::nullopt, std::move(reasons));
     }
-    return make_legal_module(std::move(*entries));
+    return make_legal_module(std::move(env), std::move(*entries));
 }
 
 // implementation of private functions
@@ -175,7 +177,7 @@ expected<type_def_t> check_type_def(env_t& env, parser::type_def_t const& type_d
 expected<axiom_t> check_axiom(env_t& env, parser::axiom_t const& axiom)
 {
     assert(axiom.signature.is_mutable == ast::is_mutable_t::no and "invalid axiom from parser");
-    ctx_t ctx;
+    ctx_t ctx(ctx_t::scoped_t{});
     auto pi_type =
         check_pi_type(
             env, ctx, axiom.properties,
@@ -192,7 +194,7 @@ expected<axiom_t> check_axiom(env_t& env, parser::axiom_t const& axiom)
 
 expected<extern_decl_t> check_extern_decl(env_t& env, parser::extern_decl_t const& decl)
 {
-    ctx_t ctx;
+    ctx_t ctx(ctx_t::scoped_t{});
     if (auto ok = is_c_func_type(decl.signature, decl.properties); not ok)
         return std::move(ok.error());
     auto pi_type =
@@ -211,7 +213,7 @@ expected<extern_decl_t> check_extern_decl(env_t& env, parser::extern_decl_t cons
 
 expected<func_decl_t> check_func_decl(env_t& env, parser::func_decl_t const& decl)
 {
-    ctx_t ctx;
+    ctx_t ctx(ctx_t::scoped_t{});
     auto pi_type =
         check_pi_type(
             env, ctx, decl.properties,
@@ -234,7 +236,7 @@ expected<func_decl_t> check_func_decl(env_t& env, parser::func_decl_t const& dec
 
 expected<func_def_t> check_func_def(env_t& env, parser::func_def_t const& f)
 {
-    ctx_t ctx;
+    ctx_t ctx(ctx_t::scoped_t{});
     usage_t usage;
     auto abs = type_assign_abs(env, ctx, f.value, f.properties, f.name, usage, ast::qty_t::one);
     if (not abs)
@@ -576,6 +578,60 @@ check_expr(
         {
             return check_or_assign(env, ctx, x, loc, &expected_type, is_mutable, usage, usage_multiplier);
         },
+        [&] (parser::expr_t::addressof_t const&) -> expected<expr_t>
+        {
+            return match(
+                expected_type,
+                [&] (expr_t const& expected_type) -> expected<expr_t>
+                {
+                    auto expr = type_assign(env, ctx, x, is_mutable, usage, usage_multiplier);
+                    if (not expr)
+                        return std::move(expr.error());
+                    auto const expr_ref = ast::get_if_ref(std::get<expr_t>(expr->properties.sort.get()));
+                    assert(expr_ref and "type-assignment of addressof_t must return an expression of type ref_t");
+                    // TODO might need to call `beta_delta_normalize(env, ctx, expected_type)` but cannot find a test
+                    auto const expected_ref = ast::get_if_ref(expected_type);
+                    if (not expected_ref)
+                    {
+                        std::ostringstream err;
+                        err << "type mismatch between reference expression and non-reference type ";
+                        pretty_print(err << '`', expected_type) << '`';
+                        return error_t(err.str(), loc);
+                    }
+                    if (is_beta_delta_equivalent(env, ctx, expected_type, expr->properties.sort.get()))
+                        return expr;
+                    // At this point the type assigned to the expression does not match the expected type.
+                    // It could be for two reasons: either the element types do not match or the scopes do not match.
+                    if (
+                        auto eq = is_beta_delta_equivalent(
+                            env, ctx, expr_ref->element_type.get(), expected_ref->element_type.get());
+                        not eq
+                    )
+                    {
+                        return type_error(
+                            expr->properties.sort.get(),
+                            dep0::error_t("referenced types do not match", {std::move(eq.error())}));
+                    }
+                    if (auto const expected_scope = std::get_if<expr_t::scopeof_t>(&expected_ref->scope.get().value))
+                        if (auto const expr_scope = std::get_if<expr_t::scopeof_t>(&expr_ref->scope.get().value))
+                            if (expr_scope->scope_id <= expected_scope->scope_id) // larger scopes have smaller id
+                                return expr;
+                            else
+                            {
+                                std::ostringstream err;
+                                pretty_print<properties_t>(err << '`', *expected_scope) << '`';
+                                pretty_print<properties_t>(err << " outlives `", *expr_scope) << '`';
+                                return type_error(expr->properties.sort.get(), dep0::error_t(err.str()));
+                            }
+                    return type_error(expr->properties.sort.get(), dep0::error_t("scopes are not comparable"));
+                },
+                [&] (kind_t) -> expected<expr_t>
+                {
+                    std::ostringstream err;
+                    pretty_print(err << "type mismatch between addressof operator and `", kind_t{}) << '`';
+                    return error_t(err.str(), loc);
+                });
+        },
         [&] (parser::expr_t::init_list_t const& list) -> expected<expr_t>
         {
             auto const wrong_element_size = [&] (std::size_t const n_expected, std::size_t const n) -> expected<expr_t>
@@ -730,6 +786,7 @@ expected<expr_t> check_pi_type(
     std::vector<parser::func_arg_t> const& parser_args,
     parser::expr_t const& parser_ret_type)
 {
+    auto unscoped_ctx = ctx.extend_unscoped();
     auto args = fmap_or_error(
         parser_args,
         [&, next_arg_index=0] (parser::func_arg_t const& arg) mutable -> expected<func_arg_t>
@@ -749,11 +806,13 @@ expected<expr_t> check_pi_type(
             }
             if (auto ok = ctx.try_emplace(var, arg_loc, ctx_t::var_decl_t{arg.qty, *type}); not ok)
                 return std::move(ok.error());
+            if (auto ok = unscoped_ctx.try_emplace(var, arg_loc, ctx_t::var_decl_t{arg.qty, *type}); not ok)
+                return std::move(ok.error()); // this is not actually possible, but whatever
             return make_legal_func_arg(arg.qty, std::move(*type), std::move(var));
         });
     if (not args)
         return std::move(args.error());
-    auto const ret_type = check_type(env, ctx, parser_ret_type);
+    auto const ret_type = check_type(env, unscoped_ctx, parser_ret_type);
     if (not ret_type)
         return dep0::error_t("cannot typecheck function return type", loc, {std::move(ret_type.error())});
     return make_legal_expr(

@@ -1,0 +1,8 @@
+/*
+ * Copyright Raffaele Rossi 2025.
+ *
+ * Distributed under the Boost Software License, Version 1.0.
+ * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
+ */
+func g(0 scope_t a, ref_t(i32_t, a)) -> u64_t { return 0; }
+extern f(i32_t x, array_t(u64_t, g(scopeof(x), &x))) -> u64_t;

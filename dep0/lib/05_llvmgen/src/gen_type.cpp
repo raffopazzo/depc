@@ -176,6 +176,10 @@ llvm::Type* gen_type(global_ctx_t const& global, typecheck::expr_t const& type)
                 {
                     return llvm::StructType::get(global.llvm_ctx);
                 },
+                [&] (typecheck::expr_t::ref_t const&) -> llvm::Type*
+                {
+                    return gen_type(global, app.args[0])->getPointerTo();
+                },
                 [&] (typecheck::expr_t::array_t const&) -> llvm::Type*
                 {
                     auto const properties = get_array_properties(type);
@@ -202,6 +206,30 @@ llvm::Type* gen_type(global_ctx_t const& global, typecheck::expr_t const& type)
         {
             auto const& element_types = fmap(x.args, [&] (auto const& arg) { return gen_type(global, arg.type); });
             return llvm::StructType::get(global.llvm_ctx, element_types);
+        },
+        [] (typecheck::expr_t::ref_t const&) -> llvm::Type*
+        {
+            assert(false and "cannot generate a type for ref_t expression");
+            __builtin_unreachable();
+        },
+        [&] (typecheck::expr_t::scope_t const&) -> llvm::Type*
+        {
+            return llvm::StructType::get(global.llvm_ctx);
+        },
+        [] (typecheck::expr_t::addressof_t const&) -> llvm::Type*
+        {
+            assert(false and "cannot generate a type for addressof_t expression");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::deref_t const&) -> llvm::Type*
+        {
+            assert(false and "cannot generate a type for deref_t expression");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::scopeof_t const&) -> llvm::Type*
+        {
+            assert(false and "cannot generate a type for scopeof_t expression");
+            __builtin_unreachable();
         },
         [] (typecheck::expr_t::array_t const&) -> llvm::Type*
         {
@@ -339,6 +367,10 @@ pass_by_ptr_result_t pass_by_ptr(global_ctx_t const& global, typecheck::expr_t c
                 {
                     return no_t{};
                 },
+                [] (typecheck::expr_t::ref_t const&) -> pass_by_ptr_result_t
+                {
+                    return no_t{}; // the pointer *is* the value!
+                },
                 [&] (typecheck::expr_t::array_t const&) -> pass_by_ptr_result_t
                 {
                     return pass_by_ptr_result::array_t{get_array_properties(type)};
@@ -364,6 +396,30 @@ pass_by_ptr_result_t pass_by_ptr(global_ctx_t const& global, typecheck::expr_t c
         [&] (typecheck::expr_t::sigma_t const& x) -> pass_by_ptr_result_t
         {
             return pass_by_ptr_result::sigma_t{x.args};
+        },
+        [] (typecheck::expr_t::ref_t const&) -> pass_by_ptr_result_t
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::scope_t const&) -> pass_by_ptr_result_t
+        {
+            return no_t{};
+        },
+        [] (typecheck::expr_t::addressof_t const&) -> pass_by_ptr_result_t
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::deref_t const&) -> pass_by_ptr_result_t
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
+        },
+        [] (typecheck::expr_t::scopeof_t const&) -> pass_by_ptr_result_t
+        {
+            assert(false and "expression is not a type");
+            __builtin_unreachable();
         },
         [] (typecheck::expr_t::array_t const&) -> pass_by_ptr_result_t
         {
@@ -510,10 +566,8 @@ bool is_trivially_destructible(global_ctx_t const& global, typecheck::expr_t con
         {
             return match(
                 app.func.get().value,
-                [] (typecheck::expr_t::true_t const&)
-                {
-                    return true;
-                },
+                [] (typecheck::expr_t::true_t const&) { return true; },
+                [] (typecheck::expr_t::ref_t const&) { return true; },
                 [&] (typecheck::expr_t::array_t const&)
                 {
                     // TODO currently only arrays are boxed and arrays of arrays are still arrays,
@@ -547,6 +601,11 @@ bool is_trivially_destructible(global_ctx_t const& global, typecheck::expr_t con
                     return not is_boxed(arg.type) and is_trivially_destructible(global, arg.type);
                 });
         },
+        [] (typecheck::expr_t::ref_t const&) { return true; },
+        [] (typecheck::expr_t::scope_t const&) { return true; },
+        [] (typecheck::expr_t::addressof_t const&) { return true; },
+        [] (typecheck::expr_t::deref_t const&) { return true; },
+        [] (typecheck::expr_t::scopeof_t const&) { return true; },
         [] (typecheck::expr_t::array_t const&) -> bool
         {
             assert(false and "expression is not a type");

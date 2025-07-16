@@ -40,11 +40,11 @@ struct legal_expr_t;
 
 /**
  * @brief Trait types required to specialize the AST for the parser stage.
- * 
+ *
  * After typechecking succeeds we have obtained a "legal" AST.
  * An expression is "legal" if a type can be assigned to it.
  * In particular, the `properties` field of an `expr_t` contains the type assigned to the expression.
- * 
+ *
  * @remarks Currently the `derivation` field of any AST node does not really prove anything.
  * It only proves that the node was constructed via `derivation_rules` but, ideally,
  * it would really contain a proof that the content of the node is legal.
@@ -93,9 +93,11 @@ struct kind_t{};
  */
 using sort_t = std::variant<expr_t, kind_t>;
 
+struct env_t; // environment.hpp depends on expr_t; so we forward declare env_t here to break the cycle
 struct legal_module_t
 {
     derivation_t<module_t> derivation;
+    boost::recursive_wrapper<env_t> env;
 
     bool operator==(legal_module_t const&) const = default;
 };
@@ -171,3 +173,8 @@ std::ostream& pretty_print(std::ostream&, kind_t, std::size_t indent = 0ul);
 std::ostream& pretty_print(std::ostream&, sort_t const&, std::size_t indent = 0ul);
 
 } // namespace dep0::typecheck
+
+// it is not sufficient to only forward declare `env_t`,
+// we also need to include it here in order to make its destructor visible,
+// otherwise `boost::recursive_wrapper` does not compile
+#include "dep0/typecheck/environment.hpp"

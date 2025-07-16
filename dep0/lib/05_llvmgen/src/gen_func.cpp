@@ -16,6 +16,7 @@
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Function.h>
 
+#include <sstream>
 #include <string>
 
 namespace dep0::llvmgen {
@@ -28,6 +29,15 @@ static void gen_func_body(
     llvm_func_proto_t const&,
     typecheck::body_t const&,
     llvm::Function*);
+
+static std::string gen_func_name(typecheck::expr_t::global_t const& g)
+{
+    std::ostringstream s;
+    if (g.module_name)
+        s << *g.module_name << "::";
+    s << g.name;
+    return s.str();
+}
 
 void gen_func_args(
     global_ctx_t& global,
@@ -99,33 +109,34 @@ void gen_func_body(
     finalize_llvm_func(llvm_f);
 }
 
-void gen_extern_decl(
+llvm_func_t gen_extern_decl(
     global_ctx_t& global,
     typecheck::expr_t::global_t const& name,
     llvm_func_proto_t const& proto)
 {
-    gen_func_decl(global, name, proto);
+    return gen_func_decl(global, name, proto);
 }
 
-void gen_func_decl(
+llvm_func_t gen_func_decl(
     global_ctx_t& global,
     typecheck::expr_t::global_t const& name,
     llvm_func_proto_t const& proto)
 {
-    if (not global[name])
-    {
-        auto const llvm_f =
-            llvm::Function::Create(
-                gen_func_type(global, proto),
-                llvm::Function::ExternalLinkage,
-                name.name.view(),
-                global.llvm_module);
-        bool const inserted = global.try_emplace(name, llvm_func_t(llvm_f)).second;
-        assert(inserted);
-        local_ctx_t local;
-        gen_func_args(global, local, proto, llvm_f);
-        gen_func_attributes(global, proto, llvm_f);
-    }
+    if (auto const p = std::get_if<llvm_func_t>(global[name]))
+        return *p;
+    auto const llvm_f =
+        llvm::Function::Create(
+            gen_func_type(global, proto),
+            llvm::Function::ExternalLinkage,
+            gen_func_name(name), // declaration might come from an imported module
+            global.llvm_module);
+    auto const llvm_func = llvm_func_t(llvm_f);
+    bool const inserted = global.try_emplace(name, llvm_func).second;
+    assert(inserted);
+    local_ctx_t local;
+    gen_func_args(global, local, proto, llvm_f);
+    gen_func_attributes(global, proto, llvm_f);
+    return llvm_func;
 }
 
 llvm::Value* gen_func(
@@ -164,11 +175,14 @@ void gen_func(
     }
     else
     {
+        // TODO currently we ignore the module name because we are not yet exporting functions.
+        // However, if the module is exporting functions, then we need to also include the module name.
+        auto const func_name = name.name.view();
         llvm_f =
             llvm::Function::Create(
                 gen_func_type(global, proto),
                 llvm::Function::ExternalLinkage,
-                name.name.view(),
+                func_name,
                 global.llvm_module);
         bool const inserted = global.try_emplace(name, llvm_func_t(llvm_f)).second;
         assert(inserted);

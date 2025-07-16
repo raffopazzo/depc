@@ -12,6 +12,7 @@
 
 #include "dep0/typecheck/ast.hpp"
 #include "dep0/typecheck/derivation.hpp"
+#include "dep0/typecheck/environment.hpp"
 
 namespace dep0::typecheck {
 
@@ -27,10 +28,10 @@ struct derivation_rules
     template <typename T>
     static derivation_t<T> make_derivation();
 
-    /** @brief Constructs a `expr_t::typename_t` whose type is Kind. */
+    /** @brief Constructs the term `typename` whose type is Kind. */
     static expr_t make_typename();
 
-    /** @brief Constructs an `expr_t::true_t` whose type is `(0 bool_t) -> typename`. */
+    /** @brief Constructs the term `true_t` whose type is `(0 bool_t) -> typename`. */
     static expr_t make_true_t();
 
     /**
@@ -39,6 +40,15 @@ struct derivation_rules
      * @warning It is the caller's responsibility to ensure that the given expression has type `bool_t`.
      */
     static expr_t make_true_t(expr_t);
+
+    /** @brief Constructs the expression `&x` whose type is `ref_t(element_type, scopeof(x))`. */
+    static expr_t make_addressof(expr_t element_type, expr_t::scopeof_t, expr_t x);
+
+    /** @brief Constructs the term `ref_t` whose type is `(typename, scope_t) -> typename`. */
+    static expr_t make_ref_t();
+
+    /** @brief Constructs the type `scope_t` whose type is `typename`. */
+    static expr_t make_scope_t();
 
     /** @brief Constructs the type `bool_t` whose type is `typename`. */
     static expr_t make_bool();
@@ -88,7 +98,7 @@ struct derivation_rules
     /** @brief Constructs an `expr_t::relation_expr_t` containing the given value; it's type is `bool_t`. */
     static expr_t make_relation_expr(expr_t::relation_expr_t::value_t);
 
-    /** @brief Constructs an `expr_t::array_t` whose type is `(0 typename, 0 u64_t) -> typename`. */
+    /** @brief Constructs the term `array_t` whose type is `(0 typename, 0 u64_t) -> typename`. */
     static expr_t make_array();
 
     /**
@@ -111,9 +121,9 @@ struct derivation_rules
 };
 
 template <typename... Args>
-module_t make_legal_module(Args&&... args)
+module_t make_legal_module(env_t env, Args&&... args)
 {
-    return module_t{derivation_rules::make_derivation<module_t>(), std::forward<Args>(args)...};
+    return module_t{derivation_rules::make_derivation<module_t>(), std::move(env), std::forward<Args>(args)...};
 }
 
 template <typename... Args>

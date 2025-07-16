@@ -1,0 +1,44 @@
+/*
+ * Copyright Raffaele Rossi 2025.
+ *
+ * Distributed under the Boost Software License, Version 1.0.
+ * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
+ */
+struct t
+{
+    i32_t x;
+    i32_t y;
+    array_t(i32_t, 3) v;
+    array_t(i32_t, 3) w;
+};
+
+func f0(0 scope_t a, ref_t(i32_t, a) p, ref_t(i32_t, a) q) -> i32_t
+{
+    if (*p == 0)
+        return *q;
+    else
+        return *p;
+}
+
+func f1(t v) -> i32_t
+{
+    return f0(scopeof(v), &v.x, &v.y);
+}
+
+func f2(t v) -> i32_t
+{
+    return f0(scopeof(v), &(v.x because true), (&v.y) because true);
+}
+
+func g0(0 scope_t a, ref_t(array_t(i32_t, 3), a) p, ref_t(array_t(i32_t, 3), a) q) -> array_t(i32_t, 3)
+{
+    if ((*p)[0] == 0)
+        return *q;
+    else
+        return *p;
+}
+
+func g1(t v) -> array_t(i32_t, 3)
+{
+    return g0(scopeof(v), &v.v, &v.w);
+}

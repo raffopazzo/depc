@@ -149,6 +149,13 @@ struct expr_t
     struct string_literal_t
     {
         source_text value;
+
+        bool operator!=(string_literal_t const& other) const { return value != other.value; }
+        bool operator==(string_literal_t const& other) const { return value == other.value; }
+        bool operator<(string_literal_t const& other) const { return value < other.value; }
+        bool operator>(string_literal_t const& other) const { return other.value < value; }
+        bool operator<=(string_literal_t const& other) const { return value < other.value or value == other.value; }
+        bool operator>=(string_literal_t const& other) const { return not (value < other.value); }
     };
 
     /** @brief Represents a boolean expression, for example `x and not y or is_even(k)`. */
@@ -288,6 +295,40 @@ struct expr_t
         std::vector<func_arg_t<P>> args;
     };
 
+    /** @brief Represents the type constructor `%ref_t`, whose type is `(typename, %scope_t) -> typename`. */
+    struct ref_t {};
+
+    /** @brief Represents the primitive type `%scope_t` */
+    struct scope_t {};
+
+    /** @brief Represents the expression `&expr`, whose type is `ref_t(t, scopeof(expr))` where `expr` has type `t`. */
+    struct addressof_t
+    {
+        rec_t expr;
+    };
+
+    /** @brief Represents the expression '*expr'. */
+    struct deref_t
+    {
+        rec_t expr;
+    };
+
+    /**
+     * @brief Represents the expression `scopeof(expr)`.
+     * @remarks `scope_id` is only relevant during type-checking and it is set to 0 during parsing.
+     */
+    struct scopeof_t
+    {
+        rec_t expr;
+        std::size_t scope_id;
+
+        /**
+         * @brief Prevent construction via aggregate initialization,
+         * thus ensuring that `scope_id` is always set to a valid value.
+         */
+        scopeof_t(rec_t expr, std::size_t const scope_id) : expr(std::move(expr)), scope_id(scope_id) {}
+    };
+
     /**
      * @brief Represents the keyword `%array_t`, which on its own has type `(typename, u64_t) -> typename`.
      *
@@ -355,6 +396,7 @@ struct expr_t
             boolean_constant_t, numeric_constant_t, string_literal_t,
             boolean_expr_t, relation_expr_t, arith_expr_t,
             var_t, global_t, app_t, abs_t, pi_t, sigma_t,
+            ref_t, scope_t, addressof_t, deref_t, scopeof_t,
             array_t, init_list_t, member_t, subscript_t, because_t
         >;
 

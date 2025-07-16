@@ -18,18 +18,23 @@
 #include "private/proto.hpp"
 
 #include "dep0/ast/find_member_field.hpp"
+#include "dep0/ast/place_expression.hpp"
+#include "dep0/ast/views.hpp"
 #include "dep0/typecheck/list_initialization.hpp"
 #include "dep0/typecheck/subscript_access.hpp"
 
 #include "dep0/match.hpp"
 
 #include <llvm/IR/Constants.h>
+#include <llvm/IR/Instructions.h>
 #include <llvm/Transforms/Utils/BasicBlockUtils.h>
 
 #include <boost/hana.hpp>
 
 #include <algorithm>
+#include <cassert>
 #include <ranges>
+#include <sstream>
 
 namespace dep0::llvmgen {
 
@@ -89,6 +94,24 @@ static std::string escape(std::string_view const in)
     return out;
 }
 
+static llvm::Constant* gen_string_literal(
+    global_ctx_t& global,
+    llvm::IRBuilder<>& builder,
+    typecheck::expr_t::string_literal_t const& x)
+{
+    auto val = global.get_string_literal(x);
+    if (not val)
+    {
+        std::optional<std::string> escaped;
+        auto const& raw = x.value.view();
+        if (needs_escaping(raw))
+            escaped.emplace(escape(raw));
+        val = builder.CreateGlobalStringPtr(escaped ? *escaped : raw, "$_str_");
+        global.store_string_literal(x, val);
+    }
+    return val;
+}
+
 static allocator_t select_allocator(value_category_t const value_category)
 {
     return value_category == value_category_t::result ? allocator_t::heap : allocator_t::stack;
@@ -102,6 +125,63 @@ llvm::Value* gen_val_unit(global_ctx_t& global)
 llvm::Value* gen_val(llvm::IntegerType* const type, boost::multiprecision::cpp_int const& x)
 {
     return llvm::ConstantInt::get(type, x.str(), 10);
+}
+
+static llvm::Value* gen_tuple_element_address(
+    global_ctx_t& global,
+    local_ctx_t& local,
+    llvm::IRBuilder<>& builder,
+    typecheck::expr_t::subscript_t const& subscript,
+    llvm::Type* const tuple_type)
+{
+    auto const base = gen_temporary_val(global, local, builder, subscript.object.get());
+    auto const index_const = std::get_if<typecheck::expr_t::numeric_constant_t>(&subscript.index.get().value);
+    assert(index_const and "subscript operand on tuples must be a numeric literal");
+    auto const int32 = llvm::Type::getInt32Ty(global.llvm_ctx);
+    auto const zero = llvm::ConstantInt::get(int32, 0);
+    auto const i = index_const->value.convert_to<std::int32_t>();
+    auto const index_val = llvm::ConstantInt::get(int32, i);
+    return builder.CreateGEP(tuple_type, base, {zero, index_val});
+}
+
+static llvm::Value* gen_array_element_address(
+    global_ctx_t& global,
+    local_ctx_t& local,
+    llvm::IRBuilder<>& builder,
+    typecheck::expr_t::subscript_t const& subscript)
+{
+    auto const& array = subscript.object.get();
+    auto const properties = get_array_properties(std::get<typecheck::expr_t>(array.properties.sort.get()));
+    auto const stride_size = gen_stride_size_if_needed(global, local, builder, properties);
+    auto const element_type = gen_type(global, properties.element_type);
+    auto const base = gen_temporary_val(global, local, builder, array);
+    auto const index_val = gen_temporary_val(global, local, builder, subscript.index.get());
+    auto const offset = stride_size ? builder.CreateMul(stride_size, index_val) : index_val;
+    return builder.CreateGEP(element_type, base, offset);
+}
+
+static std::pair<llvm::Value*, llvm::Type*>
+gen_field_address(
+    global_ctx_t& global,
+    local_ctx_t& local,
+    llvm::IRBuilder<>& builder,
+    typecheck::expr_t::member_t const& member)
+{
+    auto const& object_type = std::get<typecheck::expr_t>(member.object.get().properties.sort.get());
+    auto const& g = std::get<typecheck::expr_t::global_t>(object_type.value);
+    auto const type_def = std::get_if<global_ctx_t::type_def_t>(global[g]);
+    assert(type_def and "only global structs can have member access");
+    auto const& s = std::get<typecheck::type_def_t::struct_t>(type_def->def.value);
+    auto const i = ast::find_member_index<typecheck::properties_t>(member.field, s);
+    assert(i.has_value());
+    auto const struct_type = gen_type(global, object_type);
+    auto const base = gen_temporary_val(global, local, builder, member.object.get());
+    auto const int32 = llvm::Type::getInt32Ty(global.llvm_ctx);
+    auto const zero = llvm::ConstantInt::get(int32, 0);
+    auto const index = llvm::ConstantInt::get(int32, *i);
+    auto const ptr = builder.CreateGEP(struct_type, base, {zero, index});
+    auto const element_type = gen_type(global, s.fields[*i].type);
+    return {ptr, element_type};
 }
 
 llvm::Value* gen_val(
@@ -203,18 +283,7 @@ llvm::Value* gen_val(
         },
         [&] (typecheck::expr_t::string_literal_t const& x) -> llvm::Value*
         {
-            std::optional<std::string> escaped;
-            auto const& raw = x.value.view();
-            if (needs_escaping(raw))
-                escaped.emplace(escape(raw));
-            auto const& s = escaped ? *escaped : raw;
-            auto val = global.get_string_literal(s);
-            if (not val)
-            {
-                val = builder.CreateGlobalStringPtr(s, "$_str_");
-                global.store_string_literal(escaped ? std::move(*escaped) : std::string(s), val);
-            }
-            return maybe_store(val);
+            return maybe_store(gen_string_literal(global, builder, x));
         },
         [&] (typecheck::expr_t::boolean_expr_t const& x) -> llvm::Value*
         {
@@ -335,16 +404,36 @@ llvm::Value* gen_val(
         },
         [&] (typecheck::expr_t::global_t const& g) -> llvm::Value*
         {
-            auto const val = global[g];
-            assert(val and "unknown global");
-            return maybe_store(match(
-                *val,
-                [] (llvm_func_t const& c) { return c.func; },
-                [] (global_ctx_t::type_def_t const&) -> llvm::Value*
+            if (auto const val = global[g])
+                return maybe_store(match(
+                    *val,
+                    [] (llvm_func_t const& c) { return c.func; },
+                    [] (global_ctx_t::type_def_t const&) -> llvm::Value*
+                    {
+                        assert(false and "found a typedef but was expecting a value");
+                        __builtin_unreachable();
+                    }));
+            // the global must refer to a function in another module
+            auto const decl = global.env[g];
+            assert(decl and "unknown global");
+            return match(
+                *decl,
+                [&] (typecheck::func_decl_t const& decl) -> llvm::Value*
                 {
-                    assert(false and "found a typedef but was expecting a value");
-                    __builtin_unreachable();
-                }));
+                    auto proto = llvm_func_proto_t::from_pi(decl.signature);
+                    assert(proto and "cannot only generate declaration for first order functions");
+                    return gen_func_decl(global, g, *proto).func;
+                },
+                [&] (typecheck::func_def_t const& def) -> llvm::Value*
+                {
+                    auto proto = llvm_func_proto_t::from_abs(def.value);
+                    assert(proto and "cannot only generate declaration for first order functions");
+                    return gen_func_decl(global, g, *proto).func;
+                },
+                [] (typecheck::env_t::incomplete_type_t const&) -> llvm::Value* { return nullptr; },
+                [] (typecheck::type_def_t const&) -> llvm::Value* { return nullptr; },
+                [] (typecheck::axiom_t const&) -> llvm::Value* { return nullptr; },
+                [] (typecheck::extern_decl_t const&) -> llvm::Value* { return nullptr; });
         },
         [&] (typecheck::expr_t::app_t const& x) -> llvm::Value*
         {
@@ -413,6 +502,168 @@ llvm::Value* gen_val(
             assert(false and "cannot generate a value for a sigma-type");
             __builtin_unreachable();
         },
+        [] (typecheck::expr_t::ref_t const&) -> llvm::Value*
+        {
+            assert(false and "cannot generate a value for ref_t expression");
+            __builtin_unreachable();
+        },
+        [&] (typecheck::expr_t::scope_t const&) -> llvm::Value*
+        {
+            assert(false and "cannot generate a value for scope_t expression");
+            __builtin_unreachable();
+        },
+        [&] (typecheck::expr_t::addressof_t const& x) -> llvm::Value*
+        {
+            return match(
+                ast::is_place_expression(x.expr.get()),
+                [&] (std::reference_wrapper<typecheck::expr_t::var_t const> const var)
+                {
+                    auto const view = ast::get_if_ref(type);
+                    assert(view and "type of addressof is not a reference");
+                    auto const& el_type = view->element_type;
+                    auto address = local.load_address(var);
+                    if (not address)
+                    {
+                        if (is_boxed(el_type))
+                        {
+                            // currently only arrays are boxed, so a variable must refer to an llvm::Value;
+                            // in particular, it cannot refer to an llvm_func_t
+                            auto const val = std::get_if<llvm::Value*>(local[var.get()]);
+                            assert(val and "variable not found or not an llvm value");
+                            address = builder.CreateAlloca(gen_type(global, el_type));
+                            builder.CreateStore(*val, address);
+                        }
+                        else
+                        {
+                            auto const value = gen_temporary_val(global, local, builder, x.expr.get());
+                            if (is_pass_by_val(global, el_type))
+                            {
+                                address = gen_alloca(global, local, builder, allocator_t::stack, el_type);
+                                gen_store(global, local, builder, value_category_t::temporary, value, address, el_type);
+                            }
+                            else
+                                address = value;
+                        }
+                        local.save_address(var, address);
+                    }
+                    return maybe_store(address);
+                },
+                [&] (std::reference_wrapper<typecheck::expr_t::deref_t const> const deref)
+                {
+                    return gen_val(global, local, builder, deref.get().expr.get(), value_category, dest);
+                },
+                [&] (std::reference_wrapper<typecheck::expr_t::member_t const> const member)
+                {
+                    auto const ptr = gen_field_address(global, local, builder, member.get()).first;
+                    return maybe_store(ptr);
+                },
+                [&] (std::reference_wrapper<typecheck::expr_t::subscript_t const> const x) -> llvm::Value*
+                {
+                    auto const& subscript = x.get();
+                    auto const& object_type = std::get<typecheck::expr_t>(subscript.object.get().properties.sort.get());
+                    return match(
+                        typecheck::has_subscript_access(object_type),
+                        [] (typecheck::has_subscript_access_result::no_t) -> llvm::Value*
+                        {
+                            assert(false and "unexpected subscript expression; typechecking must be broken");
+                            __builtin_unreachable();
+                        },
+                        [&] (typecheck::has_subscript_access_result::sigma_t const& sigma) -> llvm::Value*
+                        {
+                            auto const tuple_type = gen_type(global, object_type);
+                            auto const ptr = gen_tuple_element_address(global, local, builder, subscript, tuple_type);
+                            return maybe_store(ptr);
+                        },
+                        [&] (typecheck::has_subscript_access_result::array_t const&) -> llvm::Value*
+                        {
+                            auto const ptr = gen_array_element_address(global, local, builder, subscript);
+                            return maybe_store(ptr);
+                        });
+                },
+                [&] (ast::value_expression_t)
+                {
+                    auto const view = ast::get_if_ref(type);
+                    assert(view and "type of addressof is not a reference");
+                    auto const& el_type = view->element_type;
+                    // TODO globals (and potentially string literals) could be handled as place expressions, like vars.
+                    // But is it really nacessary? Does not even seem important for typechecking...
+                    if (auto const g = std::get_if<typecheck::expr_t::global_t>(&x.expr.get().value))
+                    {
+                        auto address = global.load_address(*g);
+                        if (not address)
+                        {
+                            auto const val = gen_temporary_val(global, local, builder, x.expr.get());
+                            assert(val and "global variable not found");
+                            auto const global_func = llvm::dyn_cast<llvm::Function>(val);
+                            assert(global_func and "expected a global function");
+                            std::ostringstream symbol_name;
+                            symbol_name << "$_ref_";
+                            if (g->module_name)
+                                symbol_name << *g->module_name << "::";
+                            symbol_name << g->name.view();
+                            address =
+                                new llvm::GlobalVariable(
+                                    global.llvm_module,
+                                    gen_type(global, el_type),
+                                    true, // isConstant
+                                    llvm::GlobalValue::PrivateLinkage,
+                                    global_func,
+                                    symbol_name.str());
+                            global.save_address(*g, address);
+                        }
+                        return maybe_store(address);
+                    }
+                    else  if (auto const s = std::get_if<typecheck::expr_t::string_literal_t>(&x.expr.get().value))
+                    {
+                        auto address = global.load_address(*s);
+                        if (not address)
+                        {
+                            address =
+                                new llvm::GlobalVariable(
+                                    global.llvm_module,
+                                    gen_type(global, el_type),
+                                    true, // isConstant
+                                    llvm::GlobalValue::PrivateLinkage,
+                                    gen_string_literal(global, builder, *s),
+                                    std::string("$_strref_"));
+                            global.save_address(*s, address);
+                        }
+                        return maybe_store(address);
+                    }
+                    else
+                    {
+                        // TODO if immutable could consider caching the address
+                        auto const value = gen_temporary_val(global, local, builder, x.expr.get());
+                        if  (is_boxed(el_type))
+                        {
+                            auto const address = builder.CreateAlloca(gen_type(global, el_type));
+                            builder.CreateStore(value, address);
+                            return maybe_store(address);
+                        }
+                        if (is_pass_by_val(global, el_type))
+                        {
+                            auto const address = gen_alloca(global, local, builder, allocator_t::stack, el_type);
+                            gen_store(global, local, builder, value_category_t::temporary, value, address, el_type);
+                            return maybe_store(address);
+                        }
+                        else
+                            return maybe_store(value);
+                    }
+                });
+        },
+        [&] (typecheck::expr_t::deref_t const& x) -> llvm::Value*
+        {
+            auto const llvm_type = gen_type(global, type);
+            auto const base = gen_temporary_val(global, local, builder, x.expr.get());
+            return maybe_store(
+                is_boxed(type) or is_pass_by_val(global, type)
+                ? builder.CreateLoad(llvm_type, base)
+                : base);
+        },
+        [&] (typecheck::expr_t::scopeof_t const&) -> llvm::Value*
+        {
+            return gen_val_unit(global);
+        },
         [&] (typecheck::expr_t::array_t const&) -> llvm::Value*
         {
             assert(false and "cannot generate a value for an array_t expression");
@@ -421,7 +672,7 @@ llvm::Value* gen_val(
         [&] (typecheck::expr_t::init_list_t const& x) -> llvm::Value*
         {
             return match(
-                typecheck::is_list_initializable(global.implied_env(), type),
+                typecheck::is_list_initializable(global.env, type),
                 [&] (typecheck::is_list_initializable_result::no_t) -> llvm::Value*
                 {
                     // We found an initializer list whose type is not trivially initializiable from a list.
@@ -523,20 +774,7 @@ llvm::Value* gen_val(
         },
         [&] (typecheck::expr_t::member_t const& member) -> llvm::Value*
         {
-            auto const& object_type = std::get<typecheck::expr_t>(member.object.get().properties.sort.get());
-            auto const& g = std::get<typecheck::expr_t::global_t>(object_type.value);
-            auto const type_def = std::get_if<global_ctx_t::type_def_t>(global[g]);
-            assert(type_def and "only global structs can have member access");
-            auto const& s = std::get<typecheck::type_def_t::struct_t>(type_def->def.value);
-            auto const i = ast::find_member_index<typecheck::properties_t>(member.field, s);
-            assert(i.has_value());
-            auto const struct_type = gen_type(global, object_type);
-            auto const base = gen_temporary_val(global, local, builder, member.object.get());
-            auto const int32 = llvm::Type::getInt32Ty(global.llvm_ctx);
-            auto const zero = llvm::ConstantInt::get(int32, 0);
-            auto const index = llvm::ConstantInt::get(int32, *i);
-            auto const ptr = builder.CreateGEP(struct_type, base, {zero, index});
-            auto const element_type = gen_type(global, s.fields[*i].type);
+            auto const [ptr, element_type] = gen_field_address(global, local, builder, member);
             return maybe_store(
                 is_boxed(type) or is_pass_by_val(global, type)
                 ? builder.CreateLoad(element_type, ptr)
@@ -555,14 +793,9 @@ llvm::Value* gen_val(
                 [&] (typecheck::has_subscript_access_result::sigma_t const& sigma) -> llvm::Value*
                 {
                     auto const tuple_type = gen_type(global, object_type);
-                    auto const base = gen_temporary_val(global, local, builder, subscript.object.get());
+                    auto const ptr = gen_tuple_element_address(global, local, builder, subscript, tuple_type);
                     auto const index = std::get_if<typecheck::expr_t::numeric_constant_t>(&subscript.index.get().value);
-                    assert(index and "subscript operand on tuples must be a numeric literal");
-                    auto const int32 = llvm::Type::getInt32Ty(global.llvm_ctx);
-                    auto const zero = llvm::ConstantInt::get(int32, 0);
                     auto const i = index->value.convert_to<std::int32_t>();
-                    auto const index_val = llvm::ConstantInt::get(int32, i);
-                    auto const ptr = builder.CreateGEP(tuple_type, base, {zero, index_val});
                     auto const element_type = gen_type(global, sigma.args[i].type);
                     return maybe_store(
                         is_boxed(type) or is_pass_by_val(global, type)
@@ -571,14 +804,9 @@ llvm::Value* gen_val(
                 },
                 [&] (typecheck::has_subscript_access_result::array_t const&) -> llvm::Value*
                 {
-                    auto const& array = subscript.object.get();
-                    auto const properties = get_array_properties(std::get<typecheck::expr_t>(array.properties.sort.get()));
-                    auto const stride_size = gen_stride_size_if_needed(global, local, builder, properties);
+                    auto const ptr = gen_array_element_address(global, local, builder, subscript);
+                    auto const properties = get_array_properties(std::get<typecheck::expr_t>(subscript.object.get().properties.sort.get()));
                     auto const element_type = gen_type(global, properties.element_type);
-                    auto const base = gen_temporary_val(global, local, builder, array);
-                    auto const index = gen_temporary_val(global, local, builder, subscript.index.get());
-                    auto const offset = stride_size ? builder.CreateMul(stride_size, index) : index;
-                    auto const ptr = builder.CreateGEP(element_type, base, offset);
                     return maybe_store(is_pass_by_ptr(global, type) ? ptr : builder.CreateLoad(element_type, ptr));
                 });
         },

@@ -1,0 +1,8 @@
+/*
+ * Copyright Raffaele Rossi 2025.
+ *
+ * Distributed under the Boost Software License, Version 1.0.
+ * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
+ */
+axiom g(0 scope_t a, 1 ref_t(i32_t, a) p) -> typename;
+axiom f(i32_t x, g(scopeof(x), &x)) -> u64_t;

@@ -65,6 +65,11 @@ static bool delta_unfold(env_t const&, ctx_t const&, expr_t::app_t&);
 static bool delta_unfold(env_t const&, ctx_t const&, expr_t::abs_t&);
 static bool delta_unfold(env_t const&, ctx_t const&, expr_t::pi_t&);
 static bool delta_unfold(env_t const&, ctx_t const&, expr_t::sigma_t&);
+static bool delta_unfold(env_t const&, ctx_t const&, expr_t::ref_t&) { return false; }
+static bool delta_unfold(env_t const&, ctx_t const&, expr_t::scope_t&) { return false; }
+static bool delta_unfold(env_t const&, ctx_t const&, expr_t::addressof_t&);
+static bool delta_unfold(env_t const&, ctx_t const&, expr_t::deref_t&);
+static bool delta_unfold(env_t const&, ctx_t const&, expr_t::scopeof_t&);
 static bool delta_unfold(env_t const&, ctx_t const&, expr_t::array_t&) { return false; }
 static bool delta_unfold(env_t const&, ctx_t const&, expr_t::init_list_t&);
 static bool delta_unfold(env_t const&, ctx_t const&, expr_t::member_t&);
@@ -222,6 +227,21 @@ bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t::sigma_t& sigma)
         assert(inserted.has_value());
     }
     return false;
+}
+
+bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t::addressof_t& x)
+{
+    return delta_unfold(env, ctx, x.expr.get());
+}
+
+bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t::deref_t& x)
+{
+    return delta_unfold(env, ctx, x.expr.get());
+}
+
+bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t::scopeof_t& x)
+{
+    return delta_unfold(env, ctx, x.expr.get());
 }
 
 bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t::init_list_t& init_list)
@@ -497,6 +517,26 @@ bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t& expr)
                         }
                     return false;
                 });
+            return changed or impl::delta_unfold(env, ctx, x);
+        },
+        [&] (expr_t::addressof_t& x)
+        {
+            bool changed = false;
+            if (auto const deref = std::get_if<expr_t::deref_t>(&x.expr.get().value))
+            {
+                changed = true;
+                destructive_self_assign(expr.value, std::move(deref->expr.get().value));
+            }
+            return changed or impl::delta_unfold(env, ctx, x);
+        },
+        [&] (expr_t::deref_t& x)
+        {
+            bool changed = false;
+            if (auto const ref = std::get_if<expr_t::addressof_t>(&x.expr.get().value))
+            {
+                changed = true;
+                destructive_self_assign(expr.value, std::move(ref->expr.get().value));
+            }
             return changed or impl::delta_unfold(env, ctx, x);
         },
         [&] (expr_t::member_t& member)

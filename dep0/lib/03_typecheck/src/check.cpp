@@ -589,9 +589,13 @@ check_expr(
                         return std::move(expr.error());
                     // TODO beta_delta_normalize(env, ctx, expected_type);
                     auto const expected_ref = ast::get_if_ref(expected_type);
-                    assert(expected_ref and "TODO add a test");
-                    // if (not expected_ref)
-                    //     return error_t("type mismatch between addressof and non-reference type", loc);
+                    if (not expected_ref)
+                    {
+                        std::ostringstream err;
+                        err << "type mismatch between reference expression and non-reference type ";
+                        pretty_print(err << '`', expected_type) << '`';
+                        return error_t(err.str(), loc);
+                    }
                     auto const expr_ref = ast::get_if_ref(std::get<expr_t>(expr->properties.sort.get()));
                     assert(expr_ref and "type-assignment of addressof_t must return an expression of type ref_t");
                     auto eq = is_beta_delta_equivalent(

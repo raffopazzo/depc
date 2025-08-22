@@ -45,5 +45,4 @@ target_include_directories(dep0_llvmgen_lib PUBLIC include PRIVATE src)
 target_link_libraries(dep0_llvmgen_lib
   PUBLIC
     DepC::Dep0::TypeCheck
-    LLVM::LLVMCore
-    LLVM::LLVMTransformUtils)
+    ${LLVM_COMPONENTS})

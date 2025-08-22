@@ -25,5 +25,5 @@ target_link_libraries(dep0
     DepC::Dep0::LLVMGen
     DepC::Dep0::Compile
     DepC::Dep0::Link
-    ${LLVM_COMPONENTS}
+    ${llvm-core_COMPONENTS}
     )

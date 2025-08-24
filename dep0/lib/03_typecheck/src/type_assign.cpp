@@ -361,7 +361,7 @@ type_assign(
         },
         [&] (parser::expr_t::pi_t const& pi) -> expected<expr_t>
         {
-            auto pi_ctx = ctx.extend();
+            auto pi_ctx = ctx.extend_scoped();
             return check_pi_type(env, pi_ctx, loc, pi.is_mutable, pi.args, pi.ret_type.get());
         },
         [&] (parser::expr_t::sigma_t const& sigma) -> expected<expr_t>
@@ -682,7 +682,7 @@ expected<expr_t> type_assign_abs(
     usage_t& usage,
     ast::qty_t const usage_multiplier)
 {
-    auto f_ctx = ctx.extend();
+    auto f_ctx = ctx.extend_scoped();
     auto func_type = check_pi_type(env, f_ctx, location, f.is_mutable, f.args, f.ret_type.get());
     if (not func_type)
         return std::move(func_type.error());

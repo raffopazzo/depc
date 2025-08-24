@@ -25,22 +25,32 @@
 
 namespace dep0::typecheck {
 
-ctx_t::ctx_t(scoped_t) : m_scope_id(0) { }
+ctx_t::ctx_t(scoped_t) : m_flavour(scope_flavour_t::scoped_v), m_scope_id(0) { }
 
-ctx_t::ctx_t(scope_map<expr_t::var_t, value_type> values, std::optional<std::size_t> const scope_id) :
-    m_scope_id(scope_id), m_values(std::move(values))
+ctx_t::ctx_t(scope_map<expr_t::var_t, value_type> values, scope_flavour_t const flavour, std::size_t const scope_id) :
+    m_flavour(flavour), m_scope_id(scope_id), m_values(std::move(values))
 { }
 
 // const member functions
 
+std::optional<std::size_t> ctx_t::scope() const
+{
+    return m_flavour == scope_flavour_t::scoped_v ? std::optional{m_scope_id} : std::nullopt;
+}
+
 ctx_t ctx_t::extend() const
 {
-    return ctx_t(m_values.extend(), m_scope_id ? std::optional{*m_scope_id + 1ul} : std::nullopt);
+    return ctx_t(m_values.extend(), m_flavour, m_scope_id + 1ul);
+}
+
+ctx_t ctx_t::extend_scoped() const
+{
+    return ctx_t(m_values.extend(), scope_flavour_t::scoped_v, m_scope_id + 1ul);
 }
 
 ctx_t ctx_t::extend_unscoped() const
 {
-    return ctx_t(m_values.extend(), std::nullopt);
+    return ctx_t(m_values.extend(), scope_flavour_t::unscoped_v, m_scope_id + 1ul);
 }
 
 ctx_t ctx_t::rewrite(expr_t const& from, expr_t const& to) const
@@ -87,7 +97,7 @@ void ctx_t::add_unnamed(var_decl_t decl)
     // an unnamed variable can only be used via proof-search, so it better have zero quantity
     decl.qty = ast::qty_t::zero;
     do
-        if (m_values.try_emplace(expr_t::var_t{empty, next_id++}, std::nullopt, m_scope_id, std::move(decl)).second)
+        if (m_values.try_emplace(expr_t::var_t{empty, next_id++}, std::nullopt, scope(), std::move(decl)).second)
             return; // should always be true but doesn't harm to try the next id
     while (true);
 }
@@ -100,7 +110,7 @@ ctx_t::try_emplace(std::optional<expr_t::var_t> name, std::optional<source_loc_t
         add_unnamed(std::move(decl));
         return std::true_type{};
     }
-    auto const [it, inserted] = m_values.try_emplace(std::move(*name), loc, m_scope_id, std::move(decl));
+    auto const [it, inserted] = m_values.try_emplace(std::move(*name), loc, scope(), std::move(decl));
     if (inserted)
         return std::true_type{};
     else

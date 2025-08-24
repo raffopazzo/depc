@@ -759,10 +759,10 @@ llvm::Value* gen_val(
                     auto const dest2 = dest ? dest : gen_alloca(global, local, builder, allocator, type);
                     auto const element_type = gen_type(global, properties.element_type);
                     auto const stride_size = gen_stride_size_if_needed(global, local, builder, properties);
-                    auto const int32 = llvm::Type::getInt32Ty(global.llvm_ctx); // TODO we use u64_t to typecheck arrays
+                    auto const int64 = llvm::Type::getInt64Ty(global.llvm_ctx);
                     for (auto const i: std::views::iota(0ul, x.values.size()))
                     {
-                        auto const index = llvm::ConstantInt::get(int32, i);
+                        auto const index = llvm::ConstantInt::get(int64, i);
                         auto const offset = stride_size ? builder.CreateMul(stride_size, index) : index;
                         auto const element_ptr = builder.CreateGEP(element_type, dest2, offset);
                         // TODO currently only arrays are boxed and arrays of arrays are still arrays;

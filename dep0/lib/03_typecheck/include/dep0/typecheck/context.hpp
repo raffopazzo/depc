@@ -29,8 +29,12 @@ namespace dep0::typecheck {
  *
  * Also contexts come in two flavours: scoped and unscoped.
  * Scoped contexts represent a region of memory from which addresses can be taken.
- * Unscoped contexts only allow typechecking of reference types bound to parent scopes.
- * When extending a context, the inner context can only be scoped if the parent was also scoped.
+ * Unscoped contexts only allow typechecking of reference types if variables were bound to scoped contexts.
+ * Scopes are given an internal ID, which increases when a new scope extends another.
+ * This ID can be used to compare the lifetime of variables bound to a scope.
+ * Specifically, smaller ID means larger scope.
+ * However, if a variable is bound to an unscoped context, this ID is not provided,
+ * thus indicating the unscoped origin of the variable.
  *
  * @see `dep0::typecheck::env_t`
  */
@@ -70,7 +74,8 @@ public:
 
     // const member functions
 
-    std::optional<std::size_t> scope() const { return m_scope_id; }
+    /** If the current context is scoped, return its ID; empty otherwise. */
+    std::optional<std::size_t> scope() const;
 
     /**
      * @brief Obtain a fresh context that inherits from the current one, which is referred to as the "parent".
@@ -79,6 +84,9 @@ public:
      * The new context will be a scoped context if the parent was also scoped; otherwise will be unscoped.
      */
     ctx_t extend() const;
+
+    /** @brief Like `extend()` but the new context will scoped even if the parent was unscoped. */
+    ctx_t extend_scoped() const;
 
     /** @brief Like `extend()` but the new context will be unscoped even if the parent was scoped. */
     ctx_t extend_unscoped() const;
@@ -120,12 +128,14 @@ public:
     dep0::expected<std::true_type> try_emplace(std::optional<expr_t::var_t>, std::optional<source_loc_t>, var_decl_t);
 
 private:
-    std::optional<std::size_t> m_scope_id;
+    enum class scope_flavour_t { scoped_v, unscoped_v };
+    scope_flavour_t m_flavour = scope_flavour_t::unscoped_v;
+    std::size_t m_scope_id = 0ul;
     scope_map<expr_t::var_t, value_type> m_values;
 
     void add_unnamed(var_decl_t);
 
-    ctx_t(scope_map<expr_t::var_t, value_type>, std::optional<std::size_t> new_scope_id);
+    ctx_t(scope_map<expr_t::var_t, value_type>, scope_flavour_t, std::size_t new_scope_id);
 };
 
 /** @brief Proof that a variable exists inside some context, returned from `context_lookup`. */

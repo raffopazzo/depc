@@ -12,9 +12,11 @@
 #include "dep0/testing/failure.hpp"
 
 #include <llvm/IR/Constants.h>
+#include <llvm/IR/Instruction.h>
 #include <llvm/IR/Value.h>
 
 #include <boost/hana.hpp>
+#include <boost/scope/scope_exit.hpp>
 #include <boost/test/tools/assertion_result.hpp>
 
 namespace dep0::llvmgen::testing {
@@ -86,6 +88,9 @@ boost::test_tools::predicate_result is_const_expr_of(llvm::Value const& x, F&& f
     if (not c)
         return failure("value is not a constant expression but: ", to_string(x));
     auto const inst = c->getAsInstruction();
+    // https://stackoverflow.com/a/32000761/1288678
+    // `getAsInstruction()` constructs a new instruction that must be deleted, else LLVM will assert
+    auto&& _ = boost::scope::make_scope_exit([inst] () { inst->deleteValue(); });
     if (not inst)
         return failure("constant expression is not an instruction");
     if (auto const result = std::forward<F>(f)(*inst); not result)

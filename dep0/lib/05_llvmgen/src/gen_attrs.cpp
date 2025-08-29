@@ -28,7 +28,6 @@ llvm::Attribute::AttrKind get_sign_ext_attribute(global_ctx_t const& global, typ
         [] (typecheck::expr_t::u16_t const&) { return llvm::Attribute::ZExt; },
         [] (typecheck::expr_t::u32_t const&) { return llvm::Attribute::ZExt; },
         [] (typecheck::expr_t::u64_t const&) { return llvm::Attribute::ZExt; },
-        [] (typecheck::expr_t::u64_t const&) { return llvm::Attribute::ZExt; },
         [] (typecheck::expr_t::boolean_constant_t const&) { return llvm::Attribute::None; },
         [] (typecheck::expr_t::numeric_constant_t const&) { return llvm::Attribute::None; },
         [] (typecheck::expr_t::string_literal_t const&) { return llvm::Attribute::None; },

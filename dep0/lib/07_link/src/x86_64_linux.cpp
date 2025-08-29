@@ -30,13 +30,11 @@ expected<temp_file_t> link(std::vector<std::filesystem::path> const& object_file
     args.push_back("-dynamic-linker");
     args.push_back("/lib64/ld-linux-x86-64.so.2");
     args.push_back("/lib/x86_64-linux-gnu/crt1.o");
+    args.push_back("/lib/x86_64-linux-gnu/crti.o");
+    args.push_back("/lib/x86_64-linux-gnu/crtn.o");
     std::ranges::copy(object_files, std::back_inserter(args));
     args.push_back("-lc");
-    boost::asio::io_context ctx;
-    boost::process::v2::process linker(ctx, ld, args);
-    if (0 == linker.wait())
-        return temp_file;
-    else
+    auto const link_error = [&] (std::vector<error_t> reasons = {})
     {
         std::ostringstream err;
         err << "linker command failed: ";
@@ -44,8 +42,25 @@ expected<temp_file_t> link(std::vector<std::filesystem::path> const& object_file
         for (auto const& x: args)
             err << ' ' << std::quoted(x);
         err << '`';
-        return error_t(err.str());
+        return error_t(err.str(), std::nullopt, std::move(reasons));
+    };
+    expected<int> linker_result;
+    try
+    {
+        boost::asio::io_context ctx;
+        boost::process::v2::process linker(ctx, ld, args);
+        linker_result = linker.wait();
     }
+    catch (std::exception const& e)
+    {
+        linker_result = error_t(e.what());
+    }
+    if (not linker_result)
+        return link_error({std::move(linker_result.error())});
+    else if (0 != *linker_result)
+        return link_error();
+    else
+        return temp_file;
 }
 
 } // namespace dep0::link::x86_64_linux

@@ -16,5 +16,5 @@ target_include_directories(dep0_compile_lib PUBLIC include)
 target_link_libraries(dep0_compile_lib
   PUBLIC
     DepC::Dep0::Core
-    LLVM::LLVMCore
+    llvm-core::LLVMCore
   )

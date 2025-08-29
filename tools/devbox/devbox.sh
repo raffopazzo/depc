@@ -8,6 +8,7 @@ script_dir=$(dirname $0)
 repo_dir=$(realpath ${script_dir}/../..)
 docker run \
     --rm -it \
+    --privileged \
     --user $(id -u):$(id -g) \
     -v /etc/passwd:/etc/passwd:ro -v /etc/group:/etc/group:ro \
     -v ${repo_dir}:${repo_dir} \

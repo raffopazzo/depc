@@ -15,6 +15,10 @@ For more documentation, see [docs/](docs/README.md).
 
 It is the bootstrapping compiler written in C++.
 
+# Getting in Touch
+
+If you need help or have any question feel free to reach out to me directly on Discord @raffopazzo6911
+
 # How to build using devbox
 
 First you need to build the devbox docker image via:

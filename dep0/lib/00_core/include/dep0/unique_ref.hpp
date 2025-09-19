@@ -16,7 +16,7 @@ namespace dep0 {
 
 /** @brief Like `std::unique_ptr` but removes `nullptr` from its inhabitants. */
 template <typename T>
-class unique_ref
+class unique_ref // TODO use something from boost/std if/when available
 {
     std::unique_ptr<T> ptr;
 

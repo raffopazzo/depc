@@ -19,7 +19,9 @@ It is the bootstrapping compiler written in C++.
 
 If you need help or have any question feel free to reach out to me directly on Discord @raffopazzo6911
 
-# How to build using devbox
+# How to build using devbox*
+
+*_The name devbox is only a coincidence and not related to https://www.jetify.com/devbox_
 
 First you need to build the devbox docker image via:
 

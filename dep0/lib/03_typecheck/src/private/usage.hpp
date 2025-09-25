@@ -23,7 +23,7 @@ namespace dep0::typecheck {
 
 /**
  * @brief The main type needed to implement Quantitative Type Theory.
- * 
+ *
  * This is a helper object to keep track of how many times every variable has been used inside a function.
  * During type-checking/type-assignment this object is used to count the number of times
  * that a variable has been used and compare against the maximum allowed by the current context.
@@ -44,6 +44,9 @@ class usage_t
 
     explicit usage_t(scope_map<expr_t::var_t, ast::qty_t>);
 
+    /** @brief Return the current total usage of a variable, or `zero` if the variable has never been used so far. */
+    ast::qty_t operator[](expr_t::var_t const&) const;
+
 public:
 
     usage_t() = default;
@@ -62,12 +65,6 @@ public:
      * for example inside the true branch of an if-else statement.
      */
     usage_t extend() const;
-
-    /**
-     * Look up the current total usage of a variable;
-     * returns `zero` if the variable has never been used so far.
-     */
-    ast::qty_t operator[](expr_t::var_t const&) const;
 
     /**
      * Add 1 usage of a variable, times the given multiplier, to its total count unless

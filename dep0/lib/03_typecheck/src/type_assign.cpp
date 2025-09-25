@@ -702,14 +702,17 @@ expected<expr_t> type_assign_abs(
             return std::move(ok.error());
     }
     auto [is_mutable, arg_types, ret_type] = std::get<expr_t::pi_t>(func_type->value);
-    auto body = check_body(f_env, proof_state_t(f_ctx, ret_type.get()), f.body, is_mutable, usage, usage_multiplier);
+    auto const f_ctx_copy = f_ctx.extend();
+    auto body =
+        check_body(
+            f_env, proof_state_t(std::move(f_ctx), ret_type.get()), f.body, is_mutable, usage, usage_multiplier);
     if (not body)
         return std::move(body.error());
     // so far so good, but we now need to make sure that all branches contain a return statement,
     // with the only exception of functions returning `unit_t` because the return statement is optional;
     if (not returns_from_all_branches(*body))
     {
-        if (not is_beta_delta_equivalent(env, f_ctx, ret_type.get(), derivation_rules::make_unit()))
+        if (not is_beta_delta_equivalent(env, f_ctx_copy, ret_type.get(), derivation_rules::make_unit()))
         {
             std::ostringstream err;
             if (name)

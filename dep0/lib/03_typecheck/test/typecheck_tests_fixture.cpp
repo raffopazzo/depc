@@ -20,7 +20,7 @@
  */
 static dep0::typecheck::env_t const& get_base_env()
 {
-    static auto const env = dep0::typecheck::make_base_env().value();
+    static auto const env = std::move(dep0::typecheck::make_base_env().value());
     return env;
 }
 

@@ -73,8 +73,13 @@ ctx_t ctx_t::rewrite(expr_t const& from, expr_t const& to) const
 std::set<expr_t::var_t> ctx_t::vars() const
 {
     std::set<expr_t::var_t> result;
-    for (auto x = std::optional{m_values}; x.has_value(); x = x->parent())
-        std::ranges::copy(std::views::keys(*x), std::inserter(result, result.end()));
+    auto it = m_values.rbegin();
+    auto const end = m_values.rend();
+    while (it != end)
+    {
+        result.insert(it->first);
+        ++it;
+    }
     return result;
 }
 

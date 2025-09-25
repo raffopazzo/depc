@@ -50,8 +50,8 @@ public:
     /** @brief Empty environment containing no definitions, not even from the prelude module. */
     env_t() = default;
 
-    env_t(env_t const&) = default;
-    env_t& operator=(env_t const&) = default;
+    env_t(env_t const&) = delete;               /**< @brief Copying is expensive. Consider using `extend()`. */
+    env_t& operator=(env_t const&) = delete;    /**< @brief Copying is expensive. Consider using `extend()`. */
     env_t(env_t&&) = default;
     env_t& operator=(env_t&&) = default;
 

@@ -37,9 +37,16 @@ env_t env_t::extend() const
 std::set<expr_t::global_t> env_t::globals() const
 {
     std::set<expr_t::global_t> result;
-    for (auto const& m: {m_definitions, m_fwd_decls})
-        for (auto x = std::optional{m}; x.has_value(); x = x->parent())
-            std::ranges::copy(std::views::keys(*x), std::inserter(result, result.end()));
+    for (auto const m: {&m_definitions, &m_fwd_decls})
+    {
+        auto it = m->rbegin();
+        auto const end = m->rend();
+        while (it != end)
+        {
+            result.insert(it->first);
+            ++it;
+        }
+    }
     return result;
 }
 

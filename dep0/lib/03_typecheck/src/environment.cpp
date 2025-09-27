@@ -21,36 +21,27 @@
 
 namespace dep0::typecheck {
 
-env_t::env_t(
-    scope_map<expr_t::global_t, value_type> fwd_decls,
-    scope_map<expr_t::global_t, value_type> definitions
-) : m_fwd_decls(std::move(fwd_decls)),
-    m_definitions(std::move(definitions))
-{ }
+env_t::env_t(scope_map<expr_t::global_t, value_type> definitions) : m_definitions(std::move(definitions)) { }
 
 // const member functions
 
 env_t env_t::extend() const
 {
-    return env_t(m_fwd_decls.extend(), m_definitions.extend());
+    return env_t(m_definitions.extend());
 }
 
 std::set<expr_t::global_t> env_t::globals() const
 {
     std::set<expr_t::global_t> result;
-    for (auto const m: {&m_definitions, &m_fwd_decls})
-        std::ranges::copy(
-            std::views::keys(std::ranges::subrange(m->rbegin(), m->rend())),
-            std::inserter(result, result.end()));
+    std::ranges::copy(
+        std::views::keys(std::ranges::subrange(m_definitions.rbegin(), m_definitions.rend())),
+        std::inserter(result, result.end()));
     return result;
 }
 
 env_t::value_type const* env_t::operator[](expr_t::global_t const& global) const
 {
-    if (auto const p = m_definitions[global])
-        return p;
-    else
-        return m_fwd_decls[global];
+    return m_definitions[global];
 }
 
 // non-const member functions
@@ -174,7 +165,7 @@ dep0::expected<std::true_type> env_t::try_emplace(expr_t::global_t global, value
                     [&] <typename T> (T const& old) -> dep0::expected<std::true_type>
                     requires (std::is_same_v<T, func_decl_t> or std::is_same_v<T, func_def_t>)
                     {
-                        if (is_beta_delta_equivalent(*this, {}, decl.properties.sort.get(), old.properties.sort.get()))
+                        if (is_beta_delta_equivalent(decl.properties.sort.get(), old.properties.sort.get()))
                             return std::true_type{};
                         else
                             return reject(*prev);
@@ -184,19 +175,22 @@ dep0::expected<std::true_type> env_t::try_emplace(expr_t::global_t global, value
                         return reject(*prev);
                     });
             else
-                return accept(m_fwd_decls);
+                return accept(m_definitions);
         },
         [&] (func_def_t const& def) -> dep0::expected<std::true_type>
         {
             // if we already encountered a function declaration (but not a definition!) with this name,
             // the two signatures must be equivalent
-            if (auto const* const prev = this->operator[](global))
+            if (value_type* const prev = m_definitions[global])
                 return match(
                     *prev,
                     [&] (func_decl_t const& decl) -> dep0::expected<std::true_type>
                     {
-                        if (is_beta_delta_equivalent(*this, {}, def.properties.sort.get(), decl.properties.sort.get()))
-                            return accept(m_definitions);
+                        if (is_beta_delta_equivalent(def.properties.sort.get(), decl.properties.sort.get()))
+                        {
+                            *prev = std::move(v);
+                            return {};
+                        }
                         else
                             return reject(*prev);
                     },

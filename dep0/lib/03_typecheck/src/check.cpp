@@ -259,7 +259,8 @@ expected<expr_t> check_type(env_t const& env, ctx_t const& ctx, parser::expr_t c
     // numerical constants might get in the way, if so could maybe pass a "tie-breaker"?
     usage_t usage; // when checking types an empty usage_t works just as fine, because the multiplier is zero anyway
     auto const immutable = ast::is_mutable_t::no;
-    auto as_type = check_expr(env, ctx, type, derivation_rules::make_typename(), immutable, usage, ast::qty_t::zero);
+    auto as_type =
+        check_expr(env, ctx, type, derivation_rules::make_typename(env, ctx), immutable, usage, ast::qty_t::zero);
     if (as_type)
         return as_type;
     auto as_kind = check_expr(env, ctx, type, kind_t{}, immutable, usage, ast::qty_t::zero);
@@ -318,7 +319,9 @@ check_stmt(
         {
             auto cond =
                 check_expr(
-                    env, state.context, x.cond, derivation_rules::make_bool(), is_mutable, usage, usage_multiplier);
+                    env, state.context, x.cond,
+                        derivation_rules::make_bool(env, state.context),
+                            is_mutable, usage, usage_multiplier);
             if (not cond)
                 return std::move(cond.error());
             // Variable usage in each branch must be checked separately, starting afresh from the outer scope.
@@ -340,25 +343,27 @@ check_stmt(
             auto true_branch = [&]
             {
                 auto new_state = proof_state_t(state.context.extend(), state.goal);
-                new_state.rewrite(*cond, derivation_rules::make_true());
+                new_state.rewrite(*cond, derivation_rules::make_true(env, new_state.context));
                 // we must add `true_t(cond)` to the new context only after we have rewritten `cond=true`,
                 // otherwise the new context will contain `true_t(true)`, which is not helpful to verify array access
-                new_state.context.add_unnamed(derivation_rules::make_true_t(*cond));
+                new_state.context.add_unnamed(derivation_rules::make_true_t(env, new_state.context, *cond));
                 return check_body(env, std::move(new_state), x.true_branch, is_mutable, true_branch_usage, usage_multiplier);
             }();
             if (not true_branch)
                 return std::move(true_branch.error());
-            auto const add_true_not_cond = [&cond] (ctx_t& dest)
+            auto const add_true_not_cond = [&env, &cond] (ctx_t& dest)
             {
                 dest.add_unnamed(
                     derivation_rules::make_true_t(
+                        env, dest,
                         derivation_rules::make_boolean_expr(
+                            env, dest,
                             expr_t::boolean_expr_t::not_t{*cond})));
             };
             if (x.false_branch)
             {
                 auto new_state = proof_state_t(state.context.extend(), state.goal);
-                new_state.rewrite(*cond, derivation_rules::make_false());
+                new_state.rewrite(*cond, derivation_rules::make_false(env, new_state.context));
                 add_true_not_cond(new_state.context);
                 auto false_branch =
                     check_body(env, std::move(new_state), *x.false_branch, is_mutable, false_branch_usage, usage_multiplier);
@@ -382,7 +387,7 @@ check_stmt(
             // we can then rewrite `cond = false` inside the current proof state
             if (returns_from_all_branches(*true_branch))
             {
-                state.rewrite(*cond, derivation_rules::make_false());
+                state.rewrite(*cond, derivation_rules::make_false(env, state.context));
                 add_true_not_cond(state.context);
             }
             if (auto ok = combine_usages(); not ok)
@@ -398,7 +403,7 @@ check_stmt(
         {
             if (not x.expr)
             {
-                if (is_beta_delta_equivalent(env, state.context, state.goal, derivation_rules::make_unit()))
+                if (is_beta_delta_equivalent(state.goal, derivation_rules::make_unit(env, state.context)))
                     return make_legal_stmt(stmt_t::return_t{});
                 else
                 {
@@ -416,9 +421,10 @@ check_stmt(
         {
             auto const check_impossible_stmt = [&] (ctx_t const& ctx, std::optional<expr_t> reason) -> expected<stmt_t>
             {
-                auto const false_type = sort_t{derivation_rules::make_true_t(derivation_rules::make_false())};
+                auto const false_type =
+                    sort_t{derivation_rules::make_true_t(env, ctx, derivation_rules::make_false(env, ctx))};
                 for (auto const& v: ctx.vars())
-                    if (is_beta_delta_equivalent(env, ctx, ctx[v]->value.type, false_type))
+                    if (is_beta_delta_equivalent(ctx[v]->value.type, false_type))
                         return make_legal_stmt(stmt_t::impossible_t{std::move(reason)});
                 return error_t("proof of false not found", loc);
             };
@@ -458,7 +464,7 @@ check_numeric_expr(
             err << "numeric constant does not fit inside `" << type_name << '`';
             return error_t(err.str(), loc);
         }
-        return make_legal_expr(expected_type, expr_t::numeric_constant_t{x.value});
+        return make_legal_expr(env, ctx, expected_type, expr_t::numeric_constant_t{x.value});
     };
     return match(
         expected_type.value,
@@ -564,7 +570,7 @@ check_expr(
                 expected_type,
                 [&] (expr_t expected_type) -> expected<expr_t>
                 {
-                    beta_delta_normalize(env, ctx, expected_type);
+                    beta_delta_normalize(expected_type);
                     return check_numeric_expr(env, ctx, x, loc, expected_type);
                 },
                 [&] (kind_t) -> expected<expr_t>
@@ -598,13 +604,13 @@ check_expr(
                         pretty_print(err << '`', expected_type) << '`';
                         return error_t(err.str(), loc);
                     }
-                    if (is_beta_delta_equivalent(env, ctx, expected_type, expr->properties.sort.get()))
+                    if (is_beta_delta_equivalent(expected_type, expr->properties.sort.get()))
                         return expr;
                     // At this point the type assigned to the expression does not match the expected type.
                     // It could be for two reasons: either the element types do not match or the scopes do not match.
                     if (
-                        auto eq = is_beta_delta_equivalent(
-                            env, ctx, expr_ref->element_type.get(), expected_ref->element_type.get());
+                        auto eq =
+                            is_beta_delta_equivalent(expr_ref->element_type.get(), expected_ref->element_type.get());
                         not eq
                     )
                     {
@@ -645,7 +651,7 @@ check_expr(
                 expected_type,
                 [&] (expr_t expected_type) -> expected<expr_t>
                 {
-                    beta_delta_normalize(env, ctx, expected_type);
+                    beta_delta_normalize(expected_type);
                     return match(
                         is_list_initializable(env, expected_type),
                         [&] (is_list_initializable_result::no_t) -> expected<expr_t>
@@ -662,7 +668,7 @@ check_expr(
                                 pretty_print(err << "initializer list for `", expected_type) << "` must be empty";
                                 return error_t(err.str(), loc);
                             }
-                            return make_legal_expr(expected_type, expr_t::init_list_t{});
+                            return make_legal_expr(env, ctx, expected_type, expr_t::init_list_t{});
                         },
                         [&] (is_list_initializable_result::true_t) -> expected<expr_t>
                         {
@@ -672,7 +678,7 @@ check_expr(
                                 pretty_print(err << "initializer list for `", expected_type) << "` must be empty";
                                 return error_t(err.str(), loc);
                             }
-                            return make_legal_expr(expected_type, expr_t::init_list_t{});
+                            return make_legal_expr(env, ctx, expected_type, expr_t::init_list_t{});
                         },
                         [&] (is_list_initializable_result::struct_t const s) -> expected<expr_t>
                         {
@@ -696,7 +702,7 @@ check_expr(
                                     fields.end());
                                 values.push_back(std::move(*v));
                             }
-                            return make_legal_expr(expected_type, expr_t::init_list_t{std::move(values)});
+                            return make_legal_expr(env, ctx, expected_type, expr_t::init_list_t{std::move(values)});
                         },
                         [&] (is_list_initializable_result::sigma_ref_t sigma) -> expected<expr_t>
                         {
@@ -721,7 +727,7 @@ check_expr(
                                         element_types.end());
                                 values.push_back(std::move(*v));
                             }
-                            return make_legal_expr(expected_type, expr_t::init_list_t{std::move(values)});
+                            return make_legal_expr(env, ctx, expected_type, expr_t::init_list_t{std::move(values)});
                         },
                         [&] (is_list_initializable_result::array_const_t const array) -> expected<expr_t>
                         {
@@ -744,7 +750,7 @@ check_expr(
                                     });
                             if (not values)
                                 return std::move(values.error());
-                            return make_legal_expr(expected_type, expr_t::init_list_t{std::move(*values)});
+                            return make_legal_expr(env, ctx, expected_type, expr_t::init_list_t{std::move(*values)});
                         });
                 },
                 [&] (kind_t) -> expected<expr_t>
@@ -766,13 +772,13 @@ check_expr(
             auto value = check_expr(env, ctx2, x.value.get(), expected_type, is_mutable, usage, usage_multiplier);
             if (not value)
                 return std::move(value.error());
-            return make_legal_expr(expected_type, expr_t::because_t{std::move(*value), std::move(*reason)});
+            return make_legal_expr(env, ctx, expected_type, expr_t::because_t{std::move(*value), std::move(*reason)});
         },
         [&] (auto const&) -> expected<expr_t>
         {
             auto result = type_assign(env, ctx, x, is_mutable, usage, usage_multiplier);
             if (result)
-                if (auto eq = is_beta_delta_equivalent(env, ctx, result->properties.sort.get(), expected_type); not eq)
+                if (auto eq = is_beta_delta_equivalent(result->properties.sort.get(), expected_type); not eq)
                     return type_error(result->properties.sort.get(), std::move(eq.error()));
             return result;
         });
@@ -786,6 +792,7 @@ expected<expr_t> check_pi_type(
     std::vector<parser::func_arg_t> const& parser_args,
     parser::expr_t const& parser_ret_type)
 {
+    auto original_ctx = ctx.extend();
     auto unscoped_ctx = ctx.extend_unscoped();
     auto args = fmap_or_error(
         parser_args,
@@ -816,8 +823,7 @@ expected<expr_t> check_pi_type(
     if (not ret_type)
         return dep0::error_t("cannot typecheck function return type", loc, {std::move(ret_type.error())});
     return make_legal_expr(
-        ret_type->properties.sort.get(),
-        expr_t::pi_t{is_mutable, std::move(*args), *ret_type});
+        env, original_ctx, ret_type->properties.sort.get(), expr_t::pi_t{is_mutable, std::move(*args), *ret_type});
 }
 
 expected<expr_t> check_sigma_type(
@@ -826,6 +832,7 @@ expected<expr_t> check_sigma_type(
     source_loc_t const& loc,
     parser::expr_t::sigma_t const& sigma)
 {
+    auto original_ctx = ctx.extend();
     auto args = fmap_or_error(
         sigma.args,
         [&, next_arg_index=0] (parser::func_arg_t const& arg) mutable -> expected<func_arg_t>
@@ -851,7 +858,8 @@ expected<expr_t> check_sigma_type(
         });
     if (not args)
         return std::move(args.error());
-    return make_legal_expr(derivation_rules::make_typename(), expr_t::sigma_t{std::move(*args)});
+    return make_legal_expr(
+        env, original_ctx, derivation_rules::make_typename(env, original_ctx), expr_t::sigma_t{std::move(*args)});
 }
 
 expected<expr_t> check_or_assign(
@@ -885,11 +893,12 @@ expected<expr_t> check_or_assign(
                         pretty_print(err << "division cannot be performed on non-integral type `", type) << '`';
                         return dep0::error_t(err.str(), loc);
                     }
-                    auto const zero = make_legal_expr(type, expr_t::numeric_constant_t{0});
+                    auto const zero = make_legal_expr(env, ctx, type, expr_t::numeric_constant_t{0});
                     auto const proof_type =
                         derivation_rules::make_true_t(
+                            env, ctx,
                             derivation_rules::make_relation_expr(
-                                expr_t::relation_expr_t::neq_t{*rhs, zero}));
+                                env, ctx, expr_t::relation_expr_t::neq_t{*rhs, zero}));
                     if (not search_proof(env, ctx, proof_type, ast::is_mutable_t::no, usage, ast::qty_t::zero))
                     {
                         std::ostringstream err;
@@ -900,18 +909,23 @@ expected<expr_t> check_or_assign(
                     auto const [sign, width] = *sign_width;
                     if (sign == ast::sign_t::signed_v)
                     {
-                        auto const min_val = make_legal_expr(type, expr_t::numeric_constant_t{cpp_int_min_signed(width)});
-                        auto const neg_one = make_legal_expr(type, expr_t::numeric_constant_t{-1});
+                        auto const min_val =
+                            make_legal_expr(env, ctx, type, expr_t::numeric_constant_t{cpp_int_min_signed(width)});
+                        auto const neg_one =
+                            make_legal_expr(env, ctx, type, expr_t::numeric_constant_t{-1});
                         auto const proof_type = // true_t(not (a == min_val and b == -1))
                             derivation_rules::make_true_t(
+                                env, ctx,
                                 derivation_rules::make_boolean_expr(
+                                    env, ctx,
                                     expr_t::boolean_expr_t::not_t{
                                         derivation_rules::make_boolean_expr(
+                                            env, ctx,
                                             expr_t::boolean_expr_t::and_t{
                                                 derivation_rules::make_relation_expr(
-                                                    expr_t::relation_expr_t::eq_t{*lhs, min_val}),
+                                                    env, ctx, expr_t::relation_expr_t::eq_t{*lhs, min_val}),
                                                 derivation_rules::make_relation_expr(
-                                                    expr_t::relation_expr_t::eq_t{*rhs, neg_one})})}));
+                                                    env, ctx, expr_t::relation_expr_t::eq_t{*rhs, neg_one})})}));
                         if (not search_proof(env, ctx, proof_type, ast::is_mutable_t::no, usage, ast::qty_t::zero))
                         {
                             std::ostringstream err;
@@ -921,6 +935,7 @@ expected<expr_t> check_or_assign(
                     }
                 }
                 return make_legal_expr(
+                    env, ctx,
                     std::move(type),
                     boost::hana::overload(
                         [&] (boost::hana::type<parser::expr_t::arith_expr_t::plus_t>) -> expr_t::arith_expr_t

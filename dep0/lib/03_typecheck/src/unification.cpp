@@ -94,8 +94,7 @@ bool unify(expr_t const& from, expr_t const& to, std::map<expr_t::var_t, expr_t>
             },
             [&] (expr_t::var_t const& x, auto const&)
             {
-                // TODO should also consider non-empty environments and contexts
-                if (not is_beta_delta_equivalent({}, {}, from.properties.sort.get(), to.properties.sort.get()))
+                if (not is_beta_delta_equivalent(from.properties.sort.get(), to.properties.sort.get()))
                     return false;
                 auto const [it, inserted] = result.try_emplace(x, to);
                 return inserted or ast::is_alpha_equivalent(to, it->second).has_value();

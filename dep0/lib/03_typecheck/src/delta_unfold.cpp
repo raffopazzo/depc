@@ -34,47 +34,47 @@ namespace dep0::typecheck {
 
 namespace impl {
 
-static bool delta_unfold(env_t const&, ctx_t const&, stmt_t&);
-static bool delta_unfold(env_t const&, ctx_t const&, stmt_t::if_else_t&);
-static bool delta_unfold(env_t const&, ctx_t const&, stmt_t::return_t&);
-static bool delta_unfold(env_t const&, ctx_t const&, stmt_t::impossible_t&);
+static bool delta_unfold(stmt_t&);
+static bool delta_unfold(stmt_t::if_else_t&);
+static bool delta_unfold(stmt_t::return_t&);
+static bool delta_unfold(stmt_t::impossible_t&);
 
-static bool delta_unfold(env_t const&, ctx_t const&, expr_t::typename_t&) { return false; }
-static bool delta_unfold(env_t const&, ctx_t const&, expr_t::true_t&) { return false; }
-static bool delta_unfold(env_t const&, ctx_t const&, expr_t::auto_t&) { return false; }
-static bool delta_unfold(env_t const&, ctx_t const&, expr_t::bool_t&) { return false; }
-static bool delta_unfold(env_t const&, ctx_t const&, expr_t::cstr_t&) { return false; }
-static bool delta_unfold(env_t const&, ctx_t const&, expr_t::unit_t&) { return false; }
-static bool delta_unfold(env_t const&, ctx_t const&, expr_t::i8_t&) { return false; }
-static bool delta_unfold(env_t const&, ctx_t const&, expr_t::i16_t&) { return false; }
-static bool delta_unfold(env_t const&, ctx_t const&, expr_t::i32_t&) { return false; }
-static bool delta_unfold(env_t const&, ctx_t const&, expr_t::i64_t&) { return false; }
-static bool delta_unfold(env_t const&, ctx_t const&, expr_t::u8_t&) { return false; }
-static bool delta_unfold(env_t const&, ctx_t const&, expr_t::u16_t&) { return false; }
-static bool delta_unfold(env_t const&, ctx_t const&, expr_t::u32_t&) { return false; }
-static bool delta_unfold(env_t const&, ctx_t const&, expr_t::u64_t&) { return false; }
-static bool delta_unfold(env_t const&, ctx_t const&, expr_t::boolean_constant_t&) { return false; }
-static bool delta_unfold(env_t const&, ctx_t const&, expr_t::numeric_constant_t&) { return false; }
-static bool delta_unfold(env_t const&, ctx_t const&, expr_t::string_literal_t&) { return false; }
-static bool delta_unfold(env_t const&, ctx_t const&, expr_t::boolean_expr_t&);
-static bool delta_unfold(env_t const&, ctx_t const&, expr_t::relation_expr_t&);
-static bool delta_unfold(env_t const&, ctx_t const&, expr_t::arith_expr_t&);
-static bool delta_unfold(env_t const&, ctx_t const&, expr_t::var_t&) { return false; }
-static bool delta_unfold(env_t const&, ctx_t const&, expr_t::global_t&);
-static bool delta_unfold(env_t const&, ctx_t const&, expr_t::app_t&);
-static bool delta_unfold(env_t const&, ctx_t const&, expr_t::abs_t&);
-static bool delta_unfold(env_t const&, ctx_t const&, expr_t::pi_t&);
-static bool delta_unfold(env_t const&, ctx_t const&, expr_t::sigma_t&);
-static bool delta_unfold(env_t const&, ctx_t const&, expr_t::ref_t&) { return false; }
-static bool delta_unfold(env_t const&, ctx_t const&, expr_t::scope_t&) { return false; }
-static bool delta_unfold(env_t const&, ctx_t const&, expr_t::addressof_t&);
-static bool delta_unfold(env_t const&, ctx_t const&, expr_t::deref_t&);
-static bool delta_unfold(env_t const&, ctx_t const&, expr_t::scopeof_t&);
-static bool delta_unfold(env_t const&, ctx_t const&, expr_t::array_t&) { return false; }
-static bool delta_unfold(env_t const&, ctx_t const&, expr_t::init_list_t&);
-static bool delta_unfold(env_t const&, ctx_t const&, expr_t::member_t&);
-static bool delta_unfold(env_t const&, ctx_t const&, expr_t::subscript_t&);
-static bool delta_unfold(env_t const&, ctx_t const&, expr_t::because_t&);
+static bool delta_unfold(expr_t::typename_t&) { return false; }
+static bool delta_unfold(expr_t::true_t&) { return false; }
+static bool delta_unfold(expr_t::auto_t&) { return false; }
+static bool delta_unfold(expr_t::bool_t&) { return false; }
+static bool delta_unfold(expr_t::cstr_t&) { return false; }
+static bool delta_unfold(expr_t::unit_t&) { return false; }
+static bool delta_unfold(expr_t::i8_t&) { return false; }
+static bool delta_unfold(expr_t::i16_t&) { return false; }
+static bool delta_unfold(expr_t::i32_t&) { return false; }
+static bool delta_unfold(expr_t::i64_t&) { return false; }
+static bool delta_unfold(expr_t::u8_t&) { return false; }
+static bool delta_unfold(expr_t::u16_t&) { return false; }
+static bool delta_unfold(expr_t::u32_t&) { return false; }
+static bool delta_unfold(expr_t::u64_t&) { return false; }
+static bool delta_unfold(expr_t::boolean_constant_t&) { return false; }
+static bool delta_unfold(expr_t::numeric_constant_t&) { return false; }
+static bool delta_unfold(expr_t::string_literal_t&) { return false; }
+static bool delta_unfold(expr_t::boolean_expr_t&);
+static bool delta_unfold(expr_t::relation_expr_t&);
+static bool delta_unfold(expr_t::arith_expr_t&);
+static bool delta_unfold(expr_t::var_t&) { return false; }
+static bool delta_unfold(expr_t::global_t&);
+static bool delta_unfold(expr_t::app_t&);
+static bool delta_unfold(expr_t::abs_t&);
+static bool delta_unfold(expr_t::pi_t&);
+static bool delta_unfold(expr_t::sigma_t&);
+static bool delta_unfold(expr_t::ref_t&) { return false; }
+static bool delta_unfold(expr_t::scope_t&) { return false; }
+static bool delta_unfold(expr_t::addressof_t&);
+static bool delta_unfold(expr_t::deref_t&);
+static bool delta_unfold(expr_t::scopeof_t&);
+static bool delta_unfold(expr_t::array_t&) { return false; }
+static bool delta_unfold(expr_t::init_list_t&);
+static bool delta_unfold(expr_t::member_t&);
+static bool delta_unfold(expr_t::subscript_t&);
+static bool delta_unfold(expr_t::because_t&);
 
 /**
  * Return the primitive delta-reduction of boolean expressions, boolean relations and numeric relations.
@@ -115,51 +115,49 @@ static cpp_int
 reduce(env_t const&, hana::type<expr_t::arith_expr_t::div_t>, cpp_int const& a, cpp_int const& b, expr_t const& ty);
 /** @} */
 
-bool delta_unfold(env_t const& env, ctx_t const& ctx, stmt_t& stmt)
+bool delta_unfold(stmt_t& stmt)
 {
-    return match(stmt.value, [&] (auto& x) { return delta_unfold(env, ctx, x); });
+    return match(stmt.value,
+        [&] (expr_t::app_t& app) { return delta_unfold(app); },
+        [&] (auto& x) { return delta_unfold(x); });
 }
 
-bool delta_unfold(env_t const& env, ctx_t const& ctx, stmt_t::if_else_t& if_)
+bool delta_unfold(stmt_t::if_else_t& if_)
 {
-    return delta_unfold(env, ctx, if_.cond)
-        or delta_unfold(env, ctx, if_.true_branch)
-        or if_.false_branch and delta_unfold(env, ctx, *if_.false_branch);
+    return delta_unfold(if_.cond)
+        or delta_unfold(if_.true_branch)
+        or if_.false_branch and delta_unfold(*if_.false_branch);
 }
 
-bool delta_unfold(env_t const& env, ctx_t const& ctx, stmt_t::return_t& ret)
+bool delta_unfold(stmt_t::return_t& ret)
 {
-    return ret.expr and delta_unfold(env, ctx, *ret.expr);
+    return ret.expr and delta_unfold(*ret.expr);
 }
 
-bool delta_unfold(env_t const& env, ctx_t const& ctx, stmt_t::impossible_t& x)
+bool delta_unfold(stmt_t::impossible_t& x)
 {
-    return x.reason and delta_unfold(env, ctx, *x.reason);
+    return x.reason and delta_unfold(*x.reason);
 }
 
-bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t::boolean_expr_t& x)
-{
-    return match(
-        x.value,
-        [&] (expr_t::boolean_expr_t::not_t& x) { return delta_unfold(env, ctx, x.expr.get()); },
-        [&] (auto& x) { return delta_unfold(env, ctx, x.lhs.get()) or delta_unfold(env, ctx, x.rhs.get()); });
-}
-
-bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t::relation_expr_t& x)
+bool delta_unfold(expr_t::boolean_expr_t& x)
 {
     return match(
         x.value,
-        [&] (auto& x) { return delta_unfold(env, ctx, x.lhs.get()) or delta_unfold(env, ctx, x.rhs.get()); });
+        [&] (expr_t::boolean_expr_t::not_t& x) { return delta_unfold(x.expr.get()); },
+        [&] (auto& x) { return delta_unfold(x.lhs.get()) or delta_unfold(x.rhs.get()); });
 }
 
-bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t::arith_expr_t& x)
+bool delta_unfold(expr_t::relation_expr_t& x)
 {
-    return match(
-        x.value,
-        [&] (auto& x) { return delta_unfold(env, ctx, x.lhs.get()) or delta_unfold(env, ctx, x.rhs.get()); });
+    return match(x.value, [&] (auto& x) { return delta_unfold(x.lhs.get()) or delta_unfold(x.rhs.get()); });
 }
 
-bool delta_unfold(env_t const&, ctx_t const&, expr_t::global_t&)
+bool delta_unfold(expr_t::arith_expr_t& x)
+{
+    return match(x.value, [&] (auto& x) { return delta_unfold(x.lhs.get()) or delta_unfold(x.rhs.get()); });
+}
+
+bool delta_unfold(expr_t::global_t&)
 {
     // We only perform delta-unfolding inside a direct application,
     // eg `f(x)` for some global function `f`, but not everywhere, eg `return f`.
@@ -168,103 +166,101 @@ bool delta_unfold(env_t const&, ctx_t const&, expr_t::global_t&)
     return false;
 }
 
-bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t::app_t& app)
+bool delta_unfold(expr_t::app_t& app)
 {
     if (is_mutable(app))
         // delta-unfolding is only useful to extend beta-normalization as far as possible,
         // but mutable operations cannot be reduced to normal-formal anyway
         return false;
     if (auto const global = std::get_if<expr_t::global_t>(&app.func.get().value))
+    {
+        // When trying to unfold a function application,
+        // the look up must be performed in the environment in which the function was defined,
+        // not the environment in which the application was type-checked.
+        // Consider the following example.
+        //     func f1((i32_t) -> i32_t g) -> i32_t { return g(0); }
+        //     func f2(i32_t x) -> i32_t { return x + 1; }
+        //     func f3() -> i32_t { return f1(f2); }
+        // Inside f3, first f1 is unfolded, which yields `return f2(0);` and then
+        // f2 can also be unfolded, but note that the original `g(0)`
+        // was type-checked in an environment where `f2` did not exist yet!
+        auto const& env = *app.func.get().properties.derivation.properties.env;
         if (auto const func_def = std::get_if<func_def_t>(env[*global]))
         {
             app.func.get().value = func_def->value;
             return true;
         }
-    if (delta_unfold(env, ctx, app.func.get()))
+    }
+    if (delta_unfold(app.func.get()))
         return true;
     for (auto& arg: app.args)
-        if (delta_unfold(env, ctx, arg))
+        if (delta_unfold(arg))
             return true;
     return false;
 }
 
-bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t::abs_t& abs)
+bool delta_unfold(expr_t::abs_t& abs)
 {
-    auto ctx2 = ctx.extend();
     for (auto& arg: abs.args)
-    {
-        if (delta_unfold(env, ctx2, arg.type))
+        if (delta_unfold(arg.type))
             return true;
-        auto const inserted = ctx2.try_emplace(arg.var, std::nullopt, ctx_t::var_decl_t{arg.qty, arg.type});
-        assert(inserted.has_value());
-    }
-    if (delta_unfold(env, ctx2, abs.ret_type.get()))
+    if (delta_unfold(abs.ret_type.get()))
         return true;
-    return delta_unfold(env, ctx2, abs.body);
+    return delta_unfold(abs.body);
 }
 
-bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t::pi_t& pi)
+bool delta_unfold(expr_t::pi_t& pi)
 {
-    auto ctx2 = ctx.extend();
     for (auto& arg: pi.args)
-    {
-        if (delta_unfold(env, ctx2, arg.type))
+        if (delta_unfold(arg.type))
             return true;
-        auto const inserted = ctx2.try_emplace(arg.var, std::nullopt, ctx_t::var_decl_t{arg.qty, arg.type});
-        assert(inserted.has_value());
-    }
-    return delta_unfold(env, ctx2, pi.ret_type.get());
+    return delta_unfold(pi.ret_type.get());
 }
 
-bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t::sigma_t& sigma)
+bool delta_unfold(expr_t::sigma_t& sigma)
 {
-    auto ctx2 = ctx.extend();
     for (auto& arg: sigma.args)
-    {
-        if (delta_unfold(env, ctx2, arg.type))
+        if (delta_unfold(arg.type))
             return true;
-        auto const inserted = ctx2.try_emplace(arg.var, std::nullopt, ctx_t::var_decl_t{arg.qty, arg.type});
-        assert(inserted.has_value());
-    }
     return false;
 }
 
-bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t::addressof_t& x)
+bool delta_unfold(expr_t::addressof_t& x)
 {
-    return delta_unfold(env, ctx, x.expr.get());
+    return delta_unfold(x.expr.get());
 }
 
-bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t::deref_t& x)
+bool delta_unfold(expr_t::deref_t& x)
 {
-    return delta_unfold(env, ctx, x.expr.get());
+    return delta_unfold(x.expr.get());
 }
 
-bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t::scopeof_t& x)
+bool delta_unfold(expr_t::scopeof_t& x)
 {
-    return delta_unfold(env, ctx, x.expr.get());
+    return delta_unfold(x.expr.get());
 }
 
-bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t::init_list_t& init_list)
+bool delta_unfold(expr_t::init_list_t& init_list)
 {
     for (auto& v: init_list.values)
-        if (delta_unfold(env, ctx, v))
+        if (delta_unfold(v))
             return true;
     return false;
 }
 
-bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t::member_t& subscript)
+bool delta_unfold(expr_t::member_t& subscript)
 {
-    return delta_unfold(env, ctx, subscript.object.get());
+    return delta_unfold(subscript.object.get());
 }
 
-bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t::subscript_t& subscript)
+bool delta_unfold(expr_t::subscript_t& subscript)
 {
-    return delta_unfold(env, ctx, subscript.object.get()) or delta_unfold(env, ctx, subscript.index.get());
+    return delta_unfold(subscript.object.get()) or delta_unfold(subscript.index.get());
 }
 
-bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t::because_t& x)
+bool delta_unfold(expr_t::because_t& x)
 {
-    return delta_unfold(env, ctx, x.value.get()) or delta_unfold(env, ctx, x.reason.get());
+    return delta_unfold(x.value.get()) or delta_unfold(x.reason.get());
 }
 
 cpp_int
@@ -433,18 +429,18 @@ reduce(
 
 } // namespace impl
 
-bool delta_unfold(env_t const& env, ctx_t const& ctx, body_t& body)
+bool delta_unfold(body_t& body)
 {
     for (auto& s: body.stmts)
-        if (impl::delta_unfold(env, ctx, s))
+        if (impl::delta_unfold(s))
             return true;
     return false;
 }
 
-bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t& expr)
+bool delta_unfold(expr_t& expr)
 {
     if (auto const type = std::get_if<expr_t>(&expr.properties.sort.get()))
-        if (delta_unfold(env, ctx, *type))
+        if (delta_unfold(*type))
             return true;
     // for boolean_expr_t, relation_expr_t,  etc, prefer primitive reduction over further unfolding
     return match(
@@ -474,7 +470,7 @@ bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t& expr)
                         }
                     return false;
                 });
-            return changed or impl::delta_unfold(env, ctx, x);
+            return changed or impl::delta_unfold(x);
         },
         [&] (expr_t::relation_expr_t& x)
         {
@@ -498,7 +494,7 @@ bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t& expr)
                         }
                     return false;
                 });
-            return changed or impl::delta_unfold(env, ctx, x);
+            return changed or impl::delta_unfold(x);
         },
         [&] (expr_t::arith_expr_t& x)
         {
@@ -511,13 +507,18 @@ bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t& expr)
                         {
                             auto const& ty = std::get<expr_t>(x.lhs.get().properties.sort.get());
                             expr.value = expr_t::numeric_constant_t{
-                                impl::reduce(env, hana::type_c<T>, n->value, m->value, ty)
+                                impl::reduce(
+                                    *expr.properties.derivation.properties.env,
+                                    hana::type_c<T>,
+                                    n->value,
+                                    m->value,
+                                    ty)
                             };
                             return true;
                         }
                     return false;
                 });
-            return changed or impl::delta_unfold(env, ctx, x);
+            return changed or impl::delta_unfold(x);
         },
         [&] (expr_t::addressof_t& x)
         {
@@ -525,9 +526,9 @@ bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t& expr)
             if (auto const deref = std::get_if<expr_t::deref_t>(&x.expr.get().value))
             {
                 changed = true;
-                destructive_self_assign(expr.value, std::move(deref->expr.get().value));
+                destructive_self_assign(expr, std::move(deref->expr.get()));
             }
-            return changed or impl::delta_unfold(env, ctx, x);
+            return changed or impl::delta_unfold(x);
         },
         [&] (expr_t::deref_t& x)
         {
@@ -535,9 +536,9 @@ bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t& expr)
             if (auto const ref = std::get_if<expr_t::addressof_t>(&x.expr.get().value))
             {
                 changed = true;
-                destructive_self_assign(expr.value, std::move(ref->expr.get().value));
+                destructive_self_assign(expr, std::move(ref->expr.get()));
             }
-            return changed or impl::delta_unfold(env, ctx, x);
+            return changed or impl::delta_unfold(x);
         },
         [&] (expr_t::member_t& member)
         {
@@ -545,14 +546,14 @@ bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t& expr)
             if (auto const init_list = std::get_if<expr_t::init_list_t>(&member.object.get().value))
                 if (auto const type = std::get_if<expr_t>(&member.object.get().properties.sort.get()))
                     if (auto const g = std::get_if<expr_t::global_t>(&type->value))
-                        if (auto const type_def = std::get_if<type_def_t>(env[*g]))
+                        if (auto const type_def = std::get_if<type_def_t>((*expr.properties.derivation.properties.env)[*g]))
                             if (auto const s = std::get_if<type_def_t::struct_t>(&type_def->value))
                                 if (auto const i = ast::find_member_index<properties_t>(member.field, *s))
                                 {
                                     changed = true;
-                                    destructive_self_assign(expr.value, std::move(init_list->values[*i].value));
+                                    destructive_self_assign(expr, std::move(init_list->values[*i]));
                                 }
-            return changed or impl::delta_unfold(env, ctx, member);
+            return changed or impl::delta_unfold(member);
         },
         [&] (expr_t::subscript_t& subscript)
         {
@@ -563,9 +564,9 @@ bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t& expr)
                     {
                         changed = true;
                         auto const i_ = i->value.template convert_to<std::size_t>();
-                        destructive_self_assign(expr.value, std::move(init_list->values[i_].value));
+                        destructive_self_assign(expr, std::move(init_list->values[i_]));
                     }
-            return changed or impl::delta_unfold(env, ctx, subscript);
+            return changed or impl::delta_unfold(subscript);
         },
         [&] (expr_t::app_t& app)
         {
@@ -574,20 +575,21 @@ bool delta_unfold(env_t const& env, ctx_t const& ctx, expr_t& expr)
                 [] (is_builtin_call_result::no_t) { return false; },
                 [&] (is_builtin_call_result::slice_t const& slice)
                 {
-                    // `slice` is a view into `app`, which is non-const, so it's ok to const_cast away
-                    auto const l = const_cast<expr_t::init_list_t*>(std::get_if<expr_t::init_list_t>(&slice.xs.value));
                     auto const k = std::get_if<expr_t::numeric_constant_t>(&slice.k.value);
-                    if (l and k)
+                    if (k and std::holds_alternative<expr_t::init_list_t>(slice.xs.value))
                     {
-                        l->values.erase(l->values.begin(), l->values.begin() + k->value.template convert_to<std::size_t>());
-                        // note this is not destructive self-assignment because we first construct a new value_t
-                        expr.value = expr_t::value_t{std::move(*l)};
+                        // `slice` is a view into `app`, which is non-const, so it's ok to const_cast away
+                        destructive_self_assign(expr, std::move(const_cast<expr_t&>(slice.xs)));
+                        auto& values = std::get<expr_t::init_list_t>(expr.value).values;
+                        values.erase(values.begin(), values.begin() + k->value.template convert_to<std::size_t>());
+                        return true;
                     }
-                    return l and k;
+                    else
+                        return false;
                 });
-            return changed or impl::delta_unfold(env, ctx, app);
+            return changed or impl::delta_unfold(app);
         },
-        [&] (auto& x) { return impl::delta_unfold(env, ctx, x); });
+        [&] (auto& x) { return impl::delta_unfold(x); });
 }
 
 } // namespace dep0::typecheck

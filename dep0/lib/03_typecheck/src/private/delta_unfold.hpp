@@ -18,17 +18,17 @@
 namespace dep0::typecheck {
 
 /**
- * @brief Unfold one function definition, from the given environment and context, inside the given body.
+ * @brief Try to unfold one function definition inside the given body.
  * @return True if a definition was unfolded.
  * @see @ref delta_reduction
  */
-bool delta_unfold(env_t const&, ctx_t const&, body_t&);
+bool delta_unfold(body_t&);
 
 /**
- * @brief Unfold one function definition, from the given environment and context, inside the given expression.
+ * @brief Try to unfold one function definition inside the given expression.
  * @return True if a definition was unfolded.
  * @see @ref delta_reduction
  */
-bool delta_unfold(env_t const&, ctx_t const&, expr_t&);
+bool delta_unfold(expr_t&);
 
 } // namespace dep0::typecheck

@@ -99,8 +99,8 @@ static void try_apply(search_task_t& task, expr_t::global_t const& name, sort_t 
     }
     if (auto all_args = all_or_nothing(args))
         task.set_result(make_legal_expr(
-            target,
-            expr_t::app_t{make_legal_expr(func_type, name), std::move(*all_args)}));
+            task.env, task.ctx, target,
+                expr_t::app_t{make_legal_expr(task.env, task.ctx, func_type, name), std::move(*all_args)}));
     else
     {
         // Some arguments are still unresolved.
@@ -133,7 +133,15 @@ static void try_apply(search_task_t& task, expr_t::global_t const& name, sort_t 
         task.when_all(
             std::move(sub_tasks),
             std::move(temp_usage),
-            [name, func_type, target=task.target, args=std::move(args), indices=std::move(indices)]
+            [
+                &env=task.env,
+                &ctx=task.ctx,
+                name,
+                func_type,
+                target=task.target,
+                args=std::move(args),
+                indices=std::move(indices)
+            ]
             (std::vector<expr_t> sub_task_results)
             mutable -> expr_t
             {
@@ -149,7 +157,8 @@ static void try_apply(search_task_t& task, expr_t::global_t const& name, sort_t 
                 }
                 auto all_args = all_or_nothing(args);
                 assert(all_args and "when_all thinks it succeeded but some arguments are still unresolved!");
-                return make_legal_expr(*target, expr_t::app_t{make_legal_expr(func_type, name), std::move(*all_args)});
+                return make_legal_expr(
+                    env, ctx, *target, expr_t::app_t{make_legal_expr(env, ctx, func_type, name), std::move(*all_args)});
             });
     }
 }

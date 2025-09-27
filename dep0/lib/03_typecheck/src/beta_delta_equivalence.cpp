@@ -16,17 +16,10 @@
 namespace dep0::typecheck {
 
 dep0::expected<std::true_type>
-is_beta_delta_equivalent(
-    env_t const& env,
-    ctx_t const& ctx,
-    sort_t const& x,
-    sort_t const& y)
+is_beta_delta_equivalent(sort_t const& x, sort_t const& y)
 {
     struct visitor
     {
-        env_t const& env;
-        ctx_t const& ctx;
-
         dep0::expected<std::true_type> operator()(expr_t const& x, expr_t const& y) const
         {
             // Try without normalizing first, under the assumptions that:
@@ -38,7 +31,7 @@ is_beta_delta_equivalent(
             {
                 auto x2 = x;
                 auto y2 = y;
-                if (beta_delta_normalize(env, ctx, x2) | beta_delta_normalize(env, ctx, y2)) // don't short-circuit
+                if (beta_delta_normalize(x2) | beta_delta_normalize(y2)) // don't short-circuit
                     eq = is_alpha_equivalent(x2, y2);
             }
             return eq;
@@ -60,7 +53,7 @@ is_beta_delta_equivalent(
             return dep0::error_t(err.str());
         }
     };
-    return std::visit(visitor{env, ctx}, x, y);
+    return std::visit(visitor{}, x, y);
 }
 
 } // namespace dep0::typecheck

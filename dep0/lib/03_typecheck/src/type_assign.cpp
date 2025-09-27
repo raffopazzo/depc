@@ -47,29 +47,29 @@ type_assign_global(
         *def,
         [&] (env_t::incomplete_type_t const&) -> expected<expr_t>
         {
-            return make_legal_expr(derivation_rules::make_typename(), std::move(global));
+            return make_legal_expr(env, ctx, derivation_rules::make_typename(env, ctx), std::move(global));
         },
         [&] (type_def_t const&) -> expected<expr_t>
         {
-            return make_legal_expr(derivation_rules::make_typename(), std::move(global));
+            return make_legal_expr(env, ctx, derivation_rules::make_typename(env, ctx), std::move(global));
         },
         [&] (axiom_t const& x) -> expected<expr_t>
         {
             if (usage_multiplier > ast::qty_t::zero)
                 return dep0::error_t("axiom cannot be used at run-time", loc);
-            return make_legal_expr(x.properties.sort.get(), std::move(global));
+            return make_legal_expr(env, ctx, x.properties.sort.get(), std::move(global));
         },
         [&] (extern_decl_t const& x) -> expected<expr_t>
         {
-            return make_legal_expr(x.properties.sort.get(), std::move(global));
+            return make_legal_expr(env, ctx, x.properties.sort.get(), std::move(global));
         },
         [&] (func_decl_t const& x) -> expected<expr_t>
         {
-            return make_legal_expr(x.properties.sort.get(), std::move(global));
+            return make_legal_expr(env, ctx, x.properties.sort.get(), std::move(global));
         },
         [&] (func_def_t const& x) -> expected<expr_t>
         {
-            return make_legal_expr(x.properties.sort.get(), std::move(global));
+            return make_legal_expr(env, ctx, x.properties.sort.get(), std::move(global));
         });
 }
 
@@ -86,7 +86,7 @@ type_assign_var(
     {
         if (auto ok = usage.try_add(*lookup, usage_multiplier, loc); not ok)
             return ok.error();
-        return make_legal_expr(lookup->decl.type, lookup->var);
+        return make_legal_expr(env, ctx, lookup->decl.type, lookup->var);
     }
     if (auto const global = expr_t::global_t{std::nullopt, name}; env[global])
         return type_assign_global(env, ctx, global, loc, usage_multiplier);
@@ -100,7 +100,8 @@ type_assign_scopeof(env_t const& env, ctx_t const& ctx, parser::expr_t const& ex
     auto const loc = expr.properties;
     auto const accept = [&] (expr_t expr, std::size_t const scope_id) -> expected<expr_t>
     {
-        return make_legal_expr(derivation_rules::make_scope_t(), expr_t::scopeof_t(std::move(expr), scope_id));
+        return make_legal_expr(
+            env, ctx, derivation_rules::make_scope_t(env, ctx), expr_t::scopeof_t(std::move(expr), scope_id));
     };
     auto const reject = [&] (std::string err) -> expected<expr_t> { return error_t(std::move(err), loc); };
     if (auto const var = std::get_if<parser::expr_t::var_t>(&expr.value))
@@ -109,13 +110,13 @@ type_assign_scopeof(env_t const& env, ctx_t const& ctx, parser::expr_t const& ex
         {
             if (not lookup->scope_id)
                 return reject("variable not bound to a scope");
-            return accept(make_legal_expr(lookup->decl.type, lookup->var), *lookup->scope_id);
+            return accept(make_legal_expr(env, ctx, lookup->decl.type, lookup->var), *lookup->scope_id);
         }
         auto g = expr_t::global_t{std::nullopt, var->name};
         auto const accept_global = [&] (sort_t sort)
         {
             std::size_t constexpr global_scope_id = 0ul;
-            return accept(make_legal_expr(std::move(sort), std::move(g)), global_scope_id);
+            return accept(make_legal_expr(env, ctx, std::move(sort), std::move(g)), global_scope_id);
         };
         if (auto const p = env[g])
             return match(
@@ -188,26 +189,26 @@ type_assign(
     auto const loc = expr.properties;
     return match(
         expr.value,
-        [] (parser::expr_t::typename_t) -> expected<expr_t> { return derivation_rules::make_typename(); },
-        [] (parser::expr_t::true_t) -> expected<expr_t> { return derivation_rules::make_true_t(); },
+        [&] (parser::expr_t::typename_t) -> expected<expr_t> { return derivation_rules::make_typename(env, ctx); },
+        [&] (parser::expr_t::true_t) -> expected<expr_t> { return derivation_rules::make_true_t(env, ctx); },
         [&] (parser::expr_t::auto_t) -> expected<expr_t>
         {
             return dep0::error_t("auto expressions have no unique type", loc);
         },
-        [] (parser::expr_t::bool_t) -> expected<expr_t> { return derivation_rules::make_bool(); },
-        [] (parser::expr_t::cstr_t) -> expected<expr_t> { return derivation_rules::make_cstr(); },
-        [] (parser::expr_t::unit_t) -> expected<expr_t> { return derivation_rules::make_unit(); },
-        [] (parser::expr_t::i8_t) -> expected<expr_t> { return derivation_rules::make_i8(); },
-        [] (parser::expr_t::i16_t) -> expected<expr_t> { return derivation_rules::make_i16(); },
-        [] (parser::expr_t::i32_t) -> expected<expr_t> { return derivation_rules::make_i32(); },
-        [] (parser::expr_t::i64_t) -> expected<expr_t> { return derivation_rules::make_i64(); },
-        [] (parser::expr_t::u8_t) -> expected<expr_t> { return derivation_rules::make_u8(); },
-        [] (parser::expr_t::u16_t) -> expected<expr_t> { return derivation_rules::make_u16(); },
-        [] (parser::expr_t::u32_t) -> expected<expr_t> { return derivation_rules::make_u32(); },
-        [] (parser::expr_t::u64_t) -> expected<expr_t> { return derivation_rules::make_u64(); },
-        [] (parser::expr_t::boolean_constant_t const& x) -> expected<expr_t>
+        [&] (parser::expr_t::bool_t) -> expected<expr_t> { return derivation_rules::make_bool(env, ctx); },
+        [&] (parser::expr_t::cstr_t) -> expected<expr_t> { return derivation_rules::make_cstr(env, ctx); },
+        [&] (parser::expr_t::unit_t) -> expected<expr_t> { return derivation_rules::make_unit(env, ctx); },
+        [&] (parser::expr_t::i8_t) -> expected<expr_t> { return derivation_rules::make_i8(env, ctx); },
+        [&] (parser::expr_t::i16_t) -> expected<expr_t> { return derivation_rules::make_i16(env, ctx); },
+        [&] (parser::expr_t::i32_t) -> expected<expr_t> { return derivation_rules::make_i32(env, ctx); },
+        [&] (parser::expr_t::i64_t) -> expected<expr_t> { return derivation_rules::make_i64(env, ctx); },
+        [&] (parser::expr_t::u8_t) -> expected<expr_t> { return derivation_rules::make_u8(env, ctx); },
+        [&] (parser::expr_t::u16_t) -> expected<expr_t> { return derivation_rules::make_u16(env, ctx); },
+        [&] (parser::expr_t::u32_t) -> expected<expr_t> { return derivation_rules::make_u32(env, ctx); },
+        [&] (parser::expr_t::u64_t) -> expected<expr_t> { return derivation_rules::make_u64(env, ctx); },
+        [&] (parser::expr_t::boolean_constant_t const& x) -> expected<expr_t>
         {
-            return make_legal_expr(derivation_rules::make_bool(), expr_t::boolean_constant_t{x.value});
+            return make_legal_expr(env, ctx, derivation_rules::make_bool(env, ctx), expr_t::boolean_constant_t{x.value});
         },
         [&] (parser::expr_t::numeric_constant_t const& x) -> expected<expr_t>
         {
@@ -215,7 +216,7 @@ type_assign(
         },
         [&] (parser::expr_t::string_literal_t const& x) -> expected<expr_t>
         {
-            return make_legal_expr(derivation_rules::make_cstr(), expr_t::string_literal_t{x.value});
+            return make_legal_expr(env, ctx, derivation_rules::make_cstr(env, ctx), expr_t::string_literal_t{x.value});
         },
         [&] (parser::expr_t::boolean_expr_t const& x) -> expected<expr_t>
         {
@@ -227,12 +228,13 @@ type_assign(
                         check_expr(
                             env, ctx,
                             x.expr.get(),
-                            derivation_rules::make_bool(),
+                            derivation_rules::make_bool(env, ctx),
                             is_mutable_allowed,
                             usage, usage_multiplier);
                     if (expr)
                         return make_legal_expr(
-                            derivation_rules::make_bool(),
+                            env, ctx,
+                            derivation_rules::make_bool(env, ctx),
                             expr_t::boolean_expr_t{
                                 expr_t::boolean_expr_t::not_t{
                                     std::move(*expr)}});
@@ -243,18 +245,19 @@ type_assign(
                 {
                     auto lhs =
                         check_expr(
-                            env, ctx, x.lhs.get(), derivation_rules::make_bool(),
+                            env, ctx, x.lhs.get(), derivation_rules::make_bool(env, ctx),
                             is_mutable_allowed, usage, usage_multiplier);
                     if (not lhs)
                         return std::move(lhs.error());
                     auto rhs =
                         check_expr(
-                            env, ctx, x.rhs.get(), derivation_rules::make_bool(),
+                            env, ctx, x.rhs.get(), derivation_rules::make_bool(env, ctx),
                             is_mutable_allowed, usage, usage_multiplier);
                     if (not rhs)
                         return std::move(rhs.error());
                     return make_legal_expr(
-                        derivation_rules::make_bool(),
+                        env, ctx,
+                        derivation_rules::make_bool(env, ctx),
                         boost::hana::overload(
                             [&] (boost::hana::type<parser::expr_t::boolean_expr_t::and_t>)
                             {
@@ -285,7 +288,8 @@ type_assign(
                             env, ctx, x.lhs.get(), x.rhs.get(), is_mutable_allowed, usage, usage_multiplier);
                     if (lhs and rhs)
                         return make_legal_expr(
-                            derivation_rules::make_bool(),
+                            env, ctx,
+                            derivation_rules::make_bool(env, ctx),
                             boost::hana::overload(
                                 [&] (boost::hana::type<parser::expr_t::relation_expr_t::eq_t>)
                                 {
@@ -369,8 +373,8 @@ type_assign(
             auto sigma_ctx = ctx.extend();
             return check_sigma_type(env, sigma_ctx, loc, sigma);
         },
-        [] (parser::expr_t::ref_t) -> expected<expr_t> { return derivation_rules::make_ref_t(); },
-        [] (parser::expr_t::scope_t) -> expected<expr_t> { return derivation_rules::make_scope_t(); },
+        [&] (parser::expr_t::ref_t) -> expected<expr_t> { return derivation_rules::make_ref_t(env, ctx); },
+        [&] (parser::expr_t::scope_t) -> expected<expr_t> { return derivation_rules::make_scope_t(env, ctx); },
         [&] (parser::expr_t::addressof_t const& x) -> expected<expr_t>
         {
             auto expr = type_assign(env, ctx, x.expr.get(), is_mutable_allowed, usage, usage_multiplier);
@@ -391,6 +395,7 @@ type_assign(
                             std::get<expr_t::scopeof_t>(
                                 scope->value).expr.get().properties.sort.get());
                     return derivation_rules::make_addressof(
+                        env, ctx,
                         std::move(element_type),
                         std::move(std::get<expr_t::scopeof_t>(scope->value)),
                         std::move(*expr));
@@ -399,7 +404,7 @@ type_assign(
                 {
                     auto const& deref = std::get<expr_t::deref_t>(ast::unwrap_because(*expr).value);
                     auto ref_type = deref.expr.get().properties.sort.get(); // take a copy before moving `expr
-                    return make_legal_expr(std::move(ref_type), expr_t::addressof_t{std::move(*expr)});
+                    return make_legal_expr(env, ctx, std::move(ref_type), expr_t::addressof_t{std::move(*expr)});
                 },
                 [&] <typename T> (T x) -> expected<expr_t>
                 requires (
@@ -411,6 +416,7 @@ type_assign(
                         return dep0::error_t("cannot take address of expression", loc, {std::move(scope.error())});
                     auto element_type = std::get<expr_t>(expr->properties.sort.get());
                     return derivation_rules::make_addressof(
+                        env, ctx,
                         std::move(element_type),
                         std::move(std::get<expr_t::scopeof_t>(scope->value)),
                         std::move(*expr));
@@ -422,7 +428,7 @@ type_assign(
             if (not ref)
                 return ref;
             auto& ref_type = std::get<expr_t>(ref->properties.sort.get());
-            beta_delta_normalize(env, ctx, ref_type);
+            beta_delta_normalize(ref_type);
             auto const view = ast::get_if_ref(ref_type);
             if (not view)
             {
@@ -430,7 +436,7 @@ type_assign(
                 pretty_print(err << "cannot dereference non-reference type `", ref_type) << '`';
                 return dep0::error_t(err.str(), loc);
             }
-            return make_legal_expr(view->element_type.get(), expr_t::deref_t{std::move(*ref)});
+            return make_legal_expr(env, ctx, view->element_type.get(), expr_t::deref_t{std::move(*ref)});
         },
         [&] (parser::expr_t::scopeof_t const& x) -> expected<expr_t>
         {
@@ -438,9 +444,9 @@ type_assign(
                 return dep0::error_t("cannot use `scopeof` at runtime", loc);
             return type_assign_scopeof(env, ctx, x.expr.get());
         },
-        [] (parser::expr_t::array_t) -> expected<expr_t>
+        [&] (parser::expr_t::array_t) -> expected<expr_t>
         {
-            return derivation_rules::make_array();
+            return derivation_rules::make_array(env, ctx);
         },
         [&] (parser::expr_t::init_list_t const& init_list) -> expected<expr_t>
         {
@@ -465,13 +471,15 @@ type_assign(
                                         substitute(
                                             fields[j].var,
                                             make_legal_expr(
+                                                env, ctx,
                                                 fields[j].type,
                                                 expr_t::member_t{*obj, fields[j].var.name}),
                                             fields.begin() + j + 1,
                                             fields.end());
                                     return std::move(fields.back().type);
                                 }();
-                                return make_legal_expr(field_type, expr_t::member_t{std::move(*obj), member.field});
+                                return make_legal_expr(
+                                    env, ctx, field_type, expr_t::member_t{std::move(*obj), member.field});
                             }
                             else
                             {
@@ -505,7 +513,7 @@ type_assign(
                 obj->properties.sort.get(),
                 [&] (expr_t& t) -> expected<expr_t>
                 {
-                    beta_delta_normalize(env, ctx, t);
+                    beta_delta_normalize(t);
                     return match(
                         has_subscript_access(t),
                         [&] (has_subscript_access_result::no_t) -> expected<expr_t>
@@ -520,7 +528,7 @@ type_assign(
                                 check_expr(
                                     env, ctx,
                                     subscript.index.get(),
-                                    derivation_rules::make_u64(),
+                                    derivation_rules::make_u64(env, ctx),
                                     is_mutable_allowed, usage, usage_multiplier);
                             if (not idx)
                                 return std::move(idx.error());
@@ -542,12 +550,13 @@ type_assign(
                                     if (args[j].var)
                                         substitute(
                                             *args[j].var,
-                                            derivation_rules::make_subscript(*obj, j, args[j].type),
+                                            derivation_rules::make_subscript(env, ctx, *obj, j, args[j].type),
                                             args.begin() + j + 1,
                                             args.end());
                                 return std::move(args[idx_value].type);
                             }();
                             return make_legal_expr(
+                                env, ctx,
                                 std::move(el_type),
                                 expr_t::subscript_t{std::move(*obj), std::move(*idx)});
                         },
@@ -557,20 +566,23 @@ type_assign(
                                 check_expr(
                                     env, ctx,
                                     subscript.index.get(),
-                                    derivation_rules::make_u64(),
+                                    derivation_rules::make_u64(env, ctx),
                                     is_mutable_allowed, usage, usage_multiplier);
                             if (not idx)
                                 return std::move(idx.error());
-                            beta_delta_normalize(env, ctx, *idx);
+                            beta_delta_normalize(*idx);
                             auto const proof_type =
                                 derivation_rules::make_true_t(
+                                    env, ctx,
                                     derivation_rules::make_relation_expr(
+                                        env, ctx,
                                         expr_t::relation_expr_t::lt_t{*idx, array.size}));
                             if (search_proof(env, ctx, proof_type, ast::is_mutable_t::no, usage, ast::qty_t::zero))
                             {
                                 // we're about to move from `obj`, which holds the element type; so must take a copy
                                 auto el_type = array.element_type;
                                 return make_legal_expr(
+                                    env, ctx,
                                     std::move(el_type),
                                     expr_t::subscript_t{std::move(*obj), std::move(*idx)});
                             }
@@ -603,7 +615,7 @@ type_assign(
             if (not value)
                 return std::move(value.error());
             auto sort = value->properties.sort.get();
-            return make_legal_expr(std::move(sort), expr_t::because_t{std::move(*value), std::move(*reason)});
+            return make_legal_expr(env, ctx, std::move(sort), expr_t::because_t{std::move(*value), std::move(*reason)});
         });
 }
 
@@ -626,7 +638,7 @@ type_assign_app(
     {
         if (auto* const type = std::get_if<expr_t>(&func->properties.sort.get()))
         {
-            beta_delta_normalize(env, ctx, *type);
+            beta_delta_normalize(*type);
             return std::get_if<expr_t::pi_t>(&type->value);
         }
         else
@@ -670,7 +682,7 @@ type_assign_app(
         args.push_back(std::move(*arg));
     }
     auto result_type = func_type->ret_type.get(); // we're about to move from `func`, so take a copy
-    return make_legal_expr(std::move(result_type), expr_t::app_t{std::move(*func), std::move(args)});
+    return make_legal_expr(env, ctx, std::move(result_type), expr_t::app_t{std::move(*func), std::move(args)});
 }
 
 expected<expr_t> type_assign_abs(
@@ -702,7 +714,6 @@ expected<expr_t> type_assign_abs(
             return std::move(ok.error());
     }
     auto [is_mutable, arg_types, ret_type] = std::get<expr_t::pi_t>(func_type->value);
-    auto const f_ctx_copy = f_ctx.extend();
     auto body =
         check_body(
             f_env, proof_state_t(std::move(f_ctx), ret_type.get()), f.body, is_mutable, usage, usage_multiplier);
@@ -712,7 +723,7 @@ expected<expr_t> type_assign_abs(
     // with the only exception of functions returning `unit_t` because the return statement is optional;
     if (not returns_from_all_branches(*body))
     {
-        if (not is_beta_delta_equivalent(env, f_ctx_copy, ret_type.get(), derivation_rules::make_unit()))
+        if (not is_beta_delta_equivalent(ret_type.get(), derivation_rules::make_unit(env, ctx)))
         {
             std::ostringstream err;
             if (name)
@@ -722,6 +733,7 @@ expected<expr_t> type_assign_abs(
         }
     }
     return make_legal_expr(
+        env, ctx,
         std::move(*func_type),
         expr_t::abs_t{
             is_mutable,

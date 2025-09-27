@@ -14,7 +14,7 @@
 
 namespace dep0::typecheck {
 
-static std::optional<expr_t> try_make_trivial_value(env_t const& env, expr_t const& type)
+static std::optional<expr_t> try_make_trivial_value(env_t const& env, ctx_t const& ctx, expr_t const& type)
 {
     return match(
         is_list_initializable(env, type),
@@ -24,41 +24,41 @@ static std::optional<expr_t> try_make_trivial_value(env_t const& env, expr_t con
         },
         [&] (is_list_initializable_result::unit_t) -> std::optional<expr_t>
         {
-            return make_legal_expr(type, expr_t::init_list_t{});
+            return make_legal_expr(env, ctx, type, expr_t::init_list_t{});
         },
         [&] (is_list_initializable_result::true_t) -> std::optional<expr_t>
         {
-            return make_legal_expr(type, expr_t::init_list_t{});
+            return make_legal_expr(env, ctx, type, expr_t::init_list_t{});
         },
         [&] (is_list_initializable_result::struct_t const& s) -> std::optional<expr_t>
         {
             std::vector<expr_t> values;
             for (auto const& f: s.fields)
-                if (auto val = try_make_trivial_value(env, f.type))
+                if (auto val = try_make_trivial_value(env, ctx, f.type))
                     values.push_back(std::move(*val));
                 else
                     return std::nullopt;
-            return make_legal_expr(type, expr_t::init_list_t{std::move(values)});
+            return make_legal_expr(env, ctx, type, expr_t::init_list_t{std::move(values)});
         },
         [&] (is_list_initializable_result::sigma_const_t const sigma) -> std::optional<expr_t>
         {
             std::vector<expr_t> values;
             for (auto const& arg: sigma.args)
-                if (auto val = try_make_trivial_value(env, arg.type))
+                if (auto val = try_make_trivial_value(env, ctx, arg.type))
                     values.push_back(std::move(*val));
                 else
                     return std::nullopt;
-            return make_legal_expr(type, expr_t::init_list_t{std::move(values)});
+            return make_legal_expr(env, ctx, type, expr_t::init_list_t{std::move(values)});
         },
         [&] (is_list_initializable_result::array_const_t const array) -> std::optional<expr_t>
         {
-            return make_legal_expr(type, expr_t::init_list_t{});
+            return make_legal_expr(env, ctx, type, expr_t::init_list_t{});
         });
 }
 
 void search_trivial_value(search_task_t& task)
 {
-    if (auto val = try_make_trivial_value(task.env, *task.target))
+    if (auto val = try_make_trivial_value(task.env, task.ctx, *task.target))
         task.set_result(std::move(*val));
 }
 

@@ -93,15 +93,9 @@ public:
     dep0::expected<std::true_type> try_emplace(expr_t::global_t, value_type);
 
 private:
-    // Function declarations are stored separately from their definitions (and from type definitions).
-    // But the subscript operator must return an immutable stable pointer to a value_type,
-    // so both map store a value_type bot not all alternatives are inhabited in either of them.
-    scope_map<expr_t::global_t, value_type> m_fwd_decls;
     scope_map<expr_t::global_t, value_type> m_definitions;
 
-    env_t(
-        scope_map<expr_t::global_t, value_type> fwd_decls,
-        scope_map<expr_t::global_t, value_type> definitions);
+    env_t(scope_map<expr_t::global_t, value_type> definitions);
 };
 
 /**

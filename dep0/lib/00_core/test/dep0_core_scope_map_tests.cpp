@@ -120,6 +120,14 @@ BOOST_AUTO_TEST_CASE(iterate_tests)
     BOOST_TEST(entries[0].second == 33);
     BOOST_TEST(entries[1].first == "baz");
     BOOST_TEST(entries[1].second == 77);
+    // with subrange
+    entries.clear();
+    std::ranges::copy(std::ranges::subrange(map1.cbegin(), map1.cend()), std::back_inserter(entries));
+    BOOST_TEST_REQUIRE(entries.size() == 2ul);
+    BOOST_TEST(entries[0].first == "bar");
+    BOOST_TEST(entries[0].second == 33);
+    BOOST_TEST(entries[1].first == "baz");
+    BOOST_TEST(entries[1].second == 77);
     // and reverse
     entries.assign(map1.rbegin(), map1.rend());
     BOOST_TEST_REQUIRE(entries.size() == 2ul);
@@ -147,6 +155,12 @@ BOOST_AUTO_TEST_CASE(iterate_tests)
     BOOST_TEST_REQUIRE(entries.size() == 1ul);
     BOOST_TEST(entries[0].first == "bar");
     BOOST_TEST(entries[0].second == 33);
+    // with subrange
+    entries.clear();
+    std::ranges::copy(std::ranges::subrange(map2.cbegin(), map2.cend()), std::back_inserter(entries));
+    BOOST_TEST_REQUIRE(entries.size() == 1ul);
+    BOOST_TEST(entries[0].first == "bar");
+    BOOST_TEST(entries[0].second == 33);
     // and reverse
     entries.assign(map2.rbegin(), map2.rend());
     BOOST_TEST_REQUIRE(entries.size() == 1ul);
@@ -161,6 +175,16 @@ BOOST_AUTO_TEST_CASE(iterate_tests)
     BOOST_TEST(entries.size() == 0ul);
 
     entries.assign(map3.cbegin(), map3.cend());
+    BOOST_TEST_REQUIRE(entries.size() == 3ul);
+    BOOST_TEST(entries[0].first == "bar");
+    BOOST_TEST(entries[0].second == 33);
+    BOOST_TEST(entries[1].first == "foo");
+    BOOST_TEST(entries[1].second == 99);
+    BOOST_TEST(entries[2].first == "bar");
+    BOOST_TEST(entries[2].second == 42);
+    // with subrange
+    entries.clear();
+    std::ranges::copy(std::ranges::subrange(map3.cbegin(), map3.cend()), std::back_inserter(entries));
     BOOST_TEST_REQUIRE(entries.size() == 3ul);
     BOOST_TEST(entries[0].first == "bar");
     BOOST_TEST(entries[0].second == 33);

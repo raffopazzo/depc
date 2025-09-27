@@ -40,43 +40,75 @@ class scope_map
 
     explicit scope_map(std::shared_ptr<state_t>);
 
+    enum class iterator_direction_t { forward, reverse };
 public:
-    template <typename Derived, bool Reverse>
-    struct levels_iterator_base : std::iterator<std::input_iterator_tag, std::pair<K const, V>>
+    template <typename Derived, iterator_direction_t direction>
+    class levels_iterator_base : public std::iterator<std::input_iterator_tag, std::pair<K const, V>>
     {
         using underlying_t =
             std::conditional_t<
-                Reverse,
+                direction == iterator_direction_t::reverse,
                 typename data_map::const_reverse_iterator,
                 typename data_map::const_iterator>;
-        std::vector<std::pair<underlying_t, underlying_t>> levels;
+    public:
+        using levels_t = std::vector<std::pair<underlying_t, underlying_t>>;
+    private:
+        std::shared_ptr<levels_t> m_levels; // makes it cheap to copy iterators
+        std::size_t m_current_level;
+        underlying_t m_it;
 
-        std::pair<K const, V> const& operator*() const { return *levels.back().first; }
-        std::pair<K const, V> const* operator->() const { return &*levels.back().first; }
+        std::pair<underlying_t, underlying_t> const& current_level() const
+        {
+            assert(not is_end());
+            return (*m_levels)[m_current_level];
+        }
+        bool is_end() const { return m_levels->empty() or m_current_level >= m_levels->size(); }
+
+    public:
+        levels_iterator_base() : levels_iterator_base(levels_t{}) {}
+        explicit levels_iterator_base(levels_t levels)
+            : m_levels(std::make_shared<levels_t>(std::move(levels)))
+            , m_current_level(0ul)
+            , m_it(m_levels->empty() ? underlying_t{} : current_level().first)
+        { }
+
+        std::pair<K const, V> const& operator*() const { return *m_it; }
+        std::pair<K const, V> const* operator->() const { return &*m_it; }
         Derived& operator++()
         {
-            assert(not levels.empty());
-            assert(levels.back().first != levels.back().second);
-            if (++levels.back().first == levels.back().second)
-                levels.pop_back();
+            assert(not is_end());
+            assert(m_it != current_level().second);
+            if (++m_it == current_level().second)
+                if (++m_current_level < m_levels->size())
+                    m_it = current_level().first;
             return static_cast<Derived&>(*this);
+        }
+        Derived operator++(int)
+        {
+            auto old = *this;
+            ++(*this);
+            return old;
         }
         bool operator!=(levels_iterator_base const& that) const { return not (*this == that); }
         bool operator==(levels_iterator_base const& that) const
         {
-            if (levels.empty() and that.levels.empty())
+            if (is_end() and that.is_end())
                 return true;
-            if (levels.empty() xor that.levels.empty())
+            if (is_end() xor that.is_end())
                 return false;
-            return levels.back().first == that.levels.back().first;
+            return m_it == that.m_it;
         }
     };
-    struct levels_iterator_t : levels_iterator_base<levels_iterator_t, false> { };
-    struct reverse_levels_iterator_t : levels_iterator_base<reverse_levels_iterator_t, true> { };
+    struct forward_levels_iterator_t : levels_iterator_base<forward_levels_iterator_t, iterator_direction_t::forward>
+    {
+        using levels_iterator_base<forward_levels_iterator_t, iterator_direction_t::forward>::levels_iterator_base;
+    };
+    struct reverse_levels_iterator_t : levels_iterator_base<reverse_levels_iterator_t, iterator_direction_t::reverse>
+    {
+        using levels_iterator_base<reverse_levels_iterator_t, iterator_direction_t::reverse>::levels_iterator_base;
+    };
 
     using iterator = typename data_map::iterator;
-    using const_iterator = levels_iterator_t;
-    using reverse_iterator = reverse_levels_iterator_t;
     using value_type = std::pair<K const, V>;
 
     scope_map();                                        /**< @brief Constructs an empty scope. */
@@ -113,15 +145,15 @@ public:
      * Iteration begins from the very first entry in the outermost scope and proceeds in
      * insertion order until the most recent entry in the innermost scope.
      */
-    const_iterator cbegin() const;
-    const_iterator cend() const { return {}; }
+    forward_levels_iterator_t cbegin() const;
+    forward_levels_iterator_t cend() const { return {}; }
 
     /**
      * @brief Like `cbegin()` but in reverse order from the most recent entry in the innermost scope,
      * proceeding in reverse insertion order until the very first entry in the outermost scope.
      */
-    reverse_iterator rbegin() const;
-    reverse_iterator rend() const { return {}; }
+    reverse_levels_iterator_t rbegin() const;
+    reverse_levels_iterator_t rend() const { return {}; }
 
     /** @brief Iterator over all entries of the innermost scope only, in insertion order. */
     auto innermost_begin() const { return state->data.begin(); }
@@ -210,9 +242,9 @@ scope_map<K, V> scope_map<K, V>::copy() const
 }
 
 template <typename K, typename V>
-auto scope_map<K, V>::cbegin() const -> const_iterator
+auto scope_map<K, V>::cbegin() const -> forward_levels_iterator_t
 {
-    levels_iterator_t it;
+    typename forward_levels_iterator_t::levels_t levels;
     auto const* s = state.get();
     auto max_index = std::numeric_limits<std::ptrdiff_t>::max();
     do
@@ -221,18 +253,19 @@ auto scope_map<K, V>::cbegin() const -> const_iterator
         auto const begin = s->data.cbegin();
         auto const end = std::next(s->data.cbegin(), safe_max);
         if (begin != end)
-            it.levels.push_back(std::pair{s->data.cbegin(), std::next(s->data.cbegin(), safe_max)});
+            levels.push_back(std::pair{s->data.cbegin(), std::next(s->data.cbegin(), safe_max)});
         max_index = s->max_parent_index;
         s = s->parent.get();
     }
     while (s);
-    return it;
+    std::reverse(levels.begin(), levels.end());
+    return forward_levels_iterator_t(std::move(levels));
 }
 
 template <typename K, typename V>
-auto scope_map<K, V>::rbegin() const -> reverse_iterator
+auto scope_map<K, V>::rbegin() const -> reverse_levels_iterator_t
 {
-    reverse_levels_iterator_t it;
+    typename reverse_levels_iterator_t::levels_t levels;
     auto const* s = state.get();
     auto max_index = std::numeric_limits<std::ptrdiff_t>::max();
     do
@@ -241,13 +274,12 @@ auto scope_map<K, V>::rbegin() const -> reverse_iterator
         auto const begin = s->data.cbegin();
         auto const end = std::next(s->data.cbegin(), safe_max);
         if (begin != end)
-            it.levels.push_back(std::pair{std::make_reverse_iterator(end), std::make_reverse_iterator(begin)});
+            levels.push_back(std::pair{std::make_reverse_iterator(end), std::make_reverse_iterator(begin)});
         max_index = s->max_parent_index;
         s = s->parent.get();
     }
     while (s);
-    std::reverse(it.levels.begin(), it.levels.end());
-    return it;
+    return reverse_levels_iterator_t(std::move(levels));
 }
 
 template <typename K, typename V>

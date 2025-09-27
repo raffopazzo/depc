@@ -67,8 +67,8 @@ public:
     /** @brief The default context is unscoped, which reduces the risk of compiler bugs when typechecking references. */
     ctx_t() = default;
     explicit ctx_t(scoped_t);
-    ctx_t(ctx_t const&) = default;
-    ctx_t& operator=(ctx_t const&) = default;
+    ctx_t(ctx_t const&) = delete;               /**< @brief Copying is expensive. Consider using `extend()`. */
+    ctx_t& operator=(ctx_t const&) = delete;    /**< @brief Copying is expensive. Consider using `extend()`. */
     ctx_t(ctx_t&&) = default;
     ctx_t& operator=(ctx_t&&) = default;
 

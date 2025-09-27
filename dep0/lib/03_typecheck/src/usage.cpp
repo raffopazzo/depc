@@ -27,12 +27,12 @@ usage_t usage_t::merge(
     std::function<ast::qty_t(expr_t::var_t const&, ast::qty_t, ast::qty_t)> f)
 {
     auto total_count = scope_map<expr_t::var_t, ast::qty_t>{};
-    for (auto const& [var, qty]: a.count)
+    for (auto const& [var, qty]: a.count.innermost_range())
     {
         auto const inserted = total_count.try_emplace(var, qty).second;
         assert(inserted);
     }
-    for (auto const& [var, qty]: b.count)
+    for (auto const& [var, qty]: b.count.innermost_range())
         if (auto const [it, inserted] = total_count.try_emplace(var, qty); not inserted)
             it->second = f(it->first, it->second, qty);
     return usage_t(std::move(total_count));
@@ -92,7 +92,7 @@ expected<std::true_type> usage_t::try_add(ctx_t const& ctx, expr_t const& expr, 
     if (usage_multiplier == ast::qty_t::zero) // anything is allowed in an erased context
         return {};
     auto const ok = [] { return expected<std::true_type>{}; };
-    auto rollback = boost::scope::make_scope_exit([old=count, this] () mutable { count = std::move(old); });
+    auto rollback = boost::scope::make_scope_exit([old=count.copy(), this] () mutable { count = std::move(old); });
     auto const result = match(
         expr.value,
         [&] (expr_t::typename_t const&) { return ok(); },
@@ -215,8 +215,8 @@ expected<std::true_type> usage_t::try_add(ctx_t const& ctx, expr_t const& expr, 
 
 expected<std::true_type> usage_t::try_add(ctx_t const& ctx, usage_t const& that)
 {
-    auto rollback = boost::scope::make_scope_exit([old=count, this] () mutable { count = std::move(old); });
-    for (auto const& [var, qty]: that.count)
+    auto rollback = boost::scope::make_scope_exit([old=count.copy(), this] () mutable { count = std::move(old); });
+    for (auto const& [var, qty]: that.count.innermost_range())
         if (auto lookup = context_lookup(ctx, var))
         {
             if (auto result = try_add(*lookup, ast::qty_t::one); not result)

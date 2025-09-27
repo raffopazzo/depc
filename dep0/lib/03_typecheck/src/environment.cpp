@@ -15,6 +15,7 @@
 #include <boost/core/ignore_unused.hpp>
 
 #include <cassert>
+#include <iterator>
 #include <ranges>
 #include <sstream>
 
@@ -37,9 +38,10 @@ env_t env_t::extend() const
 std::set<expr_t::global_t> env_t::globals() const
 {
     std::set<expr_t::global_t> result;
-    for (auto const& m: {m_definitions, m_fwd_decls})
-        for (auto x = std::optional{m}; x.has_value(); x = x->parent())
-            std::ranges::copy(std::views::keys(*x), std::inserter(result, result.end()));
+    for (auto const m: {&m_definitions, &m_fwd_decls})
+        std::ranges::copy(
+            std::views::keys(std::ranges::subrange(m->rbegin(), m->rend())),
+            std::inserter(result, result.end()));
     return result;
 }
 

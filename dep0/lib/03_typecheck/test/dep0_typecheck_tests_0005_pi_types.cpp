@@ -401,5 +401,6 @@ BOOST_AUTO_TEST_CASE(typecheck_error_002) { BOOST_TEST(fail("0005_pi_types/typec
 BOOST_AUTO_TEST_CASE(typecheck_error_003) { BOOST_TEST(fail("0005_pi_types/typecheck_error_003.depc")); }
 BOOST_AUTO_TEST_CASE(typecheck_error_004) { BOOST_TEST(fail("0005_pi_types/typecheck_error_004.depc")); }
 BOOST_AUTO_TEST_CASE(typecheck_error_005) { BOOST_TEST(fail("0005_pi_types/typecheck_error_005.depc")); }
+BOOST_AUTO_TEST_CASE(typecheck_error_006) { BOOST_TEST(fail("0005_pi_types/typecheck_error_006.depc")); }
 
 BOOST_AUTO_TEST_SUITE_END()

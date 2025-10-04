@@ -123,7 +123,8 @@ public:
      *
      * Obviously you can also extend the new copy as normal.
      */
-    scope_map copy() const;
+    scope_map innermost_copy() const;
+    scope_map deep_copy() const;
 
     /**
      * @brief Steals the content from another scope.
@@ -223,6 +224,17 @@ struct scope_map<K, V>::state_t
     state_t(std::shared_ptr<state_t> parent, std::size_t const max_parent_index)
         : parent(std::move(parent)), max_parent_index(max_parent_index)
     {}
+
+    std::shared_ptr<state_t> deep_copy() const
+    {
+        auto const parent_copy = parent ? parent->deep_copy() : nullptr;
+        auto const s = std::make_shared<state_t>();
+        s->parent = parent_copy;
+        s->max_parent_index = max_parent_index;
+        std::ranges::copy(data, std::back_inserter(s->data)); // data contains `K const` so can't use operator=()
+        s->index = index;
+        return s;
+    }
 };
 
 template <typename K, typename V>
@@ -236,9 +248,15 @@ scope_map<K, V>::scope_map(std::shared_ptr<state_t> p) :
 { }
 
 template <typename K, typename V>
-scope_map<K, V> scope_map<K, V>::copy() const
+scope_map<K, V> scope_map<K, V>::innermost_copy() const
 {
     return scope_map(std::make_shared<state_t>(*state));
+}
+
+template <typename K, typename V>
+scope_map<K, V> scope_map<K, V>::deep_copy() const
+{
+    return scope_map(state->deep_copy());
 }
 
 template <typename K, typename V>

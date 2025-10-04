@@ -28,7 +28,7 @@ typename expr_t<P>::var_t rename(
     body_t<P>* body)
 {
     auto const new_idx = 1ul + std::max(var.idx, max_index(begin, end, ret_type, body));
-    auto const new_var = typename expr_t<P>::var_t{var.name, new_idx};
+    auto const new_var = typename expr_t<P>::var_t{var.name, new_idx, var.shadow_id};
     replace(var, new_var, begin, end, ret_type, body);
     return new_var;
 }
@@ -40,7 +40,7 @@ typename expr_t<P>::var_t rename(
     typename std::vector<func_arg_t<P>>::iterator const end)
 {
     auto const new_idx = 1ul + std::max(var.idx, max_index<P>(begin, end));
-    auto const new_var = typename expr_t<P>::var_t{var.name, new_idx};
+    auto const new_var = typename expr_t<P>::var_t{var.name, new_idx, var.shadow_id};
     replace<P>(var, new_var, begin, end);
     return new_var;
 }
@@ -52,7 +52,7 @@ typename expr_t<P>::var_t rename(
     typename std::vector<typename type_def_t<P>::struct_t::field_t>::iterator const end)
 {
     auto const new_idx = 1ul + std::max(var.idx, max_index<P>(begin, end));
-    auto const new_var = typename expr_t<P>::var_t{var.name, new_idx};
+    auto const new_var = typename expr_t<P>::var_t{var.name, new_idx, var.shadow_id};
     replace<P>(var, new_var, begin, end);
     return new_var;
 }

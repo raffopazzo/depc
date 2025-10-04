@@ -44,8 +44,12 @@ boost::test_tools::predicate_result is_arg(
         return failure("argument type predicate failed: ", result.message());
     if (name)
         return arg.var ? details::check_name<P>(*arg.var, *name) : failure("argument has no name");
-    else if (arg.var)
-        return failure("argument has a name but should be anonymous");
+    else if (arg.var and arg.var->name != "auto")
+    {
+        std::ostringstream arg_name;
+        pretty_print<P>(arg_name, *arg.var);
+        return failure("argument has name `", arg_name.str(),"` but should be anonymous");
+    }
     else
         return true;
 }

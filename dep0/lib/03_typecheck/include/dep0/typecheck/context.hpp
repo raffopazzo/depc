@@ -46,22 +46,33 @@ public:
     struct scoped_t{};
 
     /**
-     * @brief Variable declarations need a type and a quantity, for example `0 typename t`.
+     * @brief Variable declaration stored in the context by their binidng variable.
      *
-     * @remarks The variable name, `t` in this example, is instead stored as a key in the context.
+     * The user can only obtain a value of this type by doing a lookup,
+     * thus proving that the user must have indeed done a lookup.
      */
-    struct var_decl_t
+    struct decl_t
     {
-        ast::qty_t qty;
-        expr_t type;
-    };
+        friend class ctx_t;
+        decl_t(
+            std::optional<source_loc_t> origin,
+            std::optional<std::size_t> scope_id,
+            expr_t::var_t var,
+            ast::qty_t const qty,
+            expr_t type
+        ) : origin(std::move(origin)),
+            scope_id(std::move(scope_id)),
+            var(std::move(var)),
+            qty(qty),
+            type(std::move(type))
+        { }
 
-    /** @brief Value stored in the context, whose key is the variable name. */
-    struct value_type
-    {
+    public:
         std::optional<source_loc_t> origin; /**< Where in the source code the variable declaration was encountered. */
         std::optional<std::size_t> scope_id; /**< Scope ID of the originating context or empty if unscoped. */
-        var_decl_t value;
+        expr_t::var_t var;  /**< Copy of the variable to which this declaration was bound, eg `x` in `0 i32_t x`. */
+        ast::qty_t qty;     /**< Quantity of the variable declaration, eg `0` in `0 i32_t x`. */
+        expr_t type;        /**< Type of the variable declaration, eg `i32_t` in `0 i32_t x`. */
     };
 
     /** @brief The default context is unscoped, which reduces the risk of compiler bugs when typechecking references. */
@@ -99,24 +110,27 @@ public:
      */
     ctx_t rewrite(expr_t const& from, expr_t const& to) const;
 
-    /**
-     * @brief Return the name of all variables visible from the current context.
-     *
-     * That is, all variables in the current context plus all variables from parent, grand-parent, etc.
-     */
-    std::set<expr_t::var_t> vars() const;
+    /** @brief Return a complete snapshot of all declarations, including all parents and all shadowed variables. */
+    std::vector<std::reference_wrapper<decl_t const>> decls() const;
 
     /**
      * @brief Return the expression bound to the given variable name, or nullptr if no binding exists yet.
      *
      * @remarks The returned pointer is guaranteed stable, i.e. it will never be invalidated.
      */
-    value_type const* operator[](expr_t::var_t const&) const;
+    decl_t const* operator[](expr_t::var_t const&) const;
+
+    /**
+     * @brief Return the expression bound to the innermost variable of the given name, or nullptr if none exists yet.
+     *
+     * @remarks The returned pointer is guaranteed stable, i.e. it will never be invalidated.
+     */
+    decl_t const* operator[](source_text const&) const;
 
     // non-const member functions
 
-    /** @brief Add a new variable to the current context, with the given type and an automatically generated name. */
-    void add_unnamed(expr_t);
+    /** @brief Add a new variable declaration with the given type and quantity and an automatically generated name. */
+    void add_unnamed(ast::qty_t, expr_t type);
 
     /**
      * @brief Add a new binding variable to the current context level, if one does not already exist.
@@ -125,41 +139,21 @@ public:
      *
      * If the variable name is nullopt, an automatically generated name will be used as if `add_unnamed()` was invoked.
      */
-    dep0::expected<std::true_type> try_emplace(std::optional<expr_t::var_t>, std::optional<source_loc_t>, var_decl_t);
+    dep0::expected<expr_t::var_t> try_emplace(source_text, std::optional<source_loc_t>, ast::qty_t, expr_t type);
 
 private:
     enum class scope_flavour_t { scoped_v, unscoped_v };
     scope_flavour_t m_flavour = scope_flavour_t::unscoped_v;
     std::size_t m_scope_id = 0ul;
-    scope_map<expr_t::var_t, value_type> m_values;
+    scope_map<source_text, expr_t::var_t> m_index;
+    scope_map<expr_t::var_t, decl_t> m_values;
 
-    void add_unnamed(var_decl_t);
-
-    ctx_t(scope_map<expr_t::var_t, value_type>, scope_flavour_t, std::size_t new_scope_id);
+    ctx_t(
+        scope_flavour_t,
+        std::size_t new_scope_id,
+        scope_map<source_text, expr_t::var_t>,
+        scope_map<expr_t::var_t, decl_t>);
 };
-
-/** @brief Proof that a variable exists inside some context, returned from `context_lookup`. */
-class context_lookup_t
-{
-    context_lookup_t(ctx_t const&, expr_t::var_t, ctx_t::value_type const&);
-
-public:
-    ctx_t const& ctx; /**< @brief The context in which the variable was declared. */
-    expr_t::var_t const var; /**< @brief The variable that was declared. */
-    ctx_t::var_decl_t const& decl; /**< @brief The declaration bound to the given variable. */
-    std::optional<std::size_t> const scope_id; /**< @brief Scope ID of the originating context or empty if unscoped. */
-
-    /**
-     * @brief Checks whether the given variable is declared inside the given context and
-     * returns a proof of this fact or an empty optional otherwise.
-     *
-     * @warning
-     *      The returned proof stores a reference to the context and the declaration,
-     *      so passing a temporary context will lead to undefined behaviour.
-     */
-    friend std::optional<context_lookup_t> context_lookup(ctx_t const&, expr_t::var_t const&);
-};
-std::optional<context_lookup_t> context_lookup(ctx_t const&, expr_t::var_t const&);
 
 // non-member functions
 /**

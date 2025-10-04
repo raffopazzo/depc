@@ -44,13 +44,10 @@ void search_true_t(search_task_t& task)
         // If so we should have a proof in the context which allows us to return `{}`.
         // Note that this is different from returning the variable from the context because
         // we don't need to care about quantities.
-        for (auto const& v: task.ctx.vars())
-        {
-            auto const& val = task.ctx[v]->value;
-            if (auto const cond2 = try_extract_condition(val.type))
+        for (ctx_t::decl_t const& decl: task.ctx.decls())
+            if (auto const cond2 = try_extract_condition(decl.type))
                 if (is_beta_delta_equivalent(*cond, *cond2))
                     return task.set_result(make_legal_expr(task.env, task.ctx, target, expr_t::init_list_t{}));
-        }
     }
 }
 

@@ -208,7 +208,12 @@ struct expr_t
     {
         source_text name;
         std::size_t idx = 0ul; /**< The rename index. */
-        bool operator<(var_t const& that) const { return std::tie(name, idx) < std::tie(that.name, that.idx); }
+        std::size_t shadow_id = 0ul; /**< ID assigned during type-checking to help disambiguate shadowing variables. */
+        var_t(source_text const name) : name(name) {}
+        var_t(source_text const name, std::size_t const idx, std::size_t const shadow_id)
+            : name(name), idx(idx), shadow_id(shadow_id) {}
+        bool operator<(var_t const& that) const
+            { return std::tie(name, idx, shadow_id) < std::tie(that.name, that.idx, that.shadow_id); }
         bool operator==(var_t const&) const = default;
     };
 

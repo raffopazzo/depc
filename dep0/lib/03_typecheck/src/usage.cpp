@@ -50,17 +50,14 @@ ast::qty_t usage_t::operator[](expr_t::var_t const& var) const
 }
 
 expected<std::true_type>
-usage_t::try_add(
-    context_lookup_t const& lookup,
-    ast::qty_t const usage_multiplier,
-    std::optional<source_loc_t> loc)
+usage_t::try_add(ctx_t::decl_t const& decl, ast::qty_t const usage_multiplier, std::optional<source_loc_t> loc)
 {
     using enum ast::qty_t;
     if (usage_multiplier == zero) // anything is allowed in an erased context
         return {};
-    auto const old_qty = this->operator[](lookup.var);
+    auto const old_qty = this->operator[](decl.var);
     auto const new_qty = old_qty + one * usage_multiplier;
-    if (new_qty > lookup.decl.qty)
+    if (new_qty > decl.qty)
     {
         // The user is trying to use something more than they could;
         // let's try to give them a sensible error message.
@@ -73,14 +70,14 @@ usage_t::try_add(
         //       with multiplicity `many` (or something similar to that)
         //    b. or they are trying to use the thing more than once.
         char const* msg =
-            lookup.decl.qty == zero ? "variable cannot be used at run-time"
+            decl.qty == zero ? "variable cannot be used at run-time"
             : old_qty == zero ? "cannot use linear variable in non-linear context"
             : "variable has already been used once";
-        return dep0::error_t(msg, loc);
+        return dep0::error_t(msg, std::move(loc));
     }
     else
     {
-        auto const [it, inserted] = count.try_emplace(lookup.var, new_qty);
+        auto const [it, inserted] = count.try_emplace(decl.var, new_qty);
         if (not inserted)
             it->second = new_qty;
         return {};
@@ -92,7 +89,7 @@ expected<std::true_type> usage_t::try_add(ctx_t const& ctx, expr_t const& expr, 
     if (usage_multiplier == ast::qty_t::zero) // anything is allowed in an erased context
         return {};
     auto const ok = [] { return expected<std::true_type>{}; };
-    auto rollback = boost::scope::make_scope_exit([old=count.copy(), this] () mutable { count = std::move(old); });
+    auto rollback = boost::scope::make_scope_exit([old=count.innermost_copy(), this] () mutable { count = std::move(old); });
     auto const result = match(
         expr.value,
         [&] (expr_t::typename_t const&) { return ok(); },
@@ -154,8 +151,8 @@ expected<std::true_type> usage_t::try_add(ctx_t const& ctx, expr_t const& expr, 
         },
         [&] (expr_t::var_t const& v) -> expected<std::true_type>
         {
-            if (auto lookup = context_lookup(ctx, v))
-                return try_add(*lookup, usage_multiplier);
+            if (auto const decl = ctx[v])
+                return try_add(*decl, usage_multiplier);
             else
             {
                 std::ostringstream err;
@@ -215,11 +212,11 @@ expected<std::true_type> usage_t::try_add(ctx_t const& ctx, expr_t const& expr, 
 
 expected<std::true_type> usage_t::try_add(ctx_t const& ctx, usage_t const& that)
 {
-    auto rollback = boost::scope::make_scope_exit([old=count.copy(), this] () mutable { count = std::move(old); });
+    auto rollback = boost::scope::make_scope_exit([old=count.innermost_copy(), this] () mutable { count = std::move(old); });
     for (auto const& [var, qty]: that.count.innermost_range())
-        if (auto lookup = context_lookup(ctx, var))
+        if (auto const decl = ctx[var])
         {
-            if (auto result = try_add(*lookup, ast::qty_t::one); not result)
+            if (auto result = try_add(*decl, ast::qty_t::one); not result)
                 return result;
         }
         else

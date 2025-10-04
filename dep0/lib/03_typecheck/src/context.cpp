@@ -27,8 +27,16 @@ namespace dep0::typecheck {
 
 ctx_t::ctx_t(scoped_t) : m_flavour(scope_flavour_t::scoped_v), m_scope_id(0) { }
 
-ctx_t::ctx_t(scope_map<expr_t::var_t, value_type> values, scope_flavour_t const flavour, std::size_t const scope_id) :
-    m_flavour(flavour), m_scope_id(scope_id), m_values(std::move(values))
+ctx_t::ctx_t(
+    scope_flavour_t const flavour,
+    std::size_t const scope_id,
+    scope_map<source_text, expr_t::var_t> index,
+    scope_map<expr_t::var_t, decl_t> values
+) :
+    m_flavour(flavour),
+    m_scope_id(scope_id),
+    m_index(std::move(index)),
+    m_values(std::move(values))
 { }
 
 // const member functions
@@ -40,101 +48,84 @@ std::optional<std::size_t> ctx_t::scope() const
 
 ctx_t ctx_t::extend() const
 {
-    return ctx_t(m_values.extend(), m_flavour, m_scope_id + 1ul);
+    return ctx_t(m_flavour, m_scope_id + 1ul, m_index.extend(), m_values.extend());
 }
 
 ctx_t ctx_t::extend_scoped() const
 {
-    return ctx_t(m_values.extend(), scope_flavour_t::scoped_v, m_scope_id + 1ul);
+    return ctx_t(scope_flavour_t::scoped_v, m_scope_id + 1ul, m_index.extend(), m_values.extend());
 }
 
 ctx_t ctx_t::extend_unscoped() const
 {
-    return ctx_t(m_values.extend(), scope_flavour_t::unscoped_v, m_scope_id + 1ul);
+    return ctx_t(scope_flavour_t::unscoped_v, m_scope_id + 1ul, m_index.extend(), m_values.extend());
 }
 
 ctx_t ctx_t::rewrite(expr_t const& from, expr_t const& to) const
 {
-    auto result = extend();
-    for (auto const& var: vars())
-    {
-        auto const val = (*this)[var];
-        assert(val);
-        if (auto new_sort = typecheck::rewrite(from, to, val->value.type))
-        {
-            auto const inserted =
-                result.try_emplace(var, val->origin, var_decl_t{val->value.qty, std::move(std::get<expr_t>(*new_sort))});
-            assert(inserted.has_value());
-        }
-    }
+    auto new_values = m_values.deep_copy();
+    for (auto& [_, decl]: std::ranges::subrange(new_values.cbegin(), new_values.cend()))
+        if (auto new_type = typecheck::rewrite(from, to, decl.type))
+            // TODO remove const_cast
+            const_cast<expr_t&>(decl.type) = std::move(*new_type);
+    return ctx_t(m_flavour, m_scope_id, m_index.extend(), std::move(new_values));
+}
+
+std::vector<std::reference_wrapper<ctx_t::decl_t const>> ctx_t::decls() const
+{
+    std::vector<std::reference_wrapper<ctx_t::decl_t const>> result;
+    for (auto const& v: std::views::values(std::ranges::subrange(m_values.cbegin(), m_values.cend())))
+        result.push_back(std::cref(v));
     return result;
 }
 
-std::set<expr_t::var_t> ctx_t::vars() const
+ctx_t::decl_t const* ctx_t::operator[](expr_t::var_t const& var) const
 {
-    std::set<expr_t::var_t> result;
-    std::ranges::copy(
-        std::views::keys(std::ranges::subrange(m_values.rbegin(), m_values.rend())),
-        std::inserter(result, result.end()));
-    return result;
+    return m_values[var];
 }
 
-ctx_t::value_type const* ctx_t::operator[](expr_t::var_t const& name) const
+ctx_t::decl_t const* ctx_t::operator[](source_text const& name) const
 {
-    return m_values[name];
+    auto const var = m_index[name];
+    return var ? m_values[*var] : nullptr;
 }
+
 
 // non-const member functions
 
-void ctx_t::add_unnamed(expr_t type)
+void ctx_t::add_unnamed(ast::qty_t const qty, expr_t type)
 {
-    add_unnamed(var_decl_t{ast::qty_t::zero, std::move(type)});
-}
-
-void ctx_t::add_unnamed(var_decl_t decl)
-{
-    static std::size_t next_id = 1ul;
+    static std::size_t unnamed_idx = 0;
     static const source_text empty = source_text::from_literal("auto");
-    // an unnamed variable can only be used via proof-search, so it better have zero quantity
-    decl.qty = ast::qty_t::zero;
-    do
-        if (m_values.try_emplace(expr_t::var_t{empty, next_id++}, std::nullopt, scope(), std::move(decl)).second)
-            return; // should always be true but doesn't harm to try the next id
-    while (true);
+    auto const var = expr_t::var_t{empty, 0ul, unnamed_idx++};
+    bool const inserted = m_values.try_emplace(var, std::nullopt, scope(), var, qty, std::move(type)).second;
+    assert(inserted and "failed to add unnamed variable to context");
 }
 
-dep0::expected<std::true_type>
-ctx_t::try_emplace(std::optional<expr_t::var_t> name, std::optional<source_loc_t> const loc, var_decl_t decl)
+dep0::expected<expr_t::var_t>
+ctx_t::try_emplace(source_text name, std::optional<source_loc_t> const loc, ast::qty_t const qty, expr_t type)
 {
-    if (not name)
-    {
-        add_unnamed(std::move(decl));
-        return std::true_type{};
-    }
-    auto const [it, inserted] = m_values.try_emplace(std::move(*name), loc, scope(), std::move(decl));
+    auto const prev_var = m_index[name];
+    auto const shadow_id = prev_var ? prev_var->shadow_id + 1ul : 0ul;
+    auto const var = expr_t::var_t{name, 0ul, shadow_id};
+    auto const [it, inserted] = m_index.try_emplace(name, var);
     if (inserted)
-        return std::true_type{};
+    {
+        bool const inserted = m_values.try_emplace(var, loc, scope(), var, qty, std::move(type)).second;
+        assert(inserted and "failed to add named variable to context");
+        return var;
+    }
     else
     {
-        auto const& prev = it->second;
+        auto const prev = m_values[*prev_var];
+        assert(prev and "failed to find previous declaration of existing variable name");
         std::ostringstream err;
-        pretty_print<properties_t>(err << "cannot redefine `", *name) << '`';
-        pretty_print(err << ", previously defined as `", prev.value.type) << '`';
-        if (prev.origin)
-            err << " at " << prev.origin->line << ':' << prev.origin->col;
+        err << "cannot redefine `" << name << '`';
+        pretty_print(err << ", previously defined as `", prev->type) << '`';
+        if (prev->origin)
+            err << " at " << prev->origin->line << ':' << prev->origin->col;
         return dep0::error_t(err.str(), loc);
     }
-}
-
-context_lookup_t::context_lookup_t(ctx_t const& ctx, expr_t::var_t var, ctx_t::value_type const& val) :
-    ctx(ctx), var(std::move(var)), decl(val.value), scope_id(val.scope_id) { }
-
-std::optional<context_lookup_t> context_lookup(ctx_t const& ctx, expr_t::var_t const& var)
-{
-    if (auto const val = ctx[var])
-        return context_lookup_t(ctx, var, *val);
-    else
-        return std::nullopt;
 }
 
 // non-member functions
@@ -151,8 +142,6 @@ std::ostream& for_each_line(std::ostream& os, R&& r, F&& f)
     return os;
 }
 
-static std::vector<expr_t::var_t> topologically_ordered_vars(ctx_t const& ctx);
-
 std::ostream& pretty_print(std::ostream& os, ctx_t const& ctx)
 {
     auto const length_of = [] (expr_t::var_t const& var)
@@ -160,52 +149,30 @@ std::ostream& pretty_print(std::ostream& os, ctx_t const& ctx)
         // length of the name, plus:
         //   1. length of its quantity ("0 ", "1 ", "  ")
         //   2. and possibly the length of the index with the colon separator
-        return var.name.size() + 2 + (var.idx == 0ul ? 0ul : 2ul + static_cast<std::size_t>(std::log10(var.idx)));
+        auto const log10 = [] (std::size_t const x) { return static_cast<std::size_t>(std::log10(x)); };
+        return var.name.size() + 2 + (var.idx == 0ul ? 2ul : 2ul + log10(var.idx))
+                                   + (var.shadow_id == 0ul ? 2ul : 2ul + log10(var.shadow_id));
     };
-    auto const& vars = ctx.vars();
+    auto const& decls = ctx.decls();
     auto const longest =
-        std::accumulate(
-            vars.begin(), vars.end(),
-            0ul,
-            [&] (std::size_t const acc, expr_t::var_t const& var)
-            {
-                return std::max(acc, length_of(var));
-            });
+        decls.empty() ? 0ul :
+        std::ranges::max(decls | std::views::transform([&] (ctx_t::decl_t const& x) { return length_of(x.var); }));
     auto const indent = (longest / 4ul) + 1ul;
     auto const alignment = indent * 4ul;
     for_each_line(
         os,
-        topologically_ordered_vars(ctx),
-        [&, padding=std::string()] (expr_t::var_t const& var) mutable
+        decls,
+        [&, padding=std::string()] (ctx_t::decl_t const& decl) mutable
         {
-            auto const val = ctx[var];
-            assert(val);
-            os << (val->value.qty == ast::qty_t::zero ? "0 " : val->value.qty == ast::qty_t::one ? "1 " : "  ");
-            pretty_print<properties_t>(os, var);
-            padding.resize(alignment - length_of(var), ' ');
+            os << (decl.qty == ast::qty_t::zero ? "0 " : decl.qty == ast::qty_t::one ? "1 " : "  ");
+            pretty_print<properties_t>(os, decl.var);
+            padding.resize(alignment - length_of(decl.var), ' ');
             os << padding << ": ";
-            expr_t const& type = val->value.type;
-            auto copy = type;
+            auto copy = decl.type;
             bool const changed = beta_delta_normalize(copy);
-            pretty_print(os, changed and ast::size(copy) < ast::size(type) ? copy : type, indent);
+            pretty_print(os, changed and ast::size(copy) < ast::size(decl.type) ? copy : decl.type, indent);
         });
     return os;
-}
-
-std::vector<expr_t::var_t> topologically_ordered_vars(ctx_t const& ctx)
-{
-    std::vector<expr_t::var_t> result;
-    std::ranges::copy(ctx.vars(), std::back_inserter(result));
-    std::stable_sort( // if two vars are equivalent, keep them in alphabetical order
-        result.begin(), result.end(),
-        [&] (expr_t::var_t const& var_x, expr_t::var_t const& var_y)
-        {
-            expr_t const& type_x = ctx[var_x]->value.type;
-            expr_t const& type_y = ctx[var_y]->value.type;
-            return ast::occurs_in(var_x, type_y, ast::occurrence_style::free)
-                and not ast::occurs_in(var_y, type_x, ast::occurrence_style::free);
-        });
-    return result;
 }
 
 } // namespace dep0::typecheck

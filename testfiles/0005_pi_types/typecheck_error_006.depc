@@ -1,0 +1,7 @@
+func f(
+    0 typename t,
+    (t) -> typename g
+) -> (typename t, t y) -> g(y) // typecheck error: the type of `y` is a different `t`
+{
+    return f(t, g);
+}

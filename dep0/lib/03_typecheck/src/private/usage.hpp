@@ -67,25 +67,17 @@ public:
     usage_t extend() const;
 
     /**
-     * Add 1 usage of a variable, times the given multiplier, to its total count unless
-     * the context in which it was declared does not allow for it.
-     * For example, it is not allowed to use `x` in a context where its multiplicity is 0,
-     * unless the usage multiplier is also 0.
+     * Try add `1 * multiplier` to the total usage count of `var`, unless the total count exceeds the maximum allowed.
+     *
+     * For example, if `var` has quantity 0, it is not allowed to use it, unless `multiplier` is also 0.
      *
      * @remarks If usage is not allowed, the current usage count is left unchanged.
      *
-     * @param context_lookup
-     *      This method can only be invoked after proving that the variable is declared in its context.
-     *
-     * @param usage_multiplier
-     *      The cost to add for the use of this variable is `1 * usage_multiplier`.
-     *
-     * @param loc
-     *      If usage is not possible, copy this in the error message returned.
+     * @param loc If usage is not possible, link the error message to this location in the source code.
      */
     expected<std::true_type> try_add(
-        context_lookup_t const& context_lookup,
-        ast::qty_t usage_multiplier,
+        ctx_t::decl_t const& var,
+        ast::qty_t multiplier,
         std::optional<source_loc_t> loc = std::nullopt);
 
     /**

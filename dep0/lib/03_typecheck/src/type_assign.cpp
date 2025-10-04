@@ -82,11 +82,11 @@ type_assign_var(
     usage_t& usage,
     ast::qty_t const usage_multiplier)
 {
-    if (auto lookup = context_lookup(ctx, expr_t::var_t{name}))
+    if (auto const decl = ctx[name])
     {
-        if (auto ok = usage.try_add(*lookup, usage_multiplier, loc); not ok)
+        if (auto ok = usage.try_add(*decl, usage_multiplier, loc); not ok)
             return ok.error();
-        return make_legal_expr(env, ctx, lookup->decl.type, lookup->var);
+        return make_legal_expr(env, ctx, decl->type, decl->var);
     }
     if (auto const global = expr_t::global_t{std::nullopt, name}; env[global])
         return type_assign_global(env, ctx, global, loc, usage_multiplier);
@@ -106,12 +106,10 @@ type_assign_scopeof(env_t const& env, ctx_t const& ctx, parser::expr_t const& ex
     auto const reject = [&] (std::string err) -> expected<expr_t> { return error_t(std::move(err), loc); };
     if (auto const var = std::get_if<parser::expr_t::var_t>(&expr.value))
     {
-        if (auto lookup = context_lookup(ctx, expr_t::var_t{var->name}))
-        {
-            if (not lookup->scope_id)
-                return reject("variable not bound to a scope");
-            return accept(make_legal_expr(env, ctx, lookup->decl.type, lookup->var), *lookup->scope_id);
-        }
+        if (auto decl = ctx[var->name])
+            return decl->scope_id
+                ? accept(make_legal_expr(env, ctx, decl->type, decl->var), *decl->scope_id)
+                : reject("variable not bound to a scope");
         auto g = expr_t::global_t{std::nullopt, var->name};
         auto const accept_global = [&] (sort_t sort)
         {
@@ -610,7 +608,7 @@ type_assign(
                 return std::move(reason.error());
             auto ctx2 = ctx.extend();
             if (auto const reason_type = std::get_if<expr_t>(&reason->properties.sort.get()))
-                ctx2.add_unnamed(*reason_type);
+                ctx2.add_unnamed(ast::qty_t::zero, *reason_type);
             auto value = type_assign(env, ctx2, x.value.get(), is_mutable_allowed, usage, usage_multiplier);
             if (not value)
                 return std::move(value.error());

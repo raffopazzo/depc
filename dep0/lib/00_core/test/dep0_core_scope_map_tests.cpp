@@ -40,7 +40,7 @@ BOOST_AUTO_TEST_CASE(copy_tests)
     scope_map<std::string, int> map1;
     auto [it1, inserted1] = map1.try_emplace("hello", 23);
     // A copy behaves like the original, so adding a duplicate will fail
-    auto map2 = map1.copy();
+    auto map2 = map1.innermost_copy();
     auto [it2, inserted2] = map2.try_emplace("hello", 99);
     BOOST_TEST(inserted1);
     BOOST_TEST(not inserted2);
@@ -58,6 +58,21 @@ BOOST_AUTO_TEST_CASE(copy_tests)
     BOOST_TEST(inserted4);
     BOOST_TEST(it4->second == 77);
     BOOST_TEST(it3->second == 99);
+
+    // A change to the parent, is visible from the child
+    auto map3 = map1.extend();
+    auto map4 = map3.innermost_copy();
+    it1->second = 11;
+    auto const p1 = map4["hello"];
+    BOOST_TEST_REQUIRE(p1);
+    BOOST_TEST(*p1 == 11);
+
+    // But not with a deep copy
+    map4 = map3.deep_copy();
+    it1->second = 42;
+    auto const p2 = map4["hello"];
+    BOOST_TEST_REQUIRE(p2);
+    BOOST_TEST(*p2 == 11);
 }
 
 BOOST_AUTO_TEST_CASE(extend_tests)

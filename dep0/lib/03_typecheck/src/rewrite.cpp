@@ -51,7 +51,6 @@ bool has_any_value(std::vector<std::optional<T>> const& xs)
 
 std::optional<body_t> rewrite(expr_t const& from, expr_t const& to, body_t const&);
 std::optional<stmt_t> rewrite(expr_t const& from, expr_t const& to, stmt_t const&);
-std::optional<expr_t> rewrite(expr_t const& from, expr_t const& to, expr_t const&);
 
 std::optional<expr_t::app_t> rewrite(expr_t const& from, expr_t const& to, expr_t::app_t const&);
 
@@ -121,152 +120,6 @@ std::optional<stmt_t> rewrite(expr_t const& from, expr_t const& to, stmt_t const
                 if (auto new_reason = rewrite(from, to, *x.reason))
                     result.emplace(old.properties, stmt_t::impossible_t{std::move(*new_reason)});
         });
-    return result;
-}
-
-std::optional<expr_t> rewrite(expr_t const& from, expr_t const& to, expr_t const& old)
-{
-    std::optional<expr_t> result;
-    if (ast::is_alpha_equivalent(old, from))
-        result.emplace(to);
-    else
-        match(
-            old.value,
-            // leaf nodes (eg typename_t, var_t, etc) are empty because alpha-equivalence returned false,
-            // meaning that `from != old` and therefore there is nothing to rewrite
-            [] (expr_t::typename_t) { },
-            [] (expr_t::true_t) { },
-            [] (expr_t::auto_t) { },
-            [] (expr_t::bool_t) { },
-            [] (expr_t::cstr_t) { },
-            [] (expr_t::unit_t) { },
-            [] (expr_t::i8_t) { },
-            [] (expr_t::i16_t) { },
-            [] (expr_t::i32_t) { },
-            [] (expr_t::i64_t) { },
-            [] (expr_t::u8_t) { },
-            [] (expr_t::u16_t) { },
-            [] (expr_t::u32_t) { },
-            [] (expr_t::u64_t) { },
-            [] (expr_t::boolean_constant_t){},
-            [] (expr_t::numeric_constant_t){},
-            [] (expr_t::string_literal_t){},
-            [&] (expr_t::boolean_expr_t const& x)
-            {
-                match(
-                    x.value,
-                    [&] (expr_t::boolean_expr_t::not_t const& x)
-                    {
-                        if (auto new_expr = rewrite(from, to, x.expr.get()))
-                            result.emplace(
-                                old.properties,
-                                expr_t::boolean_expr_t{
-                                    expr_t::boolean_expr_t::not_t{
-                                        std::move(*new_expr)}});
-                    },
-                    [&] <typename T> (T const& x)
-                    {
-                        auto new_lhs = rewrite(from, to, x.lhs.get());
-                        auto new_rhs = rewrite(from, to, x.rhs.get());
-                        if (new_lhs or new_rhs)
-                            result.emplace(
-                                old.properties,
-                                expr_t::boolean_expr_t{T{
-                                    choose(std::move(new_lhs), x.lhs.get()),
-                                    choose(std::move(new_rhs), x.rhs.get())}});
-                    });
-            },
-            [&] (expr_t::relation_expr_t const& x)
-            {
-                match(
-                    x.value,
-                    [&] <typename T> (T const& x)
-                    {
-                        auto new_lhs = rewrite(from, to, x.lhs.get());
-                        auto new_rhs = rewrite(from, to, x.rhs.get());
-                        if (new_lhs or new_rhs)
-                            result.emplace(
-                                old.properties,
-                                expr_t::relation_expr_t{T{
-                                    choose(std::move(new_lhs), x.lhs.get()),
-                                    choose(std::move(new_rhs), x.rhs.get())}});
-                    });
-            },
-            [&] (expr_t::arith_expr_t const& x)
-            {
-                match(
-                    x.value,
-                    [&] <typename T> (T const& x)
-                    {
-                        auto new_lhs = rewrite(from, to, x.lhs.get());
-                        auto new_rhs = rewrite(from, to, x.rhs.get());
-                        if (new_lhs or new_rhs)
-                            result.emplace(
-                                old.properties,
-                                expr_t::arith_expr_t{T{
-                                    choose(std::move(new_lhs), x.lhs.get()),
-                                    choose(std::move(new_rhs), x.rhs.get())}});
-                    });
-            },
-            [] (expr_t::var_t const&) { },
-            [] (expr_t::global_t const&) { },
-            [&] (expr_t::app_t const& x)
-            {
-                if (auto new_app = rewrite(from, to, x))
-                    result.emplace(old.properties, std::move(*new_app));
-            },
-            [&] (expr_t::abs_t const& x)
-            {
-                rewrite(from, to, x.is_mutable, x.args, &x.ret_type.get(), &x.body, old.properties, result);
-            },
-            [&] (expr_t::pi_t const& x)
-            {
-                rewrite(from, to, x.is_mutable, x.args, &x.ret_type.get(), nullptr, old.properties, result);
-            },
-            [&] (expr_t::sigma_t const& x)
-            {
-                rewrite(from, to, ast::is_mutable_t::no, x.args, nullptr, nullptr, old.properties, result);
-            },
-            [] (expr_t::ref_t) { },
-            [] (expr_t::scope_t) { },
-            [&] (expr_t::addressof_t const& x)
-            {
-                if (auto new_expr = rewrite(from, to, x.expr.get()))
-                    result.emplace(old.properties, expr_t::addressof_t{std::move(*new_expr)});
-            },
-            [&] (expr_t::deref_t const& x)
-            {
-                if (auto new_expr = rewrite(from, to, x.expr.get()))
-                    result.emplace(old.properties, expr_t::deref_t{std::move(*new_expr)});
-            },
-            [&] (expr_t::scopeof_t const& x)
-            {
-                if (auto new_expr = rewrite(from, to, x.expr.get()))
-                    // TODO could consider using `max_scope(new_expr)` but we'd need access to the context
-                    result.emplace(old.properties, expr_t::scopeof_t(std::move(*new_expr), x.scope_id));
-            },
-            [&] (expr_t::array_t const&)
-            {
-            },
-            [&] (expr_t::init_list_t const& x)
-            {
-                for (auto& v: x.values)
-                    rewrite(from, to, v);
-            },
-            [&] (expr_t::member_t const& x)
-            {
-                rewrite(from, to, x.object.get());
-            },
-            [&] (expr_t::subscript_t const& x)
-            {
-                rewrite(from, to, x.object.get());
-                rewrite(from, to, x.index.get());
-            },
-            [&] (expr_t::because_t const& x)
-            {
-                rewrite(from, to, x.value.get());
-                rewrite(from, to, x.reason.get());
-            });
     return result;
 }
 
@@ -343,12 +196,149 @@ void rewrite(
 
 } // namespace impl
 
-std::optional<sort_t> rewrite(expr_t const& from, expr_t const& to, sort_t const& x)
+std::optional<expr_t> rewrite(expr_t const& from, expr_t const& to, expr_t const& old)
 {
-    std::optional<sort_t> result;
-    if (auto const expr = std::get_if<expr_t>(&x))
-        if (auto new_expr = impl::rewrite(from, to, *expr))
-            result.emplace(std::move(*new_expr));
+    std::optional<expr_t> result;
+    if (ast::is_alpha_equivalent(old, from))
+        result.emplace(to);
+    else
+        match(
+            old.value,
+            // leaf nodes (eg typename_t, var_t, etc) are empty because alpha-equivalence returned false,
+            // meaning that `from != old` and therefore there is nothing to rewrite
+            [] (expr_t::typename_t) { },
+            [] (expr_t::true_t) { },
+            [] (expr_t::auto_t) { },
+            [] (expr_t::bool_t) { },
+            [] (expr_t::cstr_t) { },
+            [] (expr_t::unit_t) { },
+            [] (expr_t::i8_t) { },
+            [] (expr_t::i16_t) { },
+            [] (expr_t::i32_t) { },
+            [] (expr_t::i64_t) { },
+            [] (expr_t::u8_t) { },
+            [] (expr_t::u16_t) { },
+            [] (expr_t::u32_t) { },
+            [] (expr_t::u64_t) { },
+            [] (expr_t::boolean_constant_t){},
+            [] (expr_t::numeric_constant_t){},
+            [] (expr_t::string_literal_t){},
+            [&] (expr_t::boolean_expr_t const& x)
+            {
+                match(
+                    x.value,
+                    [&] (expr_t::boolean_expr_t::not_t const& x)
+                    {
+                        if (auto new_expr = rewrite(from, to, x.expr.get()))
+                            result.emplace(
+                                old.properties,
+                                expr_t::boolean_expr_t{
+                                    expr_t::boolean_expr_t::not_t{
+                                        std::move(*new_expr)}});
+                    },
+                    [&] <typename T> (T const& x)
+                    {
+                        auto new_lhs = rewrite(from, to, x.lhs.get());
+                        auto new_rhs = rewrite(from, to, x.rhs.get());
+                        if (new_lhs or new_rhs)
+                            result.emplace(
+                                old.properties,
+                                expr_t::boolean_expr_t{T{
+                                    impl::choose(std::move(new_lhs), x.lhs.get()),
+                                    impl::choose(std::move(new_rhs), x.rhs.get())}});
+                    });
+            },
+            [&] (expr_t::relation_expr_t const& x)
+            {
+                match(
+                    x.value,
+                    [&] <typename T> (T const& x)
+                    {
+                        auto new_lhs = rewrite(from, to, x.lhs.get());
+                        auto new_rhs = rewrite(from, to, x.rhs.get());
+                        if (new_lhs or new_rhs)
+                            result.emplace(
+                                old.properties,
+                                expr_t::relation_expr_t{T{
+                                    impl::choose(std::move(new_lhs), x.lhs.get()),
+                                    impl::choose(std::move(new_rhs), x.rhs.get())}});
+                    });
+            },
+            [&] (expr_t::arith_expr_t const& x)
+            {
+                match(
+                    x.value,
+                    [&] <typename T> (T const& x)
+                    {
+                        auto new_lhs = rewrite(from, to, x.lhs.get());
+                        auto new_rhs = rewrite(from, to, x.rhs.get());
+                        if (new_lhs or new_rhs)
+                            result.emplace(
+                                old.properties,
+                                expr_t::arith_expr_t{T{
+                                    impl::choose(std::move(new_lhs), x.lhs.get()),
+                                    impl::choose(std::move(new_rhs), x.rhs.get())}});
+                    });
+            },
+            [] (expr_t::var_t const&) { },
+            [] (expr_t::global_t const&) { },
+            [&] (expr_t::app_t const& x)
+            {
+                if (auto new_app = impl::rewrite(from, to, x))
+                    result.emplace(old.properties, std::move(*new_app));
+            },
+            [&] (expr_t::abs_t const& x)
+            {
+                impl::rewrite(from, to, x.is_mutable, x.args, &x.ret_type.get(), &x.body, old.properties, result);
+            },
+            [&] (expr_t::pi_t const& x)
+            {
+                impl::rewrite(from, to, x.is_mutable, x.args, &x.ret_type.get(), nullptr, old.properties, result);
+            },
+            [&] (expr_t::sigma_t const& x)
+            {
+                impl::rewrite(from, to, ast::is_mutable_t::no, x.args, nullptr, nullptr, old.properties, result);
+            },
+            [] (expr_t::ref_t) { },
+            [] (expr_t::scope_t) { },
+            [&] (expr_t::addressof_t const& x)
+            {
+                if (auto new_expr = rewrite(from, to, x.expr.get()))
+                    result.emplace(old.properties, expr_t::addressof_t{std::move(*new_expr)});
+            },
+            [&] (expr_t::deref_t const& x)
+            {
+                if (auto new_expr = rewrite(from, to, x.expr.get()))
+                    result.emplace(old.properties, expr_t::deref_t{std::move(*new_expr)});
+            },
+            [&] (expr_t::scopeof_t const& x)
+            {
+                if (auto new_expr = rewrite(from, to, x.expr.get()))
+                    // TODO could consider using `max_scope(new_expr)` but we'd need access to the context
+                    result.emplace(old.properties, expr_t::scopeof_t(std::move(*new_expr), x.scope_id));
+            },
+            [&] (expr_t::array_t const&)
+            {
+            },
+            [&] (expr_t::init_list_t const& x)
+            {
+                for (auto& v: x.values)
+                    rewrite(from, to, v);
+            },
+            [&] (expr_t::member_t const& x)
+            {
+                rewrite(from, to, x.object.get());
+            },
+            [&] (expr_t::subscript_t const& x)
+            {
+                rewrite(from, to, x.object.get());
+                rewrite(from, to, x.index.get());
+            },
+            [&] (expr_t::because_t const& x)
+            {
+                rewrite(from, to, x.value.get());
+                rewrite(from, to, x.reason.get());
+            });
     return result;
 }
 

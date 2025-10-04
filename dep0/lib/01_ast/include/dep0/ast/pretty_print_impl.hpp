@@ -482,8 +482,11 @@ template <Properties P>
 std::ostream& pretty_print(std::ostream& os, typename expr_t<P>::var_t const& x, std::size_t)
 {
     os << x.name;
-    if (x.idx)
+    if (x.idx | x.shadow_id)
+    {
         os << ':' << x.idx;
+        os << ':' << x.shadow_id;
+    }
     return os;
 }
 

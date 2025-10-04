@@ -15,15 +15,10 @@ void search_var(search_task_t& task)
 {
     // TODO search inside environment
     auto& usage = *task.usage;
-    sort_t const sort = *task.target;
-    for (auto const& v: task.ctx.vars())
-    {
-        auto lookup = context_lookup(task.ctx, v);
-        assert(lookup.has_value());
-        if (is_beta_delta_equivalent(lookup->decl.type, sort))
-            if (usage.try_add(*lookup, task.usage_multiplier))
-                return task.set_result(make_legal_expr(task.env, task.ctx, lookup->decl.type, v));
-    }
+    for (ctx_t::decl_t const& decl: task.ctx.decls())
+        if (is_beta_delta_equivalent(decl.type, *task.target))
+            if (usage.try_add(decl, task.usage_multiplier))
+                return task.set_result(make_legal_expr(task.env, task.ctx, decl.type, decl.var));
 }
 
 } // namespace dep0::typecheck

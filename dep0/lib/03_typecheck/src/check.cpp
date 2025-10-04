@@ -147,23 +147,23 @@ expected<type_def_t> check_type_def(env_t& env, parser::type_def_t const& type_d
                 {
                     auto const index = next_index++;
                     auto const loc = field.type.properties;
-                    auto const var = expr_t::var_t{field.var.name};
                     auto type = check_type(env2, ctx, field.type);
                     if (not type)
                     {
                         std::ostringstream err;
-                        pretty_print<properties_t>(err << "cannot typecheck struct field `", var) << '`';
+                        pretty_print<parser::properties_t>(err << "invalid type for field `", field.var) << '`';
                         return error_t(err.str(), loc, {std::move(type.error())});
                     }
                     if (auto ok = is_complete_type(env2, *type); not ok)
                     {
                         std::ostringstream err;
-                        pretty_print<properties_t>(err << "incomplete type for struct field `", var) << '`';
+                        pretty_print<parser::properties_t>(err << "incomplete type for field `", field.var) << '`';
                         return error_t(err.str(), loc, {std::move(ok.error())});
                     }
-                    if (auto ok = ctx.try_emplace(var, loc, ctx_t::var_decl_t{ast::qty_t::many, *type}); not ok)
-                        return std::move(ok.error());
-                    return type_def_t::struct_t::field_t{std::move(*type), var};
+                    auto var = ctx.try_emplace(field.var.name, loc, ast::qty_t::many, *type);
+                    if (not var)
+                        return std::move(var.error());
+                    return type_def_t::struct_t::field_t{std::move(*type), std::move(*var)};
                 });
             if (not fields)
                 return std::move(fields.error());
@@ -346,7 +346,8 @@ check_stmt(
                 new_state.rewrite(*cond, derivation_rules::make_true(env, new_state.context));
                 // we must add `true_t(cond)` to the new context only after we have rewritten `cond=true`,
                 // otherwise the new context will contain `true_t(true)`, which is not helpful to verify array access
-                new_state.context.add_unnamed(derivation_rules::make_true_t(env, new_state.context, *cond));
+                new_state.context.add_unnamed(
+                    ast::qty_t::zero, derivation_rules::make_true_t(env, new_state.context, *cond));
                 return check_body(env, std::move(new_state), x.true_branch, is_mutable, true_branch_usage, usage_multiplier);
             }();
             if (not true_branch)
@@ -354,6 +355,7 @@ check_stmt(
             auto const add_true_not_cond = [&env, &cond] (ctx_t& dest)
             {
                 dest.add_unnamed(
+                    ast::qty_t::zero,
                     derivation_rules::make_true_t(
                         env, dest,
                         derivation_rules::make_boolean_expr(
@@ -423,8 +425,8 @@ check_stmt(
             {
                 auto const false_type =
                     sort_t{derivation_rules::make_true_t(env, ctx, derivation_rules::make_false(env, ctx))};
-                for (auto const& v: ctx.vars())
-                    if (is_beta_delta_equivalent(ctx[v]->value.type, false_type))
+                for (ctx_t::decl_t const& decl: ctx.decls())
+                    if (is_beta_delta_equivalent(decl.type, false_type))
                         return make_legal_stmt(stmt_t::impossible_t{std::move(reason)});
                 return error_t("proof of false not found", loc);
             };
@@ -436,7 +438,7 @@ check_stmt(
                     return std::move(reason.error());
                 auto ctx2 = state.context.extend();
                 if (auto const reason_type = std::get_if<expr_t>(&reason->properties.sort.get()))
-                    ctx2.add_unnamed(*reason_type);
+                    ctx2.add_unnamed(ast::qty_t::zero, *reason_type);
                 return check_impossible_stmt(ctx2, std::move(*reason));
             }
             else
@@ -768,7 +770,7 @@ check_expr(
                 return std::move(reason.error());
             auto ctx2 = ctx.extend();
             if (auto const reason_type = std::get_if<expr_t>(&reason->properties.sort.get()))
-                ctx2.add_unnamed(*reason_type);
+                ctx2.add_unnamed(ast::qty_t::zero, *reason_type);
             auto value = check_expr(env, ctx2, x.value.get(), expected_type, is_mutable, usage, usage_multiplier);
             if (not value)
                 return std::move(value.error());
@@ -800,22 +802,32 @@ expected<expr_t> check_pi_type(
         {
             auto const arg_index = next_arg_index++;
             auto const arg_loc = arg.properties;
-            auto var = arg.var ? std::optional{expr_t::var_t{arg.var->name}} : std::nullopt;
+            auto const arg_name = arg.var ? std::optional{arg.var->name} : std::nullopt;
             auto type = check_type(env, ctx, arg.type);
             if (not type)
             {
                 std::ostringstream err;
-                if (var)
-                    pretty_print<properties_t>(err << "cannot typecheck function argument `", *var) << '`';
+                if (arg_name)
+                    err << "cannot typecheck function argument `" << *arg_name << '`';
                 else
                     err << "cannot typecheck function argument at index " << arg_index;
                 return error_t(err.str(), loc, {std::move(type.error())});
             }
-            if (auto ok = ctx.try_emplace(var, arg_loc, ctx_t::var_decl_t{arg.qty, *type}); not ok)
-                return std::move(ok.error());
-            if (auto ok = unscoped_ctx.try_emplace(var, arg_loc, ctx_t::var_decl_t{arg.qty, *type}); not ok)
-                return std::move(ok.error()); // this is not actually possible, but whatever
-            return make_legal_func_arg(arg.qty, std::move(*type), std::move(var));
+            if (arg_name)
+            {
+                auto var = ctx.try_emplace(*arg_name, arg_loc, arg.qty, *type);
+                if (not var)
+                    return std::move(var.error());
+                if (auto ok = unscoped_ctx.try_emplace(*arg_name, arg_loc, arg.qty, *type); not ok)
+                    return std::move(ok.error()); // this is not actually possible, but whatever
+                return make_legal_func_arg(arg.qty, std::move(*type), std::move(*var));
+            }
+            else
+            {
+                ctx.add_unnamed(arg.qty, *type);
+                unscoped_ctx.add_unnamed(arg.qty, *type);
+                return make_legal_func_arg(arg.qty, std::move(*type), std::nullopt);
+            }
         });
     if (not args)
         return std::move(args.error());
@@ -841,20 +853,29 @@ expected<expr_t> check_sigma_type(
             auto const arg_loc = arg.properties;
             if (arg.qty != ast::qty_t::many)
                 return error_t("only unrestricted elements are permitted inside tuples", arg_loc);
-            auto var = arg.var ? std::optional{expr_t::var_t{arg.var->name}} : std::nullopt;
+            auto const arg_name = arg.var ? std::optional{arg.var->name} : std::nullopt;
             auto type = check_type(env, ctx, arg.type);
             if (not type)
             {
                 std::ostringstream err;
-                if (var)
-                    pretty_print<properties_t>(err << "cannot typecheck tuple argument `", *var) << '`';
+                if (arg_name)
+                    err << "cannot typecheck tuple argument `" << *arg_name << '`';
                 else
                     err << "cannot typecheck tuple argument at index " << arg_index;
                 return error_t(err.str(), loc, {std::move(type.error())});
             }
-            if (auto ok = ctx.try_emplace(var, arg_loc, ctx_t::var_decl_t{arg.qty, *type}); not ok)
-                return std::move(ok.error());
-            return make_legal_func_arg(arg.qty, std::move(*type), std::move(var));
+            if (arg_name)
+            {
+                auto var = ctx.try_emplace(*arg_name, arg_loc, arg.qty, *type);
+                if (not var)
+                    return std::move(var.error());
+                return make_legal_func_arg(arg.qty, std::move(*type), std::move(*var));
+            }
+            else
+            {
+                ctx.add_unnamed(arg.qty, *type);
+                return make_legal_func_arg(arg.qty, std::move(*type), std::nullopt);
+            }
         });
     if (not args)
         return std::move(args.error());

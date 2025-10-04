@@ -24,6 +24,6 @@ namespace dep0::typecheck {
  *
  * @return The new type if the rewrite rule changed anything; `nullopt` if the rewrite rule was ineffective.
  */
-std::optional<sort_t> rewrite(expr_t const& from, expr_t const& to, sort_t const& type);
+std::optional<expr_t> rewrite(expr_t const& from, expr_t const& to, expr_t const& type);
 
 } // namespace dep0::typecheck

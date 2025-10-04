@@ -501,4 +501,6 @@ BOOST_AUTO_TEST_CASE(typecheck_error_005)
     BOOST_TEST(is_return_of(f->value.body.stmts[0ul], var("t")));
 }
 
+BOOST_AUTO_TEST_CASE(typecheck_error_006) { BOOST_TEST(pass("0005_pi_types/typecheck_error_006.depc")); }
+
 BOOST_AUTO_TEST_SUITE_END()

@@ -27,4 +27,13 @@ namespace dep0::typecheck {
 dep0::expected<std::true_type>
 is_beta_delta_equivalent(sort_t const&, sort_t const&);
 
+dep0::expected<std::true_type>
+is_beta_delta_equivalent(expr_t const&, sort_t const&);
+
+dep0::expected<std::true_type>
+is_beta_delta_equivalent(sort_t const&, expr_t const&);
+
+dep0::expected<std::true_type>
+is_beta_delta_equivalent(expr_t const&, expr_t const&);
+
 } // namespace dep0::typecheck

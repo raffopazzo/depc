@@ -20,8 +20,9 @@ void proof_state_t::rewrite(expr_t const& from, expr_t const& to)
 {
     context = context.rewrite(from, to);
     // TODO could have a mutable-ref version instead (or as well)
-    if (auto new_goal = typecheck::rewrite(from, to, goal))
-        goal = std::move(*new_goal);
+    if (auto const type = std::get_if<expr_t>(&goal))
+        if (auto new_goal = typecheck::rewrite(from, to, *type))
+            goal = std::move(*new_goal);
 }
 
 } // namespace dep0::typecheck

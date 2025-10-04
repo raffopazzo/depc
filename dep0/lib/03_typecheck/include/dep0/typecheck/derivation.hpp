@@ -10,7 +10,24 @@
  */
 #pragma once
 
+#include "dep0/typecheck/ast_properties.hpp"
+#include "dep0/typecheck/context_ref.hpp"
+#include "dep0/typecheck/environment_ref.hpp"
+
+#include "dep0/ast/ast.hpp"
+
 namespace dep0::typecheck {
+
+template <typename NodeType>
+struct derivation_properties_t
+{ };
+
+template <>
+struct derivation_properties_t<ast::expr_t<properties_t>>
+{
+    env_ref_t env;
+    ctx_ref_t ctx;
+};
 
 /**
  * @brief Proof that an AST node is legal because it has a valid derivation.
@@ -30,7 +47,7 @@ namespace dep0::typecheck {
  * @warning This type is copiable, so one could forge a derivation by copying from another one.
  * But we are trying to "guard against Murphy, not Machiavelli".
  */
-template <typename /* NodeType */>
+template <typename NodeType>
 struct derivation_t
 {
     derivation_t(derivation_t const&) = default;
@@ -40,11 +57,11 @@ struct derivation_t
 
     bool operator==(derivation_t const&) const = default;
 
-    // TODO could add some properties of the specific derivation, if useful.
+    derivation_properties_t<NodeType> properties;
 
 private:
     friend struct derivation_rules;
-    derivation_t() = default;
+    derivation_t(derivation_properties_t<NodeType> properties) : properties(std::move(properties)) {}
 };
 
 } // namespace dep0::typecheck

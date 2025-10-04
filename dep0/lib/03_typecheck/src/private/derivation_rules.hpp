@@ -11,6 +11,7 @@
 #pragma once
 
 #include "dep0/typecheck/ast.hpp"
+#include "dep0/typecheck/context.hpp"
 #include "dep0/typecheck/derivation.hpp"
 #include "dep0/typecheck/environment.hpp"
 
@@ -25,81 +26,81 @@ namespace dep0::typecheck {
  */
 struct derivation_rules
 {
-    template <typename T>
-    static derivation_t<T> make_derivation();
+    template <typename T, typename... Args>
+    static derivation_t<T> make_derivation(Args&&...);
 
     /** @brief Constructs the term `typename` whose type is Kind. */
-    static expr_t make_typename();
+    static expr_t make_typename(env_t const&, ctx_t const&);
 
     /** @brief Constructs the term `true_t` whose type is `(0 bool_t) -> typename`. */
-    static expr_t make_true_t();
+    static expr_t make_true_t(env_t const&, ctx_t const&);
 
     /**
      * @brief Constructs a `true_t(expr)` whose type is `typename`.
      *
      * @warning It is the caller's responsibility to ensure that the given expression has type `bool_t`.
      */
-    static expr_t make_true_t(expr_t);
+    static expr_t make_true_t(env_t const&, ctx_t const&, expr_t);
 
     /** @brief Constructs the expression `&x` whose type is `ref_t(element_type, scopeof(x))`. */
-    static expr_t make_addressof(expr_t element_type, expr_t::scopeof_t, expr_t x);
+    static expr_t make_addressof(env_t const&, ctx_t const&, expr_t element_type, expr_t::scopeof_t, expr_t x);
 
     /** @brief Constructs the term `ref_t` whose type is `(typename, scope_t) -> typename`. */
-    static expr_t make_ref_t();
+    static expr_t make_ref_t(env_t const&, ctx_t const&);
 
     /** @brief Constructs the type `scope_t` whose type is `typename`. */
-    static expr_t make_scope_t();
+    static expr_t make_scope_t(env_t const&, ctx_t const&);
 
     /** @brief Constructs the type `bool_t` whose type is `typename`. */
-    static expr_t make_bool();
+    static expr_t make_bool(env_t const&, ctx_t const&);
 
     /** @brief Constructs the type `cstr_t` whose type is `typename`. */
-    static expr_t make_cstr();
+    static expr_t make_cstr(env_t const&, ctx_t const&);
 
     /** @brief Constructs the type `unit_t` whose type is `typename`. */
-    static expr_t make_unit();
+    static expr_t make_unit(env_t const&, ctx_t const&);
 
     /** @brief Constructs the type `i8_t` whose type is `typename`. */
-    static expr_t make_i8();
+    static expr_t make_i8(env_t const&, ctx_t const&);
 
     /** @brief Constructs the type `i16_t` whose type is `typename`. */
-    static expr_t make_i16();
+    static expr_t make_i16(env_t const&, ctx_t const&);
 
     /** @brief Constructs the type `i32_t` whose type is `typename`. */
-    static expr_t make_i32();
+    static expr_t make_i32(env_t const&, ctx_t const&);
 
     /** @brief Constructs the type `i64_t` whose type is `typename`. */
-    static expr_t make_i64();
+    static expr_t make_i64(env_t const&, ctx_t const&);
 
     /** @brief Constructs the type `u8_t` whose type is `typename`. */
-    static expr_t make_u8();
+    static expr_t make_u8(env_t const&, ctx_t const&);
 
     /** @brief Constructs the type `u16_t` whose type is `typename`. */
-    static expr_t make_u16();
+    static expr_t make_u16(env_t const&, ctx_t const&);
 
     /** @brief Constructs the type `u32_t` whose type is `typename`. */
-    static expr_t make_u32();
+    static expr_t make_u32(env_t const&, ctx_t const&);
 
     /** @brief Constructs the type `u64_t` whose type is `typename`. */
-    static expr_t make_u64();
+    static expr_t make_u64(env_t const&, ctx_t const&);
 
     /** @brief Constructs a numeric constant of type `u64_t` containing the given value. */
-    static expr_t make_u64(std::size_t);
+    static expr_t make_u64(env_t const&, ctx_t const&, std::size_t);
 
     /** @brief Constructs the boolean value `true`. */
-    static expr_t make_true();
+    static expr_t make_true(env_t const&, ctx_t const&);
 
     /** @brief Constructs the boolean value `false`. */
-    static expr_t make_false();
+    static expr_t make_false(env_t const&, ctx_t const&);
 
     /** @brief Constructs an `expr_t::boolean_expr_t` containing the given value; it's type is `bool_t`. */
-    static expr_t make_boolean_expr(expr_t::boolean_expr_t::value_t);
+    static expr_t make_boolean_expr(env_t const&, ctx_t const&, expr_t::boolean_expr_t::value_t);
 
     /** @brief Constructs an `expr_t::relation_expr_t` containing the given value; it's type is `bool_t`. */
-    static expr_t make_relation_expr(expr_t::relation_expr_t::value_t);
+    static expr_t make_relation_expr(env_t const&, ctx_t const&, expr_t::relation_expr_t::value_t);
 
     /** @brief Constructs the term `array_t` whose type is `(0 typename, 0 u64_t) -> typename`. */
-    static expr_t make_array();
+    static expr_t make_array(env_t const&, ctx_t const&);
 
     /**
      * @brief Constructs an `expr_t::app_t` from a function and its argument.
@@ -109,7 +110,7 @@ struct derivation_rules
      * @warning The type of the returned expression might depend on the arguments to which the function is applied.
      * It is the caller's responsibility to ensure that substitution of all arguments has been done correctly.
      */
-    static expr_t make_app(expr_t func, std::vector<expr_t> args);
+    static expr_t make_app(env_t const&, ctx_t const&, expr_t func, std::vector<expr_t> args);
 
     /**
      * @brief Constructs an expression `obj[idx]`, of the given element type, for a constant index `idx`.
@@ -117,7 +118,7 @@ struct derivation_rules
      * @warning For dependent tuples, the type of `obj[idx]` may depend on the values of `obj[idx-1], obj[idx-2], ...`.
      * It is the caller's responsibility to ensure that substitution of all values has been done correctly.
      */
-    static expr_t make_subscript(expr_t obj, std::size_t idx, sort_t type);
+    static expr_t make_subscript(env_t const&, ctx_t const&, expr_t obj, std::size_t idx, sort_t type);
 };
 
 template <typename... Args>
@@ -195,15 +196,19 @@ stmt_t make_legal_stmt(Args&&... args)
 }
 
 template <typename... Args>
-expr_t make_legal_expr(sort_t sort, Args&&... args)
+expr_t make_legal_expr(env_t const& env, ctx_t const& ctx, sort_t sort, Args&&... args)
 {
-    return expr_t{derivation_rules::make_derivation<expr_t>(), std::move(sort), std::forward<Args>(args)...};
+    return expr_t{
+        derivation_rules::make_derivation<expr_t>(env_ref_t(env), ctx_ref_t(ctx)),
+        std::move(sort),
+        std::forward<Args>(args)...
+    };
 }
 
-template <typename T>
-derivation_t<T> derivation_rules::make_derivation()
+template <typename T, typename... Args>
+derivation_t<T> derivation_rules::make_derivation(Args&&... args)
 {
-    return derivation_t<T>{};
+    return derivation_t<T>(derivation_properties_t<T>{std::forward<Args>(args)...});
 }
 
 } // namespace dep0::typecheck

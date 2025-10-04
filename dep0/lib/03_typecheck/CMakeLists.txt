@@ -9,12 +9,15 @@ add_subdirectory(test)
 add_library(dep0_typecheck_lib
   # public headers
   include/dep0/typecheck/ast.hpp
+  include/dep0/typecheck/ast_properties.hpp
   include/dep0/typecheck/beta_delta_reduction.hpp
   include/dep0/typecheck/builtin_call.hpp
   include/dep0/typecheck/check.hpp
   include/dep0/typecheck/context.hpp
+  include/dep0/typecheck/context_ref.hpp
   include/dep0/typecheck/derivation.hpp
   include/dep0/typecheck/environment.hpp
+  include/dep0/typecheck/environment_ref.hpp
   include/dep0/typecheck/is_impossible.hpp
   include/dep0/typecheck/is_mutable.hpp
   include/dep0/typecheck/list_initialization.hpp
@@ -46,6 +49,7 @@ add_library(dep0_typecheck_lib
   src/private/type_assign.hpp
   # source files
   src/ast.cpp
+  src/ast_properties.cpp
   src/beta_delta_equivalence.cpp
   src/beta_delta_reduction.cpp
   src/builtin_call.cpp
@@ -53,6 +57,7 @@ add_library(dep0_typecheck_lib
   src/check.cpp
   src/complete_type.cpp
   src/context.cpp
+  src/context_ref.cpp
   src/cpp_int_add.cpp
   src/cpp_int_div.cpp
   src/cpp_int_limits.cpp
@@ -64,6 +69,7 @@ add_library(dep0_typecheck_lib
   src/derivation_rules.cpp
   src/drop_unreachable_stmts.cpp
   src/environment.cpp
+  src/environment_ref.cpp
   src/is_impossible.cpp
   src/is_mutable.cpp
   src/is_terminator.cpp

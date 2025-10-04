@@ -186,7 +186,7 @@ std::ostream& pretty_print(std::ostream& os, ctx_t const& ctx)
             os << padding << ": ";
             expr_t const& type = val->value.type;
             auto copy = type;
-            bool const changed = beta_delta_normalize(env_t{}, ctx, copy);
+            bool const changed = beta_delta_normalize(copy);
             pretty_print(os, changed and ast::size(copy) < ast::size(type) ? copy : type, indent);
         });
     return os;

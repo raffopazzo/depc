@@ -294,7 +294,7 @@ bool beta_normalize(expr_t& expr)
                             if (ret->expr)
                             {
                                 changed = true;
-                                destructive_self_assign(expr.value, std::move(ret->expr->value));
+                                destructive_self_assign(expr, std::move(*ret->expr));
                             }
         },
         [&] (auto& x) { changed |= impl::beta_normalize(x); });

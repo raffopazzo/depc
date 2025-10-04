@@ -20,9 +20,9 @@ void search_var(search_task_t& task)
     {
         auto lookup = context_lookup(task.ctx, v);
         assert(lookup.has_value());
-        if (is_beta_delta_equivalent(task.env, task.ctx, lookup->decl.type, sort))
+        if (is_beta_delta_equivalent(lookup->decl.type, sort))
             if (usage.try_add(*lookup, task.usage_multiplier))
-                return task.set_result(make_legal_expr(lookup->decl.type, v));
+                return task.set_result(make_legal_expr(task.env, task.ctx, lookup->decl.type, v));
     }
 }
 

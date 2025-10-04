@@ -25,10 +25,6 @@ namespace dep0::typecheck {
  * @see @ref beta_reduction
  */
 dep0::expected<std::true_type>
-is_beta_delta_equivalent(
-    env_t const&,
-    ctx_t const&,
-    sort_t const&,
-    sort_t const&);
+is_beta_delta_equivalent(sort_t const&, sort_t const&);
 
 } // namespace dep0::typecheck

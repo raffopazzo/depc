@@ -13,6 +13,7 @@ docker run \
     -v /etc/passwd:/etc/passwd:ro -v /etc/group:/etc/group:ro \
     -v ${repo_dir}:${repo_dir} \
     -w ${repo_dir} \
+    -e CCACHE_DIR=${repo_dir}/.cache/ccache \
     -e CONAN_USER_HOME=${repo_dir} \
     depc-devbox \
     "$@"

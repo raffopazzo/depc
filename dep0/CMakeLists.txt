@@ -8,6 +8,11 @@ find_package(Boost 1.85.0 REQUIRED)
 find_package(llvm-core REQUIRED)
 find_package(perfetto REQUIRED)
 
+find_program(CCACHE_FOUND ccache)
+if(CCACHE_FOUND)
+    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
+endif()
+
 add_subdirectory(app/dep0)
 
 add_subdirectory(lib/00_antlr)

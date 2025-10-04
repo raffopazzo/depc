@@ -33,6 +33,17 @@ RUN apt-get update \
     --slave /usr/bin/gcc-ranlib gcc-ranlib /usr/bin/gcc-ranlib-11 \
  && rm -fr /var/lib/apt/lists
 
+# install ccache and mold for faster builds
+RUN apt-get update \
+ && apt-get install -y ccache git \
+ && git clone --branch v2.40.4 https://github.com/rui314/mold.git \
+ && cd mold \
+ && cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=g++ -B build \
+ && cmake --build build -j4 \
+ && cmake --build build --target install \
+ && cd .. && rm -fr mold \
+ && rm -fr /var/lib/apt/lists
+
 # Install javac used by antlr4
 RUN apt-get update \
  && apt-get install -y default-jdk \

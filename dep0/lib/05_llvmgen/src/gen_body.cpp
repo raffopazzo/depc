@@ -345,6 +345,10 @@ void gen_stmt(
             gen_func_call(global, local_stmt, builder, x, value_category_t::temporary, nullptr);
             gen_destructors(global, local_stmt, builder);
         },
+        [] (typecheck::stmt_t::assign_t const&)
+        {
+            assert(false and "assignment not implemented yet");
+        },
         [&] (typecheck::stmt_t::if_else_t const& x)
         {
             // Let's eliminate impossible branches.

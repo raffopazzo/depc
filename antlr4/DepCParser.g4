@@ -55,7 +55,7 @@ structDef: 'struct' name=ID '{' (fieldDecl SEMI)* '}' SEMI;
 fieldDecl: fieldType=expr fieldName=ID;
 
 // Types
-funcArg: ({one_of("0", "1")}? qty=INT)? ('typename' | expr) name=ID?;
+funcArg: ({one_of("0", "1")}? qty=INT)? ('typename' | expr) 'mutable'? name=ID?;
 type: primitiveType | funcType | tupleType | typeVar;
 primitiveType: 'bool_t' | 'cstr_t' | 'unit_t' | 'i8_t' | 'i16_t' | 'i32_t' | 'i64_t' | 'u8_t' | 'u16_t' | 'u32_t' | 'u64_t';
 funcType: '(' (funcArg (',' funcArg)*)? ')' 'mutable'? '->' ('typename' | retType=expr);
@@ -65,9 +65,10 @@ typeVar: name=ID;
 // Statements
 body: '{' stmt* '}';
 
-stmt: funcCallStmt | ifElse | returnStmt | impossibleStmt;
+stmt: funcCallStmt | assignment | ifElse | returnStmt | impossibleStmt;
 
 funcCallStmt: func=expr '(' (expr (',' expr)*)? ')' ';';
+assignment: lhs=expr '=' rhs=expr ';';
 ifElse: 'if' '(' cond=expr ')' true_branch=bodyOrStmt ('else' false_branch=bodyOrStmt)?;
 bodyOrStmt: body | stmt;
 returnStmt: 'return' expr? ';';

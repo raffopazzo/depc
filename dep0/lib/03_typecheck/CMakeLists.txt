@@ -43,6 +43,7 @@ add_library(dep0_typecheck_lib
   src/private/proof_state.hpp
   src/private/returns_from_all_branches.hpp
   src/private/rewrite.hpp
+  src/private/root_var.hpp
   src/private/substitute.hpp
   src/private/unification.hpp
   src/private/usage.hpp
@@ -80,6 +81,7 @@ add_library(dep0_typecheck_lib
   src/proof_state.cpp
   src/returns_from_all_branches.cpp
   src/rewrite.cpp
+  src/root_var.cpp
   src/subscript_access.cpp
   src/substitute.cpp
   src/unification.cpp

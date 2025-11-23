@@ -282,6 +282,14 @@ struct alpha_equivalence_visitor
         return is_alpha_equivalent_impl(x.value.get(), y.value.get());
     }
 
+    result_t operator()(typename stmt_t<P>::assign_t& x, typename stmt_t<P>::assign_t& y) const
+    {
+        auto eq = is_alpha_equivalent_impl(x.lhs, y.lhs);
+        if (eq)
+            eq = is_alpha_equivalent_impl(x.rhs, y.rhs);
+        return eq;
+    }
+
     result_t operator()(typename stmt_t<P>::if_else_t& x, typename stmt_t<P>::if_else_t& y) const
     {
         auto eq = is_alpha_equivalent_impl(x.cond, y.cond);

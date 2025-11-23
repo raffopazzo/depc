@@ -24,7 +24,8 @@ boost::test_tools::predicate_result is_arg(
     ast::func_arg_t<P> const& arg,
     F&& type_predicate,
     std::optional<std::string_view> const name,
-    ast::qty_t const qty = ast::qty_t::many)
+    ast::qty_t const qty = ast::qty_t::many,
+    ast::is_mutable_t const is_mutable = ast::is_mutable_t::no)
 {
     if (arg.qty != qty)
     {
@@ -40,6 +41,11 @@ boost::test_tools::predicate_result is_arg(
         };
         return failure("argument quantity ", to_string(arg.qty), " != ", to_string(qty));
     }
+    if (arg.is_mutable != is_mutable)
+    {
+        auto constexpr yes = ast::is_mutable_t::yes;
+        return failure("argument should be ", is_mutable == yes ? "mutable" : "immutable" , " but it is not");
+    }
     if (auto const result = std::forward<F>(type_predicate)(arg.type); not result)
         return failure("argument type predicate failed: ", result.message());
     if (name)
@@ -54,6 +60,16 @@ boost::test_tools::predicate_result is_arg(
         return true;
 }
 
+template <ast::Properties P, Predicate<ast::expr_t<P>> F>
+boost::test_tools::predicate_result is_arg(
+    ast::func_arg_t<P> const& arg,
+    F&& type_predicate,
+    std::optional<std::string_view> const name,
+    ast::is_mutable_t const is_mutable)
+{
+    return is_arg(arg, std::forward<F>(type_predicate), name, ast::qty_t::many, is_mutable);
+}
+
 inline auto typename_(
     std::optional<std::string> name = std::nullopt,
     ast::qty_t const qty = ast::qty_t::many)
@@ -65,11 +81,15 @@ inline auto typename_(
 }
 
 template <ast::Properties P, Predicate<ast::expr_t<P>> F>
-inline auto arg_of(F&& f, std::optional<std::string> name = std::nullopt, ast::qty_t const qty = ast::qty_t::many)
+inline auto arg_of(
+    F&& f,
+    std::optional<std::string> name = std::nullopt,
+    ast::qty_t const qty = ast::qty_t::many,
+    ast::is_mutable_t const is_mutable = ast::is_mutable_t::no)
 {
-    return [f=std::forward<F>(f), name=std::move(name), qty] (ast::func_arg_t<P> const& x)
+    return [f=std::forward<F>(f), name=std::move(name), qty, is_mutable] (ast::func_arg_t<P> const& x)
     {
-        return is_arg<P>(x, f, name, qty);
+        return is_arg<P>(x, f, name, qty, is_mutable);
     };
 }
 

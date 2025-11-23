@@ -57,6 +57,16 @@ BOOST_AUTO_TEST_CASE(three_match_three_out_of_order)
     BOOST_TEST(dep0::match(z, f3, f1, f2) == "test");
 }
 
+BOOST_AUTO_TEST_CASE(deduce_common_return_type)
+{
+    std::variant<int, dummy_t, std::string> x{23};
+    auto const f1 = [] (int) { return nullptr; };
+    auto const f2 = [] (dummy_t) { return ""; };
+    auto const f3 = [] (std::string const& x) { return x.c_str(); };
+    static_assert(std::is_same_v<char const*, decltype(dep0::match(x, f1, f2, f3))>);
+    static_assert(std::is_same_v<char const*, decltype(dep0::match(std::as_const(x), f1, f2, f3))>);
+}
+
 BOOST_AUTO_TEST_CASE(return_const_ref)
 {
     std::variant<int, dummy_t> x{dummy_t{23}};

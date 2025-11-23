@@ -39,6 +39,10 @@ bool occurs_in(typename expr_t<P>::var_t const& var, body_t<P> const& x, occurre
                 {
                     return occurs_in<P>(var, app, style);
                 },
+                [&] (stmt_t<P>::assign_t const& assign)
+                {
+                    return occurs_in(var, assign.lhs, style) or occurs_in(var, assign.rhs, style);
+                },
                 [&] (stmt_t<P>::if_else_t const& if_)
                 {
                     return occurs_in(var, if_.cond, style)

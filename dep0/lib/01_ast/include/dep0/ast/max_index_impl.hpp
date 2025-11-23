@@ -47,6 +47,10 @@ std::size_t max_index(body_t<P> const& x)
                     {
                         return max_index<P>(x);
                     },
+                    [] (stmt_t<P>::assign_t const& x)
+                    {
+                        return std::max(max_index(x.lhs), max_index(x.rhs));
+                    },
                     [] (stmt_t<P>::if_else_t const& if_)
                     {
                         return std::max(

@@ -54,6 +54,10 @@ std::size_t size(stmt_t<P> const& x)
         {
             return size<P>(x);
         },
+        [] (stmt_t<P>::assign_t const& assign)
+        {
+            return 1ul + std::max(size(assign.lhs), size(assign.rhs));
+        },
         [] (stmt_t<P>::if_else_t const& if_)
         {
             return 1ul + std::max(

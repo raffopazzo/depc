@@ -66,6 +66,7 @@ bool is_impossible(stmt_t const& s)
     return match(
         s.value,
         [] (expr_t::app_t const& x) { return impl::is_impossible(x); },
+        [] (stmt_t::assign_t const& x) { return impl::is_impossible(x.lhs) or impl::is_impossible(x.rhs); },
         [] (stmt_t::if_else_t const& x)
         {
             // an if-statement is impossible if the condition is impossible or

@@ -30,6 +30,11 @@ void substitute(expr_t::var_t const& var, expr_t const& expr, body_t& body)
             {
                 substitute(var, expr, app);
             },
+            [&] (stmt_t::assign_t& assign)
+            {
+                substitute(var, expr, assign.lhs);
+                substitute(var, expr, assign.rhs);
+            },
             [&] (stmt_t::if_else_t& if_)
             {
                 substitute(var, expr, if_.cond);

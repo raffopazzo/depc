@@ -282,10 +282,11 @@ struct parse_visitor_t : dep0::DepCParserVisitor
                 if (qty == "1") return ast::qty_t::one;
                 throw error_t("unexpected quantity when parsing FuncArgContext", loc);
             }(get_text(src, *ctx->qty));
+        auto const is_mutable = ctx->KW_MUTABLE() ? ast::is_mutable_t::yes : ast::is_mutable_t::no;
         if (ctx->KW_TYPENAME())
-            return func_arg_t{loc, qty, visitTypename(ctx->KW_TYPENAME()), get_name()};
+            return func_arg_t{loc, qty, is_mutable, visitTypename(ctx->KW_TYPENAME()), get_name()};
         if (ctx->expr())
-            return func_arg_t{loc, qty, visitExpr(ctx->expr()), get_name()};
+            return func_arg_t{loc, qty, is_mutable, visitExpr(ctx->expr()), get_name()};
         throw error_t("unexpected alternative when parsing FuncArgContext", loc);
     }
 
@@ -302,6 +303,7 @@ struct parse_visitor_t : dep0::DepCParserVisitor
     {
         assert(ctx);
         if (ctx->funcCallStmt()) return std::any_cast<stmt_t>(visitFuncCallStmt(ctx->funcCallStmt()));
+        if (ctx->assignment()) return std::any_cast<stmt_t>(visitAssignment(ctx->assignment()));
         if (ctx->ifElse()) return std::any_cast<stmt_t>(visitIfElse(ctx->ifElse()));
         if (ctx->returnStmt()) return std::any_cast<stmt_t>(visitReturnStmt(ctx->returnStmt()));
         if (ctx->impossibleStmt()) return std::any_cast<stmt_t>(visitImpossibleStmt(ctx->impossibleStmt()));
@@ -324,6 +326,19 @@ struct parse_visitor_t : dep0::DepCParserVisitor
                 fmap<DepCParser::ExprContext*>(
                     std::next(exprs.begin()), exprs.end(),
                     [this] (DepCParser::ExprContext* ctx) { return visitExpr(ctx); })}};
+    }
+
+    virtual std::any visitAssignment(DepCParser::AssignmentContext* ctx) override
+    {
+        assert(ctx);
+        assert(ctx->lhs);
+        assert(ctx->rhs);
+        return stmt_t{
+            get_loc(src, *ctx),
+                stmt_t::assign_t{
+                    visitExpr(ctx->lhs),
+                    visitExpr(ctx->rhs)
+                }};
     }
 
     virtual std::any visitIfElse(DepCParser::IfElseContext* ctx) override

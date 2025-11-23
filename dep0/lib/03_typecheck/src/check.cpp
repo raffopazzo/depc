@@ -14,14 +14,16 @@
 #include "private/derivation_rules.hpp"
 #include "private/proof_search.hpp"
 #include "private/returns_from_all_branches.hpp"
+#include "private/root_var.hpp"
 #include "private/substitute.hpp"
 #include "private/type_assign.hpp"
 
 #include "dep0/typecheck/beta_delta_reduction.hpp"
 #include "dep0/typecheck/list_initialization.hpp"
 
-#include "dep0/ast/views.hpp"
+#include "dep0/ast/mutable_place_expression.hpp"
 #include "dep0/ast/pretty_print.hpp"
+#include "dep0/ast/views.hpp"
 
 #include "dep0/fmap.hpp"
 #include "dep0/match.hpp"
@@ -160,7 +162,7 @@ expected<type_def_t> check_type_def(env_t& env, parser::type_def_t const& type_d
                         pretty_print<parser::properties_t>(err << "incomplete type for field `", field.var) << '`';
                         return error_t(err.str(), loc, {std::move(ok.error())});
                     }
-                    auto var = ctx.try_emplace(field.var.name, loc, ast::qty_t::many, *type);
+                    auto var = ctx.try_emplace(field.var.name, loc, ast::qty_t::many, ast::is_mutable_t::no, *type);
                     if (not var)
                         return std::move(var.error());
                     return type_def_t::struct_t::field_t{std::move(*type), std::move(*var)};
@@ -314,6 +316,54 @@ check_stmt(
                 return make_legal_stmt(std::move(std::get<expr_t::app_t>(app->value)));
             else
                 return std::move(app.error());
+        },
+        [&] (parser::stmt_t::assign_t const& x) -> expected<stmt_t>
+        {
+            auto lhs = type_assign(env, state.context, x.lhs, is_mutable, usage, usage_multiplier);
+            if (not lhs)
+                return lhs.error();
+            auto rhs =
+                check_expr(env, state.context, x.rhs, lhs->properties.sort.get(), is_mutable, usage, usage_multiplier);
+            if (not rhs)
+                return rhs.error();
+            auto const root = match(
+                ast::is_mutable_place_expression(*lhs),
+                [&] (ast::immutable_place_t)
+                {
+                    return error_t("target of assignment is not a mutable place expression", loc);
+                },
+                [&] (std::reference_wrapper<expr_t::var_t const> const var) -> expected<expr_t::var_t>
+                {
+                    return var.get();
+                },
+                [&] (std::reference_wrapper<expr_t::member_t const> const member) -> expected<expr_t::var_t>
+                {
+                    auto const root = root_var(member);
+                    if (not root)
+                        return error_t("target of assignment is not rooted in a variable", loc);
+                    return *root;
+                },
+                [&] (std::reference_wrapper<expr_t::subscript_t const> const subscript) -> expected<expr_t::var_t>
+                {
+                    auto const root = root_var(subscript);
+                    if (not root)
+                        return error_t("target of assignment is not rooted in a variable", loc);
+                    return *root;
+                });
+            if (not root)
+                return root.error();
+            auto const decl = state.context[*root];
+            assert(decl and "root of assignment was a variable but it did not exist in current context");
+            if (decl->is_mutable == ast::is_mutable_t::no)
+                return error_t("cannot mutate immutable variable");
+            auto modified_context = state.context.extend();
+            auto const new_var =
+                modified_context.try_emplace(
+                    decl->var.name, decl->origin, decl->qty, ast::is_mutable_t::yes, decl->type);
+            if (not new_var)
+                return new_var.error(); // should not happen, but just in case
+            state.context = std::move(modified_context);
+            return make_legal_stmt(stmt_t::assign_t{std::move(*lhs), std::move(*rhs)});
         },
         [&] (parser::stmt_t::if_else_t const& x) -> expected<stmt_t>
         {
@@ -815,18 +865,18 @@ expected<expr_t> check_pi_type(
             }
             if (arg_name)
             {
-                auto var = ctx.try_emplace(*arg_name, arg_loc, arg.qty, *type);
+                auto var = ctx.try_emplace(*arg_name, arg_loc, arg.qty, arg.is_mutable, *type);
                 if (not var)
                     return std::move(var.error());
-                if (auto ok = unscoped_ctx.try_emplace(*arg_name, arg_loc, arg.qty, *type); not ok)
+                if (auto ok = unscoped_ctx.try_emplace(*arg_name, arg_loc, arg.qty, arg.is_mutable, *type); not ok)
                     return std::move(ok.error()); // this is not actually possible, but whatever
-                return make_legal_func_arg(arg.qty, std::move(*type), std::move(*var));
+                return make_legal_func_arg(arg.qty, arg.is_mutable, std::move(*type), std::move(*var));
             }
             else
             {
                 ctx.add_unnamed(arg.qty, *type);
                 unscoped_ctx.add_unnamed(arg.qty, *type);
-                return make_legal_func_arg(arg.qty, std::move(*type), std::nullopt);
+                return make_legal_func_arg(arg.qty, arg.is_mutable,  std::move(*type), std::nullopt);
             }
         });
     if (not args)
@@ -866,15 +916,15 @@ expected<expr_t> check_sigma_type(
             }
             if (arg_name)
             {
-                auto var = ctx.try_emplace(*arg_name, arg_loc, arg.qty, *type);
+                auto var = ctx.try_emplace(*arg_name, arg_loc, arg.qty, arg.is_mutable, *type);
                 if (not var)
                     return std::move(var.error());
-                return make_legal_func_arg(arg.qty, std::move(*type), std::move(*var));
+                return make_legal_func_arg(arg.qty, arg.is_mutable,  std::move(*type), std::move(*var));
             }
             else
             {
                 ctx.add_unnamed(arg.qty, *type);
-                return make_legal_func_arg(arg.qty, std::move(*type), std::nullopt);
+                return make_legal_func_arg(arg.qty, arg.is_mutable, std::move(*type), std::nullopt);
             }
         });
     if (not args)

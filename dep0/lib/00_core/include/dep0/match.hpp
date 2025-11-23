@@ -29,10 +29,9 @@ template <typename... Ts, typename... Fs>
 decltype(auto) match(std::variant<Ts...> const& x, Fs&&... fs)
 {
     using F = decltype(boost::hana::overload(std::forward<Fs>(fs)...));
-    using R = decltype(std::declval<F>()(std::get<0>(x)));
     auto const jump_table = [&] <std::size_t... Is> (std::index_sequence<Is...>)
     {
-        static_assert((std::is_same_v<R, decltype(std::declval<F>()(std::get<Is>(x)))> or ...));
+        using R = std::common_reference_t<decltype(std::declval<F>()(std::get<Is>(x)))...>;
         return std::array{
             (+[] (std::variant<Ts...> const& x, F&& f) -> R
             {
@@ -52,10 +51,9 @@ template <typename... Ts, typename... Fs>
 decltype(auto) match(std::variant<Ts...>& x, Fs&&... fs)
 {
     using F = decltype(boost::hana::overload(std::forward<Fs>(fs)...));
-    using R = decltype(std::declval<F>()(std::get<0>(x)));
     auto const jump_table = [&] <std::size_t... Is> (std::index_sequence<Is...>)
     {
-        static_assert((std::is_same_v<R, decltype(std::declval<F>()(std::get<Is>(x)))> or ...));
+        using R = std::common_reference_t<decltype(std::declval<F>()(std::get<Is>(x)))...>;
         return std::array{
             (+[] (std::variant<Ts...>& x, F&& f) -> R
             {

@@ -1,0 +1,14 @@
+/*
+ * Copyright Raffaele Rossi 2025.
+ *
+ * Distributed under the Boost Software License, Version 1.0.
+ * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
+ */
+func f(u64_t mutable n, array_t(i32_t, n) xs) -> i32_t
+{
+    n = 1;
+    if (0 < n)
+        return xs[0]; // typecheck error: cannot verify that access within bounds, because n has been modified now
+    else
+        return 0;
+}

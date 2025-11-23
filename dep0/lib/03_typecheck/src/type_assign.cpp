@@ -375,6 +375,7 @@ type_assign(
         [&] (parser::expr_t::scope_t) -> expected<expr_t> { return derivation_rules::make_scope_t(env, ctx); },
         [&] (parser::expr_t::addressof_t const& x) -> expected<expr_t>
         {
+            // TODO can only take reference of immutable variables, needs a test
             auto expr = type_assign(env, ctx, x.expr.get(), is_mutable_allowed, usage, usage_multiplier);
             if (not expr)
                 return expr;

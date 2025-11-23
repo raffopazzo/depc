@@ -48,6 +48,30 @@ boost::test_tools::predicate_result is_func_call_of(ast::stmt_t<P> const& stmt, 
     return true;
 }
 
+template <ast::Properties P, Predicate<ast::expr_t<P>> F_lhs, Predicate<ast::expr_t<P>> F_rhs>
+boost::test_tools::predicate_result is_assign(ast::stmt_t<P> const& stmt, F_lhs&& f_lhs, F_rhs&& f_rhs)
+{
+    auto const assign = std::get_if<typename ast::stmt_t<P>::assign_t>(&stmt.value);
+    if (not assign)
+        return failure("statement is not an assignment but ", pretty_name(stmt.value));
+    if (auto const result = std::forward<F_lhs>(f_lhs)(assign->lhs); not result)
+        return failure("inside lhs: ", result.message());
+    if (auto const result = std::forward<F_rhs>(f_rhs)(assign->rhs); not result)
+        return failure("inside rhs: ", result.message());
+    return true;
+}
+
+template <ast::Properties P, Predicate<ast::expr_t<P>> F_lhs, Predicate<ast::expr_t<P>> F_rhs>
+constexpr auto assign_of(F_lhs&& f_lhs, F_rhs&& f_rhs)
+{
+    return
+        [f_lhs=std::forward<F_lhs>(f_lhs), f_rhs=std::forward<F_rhs>(f_rhs)]
+        (ast::stmt_t<P> const& stmt)
+        {
+            return is_assign(stmt, f_lhs, f_rhs);
+        };
+}
+
 template <
     ast::Properties P,
     Predicate<ast::expr_t<P>> F_cond,

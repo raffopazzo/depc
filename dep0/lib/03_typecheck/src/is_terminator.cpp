@@ -17,6 +17,7 @@ bool is_terminator(stmt_t const& s)
     return match(
         s.value,
         [] (expr_t::app_t const&) { return false; },
+        [] (stmt_t::assign_t const&) { return false; },
         [] (stmt_t::if_else_t const& x) { return returns_from_all_branches(x); },
         [] (stmt_t::return_t const&) { return true; },
         [] (stmt_t::impossible_t const&)

@@ -35,6 +35,7 @@ namespace dep0::typecheck {
 namespace impl {
 
 static bool delta_unfold(stmt_t&);
+static bool delta_unfold(stmt_t::assign_t&);
 static bool delta_unfold(stmt_t::if_else_t&);
 static bool delta_unfold(stmt_t::return_t&);
 static bool delta_unfold(stmt_t::impossible_t&);
@@ -120,6 +121,12 @@ bool delta_unfold(stmt_t& stmt)
     return match(stmt.value,
         [&] (expr_t::app_t& app) { return delta_unfold(app); },
         [&] (auto& x) { return delta_unfold(x); });
+}
+
+bool delta_unfold(stmt_t::assign_t& assign)
+{
+    // It is most likely that we can unfold something in rhs, so try that first.
+    return delta_unfold(assign.rhs) or delta_unfold(assign.lhs);
 }
 
 bool delta_unfold(stmt_t::if_else_t& if_)

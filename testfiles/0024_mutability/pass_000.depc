@@ -6,7 +6,8 @@
  */
 struct t
 {
-    i32_t y;
+    i32_t a;
+    i64_t b;
 };
 
 func f0(i32_t mutable x) -> i32_t
@@ -23,6 +24,14 @@ func f1(array_t(i32_t, 3) mutable xs) -> array_t(i32_t, 3)
 
 func f2(t mutable x) -> t
 {
-    x.y = 0;
+    x.a = 0;
+    x.b = 1;
     return x;
+}
+
+func f3((i32_t, i64_t) mutable x) -> i64_t
+{
+    x[0] = 0;
+    x[1] = 1;
+    return 0;
 }

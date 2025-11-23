@@ -39,6 +39,7 @@ is_sigma_of(ast::expr_t<P> const& type, std::tuple<ArgPredicates...> const& f_ar
     return result;
 }
 
+// TODO no need for tuple here
 template <ast::Properties P, Predicate<ast::func_arg_t<P>>... ArgPredicates>
 constexpr auto sigma_of(std::tuple<ArgPredicates...> args)
 {

@@ -20,8 +20,11 @@
 
 #include "dep0/typecheck/beta_delta_reduction.hpp"
 #include "dep0/typecheck/list_initialization.hpp"
+#include "dep0/typecheck/subscript_access.hpp"
 
+#include "dep0/ast/find_member_field.hpp"
 #include "dep0/ast/mutable_place_expression.hpp"
+#include "dep0/ast/occurs_in.hpp"
 #include "dep0/ast/pretty_print.hpp"
 #include "dep0/ast/views.hpp"
 
@@ -332,23 +335,66 @@ check_stmt(
                 {
                     return error_t("target of assignment is not a mutable place expression", loc);
                 },
-                [&] (std::reference_wrapper<expr_t::var_t const> const var) -> expected<expr_t::var_t>
+                [&] (expr_t::var_t const& var) -> expected<expr_t::var_t>
                 {
-                    return var.get();
+                    return var;
                 },
-                [&] (std::reference_wrapper<expr_t::member_t const> const member) -> expected<expr_t::var_t>
+                [&] (expr_t::member_t const& member) -> expected<expr_t::var_t>
                 {
                     auto const root = root_var(member);
                     if (not root)
                         return error_t("target of assignment is not rooted in a variable", loc);
-                    return *root;
+
+                    using enum ast::occurrence_style;
+                    if (auto const ty = std::get_if<expr_t>(&member.object.get().properties.sort.get()))
+                    if (auto const g = std::get_if<expr_t::global_t>(&ty->value))
+                    if (auto const type_def = std::get_if<type_def_t>(env[*g]))
+                    if (auto const s = std::get_if<type_def_t::struct_t>(&type_def->value))
+                    if (auto const it = ast::find_member_field<properties_t>(member.field, *s); it != s->fields.end())
+                        if (not ast::occurs_in<properties_t>(it->var, std::next(it), s->fields.end(), free))
+                            return *root;
+                        else
+                            return error_t("cannot mutate a member field that carries dependency to other fields", loc);
+
+                    return error_t("cannot verify that member field does not carry dependency to other fields", loc);
                 },
-                [&] (std::reference_wrapper<expr_t::subscript_t const> const subscript) -> expected<expr_t::var_t>
+                [&] (expr_t::subscript_t const& x) -> expected<expr_t::var_t>
                 {
-                    auto const root = root_var(subscript);
+                    auto const root = root_var(x);
                     if (not root)
                         return error_t("target of assignment is not rooted in a variable", loc);
-                    return *root;
+
+                    if (auto const ty = std::get_if<expr_t>(&x.object.get().properties.sort.get()))
+                        return match(
+                            has_subscript_access(*ty),
+                            [&] (has_subscript_access_result::no_t)
+                            {
+                                // this is really not possible but whatever
+                                return error_t("cannot verify that subscript access does not carry dependency", loc);
+                            },
+                            [&] (has_subscript_access_result::sigma_t const sigma) -> expected<expr_t::var_t>
+                            {
+                                using enum ast::occurrence_style;
+                                if (auto const i = std::get_if<expr_t::numeric_constant_t>(&x.index.get().value))
+                                if (auto const v = i->value.template convert_to<std::uint64_t>(); v < sigma.args.size())
+                                    if (not sigma.args[v].var or
+                                        not ast::occurs_in<properties_t>(
+                                            *sigma.args[v].var,
+                                            std::next(sigma.args.begin(), v+1),
+                                            sigma.args.end(),
+                                            free))
+                                        return *root;
+                                    else
+                                        return error_t(
+                                            "cannot mutate a member field that carries dependency to other fields",
+                                            loc);
+                                return error_t("cannot verify that subscript access does not carry dependency", loc);
+                            },
+                            [&] (has_subscript_access_result::array_t)
+                            {
+                                return *root;
+                            });
+                    return error_t("cannot verify that subscript access does not carry dependency", loc);
                 });
             if (not root)
                 return root.error();

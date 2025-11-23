@@ -16,9 +16,9 @@ BOOST_FIXTURE_TEST_SUITE(dep0_parser_tests_0024_mutability, ParserTestsFixture)
 BOOST_AUTO_TEST_CASE(pass_000)
 {
     BOOST_TEST_REQUIRE(pass("0024_mutability/pass_000.depc"));
-    BOOST_TEST_REQUIRE(pass_result->entries.size() == 4ul);
+    BOOST_TEST_REQUIRE(pass_result->entries.size() == 5ul);
     auto constexpr yes = dep0::ast::is_mutable_t::yes;
-    BOOST_TEST(is_struct_def(pass_result->entries[0], "t", struct_field("y", is_i32)));
+    BOOST_TEST(is_struct_def(pass_result->entries[0], "t", struct_field("a", is_i32), struct_field("b", is_i64)));
     {
         auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[1]);
         BOOST_TEST_REQUIRE(f);
@@ -52,9 +52,22 @@ BOOST_AUTO_TEST_CASE(pass_000)
         BOOST_TEST_REQUIRE(f->value.args.size() == 1ul);
         BOOST_TEST(is_arg(f->value.args[0], var("t"), "x", yes));
         BOOST_TEST(is_var(f->value.ret_type.get(), "t"));
-        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 2ul);
-        BOOST_TEST(is_assign(f->value.body.stmts[0ul], member_of(var("x"), "y"), constant(0)));
-        BOOST_TEST(is_return_of(f->value.body.stmts[1ul], var("x")));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 3ul);
+        BOOST_TEST(is_assign(f->value.body.stmts[0ul], member_of(var("x"), "a"), constant(0)));
+        BOOST_TEST(is_assign(f->value.body.stmts[1ul], member_of(var("x"), "b"), constant(1)));
+        BOOST_TEST(is_return_of(f->value.body.stmts[2ul], var("x")));
+    }
+    {
+        auto const f = std::get_if<dep0::parser::func_def_t>(&pass_result->entries[4]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "f3");
+        BOOST_TEST_REQUIRE(f->value.args.size() == 1ul);
+        BOOST_TEST(is_arg(f->value.args[0], sigma_of(std::tuple{arg_of(is_i32), arg_of(is_i64)}), "x", yes));
+        BOOST_TEST(is_i64(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 3ul);
+        BOOST_TEST(is_assign(f->value.body.stmts[0ul], subscript_of(var("x"), constant(0)), constant(0)));
+        BOOST_TEST(is_assign(f->value.body.stmts[1ul], subscript_of(var("x"), constant(1)), constant(1)));
+        BOOST_TEST(is_return_of(f->value.body.stmts[2ul], constant(0)));
     }
 }
 
@@ -142,5 +155,7 @@ BOOST_AUTO_TEST_CASE(typecheck_error_005)
 
 BOOST_AUTO_TEST_CASE(typecheck_error_006) { BOOST_TEST(pass("0024_mutability/typecheck_error_006.depc")); }
 BOOST_AUTO_TEST_CASE(typecheck_error_007) { BOOST_TEST(pass("0024_mutability/typecheck_error_007.depc")); }
+BOOST_AUTO_TEST_CASE(typecheck_error_008) { BOOST_TEST(pass("0024_mutability/typecheck_error_008.depc")); }
+BOOST_AUTO_TEST_CASE(typecheck_error_009) { BOOST_TEST(pass("0024_mutability/typecheck_error_009.depc")); }
 
 BOOST_AUTO_TEST_SUITE_END()

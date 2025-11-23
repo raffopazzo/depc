@@ -1,0 +1,17 @@
+/*
+ * Copyright Raffaele Rossi 2025.
+ *
+ * Distributed under the Boost Software License, Version 1.0.
+ * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
+ */
+struct t
+{
+    u64_t n;
+    array_t(i32_t, n) xs;
+};
+
+func f(t mutable x) -> t
+{
+    x.n = 0; // typecheck error: cannot mutate member `n` because member `xs` depends on it
+    return x;
+}

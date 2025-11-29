@@ -76,6 +76,19 @@ static bool has_attribute(func_decl_t const& x, std::string_view const attribute
     return x.attribute and x.attribute->value == attribute;
 }
 
+expected<mutation_log_t> mutation_log_t::combine(mutation_log_t&& a, mutation_log_t&& b)
+{
+    for (auto& [v, t]: b.mutations)
+        if (auto const [it, inserted] = a.mutations.try_emplace(v, t); not inserted)
+            if (auto eq = is_beta_delta_equivalent(it->second, t); not eq)
+            {
+                std::ostringstream err;
+                pretty_print<properties_t>(err << "found mutation of different types for variable `", v) << '`';
+                return error_t(err.str(), std::vector{std::move(eq.error())});
+            }
+    return std::move(a);
+}
+
 expected<module_t> check(env_t const& base_env, parser::module_t const& x) noexcept
 {
     auto env = base_env.extend();
@@ -279,7 +292,7 @@ expected<expr_t> check_type(env_t const& env, ctx_t const& ctx, parser::expr_t c
             : std::vector<dep0::error_t>{std::move(as_type.error()), std::move(as_kind.error())});
 }
 
-expected<body_t>
+expected<std::pair<body_t, mutation_log_t>>
 check_body(
     env_t const& env,
     proof_state_t state,
@@ -288,20 +301,39 @@ check_body(
     usage_t& usage,
     ast::qty_t const usage_multiplier)
 {
+    mutation_log_t log;
     auto stmts =
         fmap_or_error(
             x.stmts,
-            [&] (parser::stmt_t const& s)
+            [&] (parser::stmt_t const& s) -> expected<stmt_t>
             {
-                return check_stmt(env, state, s, is_mutable, usage, usage_multiplier);
+                auto stmt = check_stmt(env, state, s, is_mutable, usage, usage_multiplier);
+                if (not stmt)
+                    return stmt.error();
+                std::optional<ctx_t> new_ctx;
+                auto const loc = s.properties;
+                for (auto& [var, type]: stmt->second.mutations)
+                {
+                    if (auto const decl = state.context[var])
+                    {
+                        if (not new_ctx)
+                            new_ctx.emplace(state.context.extend());
+                        auto const v = new_ctx->try_emplace(var.name, loc, decl->qty, ast::is_mutable_t::yes, type);
+                        if (not v)
+                            return v.error(); // should not happen, but just in case
+                        log.mutations.insert_or_assign(std::move(var), std::move(type));
+                    }
+                }
+                if (new_ctx)
+                    state.context = std::move(*new_ctx);
+                return std::move(stmt->first);
             });
-    if (stmts)
-        return make_legal_body(std::move(*stmts));
-    else
+    if (not stmts)
         return std::move(stmts.error());
+    return std::pair{make_legal_body(std::move(*stmts)), std::move(log)};
 }
 
-expected<stmt_t>
+expected<std::pair<stmt_t, mutation_log_t>>
 check_stmt(
     env_t const& env,
     proof_state_t& state,
@@ -311,7 +343,8 @@ check_stmt(
     ast::qty_t const usage_multiplier)
 {
     auto const loc = s.properties;
-    return match(
+    mutation_log_t log;
+    auto stmt = match(
         s.value,
         [&] (parser::expr_t::app_t const& x) -> expected<stmt_t>
         {
@@ -325,8 +358,8 @@ check_stmt(
             auto lhs = type_assign(env, state.context, x.lhs, is_mutable, usage, usage_multiplier);
             if (not lhs)
                 return lhs.error();
-            auto rhs =
-                check_expr(env, state.context, x.rhs, lhs->properties.sort.get(), is_mutable, usage, usage_multiplier);
+            auto const& lhs_type = lhs->properties.sort.get();
+            auto rhs = check_expr(env, state.context, x.rhs, lhs_type, is_mutable, usage, usage_multiplier);
             if (not rhs)
                 return rhs.error();
             auto const root = match(
@@ -402,13 +435,7 @@ check_stmt(
             assert(decl and "root of assignment was a variable but it did not exist in current context");
             if (decl->is_mutable == ast::is_mutable_t::no)
                 return error_t("cannot mutate immutable variable");
-            auto modified_context = state.context.extend();
-            auto const new_var =
-                modified_context.try_emplace(
-                    decl->var.name, decl->origin, decl->qty, ast::is_mutable_t::yes, decl->type);
-            if (not new_var)
-                return new_var.error(); // should not happen, but just in case
-            state.context = std::move(modified_context);
+            log.mutations.insert_or_assign(*root, decl->type);
             return make_legal_stmt(stmt_t::assign_t{std::move(*lhs), std::move(*rhs)});
         },
         [&] (parser::stmt_t::if_else_t const& x) -> expected<stmt_t>
@@ -469,11 +496,19 @@ check_stmt(
                 {
                     if (auto ok = combine_usages(); not ok)
                         return std::move(ok.error());
+                    // combine mutations from both branches and add the result to the current context
+                    auto new_log =
+                        mutation_log_t::combine(
+                            std::move(true_branch->second),
+                            std::move(false_branch->second));
+                    if (not new_log)
+                        return std::move(new_log.error());
+                    log = std::move(*new_log);
                     return make_legal_stmt(
                         stmt_t::if_else_t{
                             std::move(*cond),
-                            std::move(*true_branch),
-                            std::move(*false_branch)
+                            std::move(true_branch->first),
+                            std::move(false_branch->first)
                         });
                 }
                 else
@@ -483,17 +518,24 @@ check_stmt(
             // but if the true branch returns from all its sub-branches,
             // then it means we are now in the implied else branch;
             // we can then rewrite `cond = false` inside the current proof state
-            if (returns_from_all_branches(*true_branch))
+            if (returns_from_all_branches(true_branch->first))
             {
                 state.rewrite(*cond, derivation_rules::make_false(env, state.context));
                 add_true_not_cond(state.context);
             }
             if (auto ok = combine_usages(); not ok)
                 return std::move(ok.error());
+            // TODO currently mutations cannot change type, but when they can do, this code might be incorrect.
+            // Because if the true-branch of an if-without-else has changed the type of a variable of the parent scope,
+            // the type of that variable after the if-statement is potentially unspecified.
+            // Maybe a solution is to synthesize a log for the missing else-branch where each variable
+            // mutated by the true-branch is added to the synthetic log with the original type
+            // and then run the same combining logic as-if the else-branch was present.
+            log = std::move(true_branch->second);
             return make_legal_stmt(
                 stmt_t::if_else_t{
                     std::move(*cond),
-                    std::move(*true_branch),
+                    std::move(true_branch->first),
                     std::nullopt
                 });
         },
@@ -540,6 +582,9 @@ check_stmt(
             else
                 return check_impossible_stmt(state.context, std::nullopt);
         });
+    if (not stmt)
+        return std::move(stmt.error());
+    return std::pair{std::move(*stmt), std::move(log)};
 }
 
 expected<expr_t>

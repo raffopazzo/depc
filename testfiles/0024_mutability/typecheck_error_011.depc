@@ -1,0 +1,12 @@
+/*
+ * Copyright Raffaele Rossi 2025.
+ *
+ * Distributed under the Boost Software License, Version 1.0.
+ * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
+ */
+func f(u64_t mutable i, array_t(i32_t, 3) xs, 0 true_t(i < 3)) -> i32_t
+{
+    if (i == 0)
+        i = 10;
+    return xs[i]; // typecheck error: `i` may have been modified, so the proof `i < 3` may not be valid
+}

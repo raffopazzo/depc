@@ -752,7 +752,7 @@ expected<expr_t> type_assign_abs(
         return std::move(body.error());
     // so far so good, but we now need to make sure that all branches contain a return statement,
     // with the only exception of functions returning `unit_t` because the return statement is optional;
-    if (not returns_from_all_branches(*body))
+    if (not returns_from_all_branches(body->first))
     {
         if (not is_beta_delta_equivalent(ret_type.get(), derivation_rules::make_unit(env, ctx)))
         {
@@ -770,7 +770,7 @@ expected<expr_t> type_assign_abs(
             is_mutable,
             std::move(arg_types),
             std::move(ret_type),
-            std::move(*body)
+            std::move(body->first)
         });
 }
 

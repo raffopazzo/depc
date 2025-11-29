@@ -21,10 +21,28 @@
 
 #include "dep0/error.hpp"
 
+#include <map>
 #include <optional>
 #include <vector>
 
 namespace dep0::typecheck {
+
+/** @brief Helper type to keep track of which variables have been mutated by a body or statement. */
+struct mutation_log_t
+{
+    std::map<expr_t::var_t, expr_t> mutations; /**< Store the new type of a variable after a mutation.*/
+
+    /**
+     * @brief Constructs a new log formed by the union of the two input logs.
+     * @remarks Currently this expects that, if a variable appears in both input logs, it has the same type.
+     * If not, this function will return an error.
+     * This is only a temporary limitation which will need to be removed.
+     * If a variable has been mutated to different types by different branches,
+     * the combined log will need to somehow contain the mutated variable but
+     * it is currently unclear what its type should be.
+     */
+    static expected<mutation_log_t> combine(mutation_log_t&&, mutation_log_t&&);
+};
 
 /**
  * @brief Checks whether a type definition is legal;
@@ -83,7 +101,7 @@ expected<func_def_t> check_func_def(env_t&, parser::func_def_t const&);
  *
  * @return A legal body or an error.
  */
-expected<body_t>
+expected<std::pair<body_t, mutation_log_t>>
 check_body(
     env_t const&,
     proof_state_t,
@@ -107,7 +125,7 @@ check_body(
  *
  * @return A legal statement or an error.
  */
-expected<stmt_t>
+expected<std::pair<stmt_t, mutation_log_t>>
 check_stmt(
     env_t const&,
     proof_state_t&,

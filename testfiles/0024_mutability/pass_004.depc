@@ -1,0 +1,16 @@
+/*
+ * Copyright Raffaele Rossi 2025.
+ *
+ * Distributed under the Boost Software License, Version 1.0.
+ * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
+ */
+struct node_t
+{
+    array_t(node_t, 2) children;
+};
+
+func f(node_t mutable x, node_t y) -> node_t
+{
+    x = y.children[0];
+    return x;
+}

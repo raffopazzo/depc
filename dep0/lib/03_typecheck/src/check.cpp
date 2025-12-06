@@ -434,7 +434,7 @@ check_stmt(
             auto const decl = state.context[*root];
             assert(decl and "root of assignment was a variable but it did not exist in current context");
             if (decl->is_mutable == ast::is_mutable_t::no)
-                return error_t("cannot mutate immutable variable");
+                return error_t("cannot mutate immutable variable", loc);
             log.mutations.insert_or_assign(*root, decl->type);
             return make_legal_stmt(stmt_t::assign_t{std::move(*lhs), std::move(*rhs)});
         },

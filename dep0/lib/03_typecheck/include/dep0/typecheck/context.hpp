@@ -70,12 +70,12 @@ public:
         { }
 
     public:
-        std::optional<source_loc_t> origin; /**< Where in the source code the variable declaration was encountered. */
-        std::optional<std::size_t> scope_id; /**< Scope ID of the originating context or empty if unscoped. */
-        expr_t::var_t var;  /**< Copy of the variable to which this declaration was bound, eg `x` in `0 i32_t x`. */
-        ast::qty_t qty;     /**< Quantity of the variable declaration, eg `0` in `0 i32_t x`. */
-        ast::is_mutable_t is_mutable; /**< Whether the variable was declared mutable or not. */
-        expr_t type;        /**< Type of the variable declaration, eg `i32_t` in `0 i32_t x`. */
+        std::optional<source_loc_t> origin;     /**< Where in the source code the variable declaration was found. */
+        std::optional<std::size_t> scope_id;    /**< Scope ID of the originating context or empty if unscoped. */
+        expr_t::var_t var;                      /**< Copy of the variable to which this declaration was bound. */
+        ast::qty_t qty;                         /**< Quantity of the variable declaration, eg `0` in `0 i32_t x`. */
+        ast::is_mutable_t is_mutable;           /**< Whether the variable was declared mutable or not. */
+        expr_t type;                            /**< Type of the variable declaration, eg `i32_t` in `0 i32_t x`. */
     };
 
     /** @brief The default context is unscoped, which reduces the risk of compiler bugs when typechecking references. */

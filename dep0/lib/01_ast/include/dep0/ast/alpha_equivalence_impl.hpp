@@ -290,6 +290,13 @@ struct alpha_equivalence_visitor
         return eq;
     }
 
+    result_t operator()(typename stmt_t<P>::immutable_t& x, typename stmt_t<P>::immutable_t& y) const
+    {
+        if (x.vars != y.vars)
+            return dep0::error_t("immutable blocks must have the same set of variables");
+        return is_alpha_equivalent_impl(x.body, y.body);
+    }
+
     result_t operator()(typename stmt_t<P>::if_else_t& x, typename stmt_t<P>::if_else_t& y) const
     {
         auto eq = is_alpha_equivalent_impl(x.cond, y.cond);

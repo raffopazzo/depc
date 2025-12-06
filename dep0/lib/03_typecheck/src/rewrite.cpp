@@ -94,6 +94,17 @@ std::optional<stmt_t> rewrite(expr_t const& from, expr_t const& to, stmt_t const
                         impl::choose(std::move(new_lhs), assign.lhs),
                         impl::choose(std::move(new_rhs), assign.rhs)});
         },
+        [&] (stmt_t::immutable_t const& immutable)
+        {
+            auto new_body = rewrite(from, to, immutable.body);
+            if (new_body)
+                result.emplace(
+                    old.properties,
+                    stmt_t::immutable_t{
+                        immutable.vars,
+                        std::move(*new_body)
+                    });
+        },
         [&] (stmt_t::if_else_t const& if_else)
         {
             auto new_cond = rewrite(from, to, if_else.cond);

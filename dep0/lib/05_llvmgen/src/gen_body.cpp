@@ -349,6 +349,10 @@ void gen_stmt(
         {
             assert(false and "assignment not implemented yet");
         },
+        [] (typecheck::stmt_t::immutable_t const&)
+        {
+            assert(false and "immutable block not implemented yet");
+        },
         [&] (typecheck::stmt_t::if_else_t const& x)
         {
             // Let's eliminate impossible branches.

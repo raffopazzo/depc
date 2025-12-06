@@ -105,6 +105,13 @@ std::size_t hash_code_impl(hash_code_state_t<P>& state, stmt_t<P> const& x)
             {
                 return combine(hash_code_impl(state, assign.lhs), hash_code_impl(state, assign.rhs));
             },
+            [&] (stmt_t<P>::immutable_t const& immutable)
+            {
+                std::size_t result = 0ul;
+                for (auto const& var: immutable.vars)
+                    boost::hash_combine(result, hash_code_impl(state, var));
+                return combine(result, hash_code_impl(state, immutable.body));
+            },
             [&] (stmt_t<P>::if_else_t const& if_)
             {
                 return combine(

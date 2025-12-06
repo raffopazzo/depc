@@ -35,6 +35,11 @@ void substitute(expr_t::var_t const& var, expr_t const& expr, body_t& body)
                 substitute(var, expr, assign.lhs);
                 substitute(var, expr, assign.rhs);
             },
+            [&] (stmt_t::immutable_t& immutable)
+            {
+                immutable.vars.erase(var);
+                substitute(var, expr, immutable.body);
+            },
             [&] (stmt_t::if_else_t& if_)
             {
                 substitute(var, expr, if_.cond);

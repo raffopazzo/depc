@@ -24,6 +24,7 @@
 #include <boost/variant/recursive_wrapper.hpp>
 
 #include <optional>
+#include <set>
 #include <tuple>
 #include <vector>
 #include <variant>
@@ -448,6 +449,13 @@ struct stmt_t
         expr_t rhs;
     };
 
+    /** @brief Represents an immutable block, for example `immutable(x, y) { ... }`. */
+    struct immutable_t
+    {
+        std::set<typename expr_t::var_t> vars;
+        body_t body;
+    };
+
     /** @brief Represents an `if` or `if-else` statement, whose condition must be of type `%bool_t`. */
     struct if_else_t
     {
@@ -481,7 +489,7 @@ struct stmt_t
         std::optional<expr_t> reason;
     };
 
-    using value_t = std::variant<typename expr_t::app_t, assign_t, if_else_t, return_t, impossible_t>;
+    using value_t = std::variant<typename expr_t::app_t, assign_t, immutable_t, if_else_t, return_t, impossible_t>;
 
     properties_t properties;
     value_t value;

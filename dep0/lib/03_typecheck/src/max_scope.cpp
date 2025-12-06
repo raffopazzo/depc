@@ -91,6 +91,10 @@ expected<std::size_t> max_scope_stmt(ctx_t const& ctx, stmt_t const& stmt)
         {
             return max_scope_combine(max_scope_expr(ctx, assign.lhs), max_scope_expr(ctx, assign.rhs));
         },
+        [&] (stmt_t::immutable_t const& immutable) -> expected<std::size_t>
+        {
+            return max_scope_body(ctx, immutable.body);
+        },
         [&] (stmt_t::if_else_t const& if_stmt) -> expected<std::size_t>
         {
             auto cond_result = max_scope_expr(ctx, if_stmt.cond);

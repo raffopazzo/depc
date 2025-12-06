@@ -65,10 +65,11 @@ typeVar: name=ID;
 // Statements
 body: '{' stmt* '}';
 
-stmt: funcCallStmt | assignment | ifElse | returnStmt | impossibleStmt;
+stmt: funcCallStmt | assignment | immutableBlock | ifElse | returnStmt | impossibleStmt;
 
 funcCallStmt: func=expr '(' (expr (',' expr)*)? ')' ';';
 assignment: lhs=expr '=' rhs=expr ';';
+immutableBlock: 'immutable' '(' ID (',' ID)* ')' body;
 ifElse: 'if' '(' cond=expr ')' true_branch=bodyOrStmt ('else' false_branch=bodyOrStmt)?;
 bodyOrStmt: body | stmt;
 returnStmt: 'return' expr? ';';

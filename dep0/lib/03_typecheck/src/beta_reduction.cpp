@@ -28,6 +28,7 @@ namespace impl {
 
 static bool beta_normalize(stmt_t&);
 static bool beta_normalize(stmt_t::assign_t&);
+static bool beta_normalize(stmt_t::immutable_t&);
 static bool beta_normalize(stmt_t::if_else_t&);
 static bool beta_normalize(stmt_t::return_t&);
 static bool beta_normalize(stmt_t::impossible_t&);
@@ -79,6 +80,11 @@ bool beta_normalize(stmt_t::assign_t& assign)
     bool changed = beta_normalize(assign.lhs);
     changed |= beta_normalize(assign.rhs);
     return changed;
+}
+
+bool beta_normalize(stmt_t::immutable_t& immutable)
+{
+    return beta_normalize(immutable.body);
 }
 
 bool beta_normalize(stmt_t::if_else_t& if_)
@@ -241,6 +247,11 @@ bool beta_normalize(body_t& body)
             [&] (stmt_t::assign_t& assign)
             {
                 // TODO could drop trivial self-assignments, eg `x = x`;
+                return std::next(it);
+            },
+            [&] (stmt_t::immutable_t& immutable)
+            {
+                changed |= beta_normalize(immutable.body);
                 return std::next(it);
             },
             [&] (stmt_t::if_else_t& if_)

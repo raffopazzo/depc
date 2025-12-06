@@ -6,6 +6,8 @@
  */
 #pragma once
 
+#include "dep0/testing/ast_predicates/details/check_name.hpp"
+
 #include "dep0/testing/ast_predicates/app.hpp"
 
 #include "dep0/testing/failure.hpp"
@@ -70,6 +72,23 @@ constexpr auto assign_of(F_lhs&& f_lhs, F_rhs&& f_rhs)
         {
             return is_assign(stmt, f_lhs, f_rhs);
         };
+}
+
+template <ast::Properties P, Predicate<ast::stmt_t<P>>... F_body>
+boost::test_tools::predicate_result
+is_immutable_block(ast::stmt_t<P> const& stmt, std::set<std::string> vars, std::tuple<F_body...> f_body)
+{
+    auto const immutable = std::get_if<typename ast::stmt_t<P>::immutable_t>(&stmt.value);
+    if (not immutable)
+        return failure("statement is not an immutable block but ", pretty_name(stmt.value));
+    if (immutable->vars.size() != vars.size())
+        return failure("vars of immutable block have different length: ", immutable->vars.size(), " != ", vars.size());
+    for (std::string_view const v: vars)
+        if (std::ranges::none_of(immutable->vars, [v] (auto const& var) { return details::check_name<P>(var, v); }))
+            return failure("immutable block does not declare variable `", v, '`');
+    if (auto const result = check_body(immutable->body, std::move(f_body)); not result)
+        return failure("inside immutable block: ", result.message());
+    return true;
 }
 
 template <

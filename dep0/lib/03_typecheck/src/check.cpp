@@ -438,6 +438,31 @@ check_stmt(
             log.mutations.insert_or_assign(*root, decl->type);
             return make_legal_stmt(stmt_t::assign_t{std::move(*lhs), std::move(*rhs)});
         },
+        [&] (parser::stmt_t::immutable_t const& x) -> expected<stmt_t>
+        {
+            auto new_state = proof_state_t(state.context.extend(), state.goal);
+            std::set<expr_t::var_t> vars;
+            for (auto const& v: x.vars)
+            {
+                auto const d = state.context[v.name];
+                if (not d)
+                {
+                    std::ostringstream err;
+                    pretty_print<parser::properties_t>(err << "unknown variable `", v) << '`';
+                    err << " inside immutable block declaration";
+                    return error_t(err.str(), loc);
+                }
+                auto var = new_state.context.try_emplace(v.name, d->origin, d->qty, ast::is_mutable_t::no, d->type);
+                if (not var) // should not happen but whatever
+                    return var.error();
+                vars.insert(std::move(*var));
+            }
+            auto body = check_body(env, std::move(new_state), x.body, is_mutable, usage, usage_multiplier);
+            if (not body)
+                return body.error();
+            log = std::move(body->second);
+            return make_legal_stmt(stmt_t::immutable_t{std::move(vars), std::move(body->first)});
+        },
         [&] (parser::stmt_t::if_else_t const& x) -> expected<stmt_t>
         {
             auto cond =

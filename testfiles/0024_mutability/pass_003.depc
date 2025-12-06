@@ -13,6 +13,6 @@ func f(i32_t mutable x, ref_t(i32_t, scopeof(x)) mutable p) -> i32_t
 
 func g(i32_t a) -> i32_t
 {
-    // similar to `typecheck_error_010.depc` but `p` is a referencing to `a` which is immutable, which is ok
+    // similar to `typecheck_error_010.depc` but `p` is a reference to `a` which is immutable, which is ok
     return f(a, &a);
 }

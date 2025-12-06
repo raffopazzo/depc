@@ -93,6 +93,8 @@ BOOST_AUTO_TEST_CASE(pass_001)
 BOOST_AUTO_TEST_CASE(pass_002) { BOOST_TEST(pass("0024_mutability/pass_002.depc")); }
 BOOST_AUTO_TEST_CASE(pass_003) { BOOST_TEST(pass("0024_mutability/pass_003.depc")); }
 BOOST_AUTO_TEST_CASE(pass_004) { BOOST_TEST(pass("0024_mutability/pass_004.depc")); }
+BOOST_AUTO_TEST_CASE(pass_005) { BOOST_TEST(pass("0024_mutability/pass_005.depc")); }
+BOOST_AUTO_TEST_CASE(pass_006) { BOOST_TEST(pass("0024_mutability/pass_006.depc")); }
 
 BOOST_AUTO_TEST_CASE(typecheck_error_000) { BOOST_TEST(fail("0024_mutability/typecheck_error_000.depc")); }
 BOOST_AUTO_TEST_CASE(typecheck_error_001) { BOOST_TEST(fail("0024_mutability/typecheck_error_001.depc")); }
@@ -107,5 +109,7 @@ BOOST_AUTO_TEST_CASE(typecheck_error_009) { BOOST_TEST(fail("0024_mutability/typ
 BOOST_AUTO_TEST_CASE(typecheck_error_010) { BOOST_TEST(fail("0024_mutability/typecheck_error_010.depc")); }
 BOOST_AUTO_TEST_CASE(typecheck_error_011) { BOOST_TEST(fail("0024_mutability/typecheck_error_011.depc")); }
 BOOST_AUTO_TEST_CASE(typecheck_error_012) { BOOST_TEST(fail("0024_mutability/typecheck_error_012.depc")); }
+BOOST_AUTO_TEST_CASE(typecheck_error_013) { BOOST_TEST(fail("0024_mutability/typecheck_error_013.depc")); }
+BOOST_AUTO_TEST_CASE(typecheck_error_014) { BOOST_TEST(fail("0024_mutability/typecheck_error_014.depc")); }
 
 BOOST_AUTO_TEST_SUITE_END()

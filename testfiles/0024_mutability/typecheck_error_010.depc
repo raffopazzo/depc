@@ -4,37 +4,6 @@
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
  */
-// struct node_t
-// {
-//     u64_t n;
-//     array_t(node_t, n) children;
-// };
-// 
-// func select(bool_t which, 0 scope_t a, ref_t(node_t, a) p, ref_t(node_t, a) q) -> ref_t(node_t, a)
-// {
-//     if (which)
-//         return p;
-//     else
-//         return q;
-// }
-// 
-// func f(bool_t which, node_t mutable x, 0 true_t(0 < x.n), 0 true_t(1 < x.n)) -> node_t
-// {
-//     // typecheck error: cannot take reference to an element rooted in a mutable variable
-//     x = *select(which, scopeof(x), &x.children[0], &x.children[1]);
-//     return x;
-// }
-// 
-// func f(i32_t mutable x, i32_t mutable y) -> i32_t
-// {
-//     auto p = &y; // typecheck error: cannot take reference to a mutable variable
-//     if (*p < 10)
-//         y = 11; // because otherwise we might break proofs about those references
-// 
-//     x = *&y; // typecheck error: cannot take reference to a mutable variable
-//     return x;
-// }
-
 func f(i32_t mutable x, ref_t(i32_t, scopeof(x)) mutable p) -> i32_t
 {
     p = &x; // typecheck error: cannot take reference to a mutable variable

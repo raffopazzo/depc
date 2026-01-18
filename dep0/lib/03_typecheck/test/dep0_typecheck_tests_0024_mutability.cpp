@@ -99,7 +99,7 @@ BOOST_AUTO_TEST_CASE(pass_006) { BOOST_TEST(pass("0024_mutability/pass_006.depc"
 BOOST_AUTO_TEST_CASE(pass_007)
 {
     BOOST_TEST(pass("0024_mutability/pass_007.depc"));
-    BOOST_TEST_REQUIRE(pass_result->entries.size() == 3ul);
+    BOOST_TEST_REQUIRE(pass_result->entries.size() == 5ul);
     {
         auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[0]);
         BOOST_TEST_REQUIRE(f);
@@ -146,6 +146,38 @@ BOOST_AUTO_TEST_CASE(pass_007)
                             app_of(global("f0"), scopeof("x"), addressof("x")),
                             app_of(global("f0"), scopeof("y"), addressof("y"))))
                 }));
+    }
+    {
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[3]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "f3");
+        BOOST_TEST_REQUIRE(f->value.args.size() == 2ul);
+        BOOST_TEST(is_arg(f->value.args[0], is_i32, "x", dep0::ast::is_mutable_t::yes));
+        BOOST_TEST(is_arg(f->value.args[1], is_i32, "y", dep0::ast::is_mutable_t::no));
+        BOOST_TEST(is_i32(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 1ul);
+        BOOST_TEST(
+            is_immutable_block(
+                f->value.body.stmts[0ul],
+                {"x", "y"},
+                std::tuple{
+                    return_of(
+                        plus(
+                            app_of(global("f0"), scopeof("x"), addressof("x")),
+                            var("y")))
+                }));
+    }
+    {
+        auto const f = std::get_if<dep0::typecheck::func_def_t>(&pass_result->entries[4]);
+        BOOST_TEST_REQUIRE(f);
+        BOOST_TEST(f->name == "f4");
+        BOOST_TEST_REQUIRE(f->value.args.size() == 2ul);
+        BOOST_TEST(is_arg(f->value.args[0], is_i32, "x", dep0::ast::is_mutable_t::yes));
+        BOOST_TEST(is_arg(f->value.args[1], is_i32, "y", dep0::ast::is_mutable_t::no));
+        BOOST_TEST(is_i32(f->value.ret_type.get()));
+        BOOST_TEST_REQUIRE(f->value.body.stmts.size() == 2ul);
+        BOOST_TEST(is_immutable_block(f->value.body.stmts[0ul], {"y"}, std::tuple{assign_of(var("x"), constant(10))}));
+        BOOST_TEST(is_return_of(f->value.body.stmts[1ul], var("x")));
     }
 }
 

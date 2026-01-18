@@ -20,6 +20,7 @@
 
 #include "dep0/typecheck/beta_delta_reduction.hpp"
 #include "dep0/typecheck/list_initialization.hpp"
+#include "dep0/typecheck/location_map.hpp"
 #include "dep0/typecheck/subscript_access.hpp"
 
 #include "dep0/ast/find_member_field.hpp"
@@ -74,19 +75,6 @@ static std::optional<std::pair<ast::sign_t, ast::width_t>> get_sign_and_width(en
 static bool has_attribute(func_decl_t const& x, std::string_view const attribute)
 {
     return x.attribute and x.attribute->value == attribute;
-}
-
-expected<mutation_log_t> mutation_log_t::combine(mutation_log_t&& a, mutation_log_t&& b)
-{
-    for (auto& [v, t]: b.mutations)
-        if (auto const [it, inserted] = a.mutations.try_emplace(v, t); not inserted)
-            if (auto eq = is_beta_delta_equivalent(it->second, t); not eq)
-            {
-                std::ostringstream err;
-                pretty_print<properties_t>(err << "found mutation of different types for variable `", v) << '`';
-                return error_t(err.str(), std::vector{std::move(eq.error())});
-            }
-    return std::move(a);
 }
 
 expected<module_t> check(env_t const& base_env, parser::module_t const& x) noexcept
@@ -292,7 +280,7 @@ expected<expr_t> check_type(env_t const& env, ctx_t const& ctx, parser::expr_t c
             : std::vector<dep0::error_t>{std::move(as_type.error()), std::move(as_kind.error())});
 }
 
-expected<std::pair<body_t, mutation_log_t>>
+expected<body_t>
 check_body(
     env_t const& env,
     proof_state_t state,
@@ -301,7 +289,6 @@ check_body(
     usage_t& usage,
     ast::qty_t const usage_multiplier)
 {
-    mutation_log_t log;
     auto stmts =
         fmap_or_error(
             x.stmts,
@@ -310,30 +297,21 @@ check_body(
                 auto stmt = check_stmt(env, state, s, is_mutable, usage, usage_multiplier);
                 if (not stmt)
                     return stmt.error();
-                std::optional<ctx_t> new_ctx;
-                auto const loc = s.properties;
-                for (auto& [var, type]: stmt->second.mutations)
-                {
-                    if (auto const decl = state.context[var])
-                    {
-                        if (not new_ctx)
-                            new_ctx.emplace(state.context.extend());
-                        auto const v = new_ctx->try_emplace(var.name, loc, decl->qty, ast::is_mutable_t::yes, type);
-                        if (not v)
-                            return v.error(); // should not happen, but just in case
-                        log.mutations.insert_or_assign(std::move(var), std::move(type));
-                    }
-                }
-                if (new_ctx)
-                    state.context = std::move(*new_ctx);
-                return std::move(stmt->first);
+                if (stmt->properties.derivation.next_ctx)
+                    state.context = std::move(stmt->properties.derivation.next_ctx->operator->()->extend());
+                return stmt;
             });
     if (not stmts)
         return std::move(stmts.error());
-    return std::pair{make_legal_body(std::move(*stmts)), std::move(log)};
+    if (stmts->empty())
+        return make_legal_body(std::nullopt, location_map_t{}, std::move(*stmts));
+    auto next_ctx = stmts->back().properties.derivation.next_ctx;
+    // TODO this should be the union of all maps
+    auto location_map = stmts->back().properties.derivation.location_map.get();
+    return make_legal_body(std::move(next_ctx), std::move(location_map), std::move(*stmts));
 }
 
-expected<std::pair<stmt_t, mutation_log_t>>
+expected<stmt_t>
 check_stmt(
     env_t const& env,
     proof_state_t& state,
@@ -343,13 +321,12 @@ check_stmt(
     ast::qty_t const usage_multiplier)
 {
     auto const loc = s.properties;
-    mutation_log_t log;
-    auto stmt = match(
+    return match(
         s.value,
         [&] (parser::expr_t::app_t const& x) -> expected<stmt_t>
         {
             if (auto app = type_assign_app(env, state.context, x, loc, is_mutable, usage, usage_multiplier))
-                return make_legal_stmt(std::move(std::get<expr_t::app_t>(app->value)));
+                return make_legal_stmt(std::nullopt, location_map_t{}, std::move(std::get<expr_t::app_t>(app->value)));
             else
                 return std::move(app.error());
         },
@@ -435,13 +412,31 @@ check_stmt(
             assert(decl and "root of assignment was a variable but it did not exist in current context");
             if (decl->is_mutable == ast::is_mutable_t::no)
                 return error_t("cannot mutate immutable variable", loc);
-            log.mutations.insert_or_assign(*root, decl->type);
-            return make_legal_stmt(stmt_t::assign_t{std::move(*lhs), std::move(*rhs)});
+
+            auto next_ctx = state.context.extend();
+            auto new_var =
+                next_ctx.try_emplace(root->name, x.lhs.properties, decl->qty, ast::is_mutable_t::yes, decl->type);
+            if (not new_var)
+                return std::move(new_var.error()); // should not happen, but whatever
+            return make_legal_stmt(
+                ctx_ref_t(std::move(next_ctx)),
+                location_map_t{{{*new_var, *root}}},
+                stmt_t::assign_t{
+                    std::move(*lhs),
+                    std::move(*rhs)
+                });
         },
         [&] (parser::stmt_t::immutable_t const& x) -> expected<stmt_t>
         {
             auto new_state = proof_state_t(state.context.extend(), state.goal);
             std::set<expr_t::var_t> vars;
+            // This is a bit of a hack, hence the name.
+            // Variables declared in an immutable block refer to variables in the parent scope.
+            // We need a way to tell the llvmgen stage what is the memory location that these new variables refer to.
+            // A location map is exactly what we need and we can exploit the fact that all new variables introduced
+            // by mutations will have a different name from the ones introduced by the immutable block.
+            // So we can just combine a hacky location map with the real one obtained by typechecking the body.
+            location_map_t hacky_map;
             for (auto const& v: x.vars)
             {
                 auto const d = state.context[v.name];
@@ -455,13 +450,24 @@ check_stmt(
                 auto var = new_state.context.try_emplace(v.name, d->origin, d->qty, ast::is_mutable_t::no, d->type);
                 if (not var) // should not happen but whatever
                     return var.error();
+                bool const inserted = hacky_map.map.try_emplace(*var, d->var).second;
+                assert(inserted and "variable already present in immutable block");
                 vars.insert(std::move(*var));
             }
             auto body = check_body(env, std::move(new_state), x.body, is_mutable, usage, usage_multiplier);
             if (not body)
                 return body.error();
-            log = std::move(body->second);
-            return make_legal_stmt(stmt_t::immutable_t{std::move(vars), std::move(body->first)});
+            auto next_ctx = body->properties.derivation.next_ctx;
+            auto location_map = location_map_t::combine(hacky_map, body->properties.derivation.location_map.get());
+            if (not location_map)
+                return location_map.error();
+            return make_legal_stmt(
+                std::move(next_ctx),
+                std::move(*location_map),
+                stmt_t::immutable_t{
+                    std::move(vars),
+                    std::move(*body)
+                });
         },
         [&] (parser::stmt_t::if_else_t const& x) -> expected<stmt_t>
         {
@@ -521,19 +527,34 @@ check_stmt(
                 {
                     if (auto ok = combine_usages(); not ok)
                         return std::move(ok.error());
-                    // combine mutations from both branches and add the result to the current context
-                    auto new_log =
-                        mutation_log_t::combine(
-                            std::move(true_branch->second),
-                            std::move(false_branch->second));
-                    if (not new_log)
-                        return std::move(new_log.error());
-                    log = std::move(*new_log);
+                    auto location_map =
+                        location_map_t::combine(
+                            true_branch->properties.derivation.location_map.get(),
+                            false_branch->properties.derivation.location_map.get());
+                    if (not location_map)
+                    {
+                        location_map.error().location = loc;
+                        return std::move(location_map.error());
+                    }
+                    std::optional<ctx_t> next_ctx;
+                    for (auto const& [new_var, old_var]: location_map->map)
+                        if (auto const decl = state.context[old_var])
+                        {
+                            if (not next_ctx)
+                                next_ctx.emplace(state.context.extend());
+                            auto const ok =
+                                next_ctx->try_emplace(
+                                    new_var.name, loc, decl->qty, ast::is_mutable_t::yes, decl->type);
+                            if (not ok)
+                                return std::move(ok.error()); // should not happen but whatever
+                        }
                     return make_legal_stmt(
+                        next_ctx ? std::optional{ctx_ref_t(std::move(*next_ctx))} : std::nullopt,
+                        std::move(*location_map),
                         stmt_t::if_else_t{
                             std::move(*cond),
-                            std::move(true_branch->first),
-                            std::move(false_branch->first)
+                            std::move(*true_branch),
+                            std::move(*false_branch)
                         });
                 }
                 else
@@ -543,7 +564,7 @@ check_stmt(
             // but if the true branch returns from all its sub-branches,
             // then it means we are now in the implied else branch;
             // we can then rewrite `cond = false` inside the current proof state
-            if (returns_from_all_branches(true_branch->first))
+            if (returns_from_all_branches(*true_branch))
             {
                 state.rewrite(*cond, derivation_rules::make_false(env, state.context));
                 add_true_not_cond(state.context);
@@ -553,14 +574,14 @@ check_stmt(
             // TODO currently mutations cannot change type, but when they can do, this code might be incorrect.
             // Because if the true-branch of an if-without-else has changed the type of a variable of the parent scope,
             // the type of that variable after the if-statement is potentially unspecified.
-            // Maybe a solution is to synthesize a log for the missing else-branch where each variable
-            // mutated by the true-branch is added to the synthetic log with the original type
-            // and then run the same combining logic as-if the else-branch was present.
-            log = std::move(true_branch->second);
+            auto next_ctx = true_branch->properties.derivation.next_ctx;
+            auto location_map = true_branch->properties.derivation.location_map.get();
             return make_legal_stmt(
+                std::move(next_ctx),
+                std::move(location_map),
                 stmt_t::if_else_t{
                     std::move(*cond),
-                    std::move(true_branch->first),
+                    std::move(*true_branch),
                     std::nullopt
                 });
         },
@@ -569,7 +590,7 @@ check_stmt(
             if (not x.expr)
             {
                 if (is_beta_delta_equivalent(state.goal, derivation_rules::make_unit(env, state.context)))
-                    return make_legal_stmt(stmt_t::return_t{});
+                    return make_legal_stmt(std::nullopt, location_map_t{}, stmt_t::return_t{});
                 else
                 {
                     std::ostringstream err;
@@ -578,7 +599,7 @@ check_stmt(
                 }
             }
             else if (auto expr = check_expr(env, state.context, *x.expr, state.goal, is_mutable, usage, usage_multiplier))
-                return make_legal_stmt(stmt_t::return_t{std::move(*expr)});
+                return make_legal_stmt(std::nullopt, location_map_t{}, stmt_t::return_t{std::move(*expr)});
             else
                 return std::move(expr.error());
         },
@@ -590,7 +611,7 @@ check_stmt(
                     sort_t{derivation_rules::make_true_t(env, ctx, derivation_rules::make_false(env, ctx))};
                 for (ctx_t::decl_t const& decl: ctx.decls())
                     if (is_beta_delta_equivalent(decl.type, false_type))
-                        return make_legal_stmt(stmt_t::impossible_t{std::move(reason)});
+                        return make_legal_stmt(std::nullopt, location_map_t{}, stmt_t::impossible_t{std::move(reason)});
                 return error_t("proof of false not found", loc);
             };
             if (x.reason)
@@ -607,9 +628,6 @@ check_stmt(
             else
                 return check_impossible_stmt(state.context, std::nullopt);
         });
-    if (not stmt)
-        return std::move(stmt.error());
-    return std::pair{std::move(*stmt), std::move(log)};
 }
 
 expected<expr_t>

@@ -139,3 +139,4 @@ std::ostream& pretty_print(std::ostream&, sort_t const&, std::size_t indent = 0u
 // we also need to include it here in order to make its destructor visible,
 // otherwise `boost::recursive_wrapper` does not compile
 #include "dep0/typecheck/environment.hpp"
+#include "dep0/typecheck/location_map.hpp"

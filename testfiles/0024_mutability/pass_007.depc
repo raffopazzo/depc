@@ -16,10 +16,28 @@ func f1(i32_t mutable x) -> i32_t
         return f0(scopeof(x), &x);
     }
 }
+
 func f2(i32_t mutable x, i32_t mutable y) -> i32_t
 {
     immutable(x, y)
     {
         return f0(scopeof(x), &x) + f0(scopeof(y), &y);
     }
+}
+
+func f3(i32_t mutable x, i32_t y) -> i32_t
+{
+    immutable(x, y)
+    {
+        return f0(scopeof(x), &x) + y;
+    }
+}
+
+func f4(i32_t mutable x, i32_t y) -> i32_t
+{
+    immutable(y)
+    {
+        x = 10;
+    }
+    return x;
 }

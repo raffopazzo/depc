@@ -25,7 +25,7 @@ static void gen_func_args(global_ctx_t&, local_ctx_t&, llvm_func_proto_t const&,
 static void gen_func_attributes(global_ctx_t const&, llvm_func_proto_t const&, llvm::Function*);
 static void gen_func_body(
     global_ctx_t&,
-    local_ctx_t const&,
+    local_ctx_t&,
     llvm_func_proto_t const&,
     typecheck::body_t const&,
     llvm::Function*);
@@ -69,18 +69,32 @@ void gen_func_args(
         {
             if (arg.var->idx == 0ul)
                 llvm_arg.setName(arg.var->name.view());
-            bool inserted = false;
-            if (auto const pi = std::get_if<typecheck::expr_t::pi_t>(&arg.type.value))
+            // For immutable arguments, we store their value in the local context.
+            // Mutable arguments are instead handled in `gen_func_body` because we have to make a local copy.
+            if (arg.is_mutable == ast::is_mutable_t::no)
             {
-                assert(llvm_arg.getType()->isPointerTy());
-                auto const proto = llvm_func_proto_t::from_pi(*pi);
-                assert(proto.has_value() and "function arguments must be of the 1st order");
-                auto const function_type = gen_func_type(global, *proto);
-                inserted = local.try_emplace(*arg.var, llvm_func_t(function_type, &llvm_arg)).second;
+                if (auto const pi = std::get_if<typecheck::expr_t::pi_t>(&arg.type.value))
+                {
+                    assert(llvm_arg.getType()->isPointerTy());
+                    auto const proto = llvm_func_proto_t::from_pi(*pi);
+                    assert(proto.has_value() and "function arguments must be of the 1st order");
+                    auto const function_type = gen_func_type(global, *proto);
+                    bool const inserted = local.try_emplace(*arg.var, llvm_func_t(function_type, &llvm_arg)).second;
+                    assert(inserted);
+                }
+                else
+                {
+                    bool const inserted =
+                        local.try_emplace(
+                            *arg.var,
+                            std::in_place_type<value_t>,
+                            &llvm_arg,
+                            ast::is_mutable_t::no,
+                            is_pass_by_ptr(global, arg.type)
+                        ).second;
+                    assert(inserted);
+                }
             }
-            else
-                inserted = local.try_emplace(*arg.var, &llvm_arg).second;
-            assert(inserted);
         }
     }
 }
@@ -93,18 +107,63 @@ void gen_func_attributes(global_ctx_t const& global, llvm_func_proto_t const& pr
 
 void gen_func_body(
     global_ctx_t& global,
-    local_ctx_t const& local,
+    local_ctx_t& local,
     llvm_func_proto_t const& proto,
     typecheck::body_t const& body,
     llvm::Function* const llvm_f)
 {
-    auto snippet = gen_body(global, local, body, "entry", llvm_f, std::nullopt);
-    if (snippet.open_blocks.size() and std::holds_alternative<typecheck::expr_t::unit_t>(proto.ret_type().value))
+    // If we have mutable arguments, first make a local copy of the incoming value and store the address of the copy.
+    // Note that it is physically impossible to mutate arguments that have no name, so those are ignored.
+    std::optional<std::pair<snippet_t, llvm::IRBuilder<>>> mutable_block;
+    auto constexpr yes = ast::is_mutable_t::yes;
+    if (std::ranges::any_of(proto.runtime_args(), [] (auto const& x) { return x.var and x.is_mutable == yes; }))
+    {
+        auto& [snippet, builder] =
+            mutable_block.emplace(
+                std::piecewise_construct,
+                std::forward_as_tuple(),
+                std::forward_as_tuple(global.llvm_ctx));
+        snippet.entry_block = llvm::BasicBlock::Create(global.llvm_ctx, "mutables", llvm_f);
+        builder.SetInsertPoint(snippet.entry_block);
+        auto llvm_arg_it = llvm_f->arg_begin();
+        if (is_pass_by_ptr(global, proto.ret_type()))
+            ++llvm_arg_it; // skip sret argument
+        for (auto const& arg: proto.runtime_args())
+        {
+            auto& llvm_arg = *llvm_arg_it++;
+            if (arg.var and arg.is_mutable == yes)
+            {
+                auto const address = gen_alloca(global, local, builder, allocator_t::stack, arg.type);
+                gen_store(global, local, builder, value_category_t::temporary, &llvm_arg, address, arg.type);
+                bool const inserted =
+                    local.try_emplace(
+                        *arg.var,
+                        std::in_place_type<value_t>,
+                        address,
+                        ast::is_mutable_t::yes,
+                        is_pass_by_ptr(global, arg.type)
+                    ).second;
+                local.save_address(*arg.var, address);
+                assert(inserted);
+            }
+        }
+        // Note that at this point "mutables" is missing a terminator.
+        // We'll add a jump to "entry" once it has been generated.
+        snippet.open_blocks.push_back(snippet.entry_block);
+    }
+    // Here we generate the actual body.
+    auto entry = gen_body(global, local, body, "entry", llvm_f, std::nullopt);
+    if (entry.open_blocks.size() and std::holds_alternative<typecheck::expr_t::unit_t>(proto.ret_type().value))
     {
         auto builder = llvm::IRBuilder<>(global.llvm_ctx);
         // Having open blocks means that the function has no return statement,
         // this implies its return type is `unit_t`, so just return `i8 0`.
-        snippet.seal_open_blocks(builder, [unit=gen_val_unit(global)] (auto& builder) { builder.CreateRet(unit); });
+        entry.seal_open_blocks(builder, [unit=gen_val_unit(global)] (auto& builder) { builder.CreateRet(unit); });
+    }
+    if (mutable_block)
+    {
+        auto& [snippet, builder] = *mutable_block;
+        snippet.seal_open_blocks(builder, [&] (auto& builder) { builder.CreateBr(entry.entry_block); });
     }
     finalize_llvm_func(llvm_f);
 }

@@ -6,6 +6,7 @@
  */
 #include "private/gen_body.hpp"
 
+#include "private/gen_address.hpp"
 #include "private/gen_array.hpp"
 #include "private/gen_loop.hpp"
 #include "private/gen_type.hpp"
@@ -14,6 +15,8 @@
 
 #include "dep0/typecheck/is_impossible.hpp"
 #include "dep0/typecheck/is_mutable.hpp"
+
+#include "dep0/ast/mutable_place_expression.hpp"
 
 #include "dep0/match.hpp"
 
@@ -66,30 +69,29 @@ static void gen_destructor_call(global_ctx_t&, local_ctx_t&, llvm::IRBuilder<>&,
  *      store/memcpy/memset the resulting LLVM value at the runtime location
  *      pointed by this LLVM value, which must be of pointer type.
  */
-static void gen_stmt(
+static local_ctx_t
+gen_stmt(
     global_ctx_t&,
     local_ctx_t&,
-    snippet_t& current_snippet,
     llvm::IRBuilder<>& builder,
     typecheck::stmt_t const&,
+    snippet_t& current_snippet,
     llvm::Function* parent_function,
     std::optional<inlined_result_t>);
 
 static void gen_stmts(
     global_ctx_t& global,
     local_ctx_t& local,
-    snippet_t& snippet,
     llvm::IRBuilder<>& builder,
     typecheck::body_t const& body,
+    snippet_t& snippet,
     llvm::Function* const llvm_f,
     std::optional<inlined_result_t> const inlined_result)
 {
     auto it = body.stmts.begin();
-    if (it == body.stmts.end())
-        snippet.open_blocks.push_back(snippet.entry_block);
-    else
+    if (it != body.stmts.end())
     {
-        gen_stmt(global, local, snippet, builder, *it, llvm_f, inlined_result);
+        auto new_ctx = gen_stmt(global, local, builder, *it, snippet, llvm_f, inlined_result);
         while (++it != body.stmts.end())
         {
             if (snippet.open_blocks.size())
@@ -98,7 +100,7 @@ static void gen_stmts(
                 snippet.seal_open_blocks(builder, [next] (auto& builder) { builder.CreateBr(next); });
                 builder.SetInsertPoint(next);
             }
-            gen_stmt(global, local, snippet, builder, *it, llvm_f, inlined_result);
+            new_ctx = gen_stmt(global, new_ctx, builder, *it, snippet, llvm_f, inlined_result);
         }
     }
 }
@@ -170,11 +172,17 @@ static llvm_func_t gen_destructor(global_ctx_t& global, typecheck::expr_t const&
                                 };
                             auto struct_ctx = local.extend();
                             for (auto const i: std::views::iota(0ul, s.fields.size()))
+                            {
+                                auto const is_pass_by_val = llvmgen::is_pass_by_val(global, s.fields[i].type);
                                 struct_ctx.try_emplace(
                                     s.fields[i].var,
-                                    is_boxed(s.fields[i].type) or is_pass_by_val(global, s.fields[i].type)
-                                    ? builder.CreateLoad(gen_type(global, s.fields[i].type), gep(i))
-                                    : gep(i));
+                                    std::in_place_type<value_t>,
+                                    is_boxed(s.fields[i].type) or is_pass_by_val
+                                        ? builder.CreateLoad(gen_type(global, s.fields[i].type), gep(i))
+                                        : gep(i),
+                                    ast::is_mutable_t::no,
+                                    not is_pass_by_val);
+                            }
                             for (auto const i: std::views::reverse(std::views::iota(0ul, s.fields.size())))
                             {
                                 auto const& ty = s.fields[i].type;
@@ -224,11 +232,17 @@ static llvm_func_t gen_destructor(global_ctx_t& global, typecheck::expr_t const&
             auto sigma_ctx = local.extend();
             for (auto const i: std::views::iota(0ul, x.args.size()))
                 if (x.args[i].var)
+                {
+                    auto const pass_by_val = is_pass_by_val(global, x.args[i].type);
                     sigma_ctx.try_emplace(
                         *x.args[i].var,
-                        is_boxed(x.args[i].type) or is_pass_by_val(global, x.args[i].type)
-                        ? builder.CreateLoad(gen_type(global, x.args[i].type), gep(i))
-                        : gep(i));
+                        std::in_place_type<value_t>,
+                        is_boxed(x.args[i].type) or pass_by_val
+                            ? builder.CreateLoad(gen_type(global, x.args[i].type), gep(i))
+                            : gep(i),
+                        ast::is_mutable_t::no,
+                        not pass_by_val);
+                }
             for (auto const i: std::views::reverse(std::views::iota(0ul, x.args.size())))
             {
                 if (is_boxed(x.args[i].type))
@@ -307,6 +321,20 @@ static void gen_destructors(global_ctx_t& global, local_ctx_t& local, llvm::IRBu
     }
 }
 
+void snippet_t::seal_open_blocks(llvm::IRBuilder<>& builder, std::function<void(llvm::IRBuilder<>&)> f)
+{
+    for (auto& bb: open_blocks)
+    {
+        if (not bb->getTerminator())
+        {
+            builder.SetInsertPoint(bb);
+            f(builder);
+            assert(bb->getTerminator() and "callback did not set a terminator");
+        }
+    }
+    open_blocks.clear();
+}
+
 snippet_t gen_body(
     global_ctx_t& global,
     local_ctx_t const& local,
@@ -324,19 +352,22 @@ snippet_t gen_body(
         return snippet;
     }
     auto local_body = local.extend();
-    gen_stmts(global, local_body, snippet, builder, body, llvm_f, inlined_result);
+    gen_stmts(global, local_body, builder, body, snippet, llvm_f, inlined_result);
+    if (not snippet.entry_block->getTerminator())
+        snippet.open_blocks.push_back(snippet.entry_block);
     return snippet;
 }
 
-void gen_stmt(
+local_ctx_t gen_stmt(
     global_ctx_t& global,
     local_ctx_t& local,
-    snippet_t& snippet,
     llvm::IRBuilder<>& builder,
     typecheck::stmt_t const& stmt,
+    snippet_t& snippet,
     llvm::Function* const llvm_f,
     std::optional<inlined_result_t> const inlined_result)
 {
+    auto new_ctx = local.extend();
     auto local_stmt = local.extend();
     match(
         stmt.value,
@@ -345,16 +376,63 @@ void gen_stmt(
             gen_func_call(global, local_stmt, builder, x, value_category_t::temporary, nullptr);
             gen_destructors(global, local_stmt, builder);
         },
-        [] (typecheck::stmt_t::assign_t const&)
+        [&] (typecheck::stmt_t::assign_t const& assign)
         {
-            assert(false and "assignment not implemented yet");
+            assert(stmt.properties.derivation.location_map.get().map.size() == 1ul);
+            auto const& [new_var, old_var] = *stmt.properties.derivation.location_map.get().map.begin();
+            auto const [old_val, old_address] = std::pair{local[old_var], local.load_address(old_var)};
+            assert(old_val);
+            assert(old_address);
+            new_ctx.try_emplace(new_var, *old_val);
+            new_ctx.save_address(new_var, old_address);
+            match(
+                ast::is_mutable_place_expression(assign.lhs),
+                [] (ast::immutable_place_t)
+                {
+                    assert(false and "unexpected assignment statement; typechecking must be broken");
+                    __builtin_unreachable();
+                },
+                [&] (typecheck::expr_t::var_t const& var)
+                {
+                    gen_val(global, local_stmt, builder, assign.rhs, value_category_t::result, old_address);
+                },
+                [&] (typecheck::expr_t::member_t const& x)
+                {
+                    auto const dest = gen_field_address(global, local_stmt, builder, x).first;
+                    gen_val(global, local_stmt, builder, assign.rhs, value_category_t::result, dest);
+                },
+                [&] (typecheck::expr_t::subscript_t const& x)
+                {
+                    auto const dest = gen_address(global, local_stmt, builder, x);
+                    gen_val(global, local_stmt, builder, assign.rhs, value_category_t::result, dest);
+                });
         },
-        [] (typecheck::stmt_t::immutable_t const&)
+        [&] (typecheck::stmt_t::immutable_t const& x)
         {
-            assert(false and "immutable block not implemented yet");
+            auto const& location_map = stmt.properties.derivation.location_map.get().map;
+            for (auto const& [new_var, old_var]: stmt.properties.derivation.location_map.get().map)
+            {
+                auto const [old_val, old_address] = std::pair{local[old_var], local.load_address(old_var)};
+                // Any `new_var` was introduced either by the immutable block or by a mutation inside the body;
+                // this is what determines which scope it should be added to.
+                // This is because of the hacky location map described in `check.cpp`.
+                auto const it = x.vars.find(new_var);
+                auto& relevant_scope = it != x.vars.end() ? local_stmt : new_ctx;
+                relevant_scope.try_emplace(new_var, *old_val);
+                relevant_scope.save_address(new_var, old_address);
+            }
+            gen_stmts(global, local_stmt, builder, x.body, snippet, llvm_f, inlined_result);
         },
         [&] (typecheck::stmt_t::if_else_t const& x)
         {
+            for (auto const& [new_var, old_var]: stmt.properties.derivation.location_map.get().map)
+            {
+                auto const [old_val, old_address] = std::pair{local[old_var], local.load_address(old_var)};
+                assert(old_val);
+                assert(old_address);
+                new_ctx.try_emplace(new_var, *old_val);
+                new_ctx.save_address(new_var, old_address);
+            }
             // Let's eliminate impossible branches.
             // Note that at least one branch must be possible.
             // Because, if both branches were impossible, `gen_body` would emit `unreachable` and we wouldn't be here.
@@ -368,7 +446,7 @@ void gen_stmt(
                     gen_destructors(global, local_stmt, builder);
                 }
                 if (x.false_branch)
-                    gen_stmts(global, local_stmt, snippet, builder, *x.false_branch, llvm_f, inlined_result);
+                    gen_stmts(global, local_stmt, builder, *x.false_branch, snippet, llvm_f, inlined_result);
                 return;
             }
             if (x.false_branch and is_impossible(*x.false_branch))
@@ -378,7 +456,7 @@ void gen_stmt(
                     gen_temporary_val(global, local_stmt, builder, x.cond);
                     gen_destructors(global, local_stmt, builder);
                 }
-                gen_stmts(global, local_stmt, snippet, builder, x.true_branch, llvm_f, inlined_result);
+                gen_stmts(global, local_stmt, builder, x.true_branch, snippet, llvm_f, inlined_result);
                 return;
             }
             // Otherwise both branches are possible and we need to emit each one in their own basic block.
@@ -440,6 +518,7 @@ void gen_stmt(
         {
             builder.CreateUnreachable();
         });
+    return new_ctx;
 }
 
 } // namespace dep0::llvmgen

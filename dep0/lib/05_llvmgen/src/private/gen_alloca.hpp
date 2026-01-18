@@ -14,11 +14,8 @@
 
 #include "dep0/typecheck/ast.hpp"
 
-#include <llvm/IR/Instruction.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Value.h>
-
-#include <variant>
 
 namespace dep0::llvmgen {
 

@@ -184,15 +184,21 @@ func_arg_t make_legal_func_arg(Args&&... args)
 }
 
 template <typename... Args>
-body_t make_legal_body(Args&&... args)
+body_t make_legal_body(std::optional<ctx_ref_t> next_ctx, location_map_t location_map, Args&&... args)
 {
-    return body_t{derivation_rules::make_derivation<body_t>(), std::forward<Args>(args)...};
+    return body_t{
+        derivation_rules::make_derivation<body_t>(std::move(next_ctx), std::move(location_map)),
+        std::forward<Args>(args)...
+    };
 }
 
 template <typename... Args>
-stmt_t make_legal_stmt(Args&&... args)
+stmt_t make_legal_stmt(std::optional<ctx_ref_t> next_ctx, location_map_t location_map, Args&&... args)
 {
-    return stmt_t{derivation_rules::make_derivation<stmt_t>(), std::forward<Args>(args)...};
+    return stmt_t{
+        derivation_rules::make_derivation<stmt_t>(std::move(next_ctx), std::move(location_map)),
+        std::forward<Args>(args)...
+    };
 }
 
 template <typename... Args>

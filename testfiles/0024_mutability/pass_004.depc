@@ -9,6 +9,7 @@ struct node_t
     array_t(node_t, 2) children;
 };
 
+// NOTE: This test is fundamentally broken and it should not typecheck to begin with!
 func f(node_t mutable x, node_t y) -> node_t
 {
     x = y.children[0];

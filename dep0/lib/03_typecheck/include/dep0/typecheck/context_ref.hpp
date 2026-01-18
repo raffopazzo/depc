@@ -29,6 +29,7 @@ class ctx_ref_t
 
 public:
     explicit ctx_ref_t(ctx_t const&);
+    explicit ctx_ref_t(ctx_t&&);
 
     ctx_t const& operator*() const { return *ctx; }
     ctx_t const* operator->() const { return ctx.get(); }

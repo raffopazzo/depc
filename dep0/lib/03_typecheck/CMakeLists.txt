@@ -21,6 +21,7 @@ add_library(dep0_typecheck_lib
   include/dep0/typecheck/is_impossible.hpp
   include/dep0/typecheck/is_mutable.hpp
   include/dep0/typecheck/list_initialization.hpp
+  include/dep0/typecheck/location_map.hpp
   include/dep0/typecheck/subscript_access.hpp
   # private headers
   src/private/beta_delta_equivalence.hpp
@@ -75,6 +76,7 @@ add_library(dep0_typecheck_lib
   src/is_mutable.cpp
   src/is_terminator.cpp
   src/list_initialization.cpp
+  src/location_map.cpp
   src/max_scope.cpp
   src/prelude.cpp
   src/proof_search.cpp

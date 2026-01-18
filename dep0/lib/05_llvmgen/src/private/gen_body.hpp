@@ -20,6 +20,7 @@
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Value.h>
 
+#include <functional>
 #include <string_view>
 #include <optional>
 #include <vector>
@@ -35,9 +36,9 @@ namespace dep0::llvmgen {
  * If the snippet is comprised of more basic blocks they will be linked
  * to one another and somehow reachable from the entry block.
  *
- * It may also contain open blocks, i.e. blocks currently without a terminator.
- * It is the caller responsibility to terminate all open blocks as necessary.
- * Once an open block is terminated, it is removed from the list of open blocks.
+ * It may also contain currently/previously open blocks, i.e. blocks without a terminator.
+ * This allows the user to keep track of blocks that at some point were open and
+ * conveniently close them all by invoking `seal_open_blocks()`.
  */
 struct snippet_t
 {
@@ -45,27 +46,21 @@ struct snippet_t
     std::vector<llvm::BasicBlock*> open_blocks;
 
     /**
-     * @brief Iterate over all currently open blocks and invoke the given function to close them all.
+     * @brief Iterate over all `open_blocks` that are still open and invoke the given function to close them all.
+     *
+     * The invoked function **must** produce a terminator using the supplied IRBuilder,
+     * for example to emit an unconditional jump to a continuation block.
+     * If `open_blocks` contains blocks that already have a terminator, they will be ignored and removed.
+     * Once this method returns, `open_blocks` will be empty.
      *
      * @param builder
-     *      This builder will be passed to the callback function;
-     *      before every function call, its insert point will be set to the next open block.
+     *      This builder will be passed to the callback function and
+     *      its insert point will be set to the next open block before every invocation of the callback function.
      *
      * @param f
      *      This function will be called on each open block and must emit a terminator instruction.
      */
-    template <typename F>
-    void seal_open_blocks(llvm::IRBuilder<>& builder, F&& f)
-    {
-        for (auto& bb: open_blocks)
-        {
-            assert(not bb->getTerminator());
-            builder.SetInsertPoint(bb);
-            f(builder);
-            assert(bb->getTerminator());
-        }
-        open_blocks.clear();
-    }
+    void seal_open_blocks(llvm::IRBuilder<>& builder, std::function<void(llvm::IRBuilder<>&)>);
 };
 
 /**

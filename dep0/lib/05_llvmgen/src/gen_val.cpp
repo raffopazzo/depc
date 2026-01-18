@@ -484,8 +484,7 @@ llvm::Value* gen_val(
                             auto const value = gen_temporary_val(global, local, builder, x.expr.get());
                             if (is_pass_by_val(global, el_type))
                             {
-                                // TODO isn't this the same as above, i.e. CreateAlloca()+CreateStore()?
-                                address = gen_alloca(global, local, builder, allocator_t::stack, el_type);
+                                address = builder.CreateAlloca(gen_type(global, el_type));
                                 gen_store(global, local, builder, value_category_t::temporary, value, address, el_type);
                             }
                             else

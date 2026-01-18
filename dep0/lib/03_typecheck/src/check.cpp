@@ -306,9 +306,27 @@ check_body(
     if (stmts->empty())
         return make_legal_body(std::nullopt, location_map_t{}, std::move(*stmts));
     auto next_ctx = stmts->back().properties.derivation.next_ctx;
-    // TODO this should be the union of all maps
-    auto location_map = stmts->back().properties.derivation.location_map.get();
-    return make_legal_body(std::move(next_ctx), std::move(location_map), std::move(*stmts));
+    if (stmts->size() == 1ul)
+    {
+        auto location_map = stmts->back().properties.derivation.location_map.get();
+        return make_legal_body(std::move(next_ctx), std::move(location_map), std::move(*stmts));
+    }
+    auto location_map =
+        location_map_t::combine(
+            stmts->operator[](0ul).properties.derivation.location_map.get(),
+            stmts->operator[](1ul).properties.derivation.location_map.get());
+    if (not location_map)
+        return location_map.error();
+    for (auto const i: std::views::iota(2ul, stmts->size()))
+    {
+        location_map =
+            location_map_t::combine(
+                *location_map,
+                stmts->operator[](i).properties.derivation.location_map.get());
+        if (not location_map)
+            return location_map.error();
+    }
+    return make_legal_body(std::move(next_ctx), std::move(*location_map), std::move(*stmts));
 }
 
 expected<stmt_t>

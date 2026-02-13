@@ -24,6 +24,7 @@
 #include <boost/variant/recursive_wrapper.hpp>
 
 #include <optional>
+#include <set>
 #include <tuple>
 #include <vector>
 #include <variant>
@@ -424,6 +425,7 @@ struct func_arg_t
 
     properties_t properties;
     qty_t qty;
+    is_mutable_t is_mutable;
     expr_t type;
     std::optional<typename expr_t::var_t> var;
 };
@@ -439,6 +441,20 @@ struct stmt_t
     using properties_t = typename P::stmt_properties_type;
     using body_t = ast::body_t<P>;
     using expr_t = ast::expr_t<P>;
+
+    /** @brief Represents an assignment `lhs = rhs;`, for example `x = x+1;` or `x.values[0] = f(23);` */
+    struct assign_t
+    {
+        expr_t lhs;
+        expr_t rhs;
+    };
+
+    /** @brief Represents an immutable block, for example `immutable(x, y) { ... }`. */
+    struct immutable_t
+    {
+        std::set<typename expr_t::var_t> vars;
+        body_t body;
+    };
 
     /** @brief Represents an `if` or `if-else` statement, whose condition must be of type `%bool_t`. */
     struct if_else_t
@@ -473,7 +489,7 @@ struct stmt_t
         std::optional<expr_t> reason;
     };
 
-    using value_t = std::variant<typename expr_t::app_t, if_else_t, return_t, impossible_t>;
+    using value_t = std::variant<typename expr_t::app_t, assign_t, immutable_t, if_else_t, return_t, impossible_t>;
 
     properties_t properties;
     value_t value;

@@ -79,6 +79,7 @@ AstTestsFixture::func_arg_t AstTestsFixture::arg(qty_t const qty, expr_t type, c
     return func_arg_t{
         dummy_properties_t{},
         qty,
+        is_mutable_t::no,
         std::move(type),
         var_name ? std::optional{var_t(var_name)} : std::nullopt
     };

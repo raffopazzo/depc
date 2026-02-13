@@ -83,6 +83,28 @@ std::optional<stmt_t> rewrite(expr_t const& from, expr_t const& to, stmt_t const
             if (auto new_app = rewrite(from, to, app))
                 result.emplace(old.properties, std::move(*new_app));
         },
+        [&] (stmt_t::assign_t const& assign)
+        {
+            auto new_lhs = rewrite(from, to, assign.lhs);
+            auto new_rhs = rewrite(from, to, assign.rhs);
+            if (new_lhs or new_rhs)
+                result.emplace(
+                    old.properties,
+                    stmt_t::assign_t{
+                        impl::choose(std::move(new_lhs), assign.lhs),
+                        impl::choose(std::move(new_rhs), assign.rhs)});
+        },
+        [&] (stmt_t::immutable_t const& immutable)
+        {
+            auto new_body = rewrite(from, to, immutable.body);
+            if (new_body)
+                result.emplace(
+                    old.properties,
+                    stmt_t::immutable_t{
+                        immutable.vars,
+                        std::move(*new_body)
+                    });
+        },
         [&] (stmt_t::if_else_t const& if_else)
         {
             auto new_cond = rewrite(from, to, if_else.cond);
@@ -163,7 +185,12 @@ void rewrite(
                             ast::occurs_in(*old_arg.var, from, ast::occurrence_style::free) or
                             ast::occurs_in(*old_arg.var, to, ast::occurrence_style::free);
                     if (new_type)
-                        new_arg.emplace(old_arg.properties, old_arg.qty, std::move(*new_type), old_arg.var);
+                        new_arg.emplace(
+                            old_arg.properties,
+                            old_arg.qty,
+                            old_arg.is_mutable,
+                            std::move(*new_type),
+                            old_arg.var);
                 }
                 return new_arg;
             });

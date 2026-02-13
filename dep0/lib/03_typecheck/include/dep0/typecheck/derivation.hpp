@@ -18,6 +18,8 @@
 
 namespace dep0::typecheck {
 
+struct location_map_t;
+
 template <typename NodeType>
 struct derivation_properties_t
 { };
@@ -29,6 +31,20 @@ struct derivation_properties_t<ast::expr_t<properties_t>>
     ctx_ref_t ctx;
 };
 
+template <>
+struct derivation_properties_t<ast::body_t<properties_t>>
+{
+    std::optional<ctx_ref_t> next_ctx;
+    boost::recursive_wrapper<location_map_t> location_map;
+};
+
+template <>
+struct derivation_properties_t<ast::stmt_t<properties_t>>
+{
+    std::optional<ctx_ref_t> next_ctx;
+    boost::recursive_wrapper<location_map_t> location_map;
+};
+
 /**
  * @brief Proof that an AST node is legal because it has a valid derivation.
  *
@@ -38,17 +54,11 @@ struct derivation_properties_t<ast::expr_t<properties_t>>
  * It can only be constructed using `derivation_rules`, which is private within the typecheck module;
  * therefore typechecking is the only way to construct a legal AST.
  *
- * @remarks Currently this contains no fields so the only thing that it is proving is that
- * the AST node was constructed via `derivation_rules`.
- * Ideally each specialization should contain the real proof of why the node was legal but
- * that requires dependent types in C++.
- * It might still be useful to add some fields in some cases, but currently there are none.
- *
  * @warning This type is copiable, so one could forge a derivation by copying from another one.
  * But we are trying to "guard against Murphy, not Machiavelli".
  */
 template <typename NodeType>
-struct derivation_t
+struct derivation_t : derivation_properties_t<NodeType>
 {
     derivation_t(derivation_t const&) = default;
     derivation_t& operator=(derivation_t const&) = default;
@@ -57,11 +67,11 @@ struct derivation_t
 
     bool operator==(derivation_t const&) const = default;
 
-    derivation_properties_t<NodeType> properties;
-
 private:
     friend struct derivation_rules;
-    derivation_t(derivation_properties_t<NodeType> properties) : properties(std::move(properties)) {}
+    derivation_t(derivation_properties_t<NodeType> properties)
+        : derivation_properties_t<NodeType>(std::move(properties))
+    { }
 };
 
 } // namespace dep0::typecheck

@@ -7,6 +7,7 @@
 #include "private/gen_val.hpp"
 
 #include "private/first_order_types.hpp"
+#include "private/gen_address.hpp"
 #include "private/gen_alloca.hpp"
 #include "private/gen_array.hpp"
 #include "private/gen_attrs.hpp"
@@ -17,7 +18,6 @@
 #include "private/gen_type.hpp"
 #include "private/proto.hpp"
 
-#include "dep0/ast/find_member_field.hpp"
 #include "dep0/ast/place_expression.hpp"
 #include "dep0/ast/views.hpp"
 #include "dep0/typecheck/list_initialization.hpp"
@@ -125,63 +125,6 @@ llvm::Value* gen_val_unit(global_ctx_t& global)
 llvm::Value* gen_val(llvm::IntegerType* const type, boost::multiprecision::cpp_int const& x)
 {
     return llvm::ConstantInt::get(type, x.str(), 10);
-}
-
-static llvm::Value* gen_tuple_element_address(
-    global_ctx_t& global,
-    local_ctx_t& local,
-    llvm::IRBuilder<>& builder,
-    typecheck::expr_t::subscript_t const& subscript,
-    llvm::Type* const tuple_type)
-{
-    auto const base = gen_temporary_val(global, local, builder, subscript.object.get());
-    auto const index_const = std::get_if<typecheck::expr_t::numeric_constant_t>(&subscript.index.get().value);
-    assert(index_const and "subscript operand on tuples must be a numeric literal");
-    auto const int32 = llvm::Type::getInt32Ty(global.llvm_ctx);
-    auto const zero = llvm::ConstantInt::get(int32, 0);
-    auto const i = index_const->value.convert_to<std::int32_t>();
-    auto const index_val = llvm::ConstantInt::get(int32, i);
-    return builder.CreateGEP(tuple_type, base, {zero, index_val});
-}
-
-static llvm::Value* gen_array_element_address(
-    global_ctx_t& global,
-    local_ctx_t& local,
-    llvm::IRBuilder<>& builder,
-    typecheck::expr_t::subscript_t const& subscript)
-{
-    auto const& array = subscript.object.get();
-    auto const properties = get_array_properties(std::get<typecheck::expr_t>(array.properties.sort.get()));
-    auto const stride_size = gen_stride_size_if_needed(global, local, builder, properties);
-    auto const element_type = gen_type(global, properties.element_type);
-    auto const base = gen_temporary_val(global, local, builder, array);
-    auto const index_val = gen_temporary_val(global, local, builder, subscript.index.get());
-    auto const offset = stride_size ? builder.CreateMul(stride_size, index_val) : index_val;
-    return builder.CreateGEP(element_type, base, offset);
-}
-
-static std::pair<llvm::Value*, llvm::Type*>
-gen_field_address(
-    global_ctx_t& global,
-    local_ctx_t& local,
-    llvm::IRBuilder<>& builder,
-    typecheck::expr_t::member_t const& member)
-{
-    auto const& object_type = std::get<typecheck::expr_t>(member.object.get().properties.sort.get());
-    auto const& g = std::get<typecheck::expr_t::global_t>(object_type.value);
-    auto const type_def = std::get_if<global_ctx_t::type_def_t>(global[g]);
-    assert(type_def and "only global structs can have member access");
-    auto const& s = std::get<typecheck::type_def_t::struct_t>(type_def->def.value);
-    auto const i = ast::find_member_index<typecheck::properties_t>(member.field, s);
-    assert(i.has_value());
-    auto const struct_type = gen_type(global, object_type);
-    auto const base = gen_temporary_val(global, local, builder, member.object.get());
-    auto const int32 = llvm::Type::getInt32Ty(global.llvm_ctx);
-    auto const zero = llvm::ConstantInt::get(int32, 0);
-    auto const index = llvm::ConstantInt::get(int32, *i);
-    auto const ptr = builder.CreateGEP(struct_type, base, {zero, index});
-    auto const element_type = gen_type(global, s.fields[*i].type);
-    return {ptr, element_type};
 }
 
 llvm::Value* gen_val(
@@ -399,7 +342,10 @@ llvm::Value* gen_val(
             assert(val and "unknown variable");
             return maybe_store(match(
                 *val,
-                [] (llvm::Value* const p) { return p; },
+                [&] (value_t const& v)
+                {
+                    return v.is_mutable() and v.is_pass_by_val() ? builder.CreateLoad(gen_type(global, type), v) : v;
+                },
                 [] (llvm_func_t const& c) { return c.func; }));
         },
         [&] (typecheck::expr_t::global_t const& g) -> llvm::Value*
@@ -516,7 +462,7 @@ llvm::Value* gen_val(
         {
             return match(
                 ast::is_place_expression(x.expr.get()),
-                [&] (std::reference_wrapper<typecheck::expr_t::var_t const> const var)
+                [&] (typecheck::expr_t::var_t const& var)
                 {
                     auto const view = ast::get_if_ref(type);
                     assert(view and "type of addressof is not a reference");
@@ -528,7 +474,7 @@ llvm::Value* gen_val(
                         {
                             // currently only arrays are boxed, so a variable must refer to an llvm::Value;
                             // in particular, it cannot refer to an llvm_func_t
-                            auto const val = std::get_if<llvm::Value*>(local[var.get()]);
+                            auto const val = std::get_if<value_t>(local[var]);
                             assert(val and "variable not found or not an llvm value");
                             address = builder.CreateAlloca(gen_type(global, el_type));
                             builder.CreateStore(*val, address);
@@ -538,7 +484,7 @@ llvm::Value* gen_val(
                             auto const value = gen_temporary_val(global, local, builder, x.expr.get());
                             if (is_pass_by_val(global, el_type))
                             {
-                                address = gen_alloca(global, local, builder, allocator_t::stack, el_type);
+                                address = builder.CreateAlloca(gen_type(global, el_type));
                                 gen_store(global, local, builder, value_category_t::temporary, value, address, el_type);
                             }
                             else
@@ -548,37 +494,18 @@ llvm::Value* gen_val(
                     }
                     return maybe_store(address);
                 },
-                [&] (std::reference_wrapper<typecheck::expr_t::deref_t const> const deref)
+                [&] (typecheck::expr_t::deref_t const& deref)
                 {
-                    return gen_val(global, local, builder, deref.get().expr.get(), value_category, dest);
+                    return gen_val(global, local, builder, deref.expr.get(), value_category, dest);
                 },
-                [&] (std::reference_wrapper<typecheck::expr_t::member_t const> const member)
+                [&] (typecheck::expr_t::member_t const& member)
                 {
-                    auto const ptr = gen_field_address(global, local, builder, member.get()).first;
+                    auto const ptr = gen_field_address(global, local, builder, member).first;
                     return maybe_store(ptr);
                 },
-                [&] (std::reference_wrapper<typecheck::expr_t::subscript_t const> const x) -> llvm::Value*
+                [&] (typecheck::expr_t::subscript_t const& x) -> llvm::Value*
                 {
-                    auto const& subscript = x.get();
-                    auto const& object_type = std::get<typecheck::expr_t>(subscript.object.get().properties.sort.get());
-                    return match(
-                        typecheck::has_subscript_access(object_type),
-                        [] (typecheck::has_subscript_access_result::no_t) -> llvm::Value*
-                        {
-                            assert(false and "unexpected subscript expression; typechecking must be broken");
-                            __builtin_unreachable();
-                        },
-                        [&] (typecheck::has_subscript_access_result::sigma_t const& sigma) -> llvm::Value*
-                        {
-                            auto const tuple_type = gen_type(global, object_type);
-                            auto const ptr = gen_tuple_element_address(global, local, builder, subscript, tuple_type);
-                            return maybe_store(ptr);
-                        },
-                        [&] (typecheck::has_subscript_access_result::array_t const&) -> llvm::Value*
-                        {
-                            auto const ptr = gen_array_element_address(global, local, builder, subscript);
-                            return maybe_store(ptr);
-                        });
+                    return gen_address(global, local, builder, x);
                 },
                 [&] (ast::value_expression_t)
                 {
@@ -704,17 +631,19 @@ llvm::Value* gen_val(
                     {
                         auto const index = llvm::ConstantInt::get(int32, i);
                         auto const element_ptr = builder.CreateGEP(llvm_type, dest2, {zero, index});
+                        bool const pass_by_ptr = is_pass_by_ptr(global, s.fields[i].type);
+                        auto const immutable = ast::is_mutable_t::no;
                         if (is_boxed(s.fields[i].type))
                         {
                             auto const p = gen_alloca(global, ctx, builder, allocator, s.fields[i].type);
                             gen_val(global, ctx, builder, x.values[i], value_category, p);
                             builder.CreateStore(p, element_ptr);
-                            ctx.try_emplace(s.fields[i].var, p);
+                            ctx.try_emplace(s.fields[i].var, std::in_place_type<value_t>, p, immutable, pass_by_ptr);
                         }
                         else
                         {
                             auto const val = gen_val(global, ctx, builder, x.values[i], value_category, element_ptr);
-                            ctx.try_emplace(s.fields[i].var, val);
+                            ctx.try_emplace(s.fields[i].var, std::in_place_type<value_t>, val, immutable, pass_by_ptr);
                         }
                     }
                     std::ranges::copy(ctx.destructors, std::back_inserter(local.destructors));
@@ -733,19 +662,23 @@ llvm::Value* gen_val(
                     {
                         auto const index = llvm::ConstantInt::get(int32, i);
                         auto const element_ptr = builder.CreateGEP(llvm_type, dest2, {zero, index});
+                        bool const pass_by_ptr = is_pass_by_ptr(global, sigma.args[i].type);
+                        auto const immutable = ast::is_mutable_t::no;
                         if (is_boxed(sigma.args[i].type))
                         {
                             auto const p = gen_alloca(global, sigma_ctx, builder, allocator, sigma.args[i].type);
                             gen_val(global, sigma_ctx, builder, x.values[i], value_category, p);
                             builder.CreateStore(p, element_ptr);
                             if (sigma.args[i].var)
-                                sigma_ctx.try_emplace(*sigma.args[i].var, p);
+                                sigma_ctx.try_emplace(
+                                    *sigma.args[i].var, std::in_place_type<value_t>, p, immutable, pass_by_ptr);
                         }
                         else
                         {
                             auto const val = gen_val(global, sigma_ctx, builder, x.values[i], value_category, element_ptr);
                             if (sigma.args[i].var)
-                                sigma_ctx.try_emplace(*sigma.args[i].var, val);
+                                sigma_ctx.try_emplace(
+                                    *sigma.args[i].var, std::in_place_type<value_t>, val, immutable, pass_by_ptr);
                         }
                     }
                     std::ranges::copy(sigma_ctx.destructors, std::back_inserter(local.destructors));
@@ -792,8 +725,7 @@ llvm::Value* gen_val(
                 },
                 [&] (typecheck::has_subscript_access_result::sigma_t const& sigma) -> llvm::Value*
                 {
-                    auto const tuple_type = gen_type(global, object_type);
-                    auto const ptr = gen_tuple_element_address(global, local, builder, subscript, tuple_type);
+                    auto const ptr = gen_address(global, local, builder, subscript);
                     auto const index = std::get_if<typecheck::expr_t::numeric_constant_t>(&subscript.index.get().value);
                     auto const i = index->value.convert_to<std::int32_t>();
                     auto const element_type = gen_type(global, sigma.args[i].type);
@@ -804,8 +736,8 @@ llvm::Value* gen_val(
                 },
                 [&] (typecheck::has_subscript_access_result::array_t const&) -> llvm::Value*
                 {
-                    auto const ptr = gen_array_element_address(global, local, builder, subscript);
-                    auto const properties = get_array_properties(std::get<typecheck::expr_t>(subscript.object.get().properties.sort.get()));
+                    auto const ptr = gen_address(global, local, builder, subscript);
+                    auto const properties = get_array_properties(object_type);
                     auto const element_type = gen_type(global, properties.element_type);
                     return maybe_store(is_pass_by_ptr(global, type) ? ptr : builder.CreateLoad(element_type, ptr));
                 });
@@ -852,11 +784,13 @@ void gen_store(
                         return builder.CreateGEP(llvm_type, p, {zero, builder.getInt32(i)});
                     };
                 auto struct_ctx = local.extend();
+                auto const immutable = ast::is_mutable_t::no;
                 for (auto const i: std::views::iota(0ul, s.fields.size()))
                 {
                     auto const& element_type = s.fields[i].type;
                     auto const element_ptr = gep(value, i);
                     auto const dest_element_ptr = gep(dest, i);
+                    bool const pass_by_ptr = is_pass_by_ptr(global, element_type);
                     if (is_boxed(element_type))
                     {
                         auto const allocator = select_allocator(value_category);
@@ -864,18 +798,21 @@ void gen_store(
                         builder.CreateStore(alloca, dest_element_ptr);
                         auto const element_value = builder.CreateLoad(gen_type(global, element_type), element_ptr);
                         gen_store(global, struct_ctx, builder, value_category, element_value, alloca, element_type);
-                        struct_ctx.try_emplace(s.fields[i].var, alloca);
+                        struct_ctx.try_emplace(
+                            s.fields[i].var, std::in_place_type<value_t>, alloca, immutable, pass_by_ptr);
                     }
-                    else if (is_pass_by_ptr(global, element_type))
+                    else if (pass_by_ptr)
                     {
                         gen_store(global, struct_ctx, builder, value_category, element_ptr, dest_element_ptr, element_type);
-                        struct_ctx.try_emplace(s.fields[i].var, dest_element_ptr);
+                        struct_ctx.try_emplace(
+                            s.fields[i].var, std::in_place_type<value_t>, dest_element_ptr, immutable, pass_by_ptr);
                     }
                     else
                     {
                         auto const element_value = builder.CreateLoad(gen_type(global, element_type), element_ptr);
                         builder.CreateStore(element_value, dest_element_ptr);
-                        struct_ctx.try_emplace(s.fields[i].var, element_value);
+                        struct_ctx.try_emplace(
+                            s.fields[i].var, std::in_place_type<value_t>, element_value, immutable, pass_by_ptr);
                     }
                 }
                 std::ranges::copy(struct_ctx.destructors, std::back_inserter(local.destructors));
@@ -906,6 +843,8 @@ void gen_store(
                     auto const& element_type = sigma.args[i].type;
                     auto const element_ptr = gep(value, i);
                     auto const dest_element_ptr = gep(dest, i);
+                    bool const pass_by_ptr = is_pass_by_ptr(global, element_type);
+                    auto const immutable = ast::is_mutable_t::no;
                     if (is_boxed(element_type))
                     {
                         auto const allocator = select_allocator(value_category);
@@ -914,20 +853,23 @@ void gen_store(
                         auto const element_value = builder.CreateLoad(gen_type(global, element_type), element_ptr);
                         gen_store(global, sigma_ctx, builder, value_category, element_value, alloca, element_type);
                         if (sigma.args[i].var)
-                            sigma_ctx.try_emplace(*sigma.args[i].var, alloca);
+                            sigma_ctx.try_emplace(
+                                *sigma.args[i].var, std::in_place_type<value_t>, alloca, immutable, pass_by_ptr);
                     }
-                    else if (is_pass_by_ptr(global, element_type))
+                    else if (pass_by_ptr)
                     {
                         gen_store(global, sigma_ctx, builder, value_category, element_ptr, dest_element_ptr, element_type);
                         if (sigma.args[i].var)
-                            sigma_ctx.try_emplace(*sigma.args[i].var, dest_element_ptr);
+                            sigma_ctx.try_emplace(
+                                *sigma.args[i].var, std::in_place_type<value_t>, dest_element_ptr, immutable, pass_by_ptr);
                     }
                     else
                     {
                         auto const element_value = builder.CreateLoad(gen_type(global, element_type), element_ptr);
                         builder.CreateStore(element_value, dest_element_ptr);
                         if (sigma.args[i].var)
-                            sigma_ctx.try_emplace(*sigma.args[i].var, element_value);
+                            sigma_ctx.try_emplace(
+                                *sigma.args[i].var, std::in_place_type<value_t>, element_value, immutable, pass_by_ptr);
                     }
                 }
                 std::ranges::copy(sigma_ctx.destructors, std::back_inserter(local.destructors));

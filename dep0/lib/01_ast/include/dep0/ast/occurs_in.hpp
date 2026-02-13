@@ -53,6 +53,14 @@ bool occurs_in(
     body_t<P> const* body,
     occurrence_style);
 
+/** @brief Returns true if the given variable name appears (free or anywhere) in any of the given struct fields. */
+template <Properties P>
+bool occurs_in(
+    typename expr_t<P>::var_t const&,
+    typename std::vector<typename type_def_t<P>::struct_t::field_t>::const_iterator begin,
+    typename std::vector<typename type_def_t<P>::struct_t::field_t>::const_iterator end,
+    occurrence_style);
+
 } // namespace dep0::ast
 
 #include "dep0/ast/occurs_in_impl.hpp"

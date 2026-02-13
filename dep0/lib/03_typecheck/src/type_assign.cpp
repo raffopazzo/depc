@@ -12,12 +12,14 @@
 #include "private/max_scope.hpp"
 #include "private/proof_search.hpp"
 #include "private/returns_from_all_branches.hpp"
+#include "private/root_var.hpp"
 #include "private/substitute.hpp"
 
 #include "dep0/typecheck/beta_delta_reduction.hpp"
 #include "dep0/typecheck/subscript_access.hpp"
 
 #include "dep0/ast/find_member_field.hpp"
+#include "dep0/ast/mutable_place_expression.hpp"
 #include "dep0/ast/place_expression.hpp"
 #include "dep0/ast/pretty_print.hpp"
 #include "dep0/ast/unwrap_because.hpp"
@@ -378,6 +380,37 @@ type_assign(
             auto expr = type_assign(env, ctx, x.expr.get(), is_mutable_allowed, usage, usage_multiplier);
             if (not expr)
                 return expr;
+            auto const is_mutable_variable = [&] (expr_t::var_t const& var)
+            {
+                auto const decl = ctx[var];
+                return decl and decl->is_mutable == ast::is_mutable_t::yes;
+            };
+            auto const reference_to_immutable =
+                match(
+                    ast::is_mutable_place_expression(*expr),
+                    [] (ast::immutable_place_t) { return expected<std::true_type>{}; },
+                    [&] (expr_t::var_t const& var) -> expected<std::true_type>
+                    {
+                        if (is_mutable_variable(var))
+                            return error_t("cannot take reference to mutable variable", loc);
+                        return {};
+                    },
+                    [&] (expr_t::member_t const& x) -> expected<std::true_type>
+                    {
+                        if (auto const root = root_var(x))
+                            if (is_mutable_variable(*root))
+                                return error_t("cannot take reference to field rooted in a mutable variable", loc);
+                        return {};
+                    },
+                    [&] (expr_t::subscript_t const& x) -> expected<std::true_type>
+                    {
+                        if (auto const root = root_var(x))
+                            if (is_mutable_variable(*root))
+                                return error_t("cannot take reference to element rooted in a mutable variable", loc);
+                        return {};
+                    });
+            if (not reference_to_immutable)
+                return reference_to_immutable.error();
             return match(
                 ast::is_place_expression(x.expr.get()),
                 [&] <typename T> (T) -> expected<expr_t>

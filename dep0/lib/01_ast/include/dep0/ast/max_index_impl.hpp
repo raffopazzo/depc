@@ -25,6 +25,22 @@ template <Properties P> std::size_t max_index(body_t<P> const&);
 template <Properties P> std::size_t max_index(expr_t<P> const&);
 template <Properties P> std::size_t max_index(typename expr_t<P>::app_t const&);
 
+} // namespace impl
+
+namespace {
+template <Properties P>
+inline constexpr auto max_accumulator =
+    boost::hana::overload(
+        [] (std::size_t const x, func_arg_t<P> const& y) { return std::max(x, impl::max_index(y)); },
+        [] (std::size_t const x, typename expr_t<P>::var_t const& y) { return std::max(x, y.idx); },
+        [] (std::size_t const x, typename type_def_t<P>::struct_t::field_t const& y)
+        {
+            return std::max(x, std::max(impl::max_index(y.type), y.var.idx));
+        });
+} // namespace
+
+namespace impl {
+
 template <Properties P>
 std::size_t max_index(func_arg_t<P> const& x)
 {
@@ -46,6 +62,14 @@ std::size_t max_index(body_t<P> const& x)
                     [] (expr_t<P>::app_t const& x)
                     {
                         return max_index<P>(x);
+                    },
+                    [] (stmt_t<P>::assign_t const& x)
+                    {
+                        return std::max(max_index(x.lhs), max_index(x.rhs));
+                    },
+                    [] (stmt_t<P>::immutable_t const& x)
+                    {
+                        return std::accumulate(x.vars.begin(), x.vars.end(), max_index(x.body), max_accumulator<P>);
                     },
                     [] (stmt_t<P>::if_else_t const& if_)
                     {
@@ -190,13 +214,6 @@ std::size_t max_index(typename expr_t<P>::app_t const& x)
 
 } // namespace impl
 
-namespace {
-inline constexpr auto max_accumulator = [] <Properties P> (std::size_t const acc, func_arg_t<P> const& arg)
-{
-    return std::max(acc, impl::max_index(arg));
-};
-}
-
 template <Properties P>
 std::size_t max_index(
     typename std::vector<func_arg_t<P>>::const_iterator const begin,
@@ -205,7 +222,7 @@ std::size_t max_index(
     body_t<P> const* body)
 {
     auto const initial_value = std::max(impl::max_index(ret_type), body ? impl::max_index(*body) : 0ul);
-    return std::accumulate(begin, end, initial_value, max_accumulator);
+    return std::accumulate(begin, end, initial_value, max_accumulator<P>);
 }
 
 template <Properties P>
@@ -213,7 +230,7 @@ std::size_t max_index(
     typename std::vector<func_arg_t<P>>::const_iterator const begin,
     typename std::vector<func_arg_t<P>>::const_iterator const end)
 {
-    return std::accumulate(begin, end, 0ul, max_accumulator);
+    return std::accumulate(begin, end, 0ul, max_accumulator<P>);
 }
 
 template <Properties P>
@@ -221,13 +238,7 @@ std::size_t max_index(
     typename std::vector<typename type_def_t<P>::struct_t::field_t>::const_iterator const begin,
     typename std::vector<typename type_def_t<P>::struct_t::field_t>::const_iterator const end)
 {
-    return std::accumulate(
-        begin, end,
-        0ul,
-        [] (std::size_t const acc, type_def_t<P>::struct_t::field_t const& field)
-        {
-            return std::max(acc, std::max(impl::max_index(field.type), field.var.idx));
-        });
+    return std::accumulate(begin, end, 0ul, max_accumulator<P>);
 }
 
 } // namespace dep0::ast

@@ -21,6 +21,7 @@
 
 #include "dep0/error.hpp"
 
+#include <map>
 #include <optional>
 #include <vector>
 

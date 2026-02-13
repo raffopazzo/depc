@@ -1,0 +1,18 @@
+/*
+ * Copyright Raffaele Rossi 2025.
+ *
+ * Distributed under the Boost Software License, Version 1.0.
+ * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
+ */
+struct t
+{
+    i32_t y;
+};
+
+func make_t() -> t { return {1}; }
+
+func f(t x) -> t
+{
+    make_t().y = 0; // typecheck error: assignment target not rooted in a mutable variable
+    return x;
+}

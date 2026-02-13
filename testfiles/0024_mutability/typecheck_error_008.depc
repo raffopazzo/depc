@@ -1,0 +1,11 @@
+/*
+ * Copyright Raffaele Rossi 2025.
+ *
+ * Distributed under the Boost Software License, Version 1.0.
+ * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
+ */
+func f((u64_t n, array_t(i32_t, n)) mutable x) -> i32_t
+{
+    x[0] = 1; // typecheck error: cannot mutate element 0 because element 1 depends on it
+    return 0;
+}

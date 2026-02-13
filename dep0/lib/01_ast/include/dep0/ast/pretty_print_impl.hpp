@@ -243,6 +243,24 @@ std::ostream& pretty_print(std::ostream& os, stmt_t<P> const& x, std::size_t con
 }
 
 template <Properties P>
+std::ostream& pretty_print(std::ostream& os, typename stmt_t<P>::assign_t const& x, std::size_t const indent)
+{
+    pretty_print(os, x.lhs, indent) << " = ";
+    pretty_print(os, x.rhs, indent) << ';';
+    return os;
+}
+
+template <Properties P>
+std::ostream& pretty_print(std::ostream& os, typename stmt_t<P>::immutable_t const& x, std::size_t const indent)
+{
+    os << "immutable(";
+    for (bool first = true; auto const& var: x.vars)
+        pretty_print<P>(std::exchange(first, false) ? os : os << ", ", var);
+    pretty_print(detail::new_line(os << ')', indent), x.body, indent);
+    return os;
+}
+
+template <Properties P>
 std::ostream& pretty_print(std::ostream& os, typename stmt_t<P>::if_else_t const& x, std::size_t const indent)
 {
     auto const print_stmt_or_body = [&] (body_t<P> const& body)

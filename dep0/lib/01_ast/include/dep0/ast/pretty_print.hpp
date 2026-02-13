@@ -54,6 +54,12 @@ template <Properties P>
 std::ostream& pretty_print(std::ostream&, stmt_t<P> const&, std::size_t indent = 0ul);
 
 template <Properties P>
+std::ostream& pretty_print(std::ostream&, typename stmt_t<P>::assign_t const&, std::size_t indent = 0ul);
+
+template <Properties P>
+std::ostream& pretty_print(std::ostream&, typename stmt_t<P>::immutable_t const&, std::size_t indent = 0ul);
+
+template <Properties P>
 std::ostream& pretty_print(std::ostream&, typename stmt_t<P>::if_else_t const&, std::size_t indent = 0ul);
 
 template <Properties P>

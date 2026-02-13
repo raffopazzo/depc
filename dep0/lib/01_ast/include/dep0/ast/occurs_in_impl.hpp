@@ -39,6 +39,14 @@ bool occurs_in(typename expr_t<P>::var_t const& var, body_t<P> const& x, occurre
                 {
                     return occurs_in<P>(var, app, style);
                 },
+                [&] (stmt_t<P>::assign_t const& assign)
+                {
+                    return occurs_in(var, assign.lhs, style) or occurs_in(var, assign.rhs, style);
+                },
+                [&] (stmt_t<P>::immutable_t const& immutable)
+                {
+                    return immutable.vars.contains(var) or occurs_in(var, immutable.body, style);
+                },
                 [&] (stmt_t<P>::if_else_t const& if_)
                 {
                     return occurs_in(var, if_.cond, style)
@@ -214,5 +222,23 @@ bool occurs_in(
     return occurs_in(var, ret_type, style) or (body and impl::occurs_in(var, *body, style));
 }
 
-} // namespace dep0::ast
+template <Properties P>
+bool occurs_in(
+    typename expr_t<P>::var_t const& var,
+    typename std::vector<typename type_def_t<P>::struct_t::field_t>::const_iterator const begin,
+    typename std::vector<typename type_def_t<P>::struct_t::field_t>::const_iterator const end,
+    occurrence_style const style)
+{
+    for (auto const& arg: std::ranges::subrange(begin, end))
+    {
+        if (occurs_in(var, arg.type, style))
+            return true;
+        if (arg.var == var)
+            // If we are looking for occurrences anywhere, return true because this is a valid one.
+            // If we are looking for free occurrences, return false because any later occurrence is now bound.
+            return style == occurrence_style::anywhere;
+    }
+    return false;
+}
 
+} // namespace dep0::ast

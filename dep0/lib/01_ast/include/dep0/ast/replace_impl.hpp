@@ -39,6 +39,17 @@ void replace(typename expr_t<P>::var_t const& from, typename expr_t<P>::var_t co
             {
                 return replace<P>(from, to, app);
             },
+            [&] (typename stmt_t<P>::assign_t& assign)
+            {
+                replace(from, to, assign.lhs);
+                replace(from, to, assign.rhs);
+            },
+            [&] (typename stmt_t<P>::immutable_t& immutable)
+            {
+                immutable.vars.erase(from);
+                immutable.vars.insert(to);
+                replace(from, to, immutable.body);
+            },
             [&] (typename stmt_t<P>::if_else_t& if_)
             {
                 replace(from, to, if_.cond);

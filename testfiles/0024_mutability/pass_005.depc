@@ -1,0 +1,18 @@
+/*
+ * Copyright Raffaele Rossi 2025.
+ *
+ * Distributed under the Boost Software License, Version 1.0.
+ * (See accompanying file LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
+ */
+func f(array_t(i32_t, 2) mutable x, ref_t(i32_t, scopeof(x)) mutable p) -> i32_t
+{
+    if (*p < 10)
+        x[0] = 11;
+    return x[0];
+}
+
+func g(array_t(i32_t, 2) x) -> i32_t
+{
+    // similar to `typecheck_error_013.depc` but `p` is a reference to `x[0]` which is immutable, which is ok
+    return f(x, &x[0]);
+}

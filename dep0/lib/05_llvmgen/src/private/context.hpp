@@ -11,6 +11,7 @@
 #pragma once
 
 #include "private/llvm_func.hpp"
+#include "private/value.hpp"
 
 #include "dep0/typecheck/ast.hpp"
 #include "dep0/typecheck/environment.hpp"
@@ -149,15 +150,25 @@ private:
  *
  * It also stores the values that need to be destructed before leaving the scope associated to this object.
  */
-struct local_ctx_t
+class local_ctx_t
 {
-    using value_t =
-        std::variant<
-            llvm::Value*,
-            llvm_func_t
-        >;
+public:
+    using value_t = std::variant<llvmgen::value_t, llvm_func_t>;
 
+private:
+    struct entry_t
+    {
+        value_t value;
+        llvm::Value* address = nullptr;
+    };
+    scope_map<typecheck::expr_t::var_t, entry_t> entries;
+
+    explicit local_ctx_t(scope_map<typecheck::expr_t::var_t, entry_t>);
+
+public:
     local_ctx_t() = default;
+    local_ctx_t(local_ctx_t&&) = default;
+    local_ctx_t& operator=(local_ctx_t&&) = default;
 
 #ifndef NDEBUG
     ~local_ctx_t() { assert(destructors.empty() and "local context would leak resources"); }
@@ -191,16 +202,6 @@ struct local_ctx_t
      * If values need to be destroyed in reverse order it is the user responsibility to do so.
      */
     std::vector<std::pair<llvm::Value*, typecheck::expr_t>> destructors;
-
-private:
-    struct entry_t
-    {
-        value_t value;
-        llvm::Value* address = nullptr;
-    };
-    scope_map<typecheck::expr_t::var_t, entry_t> entries;
-
-    explicit local_ctx_t(scope_map<typecheck::expr_t::var_t, entry_t>);
 };
 
 } // namespace dep0::llvmgen

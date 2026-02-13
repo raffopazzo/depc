@@ -14,14 +14,20 @@
 #include "private/derivation_rules.hpp"
 #include "private/proof_search.hpp"
 #include "private/returns_from_all_branches.hpp"
+#include "private/root_var.hpp"
 #include "private/substitute.hpp"
 #include "private/type_assign.hpp"
 
 #include "dep0/typecheck/beta_delta_reduction.hpp"
 #include "dep0/typecheck/list_initialization.hpp"
+#include "dep0/typecheck/location_map.hpp"
+#include "dep0/typecheck/subscript_access.hpp"
 
-#include "dep0/ast/views.hpp"
+#include "dep0/ast/find_member_field.hpp"
+#include "dep0/ast/mutable_place_expression.hpp"
+#include "dep0/ast/occurs_in.hpp"
 #include "dep0/ast/pretty_print.hpp"
+#include "dep0/ast/views.hpp"
 
 #include "dep0/fmap.hpp"
 #include "dep0/match.hpp"
@@ -160,7 +166,7 @@ expected<type_def_t> check_type_def(env_t& env, parser::type_def_t const& type_d
                         pretty_print<parser::properties_t>(err << "incomplete type for field `", field.var) << '`';
                         return error_t(err.str(), loc, {std::move(ok.error())});
                     }
-                    auto var = ctx.try_emplace(field.var.name, loc, ast::qty_t::many, *type);
+                    auto var = ctx.try_emplace(field.var.name, loc, ast::qty_t::many, ast::is_mutable_t::no, *type);
                     if (not var)
                         return std::move(var.error());
                     return type_def_t::struct_t::field_t{std::move(*type), std::move(*var)};
@@ -286,14 +292,41 @@ check_body(
     auto stmts =
         fmap_or_error(
             x.stmts,
-            [&] (parser::stmt_t const& s)
+            [&] (parser::stmt_t const& s) -> expected<stmt_t>
             {
-                return check_stmt(env, state, s, is_mutable, usage, usage_multiplier);
+                auto stmt = check_stmt(env, state, s, is_mutable, usage, usage_multiplier);
+                if (not stmt)
+                    return stmt.error();
+                if (stmt->properties.derivation.next_ctx)
+                    state.context = std::move(stmt->properties.derivation.next_ctx->operator->()->extend());
+                return stmt;
             });
-    if (stmts)
-        return make_legal_body(std::move(*stmts));
-    else
+    if (not stmts)
         return std::move(stmts.error());
+    if (stmts->empty())
+        return make_legal_body(std::nullopt, location_map_t{}, std::move(*stmts));
+    auto next_ctx = stmts->back().properties.derivation.next_ctx;
+    if (stmts->size() == 1ul)
+    {
+        auto location_map = stmts->back().properties.derivation.location_map.get();
+        return make_legal_body(std::move(next_ctx), std::move(location_map), std::move(*stmts));
+    }
+    auto location_map =
+        location_map_t::combine(
+            stmts->operator[](0ul).properties.derivation.location_map.get(),
+            stmts->operator[](1ul).properties.derivation.location_map.get());
+    if (not location_map)
+        return location_map.error();
+    for (auto const i: std::views::iota(2ul, stmts->size()))
+    {
+        location_map =
+            location_map_t::combine(
+                *location_map,
+                stmts->operator[](i).properties.derivation.location_map.get());
+        if (not location_map)
+            return location_map.error();
+    }
+    return make_legal_body(std::move(next_ctx), std::move(*location_map), std::move(*stmts));
 }
 
 expected<stmt_t>
@@ -311,9 +344,148 @@ check_stmt(
         [&] (parser::expr_t::app_t const& x) -> expected<stmt_t>
         {
             if (auto app = type_assign_app(env, state.context, x, loc, is_mutable, usage, usage_multiplier))
-                return make_legal_stmt(std::move(std::get<expr_t::app_t>(app->value)));
+                return make_legal_stmt(std::nullopt, location_map_t{}, std::move(std::get<expr_t::app_t>(app->value)));
             else
                 return std::move(app.error());
+        },
+        [&] (parser::stmt_t::assign_t const& x) -> expected<stmt_t>
+        {
+            auto lhs = type_assign(env, state.context, x.lhs, is_mutable, usage, usage_multiplier);
+            if (not lhs)
+                return lhs.error();
+            auto const& lhs_type = lhs->properties.sort.get();
+            auto rhs = check_expr(env, state.context, x.rhs, lhs_type, is_mutable, usage, usage_multiplier);
+            if (not rhs)
+                return rhs.error();
+            auto const root = match(
+                ast::is_mutable_place_expression(*lhs),
+                [&] (ast::immutable_place_t)
+                {
+                    return error_t("target of assignment is not a mutable place expression", loc);
+                },
+                [&] (expr_t::var_t const& var) -> expected<expr_t::var_t>
+                {
+                    return var;
+                },
+                [&] (expr_t::member_t const& member) -> expected<expr_t::var_t>
+                {
+                    auto const root = root_var(member);
+                    if (not root)
+                        return error_t("target of assignment is not rooted in a variable", loc);
+
+                    using enum ast::occurrence_style;
+                    if (auto const ty = std::get_if<expr_t>(&member.object.get().properties.sort.get()))
+                    if (auto const g = std::get_if<expr_t::global_t>(&ty->value))
+                    if (auto const type_def = std::get_if<type_def_t>(env[*g]))
+                    if (auto const s = std::get_if<type_def_t::struct_t>(&type_def->value))
+                    if (auto const it = ast::find_member_field<properties_t>(member.field, *s); it != s->fields.end())
+                        if (not ast::occurs_in<properties_t>(it->var, std::next(it), s->fields.end(), free))
+                            return *root;
+                        else
+                            return error_t("cannot mutate a member field that carries dependency to other fields", loc);
+
+                    return error_t("cannot verify that member field does not carry dependency to other fields", loc);
+                },
+                [&] (expr_t::subscript_t const& x) -> expected<expr_t::var_t>
+                {
+                    auto const root = root_var(x);
+                    if (not root)
+                        return error_t("target of assignment is not rooted in a variable", loc);
+
+                    if (auto const ty = std::get_if<expr_t>(&x.object.get().properties.sort.get()))
+                        return match(
+                            has_subscript_access(*ty),
+                            [&] (has_subscript_access_result::no_t)
+                            {
+                                // this is really not possible but whatever
+                                return error_t("cannot verify that subscript access does not carry dependency", loc);
+                            },
+                            [&] (has_subscript_access_result::sigma_t const sigma) -> expected<expr_t::var_t>
+                            {
+                                using enum ast::occurrence_style;
+                                if (auto const i = std::get_if<expr_t::numeric_constant_t>(&x.index.get().value))
+                                if (auto const v = i->value.template convert_to<std::uint64_t>(); v < sigma.args.size())
+                                    if (not sigma.args[v].var or
+                                        not ast::occurs_in<properties_t>(
+                                            *sigma.args[v].var,
+                                            std::next(sigma.args.begin(), v+1),
+                                            sigma.args.end(),
+                                            free))
+                                        return *root;
+                                    else
+                                        return error_t(
+                                            "cannot mutate a member field that carries dependency to other fields",
+                                            loc);
+                                return error_t("cannot verify that subscript access does not carry dependency", loc);
+                            },
+                            [&] (has_subscript_access_result::array_t)
+                            {
+                                return *root;
+                            });
+                    return error_t("cannot verify that subscript access does not carry dependency", loc);
+                });
+            if (not root)
+                return root.error();
+            auto const decl = state.context[*root];
+            assert(decl and "root of assignment was a variable but it did not exist in current context");
+            if (decl->is_mutable == ast::is_mutable_t::no)
+                return error_t("cannot mutate immutable variable", loc);
+
+            auto next_ctx = state.context.extend();
+            auto new_var =
+                next_ctx.try_emplace(root->name, x.lhs.properties, decl->qty, ast::is_mutable_t::yes, decl->type);
+            if (not new_var)
+                return std::move(new_var.error()); // should not happen, but whatever
+            return make_legal_stmt(
+                ctx_ref_t(std::move(next_ctx)),
+                location_map_t{{{*new_var, *root}}},
+                stmt_t::assign_t{
+                    std::move(*lhs),
+                    std::move(*rhs)
+                });
+        },
+        [&] (parser::stmt_t::immutable_t const& x) -> expected<stmt_t>
+        {
+            auto new_state = proof_state_t(state.context.extend(), state.goal);
+            std::set<expr_t::var_t> vars;
+            // This is a bit of a hack, hence the name.
+            // Variables declared in an immutable block refer to variables in the parent scope.
+            // We need a way to tell the llvmgen stage what is the memory location that these new variables refer to.
+            // A location map is exactly what we need and we can exploit the fact that all new variables introduced
+            // by mutations will have a different name from the ones introduced by the immutable block.
+            // So we can just combine a hacky location map with the real one obtained by typechecking the body.
+            location_map_t hacky_map;
+            for (auto const& v: x.vars)
+            {
+                auto const d = state.context[v.name];
+                if (not d)
+                {
+                    std::ostringstream err;
+                    pretty_print<parser::properties_t>(err << "unknown variable `", v) << '`';
+                    err << " inside immutable block declaration";
+                    return error_t(err.str(), loc);
+                }
+                auto var = new_state.context.try_emplace(v.name, d->origin, d->qty, ast::is_mutable_t::no, d->type);
+                if (not var) // should not happen but whatever
+                    return var.error();
+                bool const inserted = hacky_map.map.try_emplace(*var, d->var).second;
+                assert(inserted and "variable already present in immutable block");
+                vars.insert(std::move(*var));
+            }
+            auto body = check_body(env, std::move(new_state), x.body, is_mutable, usage, usage_multiplier);
+            if (not body)
+                return body.error();
+            auto next_ctx = body->properties.derivation.next_ctx;
+            auto location_map = location_map_t::combine(hacky_map, body->properties.derivation.location_map.get());
+            if (not location_map)
+                return location_map.error();
+            return make_legal_stmt(
+                std::move(next_ctx),
+                std::move(*location_map),
+                stmt_t::immutable_t{
+                    std::move(vars),
+                    std::move(*body)
+                });
         },
         [&] (parser::stmt_t::if_else_t const& x) -> expected<stmt_t>
         {
@@ -373,7 +545,30 @@ check_stmt(
                 {
                     if (auto ok = combine_usages(); not ok)
                         return std::move(ok.error());
+                    auto location_map =
+                        location_map_t::combine(
+                            true_branch->properties.derivation.location_map.get(),
+                            false_branch->properties.derivation.location_map.get());
+                    if (not location_map)
+                    {
+                        location_map.error().location = loc;
+                        return std::move(location_map.error());
+                    }
+                    std::optional<ctx_t> next_ctx;
+                    for (auto const& [new_var, old_var]: location_map->map)
+                        if (auto const decl = state.context[old_var])
+                        {
+                            if (not next_ctx)
+                                next_ctx.emplace(state.context.extend());
+                            auto const ok =
+                                next_ctx->try_emplace(
+                                    new_var.name, loc, decl->qty, ast::is_mutable_t::yes, decl->type);
+                            if (not ok)
+                                return std::move(ok.error()); // should not happen but whatever
+                        }
                     return make_legal_stmt(
+                        next_ctx ? std::optional{ctx_ref_t(std::move(*next_ctx))} : std::nullopt,
+                        std::move(*location_map),
                         stmt_t::if_else_t{
                             std::move(*cond),
                             std::move(*true_branch),
@@ -394,7 +589,14 @@ check_stmt(
             }
             if (auto ok = combine_usages(); not ok)
                 return std::move(ok.error());
+            // TODO currently mutations cannot change type, but when they can do, this code might be incorrect.
+            // Because if the true-branch of an if-without-else has changed the type of a variable of the parent scope,
+            // the type of that variable after the if-statement is potentially unspecified.
+            auto next_ctx = true_branch->properties.derivation.next_ctx;
+            auto location_map = true_branch->properties.derivation.location_map.get();
             return make_legal_stmt(
+                std::move(next_ctx),
+                std::move(location_map),
                 stmt_t::if_else_t{
                     std::move(*cond),
                     std::move(*true_branch),
@@ -406,7 +608,7 @@ check_stmt(
             if (not x.expr)
             {
                 if (is_beta_delta_equivalent(state.goal, derivation_rules::make_unit(env, state.context)))
-                    return make_legal_stmt(stmt_t::return_t{});
+                    return make_legal_stmt(std::nullopt, location_map_t{}, stmt_t::return_t{});
                 else
                 {
                     std::ostringstream err;
@@ -415,7 +617,7 @@ check_stmt(
                 }
             }
             else if (auto expr = check_expr(env, state.context, *x.expr, state.goal, is_mutable, usage, usage_multiplier))
-                return make_legal_stmt(stmt_t::return_t{std::move(*expr)});
+                return make_legal_stmt(std::nullopt, location_map_t{}, stmt_t::return_t{std::move(*expr)});
             else
                 return std::move(expr.error());
         },
@@ -427,7 +629,7 @@ check_stmt(
                     sort_t{derivation_rules::make_true_t(env, ctx, derivation_rules::make_false(env, ctx))};
                 for (ctx_t::decl_t const& decl: ctx.decls())
                     if (is_beta_delta_equivalent(decl.type, false_type))
-                        return make_legal_stmt(stmt_t::impossible_t{std::move(reason)});
+                        return make_legal_stmt(std::nullopt, location_map_t{}, stmt_t::impossible_t{std::move(reason)});
                 return error_t("proof of false not found", loc);
             };
             if (x.reason)
@@ -815,18 +1017,18 @@ expected<expr_t> check_pi_type(
             }
             if (arg_name)
             {
-                auto var = ctx.try_emplace(*arg_name, arg_loc, arg.qty, *type);
+                auto var = ctx.try_emplace(*arg_name, arg_loc, arg.qty, arg.is_mutable, *type);
                 if (not var)
                     return std::move(var.error());
-                if (auto ok = unscoped_ctx.try_emplace(*arg_name, arg_loc, arg.qty, *type); not ok)
+                if (auto ok = unscoped_ctx.try_emplace(*arg_name, arg_loc, arg.qty, arg.is_mutable, *type); not ok)
                     return std::move(ok.error()); // this is not actually possible, but whatever
-                return make_legal_func_arg(arg.qty, std::move(*type), std::move(*var));
+                return make_legal_func_arg(arg.qty, arg.is_mutable, std::move(*type), std::move(*var));
             }
             else
             {
                 ctx.add_unnamed(arg.qty, *type);
                 unscoped_ctx.add_unnamed(arg.qty, *type);
-                return make_legal_func_arg(arg.qty, std::move(*type), std::nullopt);
+                return make_legal_func_arg(arg.qty, arg.is_mutable,  std::move(*type), std::nullopt);
             }
         });
     if (not args)
@@ -866,15 +1068,15 @@ expected<expr_t> check_sigma_type(
             }
             if (arg_name)
             {
-                auto var = ctx.try_emplace(*arg_name, arg_loc, arg.qty, *type);
+                auto var = ctx.try_emplace(*arg_name, arg_loc, arg.qty, arg.is_mutable, *type);
                 if (not var)
                     return std::move(var.error());
-                return make_legal_func_arg(arg.qty, std::move(*type), std::move(*var));
+                return make_legal_func_arg(arg.qty, arg.is_mutable,  std::move(*type), std::move(*var));
             }
             else
             {
                 ctx.add_unnamed(arg.qty, *type);
-                return make_legal_func_arg(arg.qty, std::move(*type), std::nullopt);
+                return make_legal_func_arg(arg.qty, arg.is_mutable, std::move(*type), std::nullopt);
             }
         });
     if (not args)

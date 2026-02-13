@@ -145,6 +145,8 @@ llvm::Value* local_ctx_t::load_address(typecheck::expr_t::var_t const& k) const
 
 void local_ctx_t::save_address(typecheck::expr_t::var_t const& k, llvm::Value* const address)
 {
+    auto const p = entries[k];
+    assert(p and "you must save a value before its address");
     if (auto const p = entries[k])
         p->address = address;
 }

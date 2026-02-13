@@ -35,6 +35,8 @@ namespace dep0::typecheck {
 namespace impl {
 
 static bool delta_unfold(stmt_t&);
+static bool delta_unfold(stmt_t::assign_t&);
+static bool delta_unfold(stmt_t::immutable_t&);
 static bool delta_unfold(stmt_t::if_else_t&);
 static bool delta_unfold(stmt_t::return_t&);
 static bool delta_unfold(stmt_t::impossible_t&);
@@ -122,6 +124,17 @@ bool delta_unfold(stmt_t& stmt)
         [&] (auto& x) { return delta_unfold(x); });
 }
 
+bool delta_unfold(stmt_t::assign_t& assign)
+{
+    // It is most likely that we can unfold something in rhs, so try that first.
+    return delta_unfold(assign.rhs) or delta_unfold(assign.lhs);
+}
+
+bool delta_unfold(stmt_t::immutable_t& immutable)
+{
+    return delta_unfold(immutable.body);
+}
+
 bool delta_unfold(stmt_t::if_else_t& if_)
 {
     return delta_unfold(if_.cond)
@@ -184,7 +197,7 @@ bool delta_unfold(expr_t::app_t& app)
         // Inside f3, first f1 is unfolded, which yields `return f2(0);` and then
         // f2 can also be unfolded, but note that the original `g(0)`
         // was type-checked in an environment where `f2` did not exist yet!
-        auto const& env = *app.func.get().properties.derivation.properties.env;
+        auto const& env = *app.func.get().properties.derivation.env;
         if (auto const func_def = std::get_if<func_def_t>(env[*global]))
         {
             app.func.get().value = func_def->value;
@@ -508,7 +521,7 @@ bool delta_unfold(expr_t& expr)
                             auto const& ty = std::get<expr_t>(x.lhs.get().properties.sort.get());
                             expr.value = expr_t::numeric_constant_t{
                                 impl::reduce(
-                                    *expr.properties.derivation.properties.env,
+                                    *expr.properties.derivation.env,
                                     hana::type_c<T>,
                                     n->value,
                                     m->value,
@@ -546,7 +559,7 @@ bool delta_unfold(expr_t& expr)
             if (auto const init_list = std::get_if<expr_t::init_list_t>(&member.object.get().value))
                 if (auto const type = std::get_if<expr_t>(&member.object.get().properties.sort.get()))
                     if (auto const g = std::get_if<expr_t::global_t>(&type->value))
-                        if (auto const type_def = std::get_if<type_def_t>((*expr.properties.derivation.properties.env)[*g]))
+                        if (auto const type_def = std::get_if<type_def_t>((*expr.properties.derivation.env)[*g]))
                             if (auto const s = std::get_if<type_def_t::struct_t>(&type_def->value))
                                 if (auto const i = ast::find_member_index<properties_t>(member.field, *s))
                                 {

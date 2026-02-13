@@ -12,4 +12,6 @@ namespace dep0::typecheck {
 
 ctx_ref_t::ctx_ref_t(ctx_t const& ctx) : ctx(std::make_shared<ctx_t>(std::move(ctx.extend()))) {}
 
+ctx_ref_t::ctx_ref_t(ctx_t&& ctx) : ctx(std::make_shared<ctx_t>(std::move(ctx))) {}
+
 } // namespace dep0::typecheck

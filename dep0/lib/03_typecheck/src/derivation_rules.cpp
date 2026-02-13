@@ -21,7 +21,7 @@ expr_t derivation_rules::make_true_t(env_t const& env, ctx_t const& ctx)
             kind_t{}, // TODO need to add a test to make sure this is correct
             expr_t::pi_t{
                 ast::is_mutable_t::no,
-                std::vector{make_legal_func_arg(ast::qty_t::zero, make_bool(env, ctx))},
+                std::vector{make_legal_func_arg(ast::qty_t::zero, ast::is_mutable_t::no, make_bool(env, ctx))},
                 make_typename(env, ctx)}),
         expr_t::true_t{});
 }
@@ -53,8 +53,8 @@ expr_t derivation_rules::make_ref_t(env_t const& env, ctx_t const& ctx)
             expr_t::pi_t{
                 ast::is_mutable_t::no,
                 std::vector{
-                    make_legal_func_arg(ast::qty_t::zero, make_typename(env, ctx)),
-                    make_legal_func_arg(ast::qty_t::zero, make_scope_t(env, ctx))
+                    make_legal_func_arg(ast::qty_t::zero, ast::is_mutable_t::no, make_typename(env, ctx)),
+                    make_legal_func_arg(ast::qty_t::zero, ast::is_mutable_t::no, make_scope_t(env, ctx))
                 },
                 make_typename(env, ctx)}),
         expr_t::ref_t{});
@@ -161,8 +161,8 @@ expr_t derivation_rules::make_array(env_t const& env, ctx_t const& ctx)
             expr_t::pi_t{
                 ast::is_mutable_t::no,
                 std::vector{
-                    make_legal_func_arg(ast::qty_t::zero, make_typename(env, ctx)),
-                    make_legal_func_arg(ast::qty_t::zero, make_u64(env, ctx))
+                    make_legal_func_arg(ast::qty_t::zero, ast::is_mutable_t::no, make_typename(env, ctx)),
+                    make_legal_func_arg(ast::qty_t::zero, ast::is_mutable_t::no, make_u64(env, ctx))
                 },
                 make_typename(env, ctx)}),
         expr_t::array_t{});

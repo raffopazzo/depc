@@ -13,6 +13,7 @@ add_library(dep0_llvmgen_lib
     src/private/context.hpp
     src/private/first_order_types.hpp
     src/private/gen_alloca.hpp
+    src/private/gen_address.hpp
     src/private/gen_array.hpp
     src/private/gen_attrs.hpp
     src/private/gen_body.hpp
@@ -23,10 +24,12 @@ add_library(dep0_llvmgen_lib
     src/private/gen_val.hpp
     src/private/llvm_func.hpp
     src/private/proto.hpp
+    src/private/value.hpp
     # src files
     src/context.cpp
     src/first_order_types.cpp
     src/gen.cpp
+    src/gen_address.cpp
     src/gen_alloca.cpp
     src/gen_array.cpp
     src/gen_attrs.cpp
@@ -37,6 +40,7 @@ add_library(dep0_llvmgen_lib
     src/gen_type.cpp
     src/gen_val.cpp
     src/llvm_func.cpp
+    src/value.cpp
     src/proto.cpp
     )
 add_library(DepC::Dep0::LLVMGen ALIAS dep0_llvmgen_lib)

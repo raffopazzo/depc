@@ -16,6 +16,7 @@ add_library(dep0_ast_lib
     include/dep0/ast/max_index.hpp
     include/dep0/ast/max_index_impl.hpp
     include/dep0/ast/mutable.hpp
+    include/dep0/ast/mutable_place_expression.hpp
     include/dep0/ast/occurs_in.hpp
     include/dep0/ast/occurs_in_impl.hpp
     include/dep0/ast/place_expression.hpp
@@ -40,6 +41,7 @@ add_library(dep0_ast_lib
     src/hash_code.cpp
     src/max_index.cpp
     src/mutable.cpp
+    src/mutable_place_expression.cpp
     src/occurs_in.cpp
     src/place_expression.cpp
     src/pretty_print.cpp

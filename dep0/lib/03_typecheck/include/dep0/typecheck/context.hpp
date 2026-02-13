@@ -59,20 +59,23 @@ public:
             std::optional<std::size_t> scope_id,
             expr_t::var_t var,
             ast::qty_t const qty,
+            ast::is_mutable_t const is_mutable,
             expr_t type
         ) : origin(std::move(origin)),
             scope_id(std::move(scope_id)),
             var(std::move(var)),
             qty(qty),
+            is_mutable(is_mutable),
             type(std::move(type))
         { }
 
     public:
-        std::optional<source_loc_t> origin; /**< Where in the source code the variable declaration was encountered. */
-        std::optional<std::size_t> scope_id; /**< Scope ID of the originating context or empty if unscoped. */
-        expr_t::var_t var;  /**< Copy of the variable to which this declaration was bound, eg `x` in `0 i32_t x`. */
-        ast::qty_t qty;     /**< Quantity of the variable declaration, eg `0` in `0 i32_t x`. */
-        expr_t type;        /**< Type of the variable declaration, eg `i32_t` in `0 i32_t x`. */
+        std::optional<source_loc_t> origin;     /**< Where in the source code the variable declaration was found. */
+        std::optional<std::size_t> scope_id;    /**< Scope ID of the originating context or empty if unscoped. */
+        expr_t::var_t var;                      /**< Copy of the variable to which this declaration was bound. */
+        ast::qty_t qty;                         /**< Quantity of the variable declaration, eg `0` in `0 i32_t x`. */
+        ast::is_mutable_t is_mutable;           /**< Whether the variable was declared mutable or not. */
+        expr_t type;                            /**< Type of the variable declaration, eg `i32_t` in `0 i32_t x`. */
     };
 
     /** @brief The default context is unscoped, which reduces the risk of compiler bugs when typechecking references. */
@@ -129,7 +132,10 @@ public:
 
     // non-const member functions
 
-    /** @brief Add a new variable declaration with the given type and quantity and an automatically generated name. */
+    /**
+     * @brief Add a new immutable variable declaration with the
+     * given type and quantity and an automatically generated name.
+     */
     void add_unnamed(ast::qty_t, expr_t type);
 
     /**
@@ -139,7 +145,8 @@ public:
      *
      * If the variable name is nullopt, an automatically generated name will be used as if `add_unnamed()` was invoked.
      */
-    dep0::expected<expr_t::var_t> try_emplace(source_text, std::optional<source_loc_t>, ast::qty_t, expr_t type);
+    dep0::expected<expr_t::var_t>
+    try_emplace(source_text, std::optional<source_loc_t>, ast::qty_t, ast::is_mutable_t, expr_t type);
 
 private:
     enum class scope_flavour_t { scoped_v, unscoped_v };

@@ -21,6 +21,7 @@ add_library(dep0_typecheck_lib
   include/dep0/typecheck/is_impossible.hpp
   include/dep0/typecheck/is_mutable.hpp
   include/dep0/typecheck/list_initialization.hpp
+  include/dep0/typecheck/location_map.hpp
   include/dep0/typecheck/subscript_access.hpp
   # private headers
   src/private/beta_delta_equivalence.hpp
@@ -43,6 +44,7 @@ add_library(dep0_typecheck_lib
   src/private/proof_state.hpp
   src/private/returns_from_all_branches.hpp
   src/private/rewrite.hpp
+  src/private/root_var.hpp
   src/private/substitute.hpp
   src/private/unification.hpp
   src/private/usage.hpp
@@ -74,12 +76,14 @@ add_library(dep0_typecheck_lib
   src/is_mutable.cpp
   src/is_terminator.cpp
   src/list_initialization.cpp
+  src/location_map.cpp
   src/max_scope.cpp
   src/prelude.cpp
   src/proof_search.cpp
   src/proof_state.cpp
   src/returns_from_all_branches.cpp
   src/rewrite.cpp
+  src/root_var.cpp
   src/subscript_access.cpp
   src/substitute.cpp
   src/unification.cpp

@@ -98,12 +98,18 @@ void ctx_t::add_unnamed(ast::qty_t const qty, expr_t type)
     static std::size_t unnamed_idx = 0;
     static const source_text empty = source_text::from_literal("auto");
     auto const var = expr_t::var_t{empty, 0ul, unnamed_idx++};
-    bool const inserted = m_values.try_emplace(var, std::nullopt, scope(), var, qty, std::move(type)).second;
+    auto constexpr immutable = ast::is_mutable_t::no;
+    bool const inserted = m_values.try_emplace(var, std::nullopt, scope(), var, qty, immutable, std::move(type)).second;
     assert(inserted and "failed to add unnamed variable to context");
 }
 
 dep0::expected<expr_t::var_t>
-ctx_t::try_emplace(source_text name, std::optional<source_loc_t> const loc, ast::qty_t const qty, expr_t type)
+ctx_t::try_emplace(
+    source_text name,
+    std::optional<source_loc_t> const loc,
+    ast::qty_t const qty,
+    ast::is_mutable_t const is_mutable,
+    expr_t type)
 {
     auto const prev_var = m_index[name];
     auto const shadow_id = prev_var ? prev_var->shadow_id + 1ul : 0ul;
@@ -111,7 +117,7 @@ ctx_t::try_emplace(source_text name, std::optional<source_loc_t> const loc, ast:
     auto const [it, inserted] = m_index.try_emplace(name, var);
     if (inserted)
     {
-        bool const inserted = m_values.try_emplace(var, loc, scope(), var, qty, std::move(type)).second;
+        bool const inserted = m_values.try_emplace(var, loc, scope(), var, qty, is_mutable, std::move(type)).second;
         assert(inserted and "failed to add named variable to context");
         return var;
     }
@@ -144,19 +150,18 @@ std::ostream& for_each_line(std::ostream& os, R&& r, F&& f)
 
 std::ostream& pretty_print(std::ostream& os, ctx_t const& ctx)
 {
-    auto const length_of = [] (expr_t::var_t const& var)
+    auto const length_of = [] (ctx_t::decl_t const& x)
     {
-        // length of the name, plus:
-        //   1. length of its quantity ("0 ", "1 ", "  ")
-        //   2. and possibly the length of the index with the colon separator
-        auto const log10 = [] (std::size_t const x) { return static_cast<std::size_t>(std::log10(x)); };
-        return var.name.size() + 2 + (var.idx == 0ul ? 2ul : 2ul + log10(var.idx))
-                                   + (var.shadow_id == 0ul ? 2ul : 2ul + log10(var.shadow_id));
+        auto const& var = x.var;
+        std::ostringstream tmp;
+        pretty_print<properties_t>(tmp, x.var);
+        auto length = tmp.str().size() + 2ul; // including one of ("0 ", "1 ", "  ")
+        if (x.is_mutable == ast::is_mutable_t::yes)
+            length += std::string_view(" mutable").size();
+        return length;
     };
     auto const& decls = ctx.decls();
-    auto const longest =
-        decls.empty() ? 0ul :
-        std::ranges::max(decls | std::views::transform([&] (ctx_t::decl_t const& x) { return length_of(x.var); }));
+    auto const longest = decls.empty() ? 0ul : std::ranges::max(decls | std::views::transform(length_of));
     auto const indent = (longest / 4ul) + 1ul;
     auto const alignment = indent * 4ul;
     for_each_line(
@@ -166,7 +171,9 @@ std::ostream& pretty_print(std::ostream& os, ctx_t const& ctx)
         {
             os << (decl.qty == ast::qty_t::zero ? "0 " : decl.qty == ast::qty_t::one ? "1 " : "  ");
             pretty_print<properties_t>(os, decl.var);
-            padding.resize(alignment - length_of(decl.var), ' ');
+            if (decl.is_mutable == ast::is_mutable_t::yes)
+                os << " mutable";
+            padding.resize(alignment - length_of(decl), ' ');
             os << padding << ": ";
             auto copy = decl.type;
             bool const changed = beta_delta_normalize(copy);
